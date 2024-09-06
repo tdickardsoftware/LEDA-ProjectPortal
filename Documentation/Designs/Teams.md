@@ -4,7 +4,7 @@ The goal of this design is to implement the functionality to handle teams, by be
 ## Create a table in PostgreSQL
 Table Name: leda_team_info
 
-Columns: id* int, idNumber int, teamName str, establishedDate date(MM-DD-YYYY), memo str, lastTeamFeePayment str, memberId str, captainId str, barId str
+Columns: id* int, idNumber int, teamName str, establishedDate date(MM-DD-YYYY), memo str, lastTeamFeePayment str, memberId str, lastCaptainId str, lastBarId str
 
 ## Add a team
 On the homepage under the Teams header, there will be a link named Add a Team, in this menu you will be provided all fields to create a team.
