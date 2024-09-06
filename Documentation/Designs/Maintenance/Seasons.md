@@ -2,7 +2,7 @@
 The purpose for this design is to add functionality to handle seasons by being able to add seasons, edit seasons, or delete a season
 
 ## Create a table in PostgreSQL
-table name: leda_seasons
+table name: leda_maint_seasons
 columns: seasonCode str, description str, fiscalYear str, dates str
 
 ## Season Tab
