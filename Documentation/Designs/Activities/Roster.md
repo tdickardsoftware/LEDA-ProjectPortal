@@ -55,5 +55,3 @@ You can also create the season if it doesnt exist yet from this pop up
 ## Deleting from a roster/wiping the roster
 You can delete a team, subdivison, or division from the roster and it will update the database with the removals.
 You can also wipe the roster and delete every division, subdivision, and team from that seasons roster.  
-
-
