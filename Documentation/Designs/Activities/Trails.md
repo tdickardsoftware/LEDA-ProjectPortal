@@ -5,6 +5,9 @@ This design is to add functionality to support trails, this design will allow yo
 table name: leda_trails_history
 Columns: id* int, playerId int, notes str, singlesPlace int, doublesPlace int, trailsPoints int, trailsDate
 
+table name: leda_trails_totals
+columns: id* int, playerId int, previousTotalPoints int, totalPoints int
+
 ## Viewing trails scores
 Under the Activites tab you will find a link named Trails, after clicking the link will bring you to the trails page.
 
