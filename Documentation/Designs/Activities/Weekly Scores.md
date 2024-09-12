@@ -54,3 +54,8 @@ When they are done making changes, they can click save and it will update the da
 
 ## Deleting a Weekly Score
 Once a user is viewing a weekly score sheet they will have the option to delete a score sheet by clicking the Delete Weekly Score button, once clicked a confirmation menu will appear, if confirmed that scoresheet will be deleted.
+
+## Exporting a Weekly Score
+With weekly scores you can export a summary of all teams and their current standings, along with a report that shows the top darter points from the weekly scores 
+
+You can do this by clicking the Export button and then select the correct report
