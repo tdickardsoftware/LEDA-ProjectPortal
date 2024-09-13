@@ -5,8 +5,11 @@ Also the ability to add, remove, or changing the order of a player on a
 ## Create a table in PostgreSQL
 Table Name: leda_team_info
 
-Columns: id* int, idNumber int, teamName str, establishedDate date(MM-DD-YYYY), memo str, lastTeamFeePayment str, memberInfo str*, captainId str, barId str
+Columns: id* int, idNumber int, teamName str, establishedDate date(MM-DD-YYYY), memo str, lastTeamFeePayment str
 
+
+table name: leda_team_member_history
+Columns: id* int, idNumber int, seasonCode, memberInfo str*, captainId int, barId int
 *In memberInfo a record would look like this:
 {
 	"memberInformation": [{
