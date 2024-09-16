@@ -19,6 +19,7 @@ Columns: id* int, idNumber int, seasonCode, memberInfo str*, captainId int, barI
 		}
 	}]
 }
+
 table name: leda_team_payout_info
 columns: id int, seasonCode str, teamId int, payoutCheckAdjustedAmount number, payoutCheckAdjustmentReason str, payoutCheckGrossAmmount number, payoutCheckNumber int
 seasonCode comes from table leda_maint_seasons

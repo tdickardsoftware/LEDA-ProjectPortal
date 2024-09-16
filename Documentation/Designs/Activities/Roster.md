@@ -14,11 +14,6 @@ seasonCode comes from table leda_maint_seasons
 teamId comes from leda_team_info
 barId comes from leda_place_info
 
-table name: leda_team_payout_info
-columns: id int, seasonCode str, teamId int, payoutCheckAdjustedAmount number, payoutCheckAdjustmentReason str, payoutCheckGrossAmmount number, payoutCheckNumber int
-seasonCode comes from table leda_maint_seasons
-teamId comes from leda_team_info
-
 ## View a roster
 Under the activies header there will be a link called Roster, when clicked on it will bring you to the Rosters page, when you enter select the Season Code you are looking for it will pull up the roster for that season.
 *A list of the season codes will be obtained from the leda_maint_seasons table
