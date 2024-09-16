@@ -19,6 +19,10 @@ Columns: id* int, idNumber int, seasonCode, memberInfo str*, captainId int, barI
 		}
 	}]
 }
+table name: leda_team_payout_info
+columns: id int, seasonCode str, teamId int, payoutCheckAdjustedAmount number, payoutCheckAdjustmentReason str, payoutCheckGrossAmmount number, payoutCheckNumber int
+seasonCode comes from table leda_maint_seasons
+teamId comes from leda_team_info
 ## Add a team
 On the homepage under the Teams header, there will be a link named Add a Team, in this menu you will be provided all fields to create a team.
 
