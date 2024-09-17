@@ -6,7 +6,7 @@ table name: leda_payout_tiers
 colimns: place int, ammount double
 
 ## Viewing payout tiers
-Under the maintenance tab there will be a section called Payout Tiers, clicking on this will take you to a page to view the current payout tiers.
+Under the maintenance tab there will be a section called Payout Tiers, clicking on this will take you to a menu to view the current payout tiers.
 
 ## Creating a payout tier
 While viewing the payout tiers, click the Add Payout Tier button and enter the place (cannot already exist) and the ammount, then click Add and it will create the payout tier

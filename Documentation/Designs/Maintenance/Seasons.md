@@ -6,10 +6,10 @@ table name: leda_maint_seasons
 columns: seasonCode str, description str, fiscalYear str, dates str
 
 ## Season Tab
-Under the maintenance header there will be a link named Seasons, click this and you will be brought to the management page for a season.
+Under the maintenance header there will be a link named Seasons, click this and you will be brought to the management menu for a season.
 
 ## Add a season
-While in the season page, you can click the add button, this will popup with a menu to add a new season. 
+While in the season menu, you can click the add button, this will popup with a menu to add a new season. 
 
 Required fields: seasonCode, fiscalYear, and dates
 
@@ -18,9 +18,9 @@ You will notice that in the add menu for the dates, you can dynamically add them
 *You need atleast one date to make a season.
 
 ## Edit a season
-While in the season page, you can click the edit button, this will allow you to edit the data of a selected season.
+While in the season menu, you can click the edit button, this will allow you to edit the data of a selected season.
 
 Click save to update the table
 
 ## Delete a season
-While in the season page, you can click the delete button. Once clicked a confirmation popup will appear, if confirmed remove the season from the db and all aspects that reference it.
+While in the season menu, you can click the delete button. Once clicked a confirmation popup will appear, if confirmed remove the season from the db and all aspects that reference it.
