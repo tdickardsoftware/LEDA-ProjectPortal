@@ -3,7 +3,7 @@ this design is for a menu to view and create/edit payout tiers for different tea
 
 ## Creating a PostgreSQL table
 table name: leda_payout_tiers
-colimns: place int, ammount double
+colimns: id* int, place int, ammount double
 
 ## Viewing payout tiers
 Under the maintenance tab there will be a section called Payout Tiers, clicking on this will take you to a menu to view the current payout tiers.

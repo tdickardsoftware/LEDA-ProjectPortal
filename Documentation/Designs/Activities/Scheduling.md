@@ -11,16 +11,16 @@ column names: id int, rosterId int, teamId int, weekNum int, homeOrAway bool, op
 ## Viewing a schedule
 When a user clicks on the Scheduling link under Activites a user will be directed to the schedule page. Once loaded into the page it will be mostly blank with a prompt telling a user to select the roster the user wish to view the schedule for. 
 
+It will by default load all weeks that were defined when the Season was created.
+
 Once the roster has been selected the schedule will appear, by default a user will see the entire schedule for each division or subdivision. But the user will be able to change a setting which will always open the roster condenced. You can also always condense individual subdivisions or entire divisions within the schedule. 
 
 You will be able to see each team within a subdivision/division and also see their entire schedule.
 
 ## Creating a schedule
-If a schedule has not been created yet for a roster, when a user clicks on the roster to view the schedule it will pull up the divisions and sub divisions but not have any weeks/games displayed.
+If a schedule has not been created yet for a roster, when a user clicks on the roster to view the schedule it will pull up the divisions and sub divisions but not have any games displayed.
 
-Once the roster has been pulled up they can select the button next to the division named "Add Week +" this will add a week to that division, there will also be a button to add a week for the entire roster. 
-
-Once a week is added a user can simply drag a team in that subdivision to another team in that subdivision on their match tile, and it will assign the teams to face eachother.
+When a user wants to schedule a matchup for a week, they can drag one team to another, or click the Add Matchup button to schedule the teams to face eachother
 *By default the team that was dragged to another team will be considered the away team, it is possible to change the home team.
 **Also, the schedule will automatically update the dragged team to have the game on their schedule.
 ***There is also the ability to drag teams from another subdivision/division to face a team, i.e. if there are uneven teams in a subdivision to avoid a bye week, or something of that nature
