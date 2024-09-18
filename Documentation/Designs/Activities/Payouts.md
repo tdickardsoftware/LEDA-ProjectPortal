@@ -28,3 +28,7 @@ There will be two different forms avaliable for exporting:
 1. Checks - This will create checks for each team with their net amount
 
 2. Register - This will create a summary report for all payouts for the teams
+
+# Mockups
+## Payouts Page
+![image](../../Mockups/Activities/leda_payouts.png)
