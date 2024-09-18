@@ -63,3 +63,13 @@ While viewing a team you can select a player and once selected you can click the
 
 ## Setting the display order for a team
 As a user while adding players to a team it will by default set the order in the order you add them (starting with 1), but you can drag a player up and down to change their order in the team
+
+# Mockup Images
+## Teams Page with selections
+![image](../../Mockups/Management/leda_teams_page.png)
+
+*To get to this page you can dynamically type to search for a team, once selected it will go to this page
+## Adding Players
+![image](../../Mockups/Management/leda_teams_add_player.png)
+## Creating a team
+![image](../../Mockups/Management/leda_create_team.png)

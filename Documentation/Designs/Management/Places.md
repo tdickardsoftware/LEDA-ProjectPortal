@@ -26,3 +26,10 @@ When clicked, all of the information will appear in text boxes and become editab
 After a place has been found, and you are taken to the place where it displays all of the information, a delete button will appear in the right hand side
 
 When clicked, a confirmation box will appear, and if confirmed the data will be deleted from the table, aswell as become removed from any current teams associated with the place.
+
+# Markups
+## Places Page
+![image](../../Mockups/Management/leda_place_page.png)
+
+## Add a place
+![image](../../Mockups/Management/leda_add_place.png)
