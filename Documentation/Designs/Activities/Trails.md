@@ -31,3 +31,11 @@ On the menu a user can edit any of the data and then click the save button, from
 After a trails date has been selected, the user can either delete the entire trails score sheet by clicking the Delete Trails Scores button, or the user can delete an individual score by selecting a player's record and clicking the Delete button.
 
 After the button has been clicked a confirmation menu will appear, once confirmed the record(s) will be removed.
+
+# Mockups
+## Trails Page
+![image](../../Mockups/Activities/leda_trails.png)
+## Trails Add Entry
+![image](../../Mockups/Activities/leda_trails_add_entry.png)
+## Trails Add Trails Date
+![image](../../Mockups/Activities/leda_trails_add_trails_date.png)
