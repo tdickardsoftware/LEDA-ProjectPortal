@@ -59,3 +59,9 @@ Once a user is viewing a weekly score sheet they will have the option to delete 
 With weekly scores you can export a summary of all teams and their current standings, along with a report that shows the top darter points from the weekly scores 
 
 You can do this by clicking the Export button and then select the correct report
+
+# Mockups
+## Weekly Scores Form
+![image](../../Mockups/Activities/leda_weekly_scores.png)
+## Add Penalties
+![image](../../Mockups/Activities/leda_weekly_scores_add_penalties.png)
