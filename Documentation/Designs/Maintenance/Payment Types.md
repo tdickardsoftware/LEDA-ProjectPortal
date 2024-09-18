@@ -23,3 +23,7 @@ Once saved it will update the data in the database.
 
 ## Delete Payment Types
 In the Payment Types menu, a user can select a mention and a delete button will appear, if selected a confirmation menu will appear, if confirmed it will be deleted from the menu and the database
+
+# Mockups
+## Payout Types Page
+![image](../../Mockups/Maintenance/leda_payment_types.png)

@@ -30,3 +30,11 @@ Click save to update the table
 
 ## Delete a season
 While in the season page, you can click the delete button. Once clicked a confirmation popup will appear, if confirmed remove the season from the db and all aspects that reference it.
+
+# Mockups
+## No Season Selected
+![image](../../Mockups/Maintenance/leda_seasons_blank.png)
+## Season Selected
+![image](../../Mockups/Maintenance/leda_seasons_season_selected.png)
+## Add Season
+![image](../../Mockups/Maintenance/leda_season_add_season.png)

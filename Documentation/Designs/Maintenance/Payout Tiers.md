@@ -13,3 +13,7 @@ While viewing the payout tiers, click the Add Payout Tier button and enter the p
 
 ## Editing a payout tier
 While viewing, click on a specific tier and click the edit button and it will pull up a menu to edit that payout tiers data.
+
+# Mockups
+## Payout Tiers Page
+![image](../../Mockups/Maintenance/leda_payout_tiers.png)

@@ -21,3 +21,7 @@ Once editing is done the user will be able to save and it will then update the d
 
 ## Delete People Types
 After you select a record in the people types menu you can see a delete button, clicking the delete button will pull up a confirmation prompt, if confirmed it will then delete the record from the table
+
+# Mockups
+## People Types Page
+![image](../../Mockups/Maintenance/leda_people_types.png)

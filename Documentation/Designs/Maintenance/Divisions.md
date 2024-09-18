@@ -23,3 +23,7 @@ After a division has been selected an edit button will become avaliable, once cl
 
 ## Deleting a Division
 Once a division has been selected a delete button will become avaliable, if clicked a confirmation window will pop up, if confirmed it will delete that division
+
+# Mockups
+## Divisions Page
+![image](../../Mockups/Maintenance/leda_divisions.png)
