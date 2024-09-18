@@ -50,3 +50,13 @@ You can also create the season if it doesnt exist yet from this pop up
 ## Deleting from a roster/wiping the roster
 You can delete a team, subdivison, or division from the roster and it will update the database with the removals.
 You can also wipe the roster and delete every division, subdivision, and team from that seasons roster.  
+
+# Mockups
+## Rosters Page
+![image](../../Mockups/Activities/leda_roster_page.png)
+## Add Team
+![image](../../Mockups/Activities/leda_roster_add_team.png)
+## Add Division
+![image](../../Mockups/Activities/leda_roster_add_division.png)
+## Copy Roster
+![image](../../Mockups/Activities/leda_roster_copy_roster.png)
