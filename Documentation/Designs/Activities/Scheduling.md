@@ -39,3 +39,11 @@ Once a roster is pulled up and the schedule is being viewed a user can click the
 
 ## Deleting a schedule
 If there is a need to delete a schedule for a particular roster a user can view that particular schedule and click the Delete Schedule button. This will pull up a confirmation menu, if confirmed any data relating to the schedule will be deleted.
+
+# Mockups
+## Scheduling Blank
+![image](../../Mockups/Activities/leda_scheduling_blank.png)
+## Scheduling Selected
+![image](../../Mockups/Activities/leda_scheduling_roster_selected.png)
+## Add Match
+![image](../../Mockups/Activities/leda_scheduling_add_match.png)
