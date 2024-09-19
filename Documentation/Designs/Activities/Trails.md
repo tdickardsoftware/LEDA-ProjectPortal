@@ -3,9 +3,11 @@ This design is to add functionality to support trails, this design will allow yo
 
 ## Creating a PostgreSQL table
 table name: leda_trails_history
-Columns: id* int, playerId int, notes str, singlesPlace int, doublesPlace int, trailsPoints int, trailsDate
 
+Columns: id* int, playerId int, notes str, singlesPlace int, doublesPlace int, trailsPoints int, trailsDate
+___
 table name: leda_trails_totals
+
 columns: id* int, playerId int, previousTotalPoints int, totalPoints int
 
 ## Viewing trails scores
