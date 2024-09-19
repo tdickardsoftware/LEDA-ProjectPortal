@@ -70,7 +70,7 @@ As a user while adding players to a team it will by default set the order in the
 
 # Mockup Images
 ## Teams Page 
-![image](Documentation/Mockups/Management/leda_teams_page.png)
+![image](../../Mockups/Management/leda_teams_page.png)
 ## Teams Page with selections
 ![image](../../Mockups/Management/leda_teams_selected_page.png)
 
