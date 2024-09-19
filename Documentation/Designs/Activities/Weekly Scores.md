@@ -24,7 +24,7 @@ Columns: id int, seasonCode str, playerNumber int, weekNumber int, division str,
     game3: false
 }
 ```
---pointsGameInformation will be store dynamically in a JSOn format like this:
+--pointsGameInformation will be store dynamically in a JSON format like this:
 ```
 {
     game1: 2,
