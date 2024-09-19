@@ -1,6 +1,6 @@
 # Design for Teams
 The goal of this design is to implement the functionality to handle teams, by being able to create, copy, edit, and delete teams.
-Also the ability to add, remove, or changing the order of a player on a
+Also the ability to add, remove, or changing the order of a player on a team
 
 ## Create a table in PostgreSQL
 Table Name: leda_team_info
