@@ -7,17 +7,17 @@ Columns: id int, name str, add1 str, add2 str, city str, state str, zip str, pho
 
 *contactId links to idNumber in player table
 
+## View Places
+Once a user is on the Places page, they will be able to see a list of all places currently in our system. 
+
+The user will also be able to search for a specific place(s) using the search bar, as the user types it will dynamically return results around what the user types
+
 ## Adding Places
 On the homepage right bellow the Places header, there will be a link called Add Place, when pressed will bring you to a page to enter information about the place.
 
 Required fields: name, add1, city, state, zip, phoneNumber, establishDate, numberDartBoards, placeType
 
 Default Values: sendMailings = false, regularSponsor = false, currentSponsor = false, issues = false
-
-## View Places
-On the homepage bellow the  Add Place button you will find a link to Find Place, which will allow you to search for a place
-
-As the user types, search the table and dynamically return results around the typing
 
 ## Editing Places
 After a place has been found, and you are taken to the place where it displays all of the information, an edit button will appear in the right hand side
