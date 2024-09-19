@@ -3,19 +3,28 @@ The purpose of this design is to implement the functionality to support Rosters,
 
 ## Create a table in PostgreSQL
 Table Name: leda_team_hist
+
 Columns: id int, seasonCode str, teamId int, memberId int, captain bool, division str, subdivision int, teamLetter char(1), barId int, notes str, establishDate date(MM-DD-YYYY), finalStandings int, teamPaid bool, barPaid bool
+
 seasonCode comes from table leda_maint_seasons
+
 teamId comes from leda_team_info
+
 memberId comes from leda_player_info
 
 table name: leda_roster_info
+
 Columns: id int, seasonCode str, teamIds string
+
 seasonCode comes from table leda_maint_seasons
+
 teamId comes from leda_team_info
+
 barId comes from leda_place_info
 
 ## View a roster
 Under the activies header there will be a link called Roster, when clicked on it will bring you to the Rosters page, when you enter select the Season Code you are looking for it will pull up the roster for that season.
+
 *A list of the season codes will be obtained from the leda_maint_seasons table
 
 Once a roster has been selected you will be able to see the information from a team, like division information, teamId, team name, bar id, bar name, if the team/bar paid any notes, the option to view the players on that team.
@@ -37,6 +46,7 @@ This will then create the division information for a team, for example one could
 ## Editing a roster
 You can drag and drop teams from one subsection to another, it will also automatically reassign the team letter around the change.
 ex: say you want to move a team from subsection 1 to subsection 2, and its letter in 1 is B but you want it to be C in subsection 2. When moved it will automatically shift the remaining teams to fill the gap of B and then update the entries in subsection 2, and the old C will become D, and so on so forth. 
+
 *This will auto update the schedule
 
 You can also move entire subsections to another division, and they will adjust the numbers of the subsections and the division name automatically.
