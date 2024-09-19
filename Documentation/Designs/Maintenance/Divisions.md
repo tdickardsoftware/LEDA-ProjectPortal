@@ -11,7 +11,6 @@ columns: id, divisionName
 ## Viewing a Division
 Under the maintenance header, there will be a link titled Divisions, clicking this will bring you to the divisions menu. Here you will be able to see all current divisions.
 
-If you were to select a division and click on the button of View you would be able to see the teams in that division for any season.
 
 ## Adding a Division
 Once in the menu to view the divisions, you can click the plus button to add a division, this will then pull up a menu to add in the required information for a division.
