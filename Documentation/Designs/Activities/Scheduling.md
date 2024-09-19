@@ -15,7 +15,7 @@ When a user clicks on the Scheduling link under Activites a user will be directe
 
 It will by default load all weeks that were defined when the Season was created.
 
-Once the roster has been selected the schedule will appear, by default a user will see the entire schedule for each division or subdivision. But the user will be able to change a setting which will always open the roster condenced. You can also always condense individual subdivisions or entire divisions within the schedule. 
+Once the roster has been selected the schedule will appear, by default a user will see the entire schedule for each division or subdivision. But the user will have the option to filter it down to an individual division/subdivision or be able to collapse them.
 
 You will be able to see each team within a subdivision/division and also see their entire schedule.
 
