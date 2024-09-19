@@ -13,10 +13,8 @@ Under the activies section you will find a link named Payouts, when clicking thi
 In this page you can select a season, and then all teams will be displayed, along with their captains, their place, gross winnings, adjustments, notes, and then a net total
 
 ## Editing Payouts
-After a season is selected you will be able to edit the current place of a team, along with any adjustments/notes on a team.
+After a season is selected, a user will be able to edit any adjustments and notes on a team. This is done by clicking on a teams row and then clicking the edit button.
  
-You can do this by clicking the Edit Payouts button
-
 After editing, you can click save and it will update the database with the new information
 
 There will also be an option to do a global adjustment, which will afftect all teams.
