@@ -11,7 +11,7 @@ table name: leda_schedule_team_info
 column names: id int, rosterId int, teamId int, weekNum int, homeOrAway bool, oppTeamId int, matchDateTime date(MM-DD-YYYY HH:MM:SS)
 
 ## Viewing a schedule
-When a user clicks on the Scheduling link under Activites a user will be directed to the schedule page. Once loaded into the page it will be mostly blank with a prompt telling a user to select the roster the user wish to view the schedule for. 
+When a user clicks on the Scheduling link under Activites a user will be directed to the schedule page. Once loaded into the page it will be mostly blank with a dropdown to select the roster the user wish to view the schedule for. 
 
 It will by default load all weeks that were defined when the Season was created.
 
