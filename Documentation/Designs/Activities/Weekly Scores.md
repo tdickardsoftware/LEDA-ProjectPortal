@@ -53,7 +53,7 @@ You will also be able to enter points for home/away team per game and be able to
 
 Once the user is done entering in the data they can hit save to update all records about that week.
 
-You can also assign a player mentions, if a player has a mention it will add points to them (how does this system work? i cant figure out where the points go when it gets assigned)
+You can also assign a player mentions, if a player has a mention it will add points to them
 
 ## Editing a Weekly Score
 Once the user is viewing a weekly score sheet, and it already existed, they can click the Edit button, once clicked the user will be able to make changes to any of the game tiles, or home/away points or home wins. 
