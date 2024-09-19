@@ -45,8 +45,7 @@ After you have started viewing a weekly score sheet, if one does not exist for t
 
 The form will list out the players from each team (1-x for home) (501-x for away) in display order (this is set during team creation)
 
-home team will have a background color of white for the player rows
-away team will have a background color of dark grey for the player rows (possible dark mode, what colors would they be instead?)
+
 
 When the user goes to enter in scores, you can click on the game tile for each player to mark it as an X, like in the old program, or click again to make it blank.
 
