@@ -35,17 +35,16 @@ Division information will look like this: S1A or Sapphire, sub division 1, team 
 If you view players it will show you Player Id, Name (Dickard, Tyler), Paid Status, Captain, Bad Standing, and Cannot Be Captain. You will also have the ability to delete or add players to the selected team. All of this information will come from the table leda_player_info and leda_membership_info
 
 ## Add to a roster
-While in the roster menu if the season you are looking to make a roster for does not exist there is a button named Create Season which will popup the Add Season popup from the Season design.
+If a roster has not been created yet for a season you will be able to add divisions and subdivisons and start adding teams.
 
-After selecting a season, you can add divisions (emerald, diamond, etc.), from then you can create subdivisions(will appear as Subdivision 1 (6) the six stands for amount of teams in that subdivision)
-
-You can then select that subdivision, and begin to add teams, when adding a team all of the listed players will pull up by default, you can then add/remove players if needed. 
-Once the team is added a team letter will be assigned by automatically, so with the current implementation you can have 26 teams per subdivision (A-Z)
-This will then create the division information for a team, for example one could look like D1H Diamond, subdivision 1, letter H
+Once the add team button is pressed you will be able to select the division and subdivision of the team. Then you will be able to add the place information for their home location. Then when the user clicks add it will add that team to the roster.
 
 ## Editing a roster
 You can drag and drop teams from one subsection to another, it will also automatically reassign the team letter around the change.
+
 ex: say you want to move a team from subsection 1 to subsection 2, and its letter in 1 is B but you want it to be C in subsection 2. When moved it will automatically shift the remaining teams to fill the gap of B and then update the entries in subsection 2, and the old C will become D, and so on so forth. 
+
+The user will also be able to go and edit the bar location of a team by clicking on a team and clicking the edit button.
 
 *This will auto update the schedule
 
