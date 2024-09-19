@@ -6,11 +6,13 @@ Also the ability to add, remove, or changing the order of a player on a
 Table Name: leda_team_info
 
 Columns: id* int, idNumber int, teamName str, establishedDate date(MM-DD-YYYY), memo str, lastTeamFeePayment str
-
-
+___
 table name: leda_team_member_history
+
 Columns: id* int, idNumber int, seasonCode, memberInfo str*, captainId int, barId int
+
 *In memberInfo a record would look like this:
+```
 {
 	"memberInformation": [{
 		"playerId": 1234,
@@ -19,11 +21,21 @@ Columns: id* int, idNumber int, seasonCode, memberInfo str*, captainId int, barI
 		}
 	}]
 }
-
+```
+___
 table name: leda_team_payout_info
+
 columns: id int, seasonCode str, teamId int, payoutCheckAdjustedAmount number, payoutCheckAdjustmentReason str, payoutCheckGrossAmmount number, payoutCheckNumber int
+
 seasonCode comes from table leda_maint_seasons
+
 teamId comes from leda_team_info
+
+## Viewing a team
+When the user clicks on the Teams link and are on the teams page they will be able to see all teams
+
+The user will also be able to search for (a) specific team(s) using the search bar, the page will dynamically show results as the user types
+
 ## Add a team
 On the homepage under the Teams header, there will be a link named Add a Team, in this menu you will be provided all fields to create a team.
 
@@ -34,14 +46,6 @@ While adding teams you must add atleast one member to the team, to add a member 
 When you select the result from the search that player will be added, if you want to make a player captain select the star next to the players name.
 
 ^ The same applies for places.
-
-## Finding a team
-On the homepage bellow Add a Team you will find a link to Find a Team.
-
-To find a team start typing information about the team and it will start populating results for a team. 
-
-You can select teams based on season, division, league, etc. 
-
 
 ## Editing a team
 After a team is found in the top left there will be an edit button, once clicked you will be able to edit a team.
