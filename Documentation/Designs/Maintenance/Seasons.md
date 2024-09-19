@@ -3,14 +3,16 @@ The purpose for this design is to add functionality to handle seasons by being a
 
 ## Create a table in PostgreSQL
 table name: leda_maint_seasons
+
 columns: id int, seasonCode str, description str, fiscalYear str, dates str*, isCurrentSeason bool
 
 *dates will be stored as a json object, it will look like this:
+```
 {
     "game1":"1/1/2025",
     "game2:"1/5/2025"
 }
-
+```
 ## Season Tab
 Under the maintenance header there will be a link named Seasons, click this and you will be brought to the management page for a season.
 
