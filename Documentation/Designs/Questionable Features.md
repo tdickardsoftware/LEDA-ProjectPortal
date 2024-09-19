@@ -1,4 +1,4 @@
-# Questionable Designs
+# Question on Features Designs
 These Features were not found to be used frequently/not used in a long time, do they need to be in the project?
 
 ## Receipts
