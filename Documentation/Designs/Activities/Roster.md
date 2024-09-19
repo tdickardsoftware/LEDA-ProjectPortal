@@ -2,16 +2,7 @@
 The purpose of this design is to implement the functionality to support Rosters, with this you will be able to view, edit, add, copy, or delete a roster.
 
 ## Create a table in PostgreSQL
-Table Name: leda_team_hist
 
-Columns: id int, seasonCode str, teamId int, memberId int, captain bool, division str, subdivision int, teamLetter char(1), barId int, notes str, establishDate date(MM-DD-YYYY), finalStandings int, teamPaid bool, barPaid bool
-
-seasonCode comes from table leda_maint_seasons
-
-teamId comes from leda_team_info
-
-memberId comes from leda_player_info
-___
 table name: leda_roster_info
 
 Columns: id int, seasonCode str, teamIds string
@@ -20,7 +11,6 @@ seasonCode comes from table leda_maint_seasons
 
 teamId comes from leda_team_info
 
-barId comes from leda_place_info
 
 ## View a roster
 Under the activies header there will be a link called Roster, when clicked on it will bring you to the Rosters page, when you enter select the Season Code you are looking for it will pull up the roster for that season.
