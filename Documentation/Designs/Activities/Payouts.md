@@ -3,6 +3,7 @@ This design is to implement the functionality for payouts, with this you will be
 
 ## Creating a PostgreSQL table
 table name: leda_payouts
+
 columns: id* int, seasonCode str, teamId int, grossAmmt double, adjustment int, checkNotation str, netAmmt double
 
 
