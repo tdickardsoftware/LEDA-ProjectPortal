@@ -30,6 +30,16 @@ columns: id int, seasonCode str, teamId int, payoutCheckAdjustedAmount number, p
 seasonCode comes from table leda_maint_seasons
 
 teamId comes from leda_team_info
+___
+Table Name: leda_team_hist
+
+Columns: id int, seasonCode str, teamId int, memberId int, captain bool, division str, subdivision int, teamLetter char(1), barId int, notes str, establishDate date(MM-DD-YYYY), finalStandings int, teamPaid bool, barPaid bool
+
+seasonCode comes from table leda_maint_seasons
+
+teamId comes from leda_team_info
+
+memberId comes from leda_player_info
 
 ## Viewing a team
 When the user clicks on the Teams link and are on the teams page they will be able to see all teams
