@@ -1,5 +1,5 @@
 # Design for Scheduling
-The purpose for this design is to add functionality to support schedules, the goal is to add the ability to view, create, edit, export, or delete a schedule.
+The purpose for this design is to add functionality to support schedules, the goal is to add the ability to view, create, edit, or delete a schedule.
 
 ## Creating a table in PostgreSQL
 table name: leda_schedule
