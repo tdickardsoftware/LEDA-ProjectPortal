@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS maint.leda_maint_mentions
     id bigint NOT NULL,
     "mentionCode" text COLLATE pg_catalog."default" NOT NULL,
     "desc" text COLLATE pg_catalog."default",
-    points bigint NOT NULL,
+    "points" bigint NOT NULL,
     "mentionBasis" text COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT leda_maint_mentions_pkey PRIMARY KEY (id)
 )
