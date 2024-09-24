@@ -1,0 +1,6 @@
+-- SCHEMA: maint
+
+-- DROP SCHEMA IF EXISTS maint ;
+
+CREATE SCHEMA IF NOT EXISTS maint
+    AUTHORIZATION admin;
