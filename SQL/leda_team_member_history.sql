@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.leda_team_member_history
     "id" bigint NOT NULL,
     "ledaTeamId" bigint NOT NULL,
     "seasonCode" text COLLATE pg_catalog."default" NOT NULL,
-    "memberIdList" json COLLATE pg_catalog."default" NOT NULL,
+    "memberIdList" json NOT NULL,
     "captainId" bigint NOT NULL,
     "barId" bigint NOT NULL,
     "division" text COLLATE pg_catalog."default" NOT NULL,
