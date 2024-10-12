@@ -1,7 +1,13 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Portal"
+}
+
 export default function Page() {
     return (
         <main>
-            <p>Rosters Page</p>
+            <p>Portal Page</p>
         </main>
     );
 }
