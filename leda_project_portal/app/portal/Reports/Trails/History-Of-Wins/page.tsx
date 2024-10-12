@@ -1,13 +1,13 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Portal"
+    title: "History of Wins"
 }
 
 export default function Page() {
     return (
         <main>
-            <p>Portal Page</p>
+            <p>History of Wins Page</p>
         </main>
     );
 }
