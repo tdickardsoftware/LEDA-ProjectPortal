@@ -1,13 +1,13 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Reports"
+    title: "Portal | LEDA Project"
 }
 
 export default function Page() {
     return (
         <main>
-            <p>Reports Page</p>
+            <p>Portal Page</p>
         </main>
     );
 }
