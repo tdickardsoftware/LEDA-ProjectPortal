@@ -1,8 +1,6 @@
 import '@/app/ui/globals.css';
 import { inter } from '@/app/ui/fonts';
 import { Metadata } from 'next';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
 
 
 export const metadata: Metadata = {
@@ -18,13 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html>
       <body>
-        <SidebarProvider>
-          <AppSidebar />
           <main>
-            <SidebarTrigger />
             {children}
           </main>
-        </SidebarProvider>
       </body>
     </html>
   );
