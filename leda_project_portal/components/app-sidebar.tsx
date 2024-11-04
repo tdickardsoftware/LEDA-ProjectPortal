@@ -1,29 +1,19 @@
+//
+// Use Client
+//
 "use client"
-
+//
+// Imports
+//
 import * as React from "react"
-import {
-  Book,
-  BookOpen,
-  Bot,
-  Command,
-  FileText,
-  Frame,
-  LifeBuoy,
-  Map,
-  PieChart,
-  Send,
-  Settings2,
-  SquareTerminal,
-  Wrench,
-  ListCheck,
-  Target,
-} from "lucide-react"
-
+import { Book, FileText, Frame, LifeBuoy, Map, PieChart, Send, Wrench, ListCheck, Target } from "lucide-react"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, } from "@/components/ui/sidebar"
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import Link from "next/link"
-
+//
+// Define data for sidenav bar
+//
 const data = {
   user: {
     name: "Tyler Dickard",
@@ -278,7 +268,9 @@ const data = {
     },
   ],
 }
-
+//
+// Return sidenav object
+//
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
