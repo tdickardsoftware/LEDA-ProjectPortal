@@ -28,43 +28,11 @@ export const columns: ColumnDef<Player>[] = [
         header: "Middle Initial",
     },
     {
-        accessorKey: "addressOne",
-        header: "Address One",
-    },
-    {
-        accessorKey: "addressTwo",
-        header: "Address Two",
-    },
-    {
-        accessorKey: "city",
-        header: "City",
-    },
-    {
-        accessorKey: "state",
-        header: "State",
-    },
-    {
-        accessorKey: "zip",
-        header: "Zip Code",
-    },
-    {
         accessorKey: "phoneNumber",
         header: "Phone Number",
     },
     {
-        accessorKey: "otherNumber",
-        header: "Other Number",
-    },
-    {
         accessorKey: "email",
         header: "Email",
-    },
-    {
-        accessorKey: "gender",
-        header: "Gender",
-    },
-    {
-        accessorKey: "dateOfBirth",
-        header: "Date of Birth",
     },
 ]
