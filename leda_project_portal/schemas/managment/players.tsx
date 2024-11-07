@@ -16,16 +16,8 @@ export const columns: ColumnDef<Player>[] = [
         header: "LEDA ID Number",
     },
     {
-        accessorKey: "lastName",
-        header: "Last Name",
-    },
-    {
-        accessorKey: "firstName",
-        header: "First Name",
-    },
-    {
-        accessorKey: "middleInitial",
-        header: "Middle Initial",
+        accessorKey: "fullName",
+        header: "Full Name",
     },
     {
         accessorKey: "phoneNumber",

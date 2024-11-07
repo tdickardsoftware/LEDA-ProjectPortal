@@ -2,8 +2,8 @@
 //Define type to identify the shape of our data coming from postgres for players
 //
 export type Player = {
-    id: number
     ledaId: number
+    fullName: string
     lastName: string
     firstName: string
     middleInitial: string

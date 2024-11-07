@@ -9,11 +9,10 @@ export const metadata: Metadata = {
 
 export default async function Page() {
     return (
-        <main>
-            <h1 className="text-2xl">Players Page</h1>
+        <>
             <div className="container mx-auto py-10">
-                <DataTable columns={columns} data={await fetchPlayers()} />
+                <DataTable columns={columns} data={await fetchPlayers()} pageName="Players Page" />
             </div>
-        </main>
+        </>
     );
 }

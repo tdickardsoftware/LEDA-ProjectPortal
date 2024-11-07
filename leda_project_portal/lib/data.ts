@@ -9,7 +9,7 @@ import { query } from './db';
 export async function fetchPlayers() {
     // attempt to get data
     try {
-        const data = await query<Player>(`SELECT * from public.leda_player_info`);
+        const data = await query<Player>(`SELECT "ledaId", CONCAT(COALESCE("firstName", ''), ' ', COALESCE("middleInitial", ''), ' ', COALESCE("lastName", '')) as "fullName", "lastName", "firstName", "middleInitial", "addressOne", "addressTwo", city, state, zip, "phoneNumber", "otherNumber", email, gender, "dateOfBirth" FROM public.leda_player_info;`);
         return data.rows;
     // if it cannot get data error out
     } catch(error) {
