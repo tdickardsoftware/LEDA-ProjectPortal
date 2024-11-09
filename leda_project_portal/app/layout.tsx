@@ -5,7 +5,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | LEDA Portal',
+    template: '%s | LEDA Project Portal',
     default: 'LEDA Portal',
   },
   description: 'The official Next.js Learn Dashboard built with App Router.',
