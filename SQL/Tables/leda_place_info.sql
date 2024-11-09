@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.leda_place_info
     "state" text COLLATE pg_catalog."default" NOT NULL,
     "zip" character varying(10) COLLATE pg_catalog."default" NOT NULL,
     "phoneNumber" text COLLATE pg_catalog."default" NOT NULL,
-    "otherPhoneNumber" text COLLATE pg_catalog."default",
+    "otherNumber" text COLLATE pg_catalog."default",
     "email" text COLLATE pg_catalog."default",
     "website" text COLLATE pg_catalog."default",
     "establishDate" date NOT NULL,
