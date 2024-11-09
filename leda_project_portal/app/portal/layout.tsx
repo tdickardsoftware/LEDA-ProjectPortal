@@ -8,13 +8,13 @@ import { AppSidebar } from '@/components/app-sidebar';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
+        <main>
         <SidebarProvider>
           <AppSidebar />
-          <main>
-            <SidebarTrigger />
-            {children}
-          </main>
+          <SidebarTrigger />
+          {children}
         </SidebarProvider>
+        </main>
   );
   
 }

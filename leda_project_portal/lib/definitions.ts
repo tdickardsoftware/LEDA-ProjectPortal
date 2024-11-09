@@ -18,3 +18,13 @@ export type Player = {
     gender: string
     dateOfBirth: Date
 }
+//
+//Define type to identify the shape of our data from postgres for teams
+//
+export type Team = {
+    ledaId: number
+    teamName: string
+    establishedDate: Date
+    memo: string
+    lastTeamFeePayment: string
+}

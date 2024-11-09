@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Portal | LEDA Project"
+    title: "Portal"
 }
 
 export default function Page() {
