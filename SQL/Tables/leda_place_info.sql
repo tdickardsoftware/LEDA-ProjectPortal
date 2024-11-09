@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.leda_place_info
 (
     "id" bigint NOT NULL,
     "ledaId" bigint,
-    "name" text COLLATE pg_catalog."default" NOT NULL,
+    "name" text COLLATE pg_catalog."default" NOT NULL DEFAULT nextval('leda_place_info_seq'::regclass),
     "addressOne" text COLLATE pg_catalog."default" NOT NULL,
     "addressTwo" text COLLATE pg_catalog."default",
     "city" text COLLATE pg_catalog."default" NOT NULL,
