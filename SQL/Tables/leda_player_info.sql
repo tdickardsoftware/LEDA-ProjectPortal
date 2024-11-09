@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS public.leda_player_info
 (
-    "id" bigint NOT NULL,
+    "id" bigint NOT NULL DEFAULT nextval('leda_player_info_seq'::regclass),
     "ledaId" bigint,
     "lastName" text COLLATE pg_catalog."default" NOT NULL,
     "firstName" text COLLATE pg_catalog."default" NOT NULL,

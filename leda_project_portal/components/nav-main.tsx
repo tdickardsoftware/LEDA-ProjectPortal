@@ -1,26 +1,17 @@
+//
+// Use Client
+//
 "use client";
-
+//
+// Imports
+//
 import { ChevronRight, type LucideIcon } from "lucide-react";
-
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuAction,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-} from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@/components/ui/sidebar";
 import Link from "next/link";
-
+//
 // Define types for the nested structure
+//
 type NavItem = {
   title: string;
   url: string;
@@ -28,7 +19,9 @@ type NavItem = {
   isActive?: boolean;
   items?: NavItem[]; // Recursive type definition for nested items
 };
-
+//
+// Return all of the items for the main nav object
+//
 export function NavMain({ items }: { items: NavItem[] }) {
   // Use NavItem[] as the type for menuItems parameter
   const renderMenuItems = (menuItems: NavItem[]) => {
