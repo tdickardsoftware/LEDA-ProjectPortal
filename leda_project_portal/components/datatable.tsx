@@ -28,7 +28,7 @@ export function DataTable<TData, TValue>({
                 <div className="overflow-hidden rounded-md">
                     <h1 className="text-3xl pb-4 text-center">{pageName}</h1>
                     <Table className="min-w-full divide-y divide-gray-200 border">
-                        <TableHeader className="bg-gray-100">
+                        <TableHeader className="bg-gray-200">
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => (
@@ -52,7 +52,7 @@ export function DataTable<TData, TValue>({
                                 table.getRowModel().rows.map((row) => (
                                     <TableRow
                                         key={row.id}
-                                        className="hover:bg-gray-50 transition-colors"
+                                        className="hover:bg-zinc-300 transition-colors"
                                         data-state={row.getIsSelected() && "selected"}
                                     >
                                         {row.getVisibleCells().map((cell) => (
