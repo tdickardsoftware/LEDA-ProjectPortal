@@ -28,3 +28,31 @@ export type Team = {
     memo: string
     lastTeamFeePayment: string
 }
+//
+//Define type to identify the shape of our data from postgres for places
+//
+export type Place = {
+    ledaId: number
+    name: string
+    addressFull: string
+    addressOne: string
+    addressTwo: string
+    city: string
+    state: string
+    zip: string
+    phoneNumber: string
+    otherNumber: string
+    email: string
+    website: string
+    establishDate: Date
+    memo: string
+    numberOfBoards: number
+    sendMailings: boolean
+    regularSponsor: boolean
+    currentSponsor: boolean
+    issues: boolean
+    lastBarFeePayment: string
+    lastSanctioningDate: Date
+    contactId: number
+    placeType: string
+}

@@ -1,7 +1,7 @@
 //
 // Imports
 //
-import {Player, Team, } from './definitions'
+import {Player, Team, Place, } from './definitions'
 import { query } from './db';
 //
 // async function to get all player data from the database
@@ -28,5 +28,17 @@ export async function fetchTeams() {
     } catch (error) {
         console.error('Database Error: ', error)
         throw new Error('Failed to fetch Team Information')
+    }
+}
+//
+// async function to get all place data from the database
+//
+export async function fetchPlaces() {
+    try {
+        const data = await query<Place>(`SELECT "ledaId", "name", CONCAT(COALESCE("addressOne", ''), ' ', COALESCE("addressTwo", ''), ', ', COALESCE("city", ''), ' ', COALESCE("state", ''), ', ', COALESCE("zip", '')) as "addressFull", "addressOne", "addressTwo", "city", "state", "zip", "phoneNumber", "otherNumber", "email", "website", "establishDate", "memo", "numberOfBoards", "sendMailings", "regularSponsor", "currentSponsor", "issues", "lastBarFeePayment", "lastSanctioningDate", "contactId", "placeType" FROM public.leda_place_info;`);
+        return data.rows
+    } catch (error) {
+        console.error(error)
+        throw new Error('Failed to fetch Place Information')
     }
 }
