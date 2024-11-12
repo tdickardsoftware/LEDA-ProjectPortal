@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS maint.leda_maint_mentions
 (
-    id bigint NOT NULL,
+    id bigint NOT NULL DEFAULT nextval('maint.leda_maint_mentions_seq'::regclass),
     "mentionCode" text COLLATE pg_catalog."default" NOT NULL,
     "desc" text COLLATE pg_catalog."default",
     "points" bigint NOT NULL,

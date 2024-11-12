@@ -1,0 +1,20 @@
+INSERT INTO maint.leda_maint_mentions(
+	 "mentionCode", "desc", points, "mentionBasis")
+	VALUES ('D501','Doubles 501 Low Darts',2,'LOW'),
+			('D601','Doubles 601 Low Darts',2,'LOW'),
+			('DblDn','Double Down',0,'NONE'),
+			('Dcric','Doubles Cricket',2,'LOW'),
+			('Hat','3 Dbl Bulls-Cricket only',5,'NONE'),
+			('HiIn','High In any DD 01',2,'HIGH'),
+			('HiOut','High Out any 01',3,'HIGH'),
+			('Killr','Killer',1,'LOW'),
+			('S301','Singles 301 Low Dart',2,'LOW'),
+			('S501','Singles 501 Low Darts',2,'LOW'),
+			('S601','Singles 601 Low Darts',2,'LOW'),
+			('Scric','Singles Cricket Low Dart',3,'LOW'),
+			('T701','Team 701 Low Dart',1,'LOW'),
+			('T71','Ton 71',4,'NONE'),
+			('T80','Ton 80',4,'NONE'),
+			('T801','Team 801 Low Dart',1,'LOW'),
+			('Tcric','Team Cricket',1,'LOW'),
+			('Trips','Cricket Trips',3,'NONE')
