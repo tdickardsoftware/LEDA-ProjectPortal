@@ -62,3 +62,12 @@ export type Place = {
 export type Division = {
     divisionName: string
 }
+//
+//Define type to identify the shape of our data from postgres for mentions
+//
+export type Mention = {
+    mentionCode: string
+    desc: string
+    points: number
+    mentionBasis: string
+}
