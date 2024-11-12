@@ -1,7 +1,7 @@
 //
 // Imports
 //
-import {Player, Team, Place, Division } from './definitions'
+import {Player, Team, Place, Division, Mention, } from './definitions'
 import { query } from './db';
 //
 // async function to get all player data from the database
@@ -48,6 +48,18 @@ export async function fetchPlaces() {
 export async function fetchDivisions() {
     try {
         const data = await query<Division>(`SELECT "divisionName" FROM maint.leda_maint_divisions;`);
+        return data.rows
+    } catch (error) {
+        console.error(error)
+        throw new Error('Failed to fetch Place Information')
+    }
+}
+//
+// async function to get all division data from the database
+//
+export async function fetchMentions() {
+    try {
+        const data = await query<Mention>(`SELECT "mentionCode", "desc", "points", "mentionBasis" FROM maint.leda_maint_mentions;`);
         return data.rows
     } catch (error) {
         console.error(error)
