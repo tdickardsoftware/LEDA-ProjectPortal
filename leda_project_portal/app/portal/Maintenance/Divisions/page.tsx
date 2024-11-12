@@ -1,13 +1,18 @@
+import { DataTable } from "@/components/datatable";
+import { fetchDivisions } from "@/lib/getData";
+import { columns } from "@/schemas/maintenance/divisions";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "Divisions"
 }
 
-export default function Page() {
+export default async function Page() {
     return (
-        <main>
-            <p>Divisions Page</p>
-        </main>
+        <>
+            <div className="container mx-auto py-10">
+                <DataTable columns={columns} data={await fetchDivisions()} pageName="Divisions Page" />
+            </div>
+        </>
     );
 }

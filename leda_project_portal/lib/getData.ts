@@ -1,7 +1,7 @@
 //
 // Imports
 //
-import {Player, Team, Place, } from './definitions'
+import {Player, Team, Place, Division } from './definitions'
 import { query } from './db';
 //
 // async function to get all player data from the database
@@ -36,6 +36,18 @@ export async function fetchTeams() {
 export async function fetchPlaces() {
     try {
         const data = await query<Place>(`SELECT "ledaId", "name", CONCAT(COALESCE("addressOne", ''), ' ', COALESCE("addressTwo", ''), ', ', COALESCE("city", ''), ' ', COALESCE("state", ''), ', ', COALESCE("zip", '')) as "addressFull", "addressOne", "addressTwo", "city", "state", "zip", "phoneNumber", "otherNumber", "email", "website", "establishDate", "memo", "numberOfBoards", "sendMailings", "regularSponsor", "currentSponsor", "issues", "lastBarFeePayment", "lastSanctioningDate", "contactId", "placeType" FROM public.leda_place_info;`);
+        return data.rows
+    } catch (error) {
+        console.error(error)
+        throw new Error('Failed to fetch Place Information')
+    }
+}
+//
+// async function to get all division data from the database
+//
+export async function fetchDivisions() {
+    try {
+        const data = await query<Division>(`SELECT "divisionName" FROM maint.leda_maint_divisions;`);
         return data.rows
     } catch (error) {
         console.error(error)
