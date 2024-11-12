@@ -71,3 +71,10 @@ export type Mention = {
     points: number
     mentionBasis: string
 }
+//
+//Define type to identify the shape of our data from postgres for mentions
+//
+export type PaymentType = {
+    paymentType: string
+    desc: string
+}
