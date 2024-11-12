@@ -7,3 +7,4 @@ Website for the Lake Erie Dart Association. This repository will host as a proje
 - [Node.js](https://nodejs.org/en)
 - [Next.js](https://nextjs.org/)
 - [Tailwind](https://tailwindcss.com/)
+- [Python](https://www.python.org/)
