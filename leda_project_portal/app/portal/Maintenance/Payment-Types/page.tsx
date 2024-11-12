@@ -1,13 +1,18 @@
+import { DataTable } from "@/components/datatable";
+import { fetchPaymentTypes } from "@/lib/getData";
+import { columns } from "@/schemas/maintenance/payment_types";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "Payment Types"
 }
 
-export default function Page() {
+export default async function Page() {
     return (
-        <main>
-            <p>Payment Types Page</p>
-        </main>
+        <>
+            <div className="container mx-auto py-10">
+                <DataTable columns={columns} data={await fetchPaymentTypes()} pageName="Payment Types Page" />
+            </div>
+        </>
     );
 }
