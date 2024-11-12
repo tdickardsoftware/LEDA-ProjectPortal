@@ -56,3 +56,9 @@ export type Place = {
     contactId: number
     placeType: string
 }
+//
+//Define type to identify the shape of our data from postgres for divisions
+//
+export type Division = {
+    divisionName: string
+}

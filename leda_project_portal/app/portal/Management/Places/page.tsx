@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/datatable";
-import { fetchPlaces } from "@/lib/data";
+import { fetchPlaces } from "@/lib/getData";
 import { columns } from "@/schemas/managment/places";
 import { Metadata } from "next";
 
