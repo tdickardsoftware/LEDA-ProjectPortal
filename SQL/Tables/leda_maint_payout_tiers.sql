@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS maint.leda_maint_payout_tiers
 (
-    id bigint NOT NULL,
+    id bigint NOT NULL DEFAULT nextval('maint.leda_maint_payout_tiers_seq'::regclass),
     "place" bigint NOT NULL,
     "amount" numeric(12,2) NOT NULL,
     CONSTRAINT leda_maint_payout_tiers_pkey PRIMARY KEY (id)
