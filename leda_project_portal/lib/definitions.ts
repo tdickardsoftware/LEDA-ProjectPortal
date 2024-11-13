@@ -107,7 +107,7 @@ export type PlaceType = {
     desc: string
 }
 //
-//Define type to identify the shape of our data from postgres for Place Types
+//Define type to identify the shape of our data from postgres for Seasons
 //
 export type Season = {
     seasonCode: string
