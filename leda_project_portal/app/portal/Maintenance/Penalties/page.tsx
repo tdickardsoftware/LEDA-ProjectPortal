@@ -1,13 +1,18 @@
+import { DataTable } from "@/components/datatable";
+import { fetchPayoutTiers, fetchPenalties } from "@/lib/getData";
+import { columns } from "@/schemas/maintenance/penalties";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "Penalties"
 }
 
-export default function Page() {
+export default async function Page() {
     return (
-        <main>
-            <p>Penalties Page</p>
-        </main>
+        <>
+            <div className="container mx-auto py-10">
+                <DataTable columns={columns} data={await fetchPenalties()} pageName="Penalties Page" />
+            </div>
+        </>
     );
 }
