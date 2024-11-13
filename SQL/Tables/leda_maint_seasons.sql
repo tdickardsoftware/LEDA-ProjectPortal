@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS maint.leda_maint_seasons
 (
-    id bigint NOT NULL,
+    id bigint NOT NULL DEFAULT nextval('maint.leda_maint_seasons_seq'::regclass),
     "seasonCode" text COLLATE pg_catalog."default" NOT NULL,
     "desc" text COLLATE pg_catalog."default",
     "fiscalYear" text COLLATE pg_catalog."default" NOT NULL,

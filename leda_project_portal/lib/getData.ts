@@ -1,7 +1,7 @@
 //
 // Imports
 //
-import {Player, Team, Place, Division, Mention, PaymentType, PayoutTier, Penalty, PeopleType, PlaceType } from './definitions'
+import {Player, Team, Place, Division, Mention, PaymentType, PayoutTier, Penalty, PeopleType, PlaceType, Season } from './definitions'
 import { query } from './db';
 //
 // async function to get all player data from the database
@@ -120,6 +120,18 @@ export async function fetchPeopleTypes() {
 export async function fetchPlaceTypes() {
     try {
         const data = await query<PlaceType>(`SELECT "placeTypeCode", "desc" FROM maint.leda_maint_place_types;`);
+        return data.rows
+    } catch (error) {
+        console.error(error)
+        throw new Error('Failed to fetch Place Information')
+    }
+}
+//
+// async function to get all Seasons data from the database
+//
+export async function fetchSeasons() {
+    try {
+        const data = await query<Season>(`SELECT "seasonCode", "desc", "fiscalYear", "dates", "isCurrentSeason" FROM maint.leda_maint_seasons;`);
         return data.rows
     } catch (error) {
         console.error(error)

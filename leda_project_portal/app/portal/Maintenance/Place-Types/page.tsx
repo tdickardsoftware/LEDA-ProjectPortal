@@ -4,7 +4,7 @@ import { columns } from "@/schemas/maintenance/place_types";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "People Types"
+    title: "Place Types"
 }
 
 export default async function Page() {

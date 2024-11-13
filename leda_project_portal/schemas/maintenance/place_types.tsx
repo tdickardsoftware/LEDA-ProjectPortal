@@ -6,7 +6,7 @@
 // Imports
 //
 import { ColumnDef } from "@tanstack/react-table"
-import { Place, PlaceType } from "@/lib/definitions"
+import { PlaceType } from "@/lib/definitions"
 //
 //Define the columns
 //
