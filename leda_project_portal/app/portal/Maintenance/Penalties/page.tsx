@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/datatable";
-import { fetchPayoutTiers, fetchPenalties } from "@/lib/getData";
+import { fetchPenalties } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/penalties";
 import { Metadata } from "next";
 

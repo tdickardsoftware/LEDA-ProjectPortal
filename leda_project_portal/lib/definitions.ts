@@ -92,4 +92,10 @@ export type Penalty = {
     penaltyCode: string
     desc: string
 }
-
+//
+//Define type to identify the shape of our data from postgres for People Types
+//
+export type PeopleType = {
+    peopleTypeCode: string
+    desc: string
+}
