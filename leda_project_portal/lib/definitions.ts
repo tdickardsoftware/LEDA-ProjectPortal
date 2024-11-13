@@ -106,3 +106,13 @@ export type PlaceType = {
     placeTypeCode: string
     desc: string
 }
+//
+//Define type to identify the shape of our data from postgres for Place Types
+//
+export type Season = {
+    seasonCode: string
+    desc: string
+    fiscalYear: string
+    dates: JSON
+    isCurrentSeason: boolean
+}
