@@ -86,7 +86,7 @@ export type PayoutTier = {
     amount: number
 }
 //
-//Define type to identify the shape of our data from postgres for Payout Tiers
+//Define type to identify the shape of our data from postgres for Penalties
 //
 export type Penalty = {
     penaltyCode: string
