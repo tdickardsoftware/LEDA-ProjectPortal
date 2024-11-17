@@ -1,25 +1,42 @@
+//
+// use client
+//
 'use client'
-
-import { ColumnDef, flexRender, getCoreRowModel, useReactTable, getPaginationRowModel } from "@tanstack/react-table"
+//
+// imports
+//
+import * as React from "react"
+import { ColumnDef, SortingState,flexRender, getCoreRowModel, useReactTable, getPaginationRowModel, getSortedRowModel } from "@tanstack/react-table"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-
+//
+// interface
+//
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
     pageName: string
 }
-
+//
+// Datatable function
+//
 export function DataTable<TData, TValue>({
     columns,
     data,
     pageName,
 }: DataTableProps<TData, TValue>) {
+    const [sorting, setSorting] = React.useState<SortingState>([])
+
     const table = useReactTable({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
+        onSortingChange: setSorting,
+        getSortedRowModel: getSortedRowModel(),
+        state: {
+            sorting,
+        },
     })
 
     return (

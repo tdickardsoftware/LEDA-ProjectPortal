@@ -7,24 +7,58 @@
 //
 import { ColumnDef } from "@tanstack/react-table"
 import { Player } from "@/lib/definitions"
+import { ArrowUpDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
 //
 //Define the columns
 //
 export const columns: ColumnDef<Player>[] = [
     {
         accessorKey: "ledaId",
-        header: "LEDA ID Number",
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" 
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    LEDA ID Number
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     },
     {
         accessorKey: "fullName",
-        header: "Full Name",
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Full Name
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     },
     {
         accessorKey: "phoneNumber",
-        header: "Phone Number",
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Phone Number
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     },
     {
         accessorKey: "email",
-        header: "Email",
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Email
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     },
 ]
