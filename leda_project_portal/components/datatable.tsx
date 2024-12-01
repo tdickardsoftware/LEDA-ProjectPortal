@@ -62,7 +62,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
         onSortingChange: setSorting,
         getSortedRowModel: getSortedRowModel(),
         state: {
-        sorting,
+            sorting,
         },
     });
 
