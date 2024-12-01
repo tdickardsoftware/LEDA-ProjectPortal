@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 export default function Page() {
     return (
         <main>
-            <p>Portal Page</p>
+            <h1 className="text-4xl font-bold antialiased">Portal Page</h1>
         </main>
     );
 }

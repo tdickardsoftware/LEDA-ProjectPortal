@@ -7,28 +7,70 @@
 //
 import { ColumnDef } from "@tanstack/react-table"
 import { Place } from "@/lib/definitions"
+import { Button } from "@/components/ui/button"
+import { ArrowUpDown } from "lucide-react"
 //
 //Define the columns
 //
 export const columns: ColumnDef<Place>[] = [
     {
         accessorKey: "ledaId",
-        header: "LEDA ID Number",
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" 
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    LEDA ID Number
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     },
     {
         accessorKey: "name",
-        header: "Place Name",
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" 
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Place Name
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     },
     {
         accessorKey: "addressFull",
-        header: "Address",
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" 
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Address
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     },
     {
         accessorKey: "phoneNumber",
-        header: "Phone Number",
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" 
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Phone Number
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     },
     {
         accessorKey: "placeType",
-        header: "Place Type"
+        header: ({ column }) => {
+            return (
+                <Button variant="ghost" 
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+                    Place Type
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     }
 ]
