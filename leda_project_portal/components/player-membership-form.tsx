@@ -10,16 +10,16 @@ import { z } from 'zod'
 // Schema
 //
 const membershipInfoSchema = z.object({
-    establishedDate: z.date(),
+    establishedDate: z.string().date(),
     badStanding: z.boolean(),
     badStandingReason: z.string(),
     takeOffMailing: z.boolean(),
     mailStandings: z.boolean(),
     formOnFile: z.boolean(),
     needsMemberCard: z.boolean(),
-    inactiveDate: z.date(),
+    inactiveDate: z.string().date(),
     lastMembershipFeePayment: z.string().min(3).max(4),
-    lastTrailsDate: z.date(),
+    lastTrailsDate: z.string().date(),
     memberType: z.string().min(1),
     cannotBeCaptain: z.boolean(),
     lifetimeMember: z.boolean(),
