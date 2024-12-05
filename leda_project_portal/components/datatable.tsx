@@ -25,12 +25,14 @@ interface DataTableProps<TData extends Record<string,unknown>, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     pageName: string;
+    addPlayerDialog: React.ReactNode;
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
     columns,
     data,
     pageName,
+    addPlayerDialog
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
@@ -71,7 +73,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
         <div className="p-4 shadow-lg bg-white rounded-lg border border-gray-200 w-full max-w-4xl">
             <div className="overflow-hidden rounded-md">
             <h1 className="text-3xl pb-4 text-center">{pageName}</h1>
-
+            <div className="items-end">
+                {addPlayerDialog}
+            </div>
             {/* Search Input */}
             <div className="mb-4">
                 <Input
