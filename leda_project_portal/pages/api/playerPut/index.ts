@@ -51,7 +51,6 @@ export default async function PlayerHandler(
         let query1 = `INSERT INTO public.leda_player_info(
         "ledaId", "lastName", "firstName", "middleInitial", "addressOne", "addressTwo", "city", "state", "zip", "phoneNumber", "otherNumber", "email", "gender", "dateOfBirth")
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`;
-        console.log(query1)
         let values1 = [
             results.ledaId,
             results.lastName,
@@ -72,7 +71,6 @@ export default async function PlayerHandler(
         let query2 = `INSERT INTO public.leda_membership_info(
         "ledaId", "establishDate", "badStanding", "badStandingReason", "takeOffMailing", "mailStandings", "formOnFile", "needsMemberCard", "inactiveDate", "lastMembershipFeePayment", "lastTrailsDate", "memberType", "cannotBeCaptainin", "lifetimeMember", "lifetimeMemberReason")
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`;
-        console.log(query2)
         let values2 = [
             results.ledaId,
             results.establishedDate,
