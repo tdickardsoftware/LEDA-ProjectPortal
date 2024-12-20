@@ -1,6 +1,7 @@
 //
 // Imports
 //
+
 import {Player, Team, Place, Division, Mention, PaymentType, PayoutTier, Penalty, PeopleType, PlaceType, Season } from './definitions'
 import { query } from './dbTypeGet';
 //

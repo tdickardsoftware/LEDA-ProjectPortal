@@ -7,7 +7,6 @@
 //
 import { useState } from "react"
 import PlayerAddInformationForm from "./player-info-form"
-import PlayerForm  from "./player-membership-form"
 import { Button } from "./ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 //
@@ -28,9 +27,6 @@ export function DialogWithButton({buttonName, form, title}:DialogWithButtonProps
         if (activeForm === 'PlayerAddInformationForm') {
             return <PlayerAddInformationForm />
         } 
-        else if (activeForm === 'PlayerForm') {
-            return <PlayerForm />
-        }
     }
     return(
         <Dialog>

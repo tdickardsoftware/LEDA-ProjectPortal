@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import PhoneNumberInput from '@/components/ui/phone-number-input';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import React from 'react';
+import PlayerTypeSelector from './ui/player-type-selector';
 
 const playerInfoSchema = z.object({
     firstName: z.string(),
@@ -352,9 +353,7 @@ export default function PlayerAddInformationForm() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Member Type</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} className='w-14' type="text"/>
-                                    </FormControl>
+                                    <PlayerTypeSelector />
                                     <FormMessage />
                                 </FormItem>
                             )}
