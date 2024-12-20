@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS public.leda_membership_info
 (
-    id bigint NOT NULL,
+    id bigint NOT NULL DEFAULT nextval('leda_membership_info_seq'::regclass),
     "ledaId" bigint,
     "establishDate" date NOT NULL,
     "badStanding" boolean NOT NULL,
