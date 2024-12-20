@@ -14,7 +14,7 @@ import {
 } from './ui/form';
 import { Input } from './ui/input';
 import validator from 'validator';
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import StatePicker from './ui/state-selector';
@@ -49,3 +49,34 @@ const placeFormSchema = z.object({
     lastSanctioningDate: z.string().optional(),
     placeType: z.string().min(1, { message: 'Place Type is Required' }),
 });
+
+export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
+    const [generateIDStatus, setGenerateIDStatus] = useState(true);
+
+    const form = useForm<z.infer<typeof placeFormSchema>>({ 
+        resolver: zodResolver(placeFormSchema),
+        defaultValues: {
+            ledaId: 0,
+            name: '',
+            addressOne: '',
+            addressTwo: '',
+            city: '',
+            state: '',
+            zip: '',
+            phoneNumber: '',
+            otherNumber: '',
+            email: '',
+            website: '',
+            establishedDate: '',
+            memo: '',
+            numberOfBoards: 0,
+            sendMailings: false,
+            regularSponsor: false,
+            currentSponsor: false,
+            issues: false,
+            lastBarFeePayment: '',
+            lastSanctioningDate: '',
+            placeType: '',
+        }
+    });
+};
