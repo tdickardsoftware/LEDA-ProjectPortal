@@ -31,21 +31,21 @@ const SeasonCodeSelector: React.FC = () => {
   const seasonCode = watch("lastMembershipFeePayment")
   // State to manage the popover open/close status
   const [open, setOpen] = useState(false)
-  // State to store the fetched member types
-  const [memberTypes, setMemberTypes] = useState<{ value: string; label: string }[]>([])
+  // State to store the fetched season codes
+  const [seasonCodes, setSeasonCodes] = useState<{ value: string; label: string }[]>([])
 
-  // Fetch member types from the API endpoint
+  // Fetch season codes from the API endpoint
   useEffect(() => {
-    async function loadMemberTypes() {
+    async function loadSeasonCodes() {
       try {
         const response = await fetch('/api/seasonCode')
         const data = await response.json()
-        setMemberTypes(data.map((type: any) => ({ value: type.seasonCode, label: type.seasonCode + ' - ' + type.desc})))
+        setSeasonCodes(data.map((type: any) => ({ value: type.seasonCode, label: type.seasonCode + ' - ' + type.desc})))
       } catch (error) {
         console.error("Failed to fetch member types", error)
       }
     }
-    loadMemberTypes()
+    loadSeasonCodes()
   }, [])
 
   return (
@@ -60,7 +60,7 @@ const SeasonCodeSelector: React.FC = () => {
               className="w-[200px] justify-between"
             >
               {seasonCode
-                ? memberTypes.find((type) => type.value === seasonCode)?.label
+                ? seasonCodes.find((type) => type.value === seasonCode)?.label
                 : "Select a season code..."}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -71,7 +71,7 @@ const SeasonCodeSelector: React.FC = () => {
               <CommandEmpty>No season code found.</CommandEmpty>
               <CommandGroup>
                 <CommandList>
-                  {memberTypes.map((type) => (
+                  {seasonCodes.map((type) => (
                     <CommandItem
                       key={type.value}
                       value={type.value}
