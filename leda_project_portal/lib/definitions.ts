@@ -13,7 +13,9 @@ export type Player = {
     state: string
     zip: string
     phoneNumber: string
-    otherNumber: string
+    phoneNumberFormatted?: string
+    otherNumber?: string
+    otherNumberFormatted?: string
     email: string
     gender: string
     dateOfBirth: Date
@@ -131,7 +133,9 @@ export type PlayerMemberInfo = {
     state: string
     zip: string
     phoneNumber: string
+    phoneNumberFormatted?: string
     otherNumber?: string
+    otherNumberFormatted?: string
     email: string
     gender: string
     dateOfBirth: Date

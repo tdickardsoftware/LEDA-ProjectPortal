@@ -9,6 +9,7 @@ import { useState } from "react"
 import PlayerAddInformationForm from "./player-info-form"
 import { Button } from "./ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
+import { toast } from 'sonner';
 //
 // Interface
 //
@@ -27,7 +28,7 @@ export function DialogWithButton({buttonName, form, title, onRefresh}:DialogWith
 
     function renderForm() {
         if (activeForm === 'PlayerAddInformationForm') {
-            return <PlayerAddInformationForm onClose={() => { setOpen(false); }} onRefresh={onRefresh} />
+            return <PlayerAddInformationForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
         } 
     }
     return(

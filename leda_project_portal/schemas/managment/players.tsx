@@ -38,7 +38,7 @@ export const columns: ColumnDef<Player>[] = [
         },
     },
     {
-        accessorKey: "phoneNumber",
+        accessorKey: "phoneNumberFormatted",
         header: ({ column }) => {
             return (
                 <Button variant="ghost"
