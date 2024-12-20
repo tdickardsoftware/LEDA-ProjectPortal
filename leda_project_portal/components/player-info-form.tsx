@@ -24,6 +24,7 @@ import PhoneNumberInput from '@/components/ui/phone-number-input';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import React from 'react';
 import PlayerTypeSelector from './ui/player-type-selector';
+import SeasonCodeSelector from './ui/season-code-selector';
 
 const playerInfoSchema = z.object({
     firstName: z.string(),
@@ -577,9 +578,7 @@ export default function PlayerAddInformationForm() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Last Membership Fee Payment</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='F22..' {...field} className='w-14' type="text"/>
-                                    </FormControl>
+                                    <SeasonCodeSelector />
                                     <FormMessage />
                                 </FormItem>
                             )}

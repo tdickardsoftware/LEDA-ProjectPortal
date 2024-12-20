@@ -149,4 +149,4 @@ export type PlayerMemberInfo = {
     cannotBeCaptain: boolean
     lifetimeMember: boolean
     lifetimeMemberReason?: string
-}
+} 
