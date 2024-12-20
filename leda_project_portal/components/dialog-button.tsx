@@ -6,7 +6,8 @@
 // imports
 //
 import { useState } from "react"
-import { PlayerAddInformationForm } from "./player-info-form"
+import PlayerAddInformationForm from "./player-info-form"
+import PlayerForm  from "./player-membership-form"
 import { Button } from "./ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 //
@@ -26,6 +27,9 @@ export function DialogWithButton({buttonName, form, title}:DialogWithButtonProps
     function rednerForm() {
         if (activeForm === 'PlayerAddInformationForm') {
             return <PlayerAddInformationForm />
+        } 
+        else if (activeForm === 'PlayerForm') {
+            return <PlayerForm />
         }
     }
     return(
@@ -33,7 +37,7 @@ export function DialogWithButton({buttonName, form, title}:DialogWithButtonProps
             <DialogTrigger asChild>
                 <Button variant="default" onClick={() => setActiveForm(form)}>{buttonName}</Button>
             </DialogTrigger>
-            <DialogContent className="bg-white">
+            <DialogContent className="bg-white max-w-full w-fit max-h-full h-fit">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                 </DialogHeader>

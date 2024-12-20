@@ -12,7 +12,6 @@ export default async function Page() {
     return (
         <>
             <div className="container mx-auto py-10">
-                
                 <DataTable columns={columns} data={await fetchPlayers()} pageName="Players Page" addPlayerDialog={<DialogWithButton form="PlayerAddInformationForm" title="Add Player" buttonName="Add Player +"/>}/>
             </div>
         </>

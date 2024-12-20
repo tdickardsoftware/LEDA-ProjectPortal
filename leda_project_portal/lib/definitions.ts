@@ -116,3 +116,37 @@ export type Season = {
     dates: JSON
     isCurrentSeason: boolean
 }
+//
+// Define type to identify the shape of our data from postgres for Seasons
+//
+export type PlayerMemberInfo = {
+    ledaId: number
+    fullName?: string
+    lastName: string
+    firstName: string
+    middleInitial?: string
+    addressOne: string
+    addressTwo?: string
+    city: string
+    state: string
+    zip: string
+    phoneNumber: string
+    otherNumber?: string
+    email: string
+    gender: string
+    dateOfBirth: Date
+    establishedDate:Date
+    badStanding: boolean
+    badStandingReason?: string
+    takeOffMailing: boolean
+    mailStandings: boolean
+    formOnFile: boolean
+    needsMemberCard: boolean
+    inactiveDate?: Date
+    lastMembershipFeePayment: string
+    lastTrailsDate?: Date
+    memberType: string
+    cannotBeCaptain: boolean
+    lifetimeMember: boolean
+    lifetimeMemberReason?: string
+}

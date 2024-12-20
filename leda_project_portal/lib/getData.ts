@@ -2,7 +2,7 @@
 // Imports
 //
 import {Player, Team, Place, Division, Mention, PaymentType, PayoutTier, Penalty, PeopleType, PlaceType, Season } from './definitions'
-import { query } from './db';
+import { query } from './dbTypeGet';
 //
 // async function to get all player data from the database
 //
