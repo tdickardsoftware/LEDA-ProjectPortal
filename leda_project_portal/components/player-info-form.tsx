@@ -101,7 +101,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
 
     async function onSubmit(values: z.infer<typeof playerInfoSchema>) {
         try {
-            const response = await fetch("/api/players", {
+            const response = await fetch("/api/playerPut", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -125,7 +125,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
             
             console.log("Form submitted successfully!", results);
             onClose(); // Close the form
-            onRefresh(); // Refresh the datatable
+            onRefresh(); // Refresh the datatable with the player API route
         } catch (error: any) {
             console.error("Form submission error", error);
             toast.error(`Failed to submit the form: ${error.message || "Please try again."}`);
@@ -294,7 +294,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                             control={form.control}
                             name='phoneNumber'
                             render={() => (
-                                <PhoneNumberInput label='Phone Number' name="phoneNumber"/>
+                                <PhoneNumberInput label='Phone Number *' name="phoneNumber"/>
                             )}
                         />
                         <FormField

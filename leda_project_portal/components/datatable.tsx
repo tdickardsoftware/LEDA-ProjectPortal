@@ -26,16 +26,18 @@ interface DataTableProps<TData extends Record<string,unknown>, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     pageName: string;
-    addPlayerDialog: React.ReactNode;
-    onRefresh: () => void;
+    addDialog: React.ReactNode;
+    onRefresh: (api: string) => void;
+    apiEndpoint: string; // New prop for API endpoint
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
     columns,
     data,
     pageName,
-    addPlayerDialog,
-    onRefresh
+    addDialog,
+    onRefresh,
+    apiEndpoint // Destructure the new prop
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
@@ -76,7 +78,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
     // Refresh the table data
     const handleRefresh = async () => {
         try {
-            const response = await fetch('/api/playerGet'); // Adjust the endpoint as needed
+            const response = await fetch(apiEndpoint); // Use the dynamic API endpoint
             const newData = await response.json();
             setTableData(newData);
         } catch (error) {
@@ -85,7 +87,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
     };
 
     React.useEffect(() => {
-        handleRefresh();
+        handleRefresh(); // Call handleRefresh without arguments
     }, [onRefresh]);
 
     return (
@@ -94,7 +96,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
             <div className="overflow-hidden rounded-md">
             <h1 className="text-3xl pb-4 text-center">{pageName}</h1>
             <div className="items-end">
-                {React.cloneElement(addPlayerDialog as React.ReactElement<any>, { onRefresh: handleRefresh })}
+                {React.cloneElement(addDialog as React.ReactElement<any>, { onRefresh: handleRefresh })}
             </div>
             {/* Search Input */}
             <div className="mb-4">

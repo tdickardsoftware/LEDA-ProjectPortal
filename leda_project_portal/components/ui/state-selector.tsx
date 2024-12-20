@@ -96,7 +96,6 @@ export default function StatePicker({ name, control }: StatePickerProps) {
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            onFocus={() => setOpen(true)}
             className="w-[200px] justify-between"
           >
             {field.value
