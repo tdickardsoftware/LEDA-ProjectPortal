@@ -16,20 +16,22 @@ interface DialogWithButtonProps{
     buttonName: string
     form: string
     title: string
+    onRefresh: () => void
 }
 //
 // function
 //
-export function DialogWithButton({buttonName, form, title}:DialogWithButtonProps) {
+export function DialogWithButton({buttonName, form, title, onRefresh}:DialogWithButtonProps) {
     const [activeForm, setActiveForm] = useState<string>("PlayerAddInformationForm");
+    const [open, setOpen] = useState(false);
 
-    function rednerForm() {
+    function renderForm() {
         if (activeForm === 'PlayerAddInformationForm') {
-            return <PlayerAddInformationForm />
+            return <PlayerAddInformationForm onClose={() => { setOpen(false); }} onRefresh={onRefresh} />
         } 
     }
     return(
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="default" onClick={() => setActiveForm(form)}>{buttonName}</Button>
             </DialogTrigger>
@@ -37,7 +39,7 @@ export function DialogWithButton({buttonName, form, title}:DialogWithButtonProps
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                 </DialogHeader>
-                {rednerForm()}
+                {renderForm()}
             </DialogContent>
         </Dialog>
     )

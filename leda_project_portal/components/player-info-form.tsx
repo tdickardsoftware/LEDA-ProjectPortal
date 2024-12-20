@@ -35,8 +35,8 @@ const playerInfoSchema = z.object({
     city: z.string(),
     state: z.string(),
     zip: z.string(),
-    phoneNumber: z.string().min(1, { message: 'Phone Number is Required' }).refine(isValidPhoneNumber, { message: 'Phone Number is Invalid' }),
-    otherNumber: z.string().optional().refine((value) => value === '' || isValidPhoneNumber, { message: 'Other Number is Invalid' }),
+    phoneNumber: z.string().min(1, { message: 'Phone Number is Required' }).refine((value) => isValidPhoneNumber(value, 'US'), { message: 'Phone Number is Invalid' }),
+    otherNumber: z.string().optional().refine((value) => value === '' ||  isValidPhoneNumber(value ?? '', 'US'), { message: 'Other Number is Invalid' }),
     email: z.string().min(1, { message: 'Email is Required' }).refine(validator.isEmail, { message: 'Email is Invalid' }),
     gender: z.string().min(1, { message: 'Gender is Required' }),
     dateOfBirth: z.string().optional(),
@@ -62,7 +62,7 @@ const formContainerStyle = 'p-4 shadow-lg bg-white rounded-lg border border-gray
 const inputWidth = 'w-24';
 const checkboxWidth = 'h-5 w-5';
 
-export default function PlayerAddInformationForm() {
+export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void }) {
     const [generateIDStatus, setGenerateIDStatus] = useState(true);
     const [badStandingStatus, setBadStandingStatus] = useState(false);
     const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
@@ -124,6 +124,8 @@ export default function PlayerAddInformationForm() {
             setLifetimeMemberStatus(false);
             
             console.log("Form submitted successfully!", results);
+            onClose(); // Close the form
+            onRefresh(); // Refresh the datatable
         } catch (error: any) {
             console.error("Form submission error", error);
             toast.error(`Failed to submit the form: ${error.message || "Please try again."}`);

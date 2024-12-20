@@ -2,22 +2,12 @@ import React from 'react';
 import { useController, useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { parsePhoneNumberFromString, AsYouType } from 'libphonenumber-js';
 
 interface PhoneNumberInputProps {
     name: string;
     label: string;
 }
-
-const formatPhoneNumber = (value: string) => {
-    if (!value) return value;
-    const phoneNumber = value.replace(/[^\d]/g, '');
-    const phoneNumberLength = phoneNumber.length;
-    if (phoneNumberLength < 4) return phoneNumber;
-    if (phoneNumberLength < 7) {
-        return `(${phoneNumber.slice(0, 3)})-${phoneNumber.slice(3, 6)}`;
-    }
-    return `(${phoneNumber.slice(0, 3)})-${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
-};
 
 const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({ name, label }) => {
     const { control } = useFormContext();
@@ -31,8 +21,17 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({ name, label }) => {
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const rawValue = e.target.value.replace(/\D/g, '');
-        onChange(rawValue);
+        const rawValue = e.target.value;
+        const formattedValue = new AsYouType('US').input(rawValue);
+        onChange(formattedValue);
+    };
+
+    const handleBlur = () => {
+        onBlur();
+        const phoneNumber = parsePhoneNumberFromString(value, 'US');
+        if (phoneNumber) {
+            onChange(phoneNumber.nationalNumber);
+        }
     };
 
     return (
@@ -41,9 +40,9 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({ name, label }) => {
             <Input
                 id={name}
                 name={name}
-                value={formatPhoneNumber(value)}
+                value={value}
                 onChange={handleChange}
-                onBlur={onBlur}
+                onBlur={handleBlur}
                 ref={ref}
             />
             {error && <p>{error.message}</p>}

@@ -21,23 +21,28 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
 
+
 interface DataTableProps<TData extends Record<string,unknown>, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     pageName: string;
     addPlayerDialog: React.ReactNode;
+    onRefresh: () => void;
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
     columns,
     data,
     pageName,
-    addPlayerDialog
+    addPlayerDialog,
+    onRefresh
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
     const [debouncedQuery, setDebouncedQuery] = React.useState(""); // State for debounced query
-      // Debounce the search input
+    const [tableData, setTableData] = React.useState(data); // State for table data
+
+    // Debounce the search input
     React.useEffect(() => {
         const handler = setTimeout(() => {
         setDebouncedQuery(searchQuery);
@@ -48,13 +53,13 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 
     // Filtered data based on debounced query
     const filteredData = React.useMemo(() => {
-        if (!debouncedQuery) return data;
-        return data.filter((row) =>
+        if (!debouncedQuery) return tableData;
+        return tableData.filter((row) =>
         Object.values(row).some((value) =>
             String(value).toLowerCase().includes(debouncedQuery.toLowerCase())
         )
         );
-    }, [debouncedQuery, data]);
+    }, [debouncedQuery, tableData]);
 
     const table = useReactTable({
         data: filteredData, // Use filtered data here
@@ -68,13 +73,28 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
         },
     });
 
+    // Refresh the table data
+    const handleRefresh = async () => {
+        try {
+            const response = await fetch('/api/playerGet'); // Adjust the endpoint as needed
+            const newData = await response.json();
+            setTableData(newData);
+        } catch (error) {
+            console.error("Failed to refresh data", error);
+        }
+    };
+
+    React.useEffect(() => {
+        handleRefresh();
+    }, [onRefresh]);
+
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="p-4 shadow-lg bg-white rounded-lg border border-gray-200 w-full max-w-4xl">
             <div className="overflow-hidden rounded-md">
             <h1 className="text-3xl pb-4 text-center">{pageName}</h1>
             <div className="items-end">
-                {addPlayerDialog}
+                {React.cloneElement(addPlayerDialog as React.ReactElement<any>, { onRefresh: handleRefresh })}
             </div>
             {/* Search Input */}
             <div className="mb-4">
