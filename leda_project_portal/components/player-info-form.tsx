@@ -42,7 +42,7 @@ const playerInfoSchema = z.object({
     dateOfBirth: z.string().optional(),
     // Membership Information
     ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }),
-    establishedDate: z.string().optional(),
+    establishedDate: z.string(),
     badStanding: z.boolean(),
     badStandingReason: z.optional(z.string()),
     takeOffMailing: z.boolean(),
@@ -579,7 +579,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                             name='lastMembershipFeePayment'
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Last Membership Fee Payment</FormLabel>
+                                    <FormLabel>Last Membership Fee Payment *</FormLabel>
                                     <SeasonCodeSelector />
                                     <FormMessage />
                                 </FormItem>
