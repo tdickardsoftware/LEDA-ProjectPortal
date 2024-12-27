@@ -4,10 +4,12 @@ export const metadata: Metadata = {
     title: "Management"
 }
 
-export default function Page() {
+export default async function Page() {
     return (
-        <main>
-            <p>Management Page</p>
-        </main>
+        <>
+            <div className="container mx-auto py-10">
+                <p>Management Page</p>
+            </div>
+        </>
     );
 }

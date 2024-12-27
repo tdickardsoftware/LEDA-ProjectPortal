@@ -19,16 +19,21 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-// Define the form values interface
+// Update the interface to be more generic
 interface FormValues {
-    lastMembershipFeePayment: string
+    [key: string]: string;  // This allows for dynamic field names
 }
 
-const SeasonCodeSelector: React.FC = () => {
+interface SeasonCodeSelectorProps {
+  disabled?: boolean;
+  name: string;  // Add name prop to specify which field to watch/set
+}
+
+const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({ disabled, name }) => {
   // Use form context to get watch and setValue functions
   const { watch, setValue } = useFormContext<FormValues>()
   // Watch the memberType field value
-  const seasonCode = watch("lastMembershipFeePayment")
+  const seasonCode = watch(name)  // Use the dynamic name prop
   // State to manage the popover open/close status
   const [open, setOpen] = useState(false)
   // State to store the fetched season codes
@@ -58,6 +63,7 @@ const SeasonCodeSelector: React.FC = () => {
               role="combobox"
               aria-expanded={open}
               className="w-[200px] justify-between"
+              disabled={disabled} // Disable the button if the prop is true
             >
               {seasonCode
                 ? seasonCodes.find((type) => type.value === seasonCode)?.label
@@ -76,7 +82,7 @@ const SeasonCodeSelector: React.FC = () => {
                       key={type.value}
                       value={type.value}
                       onSelect={() => {
-                        setValue("lastMembershipFeePayment", type.value)
+                        setValue(name, type.value)  // Use the dynamic name prop
                         setOpen(false)
                       }}
                       className="hover:bg-gray-200"
