@@ -9,8 +9,8 @@ import { useState } from "react"
 import PlayerAddInformationForm from "./player-info-form"
 import { Button } from "./ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
-import { toast } from 'sonner';
 import PlaceAddForm from "./place-add-form"
+import TeamAddForm from "./team-add-form"
 //
 // Interface
 //
@@ -32,6 +32,8 @@ export function DialogWithButton({buttonName, form, title, onRefresh}:DialogWith
             return <PlayerAddInformationForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
         } else if (activeForm === 'PlaceAddForm') {
             return <PlaceAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
+        } else if (activeForm === 'TeamAddForm') {
+            return <TeamAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
         }
     }
     return(

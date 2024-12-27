@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Button } from './ui/button';
 import {
     Form,
@@ -14,16 +14,14 @@ import {
 } from './ui/form';
 import { Input } from './ui/input';
 import validator from 'validator';
-import { use, useState } from 'react';
+import {useState } from 'react';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import StatePicker from './ui/state-selector';
-import GenderSelector from './ui/gender-selector';
 import { toast } from 'sonner';
 import PhoneNumberInput from '@/components/ui/phone-number-input';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import React from 'react';
-import PlayerTypeSelector from './ui/player-type-selector';
 import SeasonCodeSelector from './ui/season-code-selector';
 import PlaceTypeSelector from './ui/place-type-selector';
 import { Textarea } from "@/components/ui/textarea"
