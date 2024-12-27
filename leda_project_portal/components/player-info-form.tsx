@@ -580,7 +580,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Last Membership Fee Payment *</FormLabel>
-                                    <SeasonCodeSelector />
+                                    <SeasonCodeSelector name='lastMembershipFeePayment'/>
                                     <FormMessage />
                                 </FormItem>
                             )}

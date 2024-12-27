@@ -48,6 +48,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
             }
         });
 
+
         async function onSubmit(values: z.infer<typeof teamFormSchema>) {
                     try {
                         const response = await fetch("/api/teamPut", {
@@ -97,29 +98,29 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                                     id='generateID'
                                 />
                             </div>
-                        <FormField
-                            control={form.control}
-                            name='ledaId'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input
-                                            placeholder='LEDA ID #'
-                                            {...field}
-                                            disabled={generateIDStatus}
-                                            className={inputWidth}
-                                            type='number'
-                                            onChange={(e) => {
-                                                field.onChange(
-                                                    e.target.value ? Number(e.target.value) : undefined
-                                                );
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                            <FormField
+                                control={form.control}
+                                name='ledaId'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormControl>
+                                            <Input
+                                                placeholder='LEDA ID #'
+                                                {...field}
+                                                disabled={generateIDStatus}
+                                                className={inputWidth}
+                                                type='number'
+                                                onChange={(e) => {
+                                                    field.onChange(
+                                                        e.target.value ? Number(e.target.value) : undefined
+                                                    );
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                             <FormField
                                 control={form.control}
                                 name='teamName'
@@ -152,7 +153,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Last Team Fee Payment *</FormLabel>
-                                        <SeasonCodeSelector />
+                                        <SeasonCodeSelector name='lastTeamFeePayment' />
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -162,9 +163,9 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                                 name='memo'
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Memo *</FormLabel>
+                                        <FormLabel>Memo</FormLabel>
                                         <FormControl>
-                                            <Textarea placeholder="Additional Data Here..." />
+                                            <Textarea placeholder="Additional Data Here..." {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

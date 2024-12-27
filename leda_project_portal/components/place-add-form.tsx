@@ -328,7 +328,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Last Bar Fee Payment *</FormLabel>
-                                    <SeasonCodeSelector />
+                                    <SeasonCodeSelector name='lastBarFeePayment'/>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -453,7 +453,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                                 <FormItem>
                                     <FormLabel>Memo *</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="Additional Data Here..." />
+                                        <Textarea placeholder="Additional Data Here..." {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
