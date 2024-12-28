@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import React from 'react';
-import { InputDefault } from '../ui/form-input-default';
+import { InputDefault } from '@/components/ui/form-input-default';
 
 const divisionFormSchema = z.object({ 
     divisionName: z.string().min(1, { message: 'Division Name is required.' }),
