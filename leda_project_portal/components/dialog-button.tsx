@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import PlayerAddInformationForm from "@/components/forms/player-info-form"
 import PlaceAddForm from "@/components/forms/place-add-form"
 import TeamAddForm from "@/components/forms/team-add-form"
-import DivisionAddForm from "./forms/division-add-form"
+import DivisionAddForm from "@/components/forms/division-add-form"
+import MentionAddForm from "@/components/forms/mention-add-form"
 //
 // Interface
 //
@@ -35,9 +36,10 @@ export function DialogWithButton({buttonName, form, title, onRefresh}:DialogWith
             return <PlaceAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
         } else if (activeForm === 'TeamAddForm') {
             return <TeamAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        }
-        else if (activeForm === 'DivisionAddForm') {
+        } else if (activeForm === 'DivisionAddForm') {
             return <DivisionAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
+        } else if (activeForm === 'MentionAddForm') {
+            return <MentionAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
         }
     }
     return(
