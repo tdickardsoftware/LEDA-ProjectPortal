@@ -51,35 +51,40 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
 
 
         async function onSubmit(values: z.infer<typeof teamFormSchema>) {
-                    try {
-                        const response = await fetch("/api/team/teamPut", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify(values),
-                        });
-            
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
-                        }
-            
-                        const results = await response.json();
-                        toast.success("Successfully submitted the form!");
-                        
-                        // Reset form and state
-                        form.reset();
-                        setGenerateIDStatus(true);
-                        
-                        console.log("Form submitted successfully!", results);
-                        onClose(); // Close the form
-                        onRefresh(); // Refresh the datatable with the place API route
-                    } catch (error: any) {
-                        console.error("Form submission error", error);
-                        toast.error(`Failed to submit the form: ${error.message || "Please try again."}`);
-                    }
+            try {
+                // If generateIDStatus is true, set ledaId to 0
+                const submissionValues = generateIDStatus 
+                    ? { ...values, ledaId: 0 }
+                    : values;
+
+                const response = await fetch("/api/team/teamPut", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(submissionValues),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
                 }
+
+                const results = await response.json();
+                toast.success("Successfully submitted the form!");
+                
+                // Reset form and state
+                form.reset();
+                setGenerateIDStatus(true);
+                
+                console.log("Form submitted successfully!", results);
+                onClose(); // Close the form
+                onRefresh(); // Refresh the datatable with the place API route
+            } catch (error: any) {
+                console.error("Form submission error", error);
+                toast.error(`Failed to submit the form: ${error.message || "Please try again."}`);
+            }
+        }
 
         return (
             <Form {...form}>
