@@ -26,6 +26,7 @@ import SeasonCodeSelector from '@/components/ui/season-code-selector';
 import PlaceTypeSelector from '@/components/ui/place-type-selector';
 import { Textarea } from "@/components/ui/textarea"
 import PlaceOwnerSelector from '@/components/ui/place-owner-select';
+import { InputDefault } from '../ui/form-input-default';
 
 const placeFormSchema = z.object({ 
     ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }),
@@ -125,32 +126,8 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                     <div className={formContainerStyle}>
                         <h1>Place Information</h1>
                         <hr className='bg-gray-300'></hr>
-                        <FormField
-                            control={form.control}
-                            name='name'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Name of Place *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type="text"/>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='website'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Website *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type="text"/>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <InputDefault control={form.control} name='name' label='Name of Place *' />
+                        <InputDefault control={form.control} name='website' label='Website *' />
                         <FormField
                             control={form.control}
                             name='numberOfBoards'
@@ -174,84 +151,14 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name='addressOne'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Address One *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type="text"/>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='addressTwo'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Address Two</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type="text" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <InputDefault control={form.control} name='addressOne' label='Address One *' />
+                        <InputDefault control={form.control} name='addressTwo' label='Address Two' />
                         <div className='flex space-x-4'>
-                            <FormField
-                                control={form.control}
-                                name='city'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>City *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder='' {...field} type="text" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField 
-                                control={form.control}
-                                name='state'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>State *</FormLabel>
-                                        <StatePicker name='state' control={form.control} />
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name='zip'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Zip Code *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder='' {...field} type="text"/>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <InputDefault control={form.control} name='city' label='City *' />
+                            <InputDefault control={form.control} name='state' label='State *' />
+                            <InputDefault control={form.control} name='zip' label='Zip Code *' />
                         </div>
-                        <FormField
-                            control={form.control}
-                            name='email'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type='email' />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <InputDefault control={form.control} name='email' label='Email *' type='email'/>
                         <FormField
                             control={form.control}
                             name='phoneNumber'
@@ -344,32 +251,8 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name='establishDate'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Established Date *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type='date' />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='lastSanctioningDate'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Last Sanctioning Date *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type='date' />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <InputDefault control={form.control} name='establishDate' label='Established Date *' type='date'/>
+                        <InputDefault control={form.control} name='lastSanctioningDate' label='Last Sanctioning Date *'  type='date'/>
                         <FormField
                             control={form.control}
                             name="sendMailings"
