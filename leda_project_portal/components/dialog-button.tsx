@@ -18,7 +18,7 @@ interface DialogWithButtonProps{
     buttonName: string
     form: string
     title: string
-    onRefresh: () => void
+    onRefresh?: any//() => void
 }
 //
 // function

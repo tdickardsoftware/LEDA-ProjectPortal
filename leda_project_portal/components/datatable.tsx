@@ -27,7 +27,7 @@ interface DataTableProps<TData extends Record<string,unknown>, TValue> {
     data: TData[];
     pageName: string;
     addDialog: React.ReactNode;
-    onRefresh: (api: string) => void;
+    onRefresh?: (api: string) => void;
     apiEndpoint: string; // New prop for API endpoint
 }
 
