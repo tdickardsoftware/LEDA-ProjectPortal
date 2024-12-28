@@ -38,7 +38,7 @@ const PlaceTypeSelector: React.FC = () => {
   useEffect(() => {
     async function loadPlaceTypes() {
       try {
-        const response = await fetch('/api/placeType')
+        const response = await fetch('/api/maintenance/placeType')
         const data = await response.json()
         setMemberTypes(data.map((type: any) => ({ value: type.placeTypeCode, label: type.placeTypeCode + ' - ' + type.desc})))
       } catch (error) {

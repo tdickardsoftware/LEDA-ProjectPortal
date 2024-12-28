@@ -38,7 +38,7 @@ const PlaceOwnerSelector: React.FC = () => {
   useEffect(() => {
     async function loadPlaceTypes() {
       try {
-        const response = await fetch('/api/placeOwnerGet')
+        const response = await fetch('/api/place/placeOwnerGet')
         const data = await response.json()
         setMemberTypes(data.map((type: any) => ({ value: type.ledaId, label: type.ledaId + ' - ' + type.fullName})))
       } catch (error) {

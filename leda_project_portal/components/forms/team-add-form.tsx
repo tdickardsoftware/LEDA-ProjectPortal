@@ -51,7 +51,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
 
         async function onSubmit(values: z.infer<typeof teamFormSchema>) {
                     try {
-                        const response = await fetch("/api/teamPut", {
+                        const response = await fetch("/api/team/teamPut", {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",

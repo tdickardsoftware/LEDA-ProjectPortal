@@ -89,7 +89,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
 
     async function onSubmit(values: z.infer<typeof placeFormSchema>) {
             try {
-                const response = await fetch("/api/placePut", {
+                const response = await fetch("/api/place/placePut", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

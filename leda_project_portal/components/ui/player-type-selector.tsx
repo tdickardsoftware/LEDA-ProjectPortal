@@ -38,7 +38,7 @@ const PlayerTypeSelector: React.FC = () => {
   useEffect(() => {
     async function loadMemberTypes() {
       try {
-        const response = await fetch('/api/peopleType')
+        const response = await fetch('/api/maintenance/peopleType')
         const data = await response.json()
         setMemberTypes(data.map((type: any) => ({ value: type.peopleTypeCode, label: type.peopleTypeCode + ' - ' + type.desc})))
       } catch (error) {

@@ -101,7 +101,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
 
     async function onSubmit(values: z.infer<typeof playerInfoSchema>) {
         try {
-            const response = await fetch("/api/playerPut", {
+            const response = await fetch("/api/player/playerPut", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

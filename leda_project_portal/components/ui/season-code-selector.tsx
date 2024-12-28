@@ -43,7 +43,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({ disabled, name 
   useEffect(() => {
     async function loadSeasonCodes() {
       try {
-        const response = await fetch('/api/seasonCode')
+        const response = await fetch('/api/maintenance/seasonCode')
         const data = await response.json()
         setSeasonCodes(data.map((type: any) => ({ value: type.seasonCode, label: type.seasonCode + ' - ' + type.desc})))
       } catch (error) {
