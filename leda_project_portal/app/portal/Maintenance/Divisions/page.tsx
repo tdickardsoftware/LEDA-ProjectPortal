@@ -12,7 +12,7 @@ export default async function Page() {
     return (
         <>
             <div className="container mx-auto py-10">
-                <DataTable columns={columns} data={await fetchDivisions()} pageName="Places Page" addDialog={<DialogWithButton form="DivisionAddForm" title="Add Division" buttonName="Add Division +"/>} apiEndpoint="/api/maintenance/divisionGet"/>
+                <DataTable columns={columns} data={await fetchDivisions()} pageName="Divisions Page" addDialog={<DialogWithButton form="DivisionAddForm" title="Add Division" buttonName="Add Division +"/>} apiEndpoint="/api/maintenance/division/divisionGet"/>
             </div>
         </>
     );
