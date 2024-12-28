@@ -15,6 +15,7 @@ import DivisionAddForm from "@/components/forms/division-add-form"
 import MentionAddForm from "@/components/forms/mention-add-form"
 import PaymentTypeAddForm from "@/components/forms/payment-type-add-form"
 import PayoutTierAddForm from "@/components/forms/payout-tier-add-form"
+import PenaltyAddForm from "@/components/forms/penalty-add-form"
 //
 // Interface
 //
@@ -46,6 +47,8 @@ export function DialogWithButton({buttonName, form, title, onRefresh}:DialogWith
             return <PaymentTypeAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
         } else if (activeForm === 'PayoutTierAddForm') {
             return <PayoutTierAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
+        } else if (activeForm === 'PenaltyAddForm') {
+            return <PenaltyAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
         }
     }
     return(
