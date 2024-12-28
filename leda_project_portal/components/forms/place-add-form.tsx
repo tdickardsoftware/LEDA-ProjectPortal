@@ -63,7 +63,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
     const form = useForm<z.infer<typeof placeFormSchema>>({ 
         resolver: zodResolver(placeFormSchema),
         defaultValues: {
-            ledaId: 0,
+            ledaId: undefined,
             name: '',
             addressOne: '',
             addressTwo: '',
@@ -90,12 +90,16 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
 
     async function onSubmit(values: z.infer<typeof placeFormSchema>) {
             try {
+                const submissionValues = generateIDStatus 
+                    ? { ...values, ledaId: 0 }
+                    : values;
+
                 const response = await fetch("/api/place/placePut", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify(values),
+                    body: JSON.stringify(submissionValues),
                 });
     
                 if (!response.ok) {

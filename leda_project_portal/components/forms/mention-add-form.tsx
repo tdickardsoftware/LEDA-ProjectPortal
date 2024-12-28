@@ -37,6 +37,7 @@ export default function MentionAddForm({ onClose, onRefresh }: { onClose: () => 
                 mentionCode: '',
                 desc: '',
                 mentionBasis: '',
+                points: undefined
             }
     });
 

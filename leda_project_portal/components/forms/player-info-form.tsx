@@ -94,7 +94,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
             "email": "",
             "phoneNumber": '',
             "gender": '',
-            "ledaId": 0,
+            "ledaId": undefined,
             "lastMembershipFeePayment": '',
             "memberType": ''
         },
@@ -102,12 +102,15 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
 
     async function onSubmit(values: z.infer<typeof playerInfoSchema>) {
         try {
+            const submissionValues = generateIDStatus 
+                    ? { ...values, ledaId: 0 }
+                    : values;
             const response = await fetch("/api/player/playerPut", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(values),
+                body: JSON.stringify(submissionValues),
             });
 
             if (!response.ok) {

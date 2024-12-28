@@ -41,7 +41,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
     const form = useForm<z.infer<typeof teamFormSchema>>({ 
             resolver: zodResolver(teamFormSchema),
             defaultValues: {
-                ledaId: 0,
+                ledaId: undefined,
                 teamName: '',
                 establishedDate: '',
                 memo: '',
