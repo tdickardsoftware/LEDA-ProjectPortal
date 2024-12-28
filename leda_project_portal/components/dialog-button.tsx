@@ -6,11 +6,11 @@
 // imports
 //
 import { useState } from "react"
-import PlayerAddInformationForm from "./player-info-form"
+import PlayerAddInformationForm from "@/components/forms/player-info-form"
 import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
-import PlaceAddForm from "./place-add-form"
-import TeamAddForm from "./team-add-form"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import PlaceAddForm from "@/components/forms/place-add-form"
+import TeamAddForm from "@/components/forms/team-add-form"
 //
 // Interface
 //

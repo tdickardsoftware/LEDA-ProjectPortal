@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import {
     Form,
     FormControl,
@@ -11,16 +11,16 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from './ui/form';
-import { Input } from './ui/input';
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import validator from 'validator';
 import {useState } from 'react';
-import { Label } from './ui/label';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import React from 'react';
-import SeasonCodeSelector from './ui/season-code-selector';
+import SeasonCodeSelector from '@/components/ui/season-code-selector';
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from './ui/checkbox';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const teamFormSchema = z.object({ 
     ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }),
