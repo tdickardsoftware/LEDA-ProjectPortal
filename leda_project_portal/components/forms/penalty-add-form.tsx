@@ -15,24 +15,26 @@ import {
 import { toast } from 'sonner';
 import React from 'react';
 import { InputDefault } from '@/components/ui/form-input-default';
+import { Textarea } from '../ui/textarea';
 
-const divisionFormSchema = z.object({ 
-    divisionName: z.string().min(1, { message: 'Division Name is required.' }),
+const penaltyFormSchema = z.object({ 
+    penaltyCode: z.string().min(1, { message: 'Penalty Code is required.' }),
+    desc: z.string().optional(),
 });
 
 const formContainerStyle = 'p-4 shadow-lg bg-white rounded-lg border border-gray-300';
 
-export default function DivisionAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
-    const form = useForm<z.infer<typeof divisionFormSchema>>({ 
-            resolver: zodResolver(divisionFormSchema),
+export default function PenaltyAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
+    const form = useForm<z.infer<typeof penaltyFormSchema>>({ 
+            resolver: zodResolver(penaltyFormSchema),
             defaultValues: {
-                divisionName: '',
+                penaltyCode: '',
             }
     });
 
-    async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
+    async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
                 try {
-                    const response = await fetch("/api/maintenance/division/divisionPut", {
+                    const response = await fetch("/api/maintenance/penalty/penaltyPut", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -64,7 +66,20 @@ export default function DivisionAddForm({ onClose, onRefresh }: { onClose: () =>
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 mx-auto'>
                 <div className='flex space-x-4'>
                     <div className={formContainerStyle}>
-                        <InputDefault control={form.control} name="divisionName" label="Division Name *" />
+                        <InputDefault control={form.control} name="penaltyCode" label="Penalty Code *" />
+                        <FormField
+                            control={form.control}
+                            name='desc'
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Description</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="Additional Data Here..." {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
                 </div>
                 <div className='flex justify-center'>
