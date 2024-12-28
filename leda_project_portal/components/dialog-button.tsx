@@ -17,6 +17,7 @@ import PaymentTypeAddForm from "@/components/forms/payment-type-add-form"
 import PayoutTierAddForm from "@/components/forms/payout-tier-add-form"
 import PenaltyAddForm from "@/components/forms/penalty-add-form"
 import PeopleTypeAddForm from "@/components/forms/people-type-add-form"
+import PlaceTypeAddForm from "@/components/forms/place-type-add-form"
 //
 // Interface
 //
@@ -52,6 +53,8 @@ export function DialogWithButton({buttonName, form, title, onRefresh}:DialogWith
             return <PenaltyAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
         } else if (activeForm === 'PeopleTypeAddForm') {
             return <PeopleTypeAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
+        } else if (activeForm === 'PlaceTypeAddForm') {
+            return <PlaceTypeAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
         }
     }
     return(
