@@ -20,7 +20,7 @@ import React from 'react';
 import { InputDefault } from '@/components/ui/form-input-default';
 import { Textarea } from '@/components/ui/textarea';
 
-const divisionFormSchema = z.object({ 
+const paymentTypeFormSchema = z.object({ 
     paymentType: z.string().min(1, { message: 'Payment Type is required.' }),
     desc: z.string().optional(),
 });
@@ -29,16 +29,16 @@ const formContainerStyle = 'p-4 shadow-lg bg-white rounded-lg border border-gray
 const inputWidth = 'w-24';
 const checkboxWidth = 'h-5 w-5';
 
-export default function DivisionAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
-    const form = useForm<z.infer<typeof divisionFormSchema>>({ 
-            resolver: zodResolver(divisionFormSchema),
+export default function PaymentTypeAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
+    const form = useForm<z.infer<typeof paymentTypeFormSchema>>({ 
+            resolver: zodResolver(paymentTypeFormSchema),
             defaultValues: {
                 paymentType: '',
                 desc: '',
             }
     });
 
-    async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
+    async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
                 try {
                     const response = await fetch("/api/maintenance/paymentType/paymentTypePut", {
                         method: "POST",
