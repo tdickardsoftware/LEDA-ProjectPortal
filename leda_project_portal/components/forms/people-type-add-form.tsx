@@ -24,7 +24,7 @@ const peopleTypeFormSchema = z.object({
 
 const formContainerStyle = 'p-4 shadow-lg bg-white rounded-lg border border-gray-300';
 
-export default function PenaltyAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
+export default function PeopleTypeAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
     const form = useForm<z.infer<typeof peopleTypeFormSchema>>({ 
             resolver: zodResolver(peopleTypeFormSchema),
             defaultValues: {
