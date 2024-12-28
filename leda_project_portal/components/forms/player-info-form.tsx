@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import {
     Form,
     FormControl,
@@ -11,30 +11,31 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from './ui/form';
-import { Input } from './ui/input';
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import validator from 'validator';
 import { useState } from 'react';
-import { Checkbox } from './ui/checkbox';
-import { Label } from './ui/label';
-import StatePicker from './ui/state-selector';
-import GenderSelector from './ui/gender-selector';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import StatePicker from '@/components/ui/state-selector';
+import GenderSelector from '@/components/ui/gender-selector';
 import { toast } from 'sonner';
 import PhoneNumberInput from '@/components/ui/phone-number-input';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import React from 'react';
-import PlayerTypeSelector from './ui/player-type-selector';
-import SeasonCodeSelector from './ui/season-code-selector';
+import PlayerTypeSelector from '@/components/ui/player-type-selector';
+import SeasonCodeSelector from '@/components/ui/season-code-selector';
+import { InputDefault } from '../ui/form-input-default';
 
 const playerInfoSchema = z.object({
-    firstName: z.string(),
+    firstName: z.string().min(1, { message: 'First Name is Required' }),
     middleInitial: z.optional(z.string()),
-    lastName: z.string(),
-    addressOne: z.string(),
+    lastName: z.string().min(1, { message: 'Last Name is Required' }),
+    addressOne: z.string().min(1, { message: 'Address is Required' }),
     addressTwo: z.optional(z.string()),
-    city: z.string(),
-    state: z.string(),
-    zip: z.string(),
+    city: z.string().min(1, { message: 'City is Required' }),
+    state: z.string().min(1, { message: 'State is Required' }),
+    zip: z.string().min(1, { message: 'Zip Code is Required' }),
     phoneNumber: z.string().min(1, { message: 'Phone Number is Required' }).refine((value) => isValidPhoneNumber(value, 'US'), { message: 'Phone Number is Invalid' }),
     otherNumber: z.string().optional().refine((value) => value === '' ||  isValidPhoneNumber(value ?? '', 'US'), { message: 'Other Number is Invalid' }),
     email: z.string().min(1, { message: 'Email is Required' }).refine(validator.isEmail, { message: 'Email is Invalid' }),
@@ -101,7 +102,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
 
     async function onSubmit(values: z.infer<typeof playerInfoSchema>) {
         try {
-            const response = await fetch("/api/playerPut", {
+            const response = await fetch("/api/player/playerPut", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -141,53 +142,9 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                         
                         <h1>Player Information</h1>
                         <div className='flex space-x-4'>
-                            <FormField
-                                control={form.control}
-                                name='firstName'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>First Name *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder='' {...field} type="text"/>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                name='middleInitial'
-                                control={form.control}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className='whitespace-nowrap'>
-                                            Middle Initial
-                                        </FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                placeholder=''
-                                                maxLength={1}
-                                                className='w-10'
-                                                {...field}
-                                                type="text"
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name='lastName'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Last Name *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder='Last Name' {...field} type="text"/>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <InputDefault control={form.control} name="firstName" label="First Name *" />
+                            <InputDefault control={form.control} name="middleInitial" label="Middle Initial" customClass='w-10' />
+                            <InputDefault control={form.control} name="lastName" label="Last Name *" />
                         </div>
                         <FormField
                             control={form.control}
@@ -199,59 +156,11 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                                 <FormMessage />
                             </FormItem>
                             )} />
-                        <FormField
-                            control={form.control}
-                            name="dateOfBirth"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Date of Birth</FormLabel>
-                                <FormControl>
-                                <Input placeholder='' {...field} type='date' />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='addressOne'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Address One *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type="text"/>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='addressTwo'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Address Two</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type="text" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <InputDefault control={form.control} name="dateOfBirth" label="Date of Birth" type="date" />
+                        <InputDefault control={form.control} name="addressOne" label="Address One *" />
+                        <InputDefault control={form.control} name="addressTwo" label="Address Two" />
                         <div className='flex space-x-4'>
-                            <FormField
-                                control={form.control}
-                                name='city'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>City *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder='' {...field} type="text" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <InputDefault control={form.control} name="city" label="City *" />
                             <FormField 
                                 control={form.control}
                                 name='state'
@@ -263,33 +172,9 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name='zip'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Zip Code *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder='' {...field} type="text"/>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <InputDefault control={form.control} name="zip" label="Zip Code *" />
                         </div>
-                        <FormField
-                            control={form.control}
-                            name='email'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type='email' />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <InputDefault control={form.control} name="email" label="Email *"  type='email'/>
                         <FormField
                             control={form.control}
                             name='phoneNumber'
@@ -361,19 +246,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name='establishedDate'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Established Date *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type='date' />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <InputDefault control={form.control} name='establishedDate' label='Established Date *' type='date' />
                         {/* Bad Standing Checkbox */}
                         <FormField
                             control={form.control}
@@ -561,19 +434,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name='inactiveDate'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Inactive Date</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type='date' />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <InputDefault control={form.control} name='inactiveDate' label='Inactive Date' type='date' />
                         <FormField
                             control={form.control}
                             name='lastMembershipFeePayment'
@@ -585,19 +446,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name='lastTrailsDate'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Last Trails Date</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder='' {...field} type='date' />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <InputDefault control={form.control} name='lastTrailsDate' label='Last Trails Date' type='date' />
                     </div>
                 </div>
                 

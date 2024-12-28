@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import {
     Form,
     FormControl,
@@ -11,20 +11,21 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from './ui/form';
-import { Input } from './ui/input';
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import validator from 'validator';
 import {useState } from 'react';
-import { Label } from './ui/label';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import React from 'react';
-import SeasonCodeSelector from './ui/season-code-selector';
+import SeasonCodeSelector from '@/components/ui/season-code-selector';
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from './ui/checkbox';
+import { Checkbox } from '@/components/ui/checkbox';
+import { InputDefault } from '../ui/form-input-default';
 
 const teamFormSchema = z.object({ 
     ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }),
-    teamName: z.string(),
+    teamName: z.string().min(1, { message: 'Team Name is required.' }),
     establishedDate: z.string(),
     memo: z.string().optional(),
     lastTeamFeePayment: z.string(),
@@ -51,7 +52,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
 
         async function onSubmit(values: z.infer<typeof teamFormSchema>) {
                     try {
-                        const response = await fetch("/api/teamPut", {
+                        const response = await fetch("/api/team/teamPut", {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
@@ -121,32 +122,8 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name='teamName'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Team Name *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder='' {...field} type="text"/>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name='establishedDate'
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Established Date *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder='' {...field} type='date' />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <InputDefault control={form.control} name='teamName' label='Team Name *' />
+                            <InputDefault control={form.control} name='establishedDate' label='Established Date *' type='date' />
                             <FormField
                                 control={form.control}
                                 name='lastTeamFeePayment'
