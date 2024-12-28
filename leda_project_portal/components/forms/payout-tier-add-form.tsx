@@ -1,6 +1,6 @@
 'use client'
 
-import { z } from 'zod';
+import { unknown, z, ZodUndefined } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import { InputDefault } from '@/components/ui/form-input-default';
 import { Textarea } from '@/components/ui/textarea';
 
 const paymentTypeFormSchema = z.object({ 
-    place: z.string().min(1, { message: 'Place is required.' }),
+    place: z.number().min(0, { message: 'Place must be a positive number/is required.' }),
     amount: z.number().min(0, { message: 'Amount must be a positive number.' }),
 });
 
@@ -33,7 +33,8 @@ export default function PayoutTierAddForm({ onClose, onRefresh }: { onClose: () 
     const form = useForm<z.infer<typeof paymentTypeFormSchema>>({ 
             resolver: zodResolver(paymentTypeFormSchema),
             defaultValues: {
-                place: '',
+                place: undefined,
+                amount: undefined,
             }
     });
 
@@ -71,57 +72,51 @@ export default function PayoutTierAddForm({ onClose, onRefresh }: { onClose: () 
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 mx-auto'>
                 <div className='flex space-x-4'>
                     <div className={formContainerStyle}>
-                        <FormField
-                            control={form.control}
-                            name='place'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Place *</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder='0'
-                                            {...field}
-                                            className={inputWidth}
-                                            type='number'
-                                            onChange={(e) => {
-                                                field.onChange(
-                                                    e.target.value ? Number(e.target.value) : undefined
-                                                );
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='amount'
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Points *</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder='0.00'
-                                            {...field}
-                                            className={inputWidth}
-                                            type='number'
-                                            step='0.01'
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                if (value) {
-                                                    const numberValue = Number(value);
-                                                    const formattedValue = numberValue.toFixed(2);
-                                                    field.onChange(formattedValue);
-                                                } else {
-                                                    field.onChange('');
-                                                }
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
+                    <FormField
+                        control={form.control}
+                        name='place'
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Place *</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        placeholder='0'
+                                        {...field}
+                                        className={inputWidth}
+                                        type='number'
+                                        onChange={(e) => {
+                                            field.onChange(
+                                                e.target.value ? Number(e.target.value) : undefined
+                                            );
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name='amount'
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Points *</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        placeholder='0.00'
+                                        {...field}
+                                        className={inputWidth}
+                                        type='number'
+                                        onChange={(e) => {
+                                            field.onChange(
+                                                e.target.value ? Number(e.target.value) : undefined
+                                            );
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
                         />
                     </div>
                 </div>
