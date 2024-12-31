@@ -24,6 +24,7 @@ interface InputDefaultProps {
     placeholder?: string;
     type?: string;
     customClass?: string;
+    disabled?: boolean;
 }
 //
 // Making the form input a component
@@ -35,6 +36,7 @@ export function InputDefault({
     placeholder = '',
     type = 'text',
     customClass,
+    disabled
 }: InputDefaultProps) {
     return (
         <FormField
@@ -44,7 +46,7 @@ export function InputDefault({
             <FormItem>
                 <FormLabel>{label}</FormLabel>
                 <FormControl>
-                    <Input placeholder={placeholder} {...field} type={type} className={customClass}/>
+                    <Input placeholder={placeholder} {...field} type={type} className={customClass} disabled={disabled} value={type === 'date' ? field.value?.split('T')[0] : field.value}/>
                 </FormControl>
                 <FormMessage />
             </FormItem>
