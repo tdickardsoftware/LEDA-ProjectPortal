@@ -55,7 +55,7 @@ export default function SeasonAddForm({ onClose, onRefresh }: { onClose: () => v
             const generatedDates: string[] = [];
             let currentDate = new Date(initialDate);
             for (let i = 0; i < howManyWeeks; i++) {
-                generatedDates.push(currentDate.toISOString().split('T')[0]);
+                generatedDates.push(currentDate.toLocaleDateString('en-CA')); // Use 'en-CA' for YYYY-MM-DD format
                 currentDate.setDate(currentDate.getDate() + 7);
             }
             console.log(generatedDates);
@@ -68,11 +68,11 @@ export default function SeasonAddForm({ onClose, onRefresh }: { onClose: () => v
     const handleDateChange = (selectedDate: Date | undefined, index: number) => {
         if (selectedDate) {
             const updatedDates = JSON.parse(dates || '[]');
-            updatedDates[index] = selectedDate.toISOString().split('T')[0];
+            updatedDates[index] = selectedDate.toLocaleDateString('en-CA'); // Use 'en-CA' for YYYY-MM-DD format
             for (let i = index + 1; i < updatedDates.length; i++) {
                 const previousDate = new Date(updatedDates[i - 1]);
                 previousDate.setDate(previousDate.getDate() + 7);
-                updatedDates[i] = previousDate.toISOString().split('T')[0];
+                updatedDates[i] = previousDate.toLocaleDateString('en-CA'); // Use 'en-CA' for YYYY-MM-DD format
             }
             setDates(JSON.stringify(updatedDates));
         }
@@ -198,6 +198,7 @@ export default function SeasonAddForm({ onClose, onRefresh }: { onClose: () => v
                                                         <DatePicker 
                                                             onDateChange={(date) => handleDateChange(date, index)} 
                                                             initialMonth={new Date(date)}
+                                                            dateSelected={new Date(date)}
                                                         />
                                                     </th>
                                                 ))}

@@ -12,16 +12,22 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-export function DatePicker({ onDateChange, initialMonth }: { onDateChange: (date: Date | undefined) => void, initialMonth?: Date }) {
-  const [date, setDate] = React.useState<Date>()
+
+export function DatePicker({ onDateChange, initialMonth, dateSelected }: { onDateChange: (date: Date | undefined) => void, initialMonth?: Date, dateSelected: Date }) {
+  const [date, setDate] = React.useState<Date>(new Date(dateSelected.getTime() + dateSelected.getTimezoneOffset() * 60000))
+  const [isOpen, setIsOpen] = React.useState(false)
 
   const handleDateChange = (selectedDate: Date | undefined) => {
-    setDate(selectedDate)
-    onDateChange(selectedDate)
+    if (selectedDate) {
+      const localDate = new Date(selectedDate.getTime() + selectedDate.getTimezoneOffset() * 60000)
+      setDate(localDate)
+      onDateChange(localDate)
+      setIsOpen(false)
+      console.log(localDate)
+    }
   }
-
   return (
-    <Popover>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
           variant={"ghost"}
@@ -41,9 +47,6 @@ export function DatePicker({ onDateChange, initialMonth }: { onDateChange: (date
           onSelect={handleDateChange}
           initialFocus
           defaultMonth={initialMonth}
-          modifiersClassNames={{
-            selected: 'bg-blue-500 text-white'
-          }}
         />
       </PopoverContent>
     </Popover>
