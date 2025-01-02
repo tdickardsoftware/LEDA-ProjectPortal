@@ -43,6 +43,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
     const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
     const [debouncedQuery, setDebouncedQuery] = React.useState(""); // State for debounced query
     const [tableData, setTableData] = React.useState(data); // State for table data
+    const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
 
     // Debounce the search input
     React.useEffect(() => {
@@ -70,8 +71,10 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
         getPaginationRowModel: getPaginationRowModel(),
         onSortingChange: setSorting,
         getSortedRowModel: getSortedRowModel(),
+        onRowSelectionChange: setRowSelection,
         state: {
             sorting,
+            rowSelection
         },
     });
 
@@ -161,22 +164,22 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
                 </Table>
                 </div>
                 <div className="flex items-center justify-between space-x-2 py-4">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                >
-                    Previous
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                >
-                    Next
-                </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
+                    >
+                        Next
+                    </Button>
                 </div>
             </div>
         </div>

@@ -1,4 +1,5 @@
 'use client'
+
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
 import { Separator } from "@radix-ui/react-separator"
 import { ChevronsUpDown } from "lucide-react"
