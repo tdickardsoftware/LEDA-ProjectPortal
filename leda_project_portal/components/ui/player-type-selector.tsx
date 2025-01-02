@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { peopleTypeRoute } from "@/lib/apiRoutes"
 
 // Define the form values interface
 interface FormValues {
@@ -38,7 +39,7 @@ const PlayerTypeSelector: React.FC = () => {
   useEffect(() => {
     async function loadMemberTypes() {
       try {
-        const response = await fetch('/api/maintenance/peopleType/peopleTypeGet')
+        const response = await fetch(peopleTypeRoute)
         const data = await response.json()
         setMemberTypes(data.map((type: any) => ({ value: type.peopleTypeCode, label: type.peopleTypeCode + ' - ' + type.desc})))
       } catch (error) {

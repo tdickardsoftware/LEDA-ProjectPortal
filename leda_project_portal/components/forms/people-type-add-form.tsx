@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import React from 'react';
 import { InputDefault } from '@/components/ui/form-input-default';
 import { Textarea } from '../ui/textarea';
+import { peopleTypeRoute } from '@/lib/apiRoutes';
 
 const peopleTypeFormSchema = z.object({ 
     peopleTypeCode: z.string().min(1, { message: 'People Type Code is required.' }),
@@ -34,7 +35,7 @@ export default function PeopleTypeAddForm({ onClose, onRefresh }: { onClose: () 
 
     async function onSubmit(values: z.infer<typeof peopleTypeFormSchema>) {
                 try {
-                    const response = await fetch("/api/maintenance/peopleType/peopleTypePut", {
+                    const response = await fetch(peopleTypeRoute, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
