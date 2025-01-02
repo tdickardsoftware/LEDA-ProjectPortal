@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { placeTypeRoute } from "@/lib/apiRoutes"
 
 // Define the form values interface
 interface FormValues {
@@ -38,7 +39,7 @@ const PlaceTypeSelector: React.FC = () => {
   useEffect(() => {
     async function loadPlaceTypes() {
       try {
-        const response = await fetch('/api/maintenance/placeType/placeTypeGet')
+        const response = await fetch(placeTypeRoute)
         const data = await response.json()
         setMemberTypes(data.map((type: any) => ({ value: type.placeTypeCode, label: type.placeTypeCode + ' - ' + type.desc})))
       } catch (error) {

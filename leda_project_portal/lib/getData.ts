@@ -4,7 +4,7 @@
 
 import {Player, Team, Place, Division, Mention, PaymentType, PayoutTier, Penalty, PeopleType, PlaceType, Season } from './definitions'
 import { query } from './dbTypeGet';
-import { placeRouteServer, playerRouteServer, seasonRouteServer, teamRouteServer } from './apiRoutes';
+import { placeRouteServer, placeTypeRouteServer, playerRouteServer, seasonRouteServer, teamRouteServer } from './apiRoutes';
 //
 // async function to get all player data from the database
 //
@@ -151,12 +151,23 @@ export async function fetchPeopleTypes() {
 // async function to get all Place Types data from the database
 //
 export async function fetchPlaceTypes() {
+    // attempt to get data
     try {
-        const data = await query<PlaceType>(`SELECT "placeTypeCode", "desc" FROM maint.leda_maint_place_types;`);
-        return data.rows
+        const response = await fetch(placeTypeRouteServer, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json() as PlaceType[];
+        return data;
+    // if it cannot get data error out
     } catch (error) {
-        console.error(error)
-        throw new Error('Failed to fetch Place Information')
+        console.error('API Error: ', error);
+        throw new Error('Failed to fetch Player Information');
     }
 }
 //
