@@ -18,10 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log(req.body);
                 const results = req.body as Season;
         
-                let query = `INSERT INTO maint.leda_maint_seasons(
+                const query = `INSERT INTO maint.leda_maint_seasons(
                             "seasonCode", "fiscalYear", "dates", "desc", "isCurrentSeason")
                             VALUES ($1, $2, $3, $4, $5);`;
-                let values = [
+                const values = [
                     results.seasonCode,
                     results.fiscalYear,
                     results.dates,

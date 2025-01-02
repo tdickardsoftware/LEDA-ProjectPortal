@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { useFormContext, Controller } from "react-hook-form"
+import { useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -33,7 +33,7 @@ const mentionBasisList = [
 
 const MentionBasisSelector: React.FC = () => {
   // Use form context to get control, watch, setValue, and register functions
-  const { control, watch, setValue, register } = useFormContext<FormValues>()
+  const {  watch, setValue } = useFormContext<FormValues>()
   // Watch the gender field value
   const mentionBasis = watch("mentionBasis")
   // State to manage the popover open/close status

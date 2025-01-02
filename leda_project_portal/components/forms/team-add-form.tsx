@@ -13,7 +13,6 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import validator from 'validator';
 import {useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';

@@ -18,10 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log(req.body);
                 const results = req.body as Penalty;
         
-                let query = `INSERT INTO maint.leda_maint_penalties(
+                const query = `INSERT INTO maint.leda_maint_penalties(
                             "penaltyCode", "desc")
                             VALUES ($1, $2);`;
-                let values = [
+                const values = [
                     results.penaltyCode,
                     results.desc
                 ];

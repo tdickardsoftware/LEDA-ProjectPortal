@@ -18,10 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log(req.body);
                 const results = req.body as PlaceType;
         
-                let query = `INSERT INTO maint.leda_maint_place_types(
+                const query = `INSERT INTO maint.leda_maint_place_types(
                             "placeTypeCode", "desc")
                             VALUES ($1, $2);`;
-                let values = [
+                const values = [
                     results.placeTypeCode,
                     results.desc
                 ];

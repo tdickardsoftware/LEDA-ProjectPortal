@@ -18,10 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log(req.body);
                 const results = req.body as Mention;
         
-                let query = `INSERT INTO maint.leda_maint_mentions(
+                const query = `INSERT INTO maint.leda_maint_mentions(
                             "mentionCode", "desc", "points", "mentionBasis")
                             VALUES ($1, $2, $3, $4);`;
-                let values = [
+                const values = [
                     results.mentionCode,
                     results.desc,
                     results.points,

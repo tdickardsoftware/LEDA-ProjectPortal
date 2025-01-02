@@ -18,10 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log(req.body);
                 const results = req.body as PayoutTier;
         
-                let query = `INSERT INTO maint.leda_maint_payout_tiers(
+                const query = `INSERT INTO maint.leda_maint_payout_tiers(
                             "place", "amount")
                             VALUES ($1, $2);`;
-                let values = [
+                const values = [
                     results.place,
                     results.amount.toPrecision(2)
                 ];

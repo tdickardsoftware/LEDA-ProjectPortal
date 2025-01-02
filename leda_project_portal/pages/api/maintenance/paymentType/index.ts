@@ -18,10 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log(req.body);
                 const results = req.body as PaymentType;
         
-                let query = `INSERT INTO maint.leda_maint_payment_types(
+                const query = `INSERT INTO maint.leda_maint_payment_types(
                             "paymentType", "desc")
                             VALUES ($1, $2);`;
-                let values = [
+                const values = [
                     results.paymentType,
                     results.desc
                 ];

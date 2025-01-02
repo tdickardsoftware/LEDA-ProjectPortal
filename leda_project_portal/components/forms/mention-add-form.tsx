@@ -29,7 +29,6 @@ const mentionFormSchema = z.object({
 
 const formContainerStyle = 'p-4 shadow-lg bg-white rounded-lg border border-gray-300';
 const inputWidth = 'w-24';
-const checkboxWidth = 'h-5 w-5';
 
 export default function MentionAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
     const form = useForm<z.infer<typeof mentionFormSchema>>({ 
