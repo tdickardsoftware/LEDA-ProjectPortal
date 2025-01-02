@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 export default function Page() {
     return (
         <main>
-            <p>Ton 80's - Weekly League Page</p>
+            <p>Ton 80{"'"}s - Weekly League Page</p>
         </main>
     );
 }

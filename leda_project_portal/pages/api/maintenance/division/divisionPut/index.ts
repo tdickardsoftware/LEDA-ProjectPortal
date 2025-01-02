@@ -6,7 +6,7 @@ const pool = new Pool({
     connectionString: process.env.POSTGRES_URL,
 });
 
-async function queryPost(text: string, values: any) {
+async function queryPost(text: string, values: string[]) {
     try {
         const res = await pool.query(text, values);
         return res;
@@ -28,18 +28,18 @@ export default async function DivisionHandler(
         console.log(req.body);
         const results = req.body as Division;
 
-        let query = `INSERT INTO maint.leda_maint_divisions(
+        const query = `INSERT INTO maint.leda_maint_divisions(
                     "divisionName")
                     VALUES ($1);`;
-        let values = [
+        const values = [
             results.divisionName
         ];
 
         const result = await queryPost(query, values);
 
         res.status(201).json({ insert1: result});
-    } catch (error: any) {
-        console.error("Error in PlayerHandler:", error);
-        res.status(500).json({ message: error.message || "Server error" }); // Send error info in JSON
+    } catch (error) {
+        console.error("Error in PlayerHandler:", error as Error);
+        res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
     }
 }
