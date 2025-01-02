@@ -11,23 +11,23 @@ export const placeRoute = '/api/management/place';
 // Define route for teams not on the serverside
 export const teamRoute = '/api/management/team';
 // Define route for division not on the serverside
-export const divisionRoute = '/api/management/division';
+export const divisionRoute = '/api/maintenance/division';
 // Define route for mention not on the serverside
-export const menttionRoute = '/api/management/mention';
+export const menttionRoute = '/api/maintenance/mention';
 // Define route for paymentType not on the serverside
-export const paymentTypeRoute = '/api/management/paymentType';
+export const paymentTypeRoute = '/api/maintenance/paymentType';
 // Define route for payoutTier not on the serverside
-export const payoutTierRoute = '/api/management/payoutTier';
+export const payoutTierRoute = '/api/maintenance/payoutTier';
 // Define route for penalty not on the serverside
-export const penaltyRoute = '/api/management/penalty';
+export const penaltyRoute = '/api/maintenance/penalty';
 // Define route for peopleType not on the serverside
-export const peopleTypeRoute = '/api/management/peopleType';
+export const peopleTypeRoute = '/api/maintenance/peopleType';
 // Define route for placeType not on the serverside
-export const placeTypeRoute = '/api/management/placeType';
+export const placeTypeRoute = '/api/maintenance/placeType';
 // Define route for season not on the serverside
-export const seasonRoute = '/api/management/season';
+export const seasonRoute = '/api/maintenance/season';
 // Define route for seasonCode not on the serverside
-export const seasonCodeRoute = '/api/management/season/seasonCode';
+export const seasonCodeRoute = '/api/maintenance/season/seasonCode';
 
 //
 // Server Routes

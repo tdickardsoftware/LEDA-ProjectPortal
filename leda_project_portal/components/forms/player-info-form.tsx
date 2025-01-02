@@ -26,6 +26,7 @@ import React from 'react';
 import PlayerTypeSelector from '@/components/ui/player-type-selector';
 import SeasonCodeSelector from '@/components/ui/season-code-selector';
 import { InputDefault } from '../ui/form-input-default';
+import { playerRoute } from '@/lib/apiRoutes';
 
 const playerInfoSchema = z.object({
     firstName: z.string().min(1, { message: 'First Name is Required' }),
@@ -105,7 +106,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
             const submissionValues = generateIDStatus 
                     ? { ...values, ledaId: 0 }
                     : values;
-            const response = await fetch("/api/player/playerPut", {
+            const response = await fetch(playerRoute, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

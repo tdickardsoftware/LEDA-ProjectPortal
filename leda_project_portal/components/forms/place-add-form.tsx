@@ -17,7 +17,6 @@ import validator from 'validator';
 import {useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import StatePicker from '@/components/ui/state-selector';
 import { toast } from 'sonner';
 import PhoneNumberInput from '@/components/ui/phone-number-input';
 import { isValidPhoneNumber } from 'libphonenumber-js';
@@ -27,9 +26,10 @@ import PlaceTypeSelector from '@/components/ui/place-type-selector';
 import { Textarea } from "@/components/ui/textarea"
 import PlaceOwnerSelector from '@/components/ui/place-owner-select';
 import { InputDefault } from '../ui/form-input-default';
+import { placeRoute } from '@/lib/apiRoutes';
 
 const placeFormSchema = z.object({ 
-    ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }),
+    ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }).optional(),
     name: z.string().min(1, { message: 'Name is required.' }),
     addressOne: z.string().min(1, { message: 'Address is required.' }),
     addressTwo: z.string().optional(),
@@ -94,7 +94,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                     ? { ...values, ledaId: 0 }
                     : values;
 
-                const response = await fetch("/api/place/placePut", {
+                const response = await fetch(placeRoute, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { DatePicker } from '../ui/date-picker';
+import { seasonRoute } from '@/lib/apiRoutes';
 
 const seasonFormSchema = z.object({ 
     seasonCode: z.string().min(1, { message: 'Season Code is required.' }),
@@ -86,7 +87,7 @@ export default function SeasonAddForm({ onClose, onRefresh }: { onClose: () => v
         values.dates = JSON.stringify(formattedDates);
         console.log("Submitting form with values", values);
         try {
-            const response = await fetch("/api/maintenance/season/seasonPut", {
+            const response = await fetch(seasonRoute, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
