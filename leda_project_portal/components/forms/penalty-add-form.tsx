@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import React from 'react';
 import { InputDefault } from '@/components/ui/form-input-default';
 import { Textarea } from '../ui/textarea';
+import { penaltyRoute } from '@/lib/apiRoutes';
 
 const penaltyFormSchema = z.object({ 
     penaltyCode: z.string().min(1, { message: 'Penalty Code is required.' }),
@@ -34,7 +35,7 @@ export default function PenaltyAddForm({ onClose, onRefresh }: { onClose: () => 
 
     async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
                 try {
-                    const response = await fetch("/api/maintenance/penalty/penaltyPut", {
+                    const response = await fetch(penaltyRoute, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
