@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { seasonCodeRoute } from "@/lib/apiRoutes"
 
 // Update the interface to be more generic
 interface FormValues {
@@ -43,7 +44,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({ disabled, name 
   useEffect(() => {
     async function loadSeasonCodes() {
       try {
-        const response = await fetch('/api/maintenance/seasonCode')
+        const response = await fetch(seasonCodeRoute)
         const data = await response.json()
         setSeasonCodes(data.map((type: any) => ({ value: type.seasonCode, label: type.seasonCode + ' - ' + type.desc})))
       } catch (error) {
