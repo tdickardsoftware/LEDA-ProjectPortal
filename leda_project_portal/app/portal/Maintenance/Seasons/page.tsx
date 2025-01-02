@@ -1,6 +1,6 @@
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-button";
-import { fetchPlaceTypes, fetchSeasons } from "@/lib/getData";
+import { fetchSeasons } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/seasons";
 import { Metadata } from "next";
 

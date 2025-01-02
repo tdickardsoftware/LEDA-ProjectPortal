@@ -55,7 +55,7 @@ export default function SeasonAddForm({ onClose, onRefresh }: { onClose: () => v
             const generatedDates: string[] = [];
             let currentDate = new Date(initialDate);
             for (let i = 0; i < howManyWeeks; i++) {
-                generatedDates.push(currentDate.toLocaleDateString('en-CA')); // Use 'en-CA' for YYYY-MM-DD format
+                generatedDates.push(currentDate.toISOString().split('T')[0]);
                 currentDate.setDate(currentDate.getDate() + 7);
             }
             console.log(generatedDates);
@@ -68,11 +68,11 @@ export default function SeasonAddForm({ onClose, onRefresh }: { onClose: () => v
     const handleDateChange = (selectedDate: Date | undefined, index: number) => {
         if (selectedDate) {
             const updatedDates = JSON.parse(dates || '[]');
-            updatedDates[index] = selectedDate.toLocaleDateString('en-CA'); // Use 'en-CA' for YYYY-MM-DD format
+            updatedDates[index] = selectedDate.toISOString().split('T')[0];
             for (let i = index + 1; i < updatedDates.length; i++) {
                 const previousDate = new Date(updatedDates[i - 1]);
                 previousDate.setDate(previousDate.getDate() + 7);
-                updatedDates[i] = previousDate.toLocaleDateString('en-CA'); // Use 'en-CA' for YYYY-MM-DD format
+                updatedDates[i] = previousDate.toISOString().split('T')[0];
             }
             setDates(JSON.stringify(updatedDates));
         }
@@ -164,12 +164,12 @@ export default function SeasonAddForm({ onClose, onRefresh }: { onClose: () => v
                                     max={2}
                                     onChange={(e) => {
                                         const value = parseInt(e.target.value);
-                                        if (!isNaN(value) && value > 0 && value <= 52) {
+                                        if (!isNaN(value) && value > 0 && value <= 54) {
                                             setHowManyWeeks(value);
                                         } else if (value > 54) {
-                                            setHowManyWeeks(52); //max value
+                                            setHowManyWeeks(54); //max value
                                         } else {
-                                            setHowManyWeeks(14); // Default value
+                                            setHowManyWeeks(10); // Default value
                                         }}
                                     }
                                     className={`${inputWidth}`}

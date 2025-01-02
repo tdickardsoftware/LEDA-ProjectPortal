@@ -212,28 +212,28 @@ const data = {
     },
     {
       title: "Activites",
-      url: "/Portal/Activites",
+      url: "/Portal/Activities",
       icon: ListCheck,
       items: [
         {
           title: "Payouts",
-          url: "/Portal/Activites/Payouts",
+          url: "/Portal/Activities/Payouts",
         },
         {
           title: "Rosters",
-          url: "/Portal/Activites/Rosters",
+          url: "/Portal/Activities/Rosters",
         },
         {
           title: "Scheduling",
-          url: "/Portal/Activites/Scheduling",
+          url: "/Portal/Activities/Scheduling",
         },
         {
           title: "Trails",
-          url: "/Portal/Activites/Trails",
+          url: "/Portal/Activities/Trails",
         },
         {
           title: "Weekly Score",
-          url: "/Portal/Activites/Weekly-Score",
+          url: "/Portal/Activities/Weekly-Score",
         },
       ],
     },
