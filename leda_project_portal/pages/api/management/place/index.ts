@@ -1,7 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { query } from '@/lib/dbTypeGet'
 import { Place } from '@/lib/definitions';
-import { queryGet, queryPost } from '@/lib/query';
+import { queryPost } from '@/lib/query';
+import getNextLedaId from '@/lib/getNextLedaId';
 
 
 
@@ -18,10 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const results = req.body as Place;
         
             if (results.ledaId === 0) {
-                const next_id = await (
-                    await queryGet('SELECT COALESCE(MAX("ledaId"), 0) + 1 AS next_leda_id FROM leda_place_info;')
-                ).rows[0].next_leda_id;
-                results.ledaId = next_id;
+                results.ledaId = await getNextLedaId('leda_place_info');
             }
         
             const query = `INSERT INTO public.leda_place_info("ledaId", name, "addressOne", "addressTwo", "city", "state", "zip", "phoneNumber", "otherNumber", "email", "website", "establishDate", "memo", "numberOfBoards", "sendMailings", "regularSponsor", "currentSponsor", "issues", "lastBarFeePayment", "lastSanctioningDate", "contactId", "placeType")
