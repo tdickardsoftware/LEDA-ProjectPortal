@@ -102,7 +102,7 @@ export default function MentionAddForm({ onClose, onRefresh }: { onClose: () => 
                         <FormField
                             control={form.control}
                             name="mentionBasis"
-                            render={({ field }) => (
+                            render={() => (
                             <FormItem>
                                 <FormLabel>Mention Basis *</FormLabel>
                                 <MentionBasisSelector />

@@ -153,7 +153,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                         <FormField
                             control={form.control}
                             name="gender"
-                            render={({ field }) => (
+                            render={() => (
                             <FormItem>
                                 <FormLabel>Gender *</FormLabel>
                                 <GenderSelector />
@@ -168,7 +168,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                             <FormField 
                                 control={form.control}
                                 name='state'
-                                render={({ field }) => (
+                                render={() => (
                                     <FormItem>
                                         <FormLabel>State *</FormLabel>
                                         <StatePicker name='state' control={form.control} />
@@ -242,7 +242,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                         <FormField
                             control={form.control}
                             name='memberType'
-                            render={({ field }) => (
+                            render={() => (
                                 <FormItem>
                                     <FormLabel>Member Type</FormLabel>
                                     <PlayerTypeSelector />
@@ -442,7 +442,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                         <FormField
                             control={form.control}
                             name='lastMembershipFeePayment'
-                            render={({ field }) => (
+                            render={() => (
                                 <FormItem>
                                     <FormLabel>Last Membership Fee Payment *</FormLabel>
                                     <SeasonCodeSelector name='lastMembershipFeePayment'/>

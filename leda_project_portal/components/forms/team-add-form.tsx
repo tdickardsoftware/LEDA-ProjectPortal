@@ -132,7 +132,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                             <FormField
                                 control={form.control}
                                 name='lastTeamFeePayment'
-                                render={({ field }) => (
+                                render={() => (
                                     <FormItem>
                                         <FormLabel>Last Team Fee Payment *</FormLabel>
                                         <SeasonCodeSelector name='lastTeamFeePayment' />
