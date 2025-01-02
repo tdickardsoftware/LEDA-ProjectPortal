@@ -13,7 +13,7 @@ export const teamRoute = '/api/management/team';
 // Define route for division not on the serverside
 export const divisionRoute = '/api/maintenance/division';
 // Define route for mention not on the serverside
-export const menttionRoute = '/api/maintenance/mention';
+export const mentionRoute = '/api/maintenance/mention';
 // Define route for paymentType not on the serverside
 export const paymentTypeRoute = '/api/maintenance/paymentType';
 // Define route for payoutTier not on the serverside
@@ -42,7 +42,7 @@ export const teamRouteServer = process.env.URL + teamRoute;
 // Define route for division api
 export const divisionRouteServer = process.env.URL + divisionRoute;
 // Define route for mention api
-export const mentionRouteServer = process.env.URL + menttionRoute;
+export const mentionRouteServer = process.env.URL + mentionRoute;
 // Define route for paymentType api
 export const paymentTypeRouteServer = process.env.URL + paymentTypeRoute;
 // Define route for payoutTier api

@@ -18,6 +18,7 @@ import { InputDefault } from '@/components/ui/form-input-default';
 import MentionBasisSelector from '@/components/ui/mention-basis-selector';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { mentionRoute } from '@/lib/apiRoutes';
 
 const mentionFormSchema = z.object({ 
     mentionCode: z.string().min(1, { message: 'Mention Code is required.' }),
@@ -43,7 +44,7 @@ export default function MentionAddForm({ onClose, onRefresh }: { onClose: () => 
 
     async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
                 try {
-                    const response = await fetch("/api/maintenance/mention/mentionPut", {
+                    const response = await fetch(mentionRoute, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",

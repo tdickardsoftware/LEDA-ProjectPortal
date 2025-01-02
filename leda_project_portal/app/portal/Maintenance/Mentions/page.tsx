@@ -1,5 +1,6 @@
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-button";
+import { mentionRoute } from "@/lib/apiRoutes";
 import { fetchMentions } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/mentions";
 import { Metadata } from "next";
@@ -12,7 +13,7 @@ export default async function Page() {
     return (
         <>
             <div className="container mx-auto py-10">
-                <DataTable columns={columns} data={await fetchMentions()} pageName="Mentions Page" addDialog={<DialogWithButton form="MentionAddForm" title="Add Mention" buttonName="Add Mention +"/>} apiEndpoint="/api/maintenance/mention/mentionGet"/>
+                <DataTable columns={columns} data={await fetchMentions()} pageName="Mentions Page" addDialog={<DialogWithButton form="MentionAddForm" title="Add Mention" buttonName="Add Mention +"/>} apiEndpoint={mentionRoute}/>
             </div>
         </>
     );
