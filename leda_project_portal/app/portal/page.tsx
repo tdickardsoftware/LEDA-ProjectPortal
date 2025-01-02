@@ -1,4 +1,4 @@
-import PortalPageContent from "@/components/ui/portal-page-content";
+import PortalPageContent from "@/app/Portal/portal-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 
