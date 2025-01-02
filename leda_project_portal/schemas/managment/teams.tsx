@@ -9,10 +9,31 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Team } from "@/lib/definitions"
 import { Button } from "@/components/ui/button"
 import { ArrowUpDown } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 //
 //Define the columns
 //
 export const columns: ColumnDef<Team>[] = [
+    {
+        id: "select",
+        header:({ table }) => (
+            <Checkbox
+                checked={
+                    table.getIsAllPageRowsSelected() || 
+                    (table.getIsSomePageRowsSelected() && "indeterminate")
+                }
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select All"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(value) => row.toggleSelected(!!value)}
+                aria-label="Select Row"
+            />
+        )
+    },
     {
         accessorKey: "ledaId",
         header: ({ column }) => {
