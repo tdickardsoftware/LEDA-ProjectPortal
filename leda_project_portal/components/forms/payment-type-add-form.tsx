@@ -12,13 +12,11 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { useState } from 'react';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import React from 'react';
 import { InputDefault } from '@/components/ui/form-input-default';
 import { Textarea } from '@/components/ui/textarea';
+import { paymentTypeRoute } from '@/lib/apiRoutes';
 
 const paymentTypeFormSchema = z.object({ 
     paymentType: z.string().min(1, { message: 'Payment Type is required.' }),
@@ -26,8 +24,6 @@ const paymentTypeFormSchema = z.object({
 });
 
 const formContainerStyle = 'p-4 shadow-lg bg-white rounded-lg border border-gray-300';
-const inputWidth = 'w-24';
-const checkboxWidth = 'h-5 w-5';
 
 export default function PaymentTypeAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
     const form = useForm<z.infer<typeof paymentTypeFormSchema>>({ 
@@ -40,7 +36,7 @@ export default function PaymentTypeAddForm({ onClose, onRefresh }: { onClose: ()
 
     async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
                 try {
-                    const response = await fetch("/api/maintenance/paymentType/paymentTypePut", {
+                    const response = await fetch(paymentTypeRoute, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
