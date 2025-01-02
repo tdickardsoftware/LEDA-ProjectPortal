@@ -1,6 +1,6 @@
 'use client'
 
-import { unknown, z, ZodUndefined } from 'zod';
+import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,10 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useState } from 'react';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import React from 'react';
-import { InputDefault } from '@/components/ui/form-input-default';
-import { Textarea } from '@/components/ui/textarea';
+import { payoutTierRoute } from '@/lib/apiRoutes';
+
 
 const paymentTypeFormSchema = z.object({ 
     place: z.number().min(0, { message: 'Place must be a positive number/is required.' }),
@@ -40,7 +38,7 @@ export default function PayoutTierAddForm({ onClose, onRefresh }: { onClose: () 
 
     async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
                 try {
-                    const response = await fetch("/api/maintenance/payoutTier/payoutTierPut", {
+                    const response = await fetch(payoutTierRoute, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
