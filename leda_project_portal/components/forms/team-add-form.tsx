@@ -22,9 +22,10 @@ import SeasonCodeSelector from '@/components/ui/season-code-selector';
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from '@/components/ui/checkbox';
 import { InputDefault } from '../ui/form-input-default';
+import { teamRoute } from '@/lib/apiRoutes';
 
 const teamFormSchema = z.object({ 
-    ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }),
+    ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }).optional(),
     teamName: z.string().min(1, { message: 'Team Name is required.' }),
     establishedDate: z.string(),
     memo: z.string().optional(),
@@ -57,7 +58,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                     ? { ...values, ledaId: 0 }
                     : values;
 
-                const response = await fetch("/api/team/teamPut", {
+                const response = await fetch(teamRoute, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

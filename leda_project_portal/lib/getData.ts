@@ -4,14 +4,14 @@
 
 import {Player, Team, Place, Division, Mention, PaymentType, PayoutTier, Penalty, PeopleType, PlaceType, Season } from './definitions'
 import { query } from './dbTypeGet';
-import { placeRoute, playerRoute, teamRoute } from './apiRoutes';
+import { placeRouteServer, playerRouteServer, teamRouteServer } from './apiRoutes';
 //
 // async function to get all player data from the database
 //
 export async function fetchPlayers() {
     // attempt to get data
     try {
-        const response = await fetch(playerRoute, {
+        const response = await fetch(playerRouteServer, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -20,7 +20,7 @@ export async function fetchPlayers() {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        const data = await response.json() as Player;
+        const data = await response.json() as Player[];
         return data;
     // if it cannot get data error out
     } catch (error) {
@@ -35,7 +35,7 @@ export async function fetchPlayers() {
 export async function fetchTeams() {
     // attempt to get data
     try {
-        const response = await fetch(teamRoute, {
+        const response = await fetch(teamRouteServer, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ export async function fetchTeams() {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        const data = await response.json() as Team;
+        const data = await response.json() as Team[];
         return data;
     // if it cannot get data error out
     } catch (error) {
@@ -58,7 +58,7 @@ export async function fetchTeams() {
 export async function fetchPlaces() {
     // attempt to get data
     try {
-        const response = await fetch(placeRoute, {
+        const response = await fetch(placeRouteServer, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ export async function fetchPlaces() {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        const data = await response.json() as Place;
+        const data = await response.json() as Place[];
         return data;
     // if it cannot get data error out
     } catch (error) {

@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { placeOwnerRoute } from "@/lib/apiRoutes"
 
 // Define the form values interface
 interface FormValues {
@@ -38,7 +39,8 @@ const PlaceOwnerSelector: React.FC = () => {
   useEffect(() => {
     async function loadPlaceTypes() {
       try {
-        const response = await fetch('/api/place/placeOwnerGet')
+        const response = await fetch(placeOwnerRoute
+        )
         const data = await response.json()
         setMemberTypes(data.map((type: any) => ({ value: type.ledaId, label: type.ledaId + ' - ' + type.fullName})))
       } catch (error) {

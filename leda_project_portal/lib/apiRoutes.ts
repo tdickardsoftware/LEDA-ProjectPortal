@@ -1,16 +1,28 @@
 //
 // Define Route for players api
 //
-export const playerRoute = process.env.URL + '/api/management/player';
+export const playerRouteServer = process.env.URL + '/api/management/player';
 //
 // Define Route for places api
 //
-export const placeRoute = process.env.URL + '/api/management/place';
+export const placeRouteServer = process.env.URL + '/api/management/place';
 //
 // Define Route for teams api
 //
-export const teamRoute = process.env.URL + '/api/management/team';
+export const teamRouteServer = process.env.URL + '/api/management/team';
 //
 // Define Route for place owner api
 //
-export const placeOwnerRoute = process.env.URL + '/api/management/player/placeOwner';
+export const placeOwnerRoute = '/api/management/player/placeOwner';
+//
+// Define route for players not on the serverside
+//
+export const playerRoute = '/api/management/player';
+//
+// Define route for places not on the serverside
+//
+export const placeRoute = '/api/management/place';
+//
+// Define route for teams not on the serverside
+//
+export const teamRoute = '/api/management/team';
