@@ -101,7 +101,7 @@ export default function PortalPageContent() {
             <div className="flex flex-col space-y-4">
                 
                     <Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
-                        <Link href="/Portal/Maintenance">
+                        <Link href="/Portal/Activities">
                             <CardHeader>
                                 <CardTitle>Activities *WORK IN PROGRESS*</CardTitle>
                                 <Separator className="my-4 bg-gray-500" />
