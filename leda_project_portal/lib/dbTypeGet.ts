@@ -1,5 +1,5 @@
 
-import { Pool, QueryResult, QueryResultRow } from "pg";
+import { QueryResult, QueryResultRow } from "pg";
 import { pool } from "./getPool";
 
 export const query = <T extends QueryResultRow>(text: string, params?: any[]): Promise<QueryResult<T>> =>{

@@ -225,7 +225,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                         <FormField
                             control={form.control}
                             name='contactId'
-                            render={({ field }) => (
+                            render={() => (
                                 <FormItem>
                                     <FormLabel>Place Owner *</FormLabel>
                                     <PlaceOwnerSelector />
@@ -236,7 +236,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                         <FormField
                             control={form.control}
                             name='lastBarFeePayment'
-                            render={({ field }) => (
+                            render={() => (
                                 <FormItem>
                                     <FormLabel>Last Bar Fee Payment *</FormLabel>
                                     <SeasonCodeSelector name='lastBarFeePayment'/>
@@ -247,7 +247,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                         <FormField
                             control={form.control}
                             name='placeType'
-                            render={({ field }) => (
+                            render={() => (
                                 <FormItem>
                                     <FormLabel>Place Type *</FormLabel>
                                     <PlaceTypeSelector />
