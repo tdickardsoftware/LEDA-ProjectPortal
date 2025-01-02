@@ -4,43 +4,75 @@
 
 import {Player, Team, Place, Division, Mention, PaymentType, PayoutTier, Penalty, PeopleType, PlaceType, Season } from './definitions'
 import { query } from './dbTypeGet';
+import { placeRoute, playerRoute, teamRoute } from './apiRoutes';
 //
 // async function to get all player data from the database
 //
 export async function fetchPlayers() {
     // attempt to get data
     try {
-        const data = await query<Player>(`SELECT "ledaId", CONCAT(COALESCE("firstName", ''), ' ', COALESCE("middleInitial", ''), ' ', COALESCE("lastName", '')) as "fullName", "lastName", "firstName", "middleInitial", "addressOne", "addressTwo", city, state, zip, "phoneNumber", "otherNumber", email, gender, TO_CHAR("dateOfBirth", 'mm/dd/yyyy') as "dateOfBirth", '(' || SUBSTRING("phoneNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("phoneNumber" FROM 4 FOR 3) || '-' || SUBSTRING("phoneNumber" FROM 7 FOR 4) AS "phoneNumberFormatted", '(' || SUBSTRING("otherNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("otherNumber" FROM 4 FOR 3) || '-' || SUBSTRING("otherNumber" FROM 7 FOR 4) AS "otherNumberFormatted" FROM public.leda_player_info;`);
-        return data.rows;
+        const response = await fetch(playerRoute, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json() as Player;
+        return data;
     // if it cannot get data error out
-    } catch(error) {
-        console.error('Database Error: ', error)
-        throw new Error('Failed to fetch Player Information')
+    } catch (error) {
+        console.error('API Error: ', error);
+        throw new Error('Failed to fetch Player Information');
     }
 }
+
 //
 // async function to get all team data from the database
 //
 export async function fetchTeams() {
     // attempt to get data
     try {
-        const data = await query<Team>(`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/YYYY') as "establishedDate", "memo", "lastTeamFeePayment" FROM public.leda_team_info;`);
-        return data.rows
+        const response = await fetch(teamRoute, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json() as Team;
+        return data;
+    // if it cannot get data error out
     } catch (error) {
-        console.error('Database Error: ', error)
-        throw new Error('Failed to fetch Team Information')
+        console.error('API Error: ', error);
+        throw new Error('Failed to fetch Player Information');
     }
 }
 //
 // async function to get all place data from the database
 //
 export async function fetchPlaces() {
+    // attempt to get data
     try {
-        const data = await query<Place>(`SELECT "ledaId", "name", CONCAT(COALESCE("addressOne", ''), ' ', COALESCE("addressTwo", ''), ', ', COALESCE("city", ''), ' ', COALESCE("state", ''), ', ', COALESCE("zip", '')) as "addressFull", "addressOne", "addressTwo", "city", "state", "zip", "phoneNumber", "otherNumber", "email", "website", "establishDate", "memo", "numberOfBoards", "sendMailings", "regularSponsor", "currentSponsor", "issues", "lastBarFeePayment", "lastSanctioningDate", "contactId", "placeType" FROM public.leda_place_info;`);
-        return data.rows
+        const response = await fetch(placeRoute, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json() as Place;
+        return data;
+    // if it cannot get data error out
     } catch (error) {
-        console.error(error)
-        throw new Error('Failed to fetch Place Information')
+        console.error('API Error: ', error);
+        throw new Error('Failed to fetch Player Information');
     }
 }
 //
