@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import React from 'react';
 import { InputDefault } from '@/components/ui/form-input-default';
+import { divisionRoute } from '@/lib/apiRoutes';
 
 const divisionFormSchema = z.object({ 
     divisionName: z.string().min(1, { message: 'Division Name is required.' }),
@@ -32,7 +33,7 @@ export default function DivisionAddForm({ onClose, onRefresh }: { onClose: () =>
 
     async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
                 try {
-                    const response = await fetch("/api/maintenance/division/divisionPut", {
+                    const response = await fetch(divisionRoute, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
