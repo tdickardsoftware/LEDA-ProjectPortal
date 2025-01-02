@@ -36,7 +36,6 @@ export default async function PlayerHandler(
     }
 
     try {
-        console.log(req.body);
         const results = req.body as Place;
 
         if (results.ledaId === 0) {
