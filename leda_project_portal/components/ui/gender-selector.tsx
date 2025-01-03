@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { useFormContext } from "react-hook-form"
+import { Control, useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,12 @@ import {
 } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { FormField, FormLabel, FormMessage } from "@/components/ui/form"
+
+interface GenderSelectorProps {
+  control: Control<any>;
+  name: string;
+}
 
 // Define the form values interface
 interface FormValues {
@@ -34,7 +40,21 @@ const genders = [
   { value: "Other", label: "Other" },
 ]
 
-const GenderSelector: React.FC = () => {
+
+export default function GenderSelector({control, name}: GenderSelectorProps) {
+  return (
+      <FormField control={control} name={name} render={() => (
+        <>
+          <FormLabel>Gender *</FormLabel>
+          <GenderSelectorContent />
+          <FormMessage />
+        </>
+      )} />
+  )
+}
+
+
+const GenderSelectorContent: React.FC = () => {
   // Use form context to get control, watch, setValue, and register functions
   const { watch, setValue, register } = useFormContext<FormValues>()
   // Watch the gender field value
@@ -107,5 +127,3 @@ const GenderSelector: React.FC = () => {
     </div>
   )
 }
-
-export default GenderSelector

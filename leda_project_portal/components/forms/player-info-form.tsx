@@ -25,7 +25,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js';
 import React from 'react';
 import PlayerTypeSelector from '@/components/ui/player-type-selector';
 import SeasonCodeSelector from '@/components/ui/season-code-selector';
-import { InputDefault } from '../ui/form-input-default';
+import { InputDefault } from '@/components/ui/form-input-default';
 import { playerRoute } from '@/lib/apiRoutes';
 
 const playerInfoSchema = z.object({
@@ -150,16 +150,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                             <InputDefault control={form.control} name="middleInitial" label="Middle Initial" customClass='w-10' />
                             <InputDefault control={form.control} name="lastName" label="Last Name *" />
                         </div>
-                        <FormField
-                            control={form.control}
-                            name="gender"
-                            render={() => (
-                            <FormItem>
-                                <FormLabel>Gender *</FormLabel>
-                                <GenderSelector />
-                                <FormMessage />
-                            </FormItem>
-                            )} />
+                        <GenderSelector control={form.control} name="gender" />
                         <InputDefault control={form.control} name="dateOfBirth" label="Date of Birth" type="date" />
                         <InputDefault control={form.control} name="addressOne" label="Address One *" />
                         <InputDefault control={form.control} name="addressTwo" label="Address Two" />
