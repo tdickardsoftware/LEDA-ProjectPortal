@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { DatePicker } from '../ui/date-picker';
+import { DatePicker } from '../../ui/date-picker';
 import { seasonRoute } from '@/lib/apiRoutes';
 
 const seasonFormSchema = z.object({ 

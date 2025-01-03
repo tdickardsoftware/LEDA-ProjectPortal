@@ -20,7 +20,7 @@ import React from 'react';
 import SeasonCodeSelector from '@/components/ui/season-code-selector';
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from '@/components/ui/checkbox';
-import { InputDefault } from '../ui/form-input-default';
+import { InputDefault } from '@/components/ui/form-input-default';
 import { teamRoute } from '@/lib/apiRoutes';
 
 const teamFormSchema = z.object({ 

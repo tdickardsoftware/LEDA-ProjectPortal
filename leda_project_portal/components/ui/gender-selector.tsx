@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { FormField, FormLabel, FormMessage } from "@/components/ui/form"
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 interface GenderSelectorProps {
   control: Control<any>;
@@ -44,11 +44,13 @@ const genders = [
 export default function GenderSelector({control, name}: GenderSelectorProps) {
   return (
       <FormField control={control} name={name} render={() => (
-        <>
+        <FormItem>
           <FormLabel>Gender *</FormLabel>
-          <GenderSelectorContent />
+          <FormControl>
+            <GenderSelectorContent />
+          </FormControl>
           <FormMessage />
-        </>
+        </FormItem>
       )} />
   )
 }

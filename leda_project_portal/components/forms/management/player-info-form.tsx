@@ -156,17 +156,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                         <InputDefault control={form.control} name="addressTwo" label="Address Two" />
                         <div className='flex space-x-4'>
                             <InputDefault control={form.control} name="city" label="City *" />
-                            <FormField 
-                                control={form.control}
-                                name='state'
-                                render={() => (
-                                    <FormItem>
-                                        <FormLabel>State *</FormLabel>
-                                        <StatePicker name='state' control={form.control} />
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <StatePicker name='state' control={form.control} />
                             <InputDefault control={form.control} name="zip" label="Zip Code *" />
                         </div>
                         <InputDefault control={form.control} name="email" label="Email *"  type='email'/>

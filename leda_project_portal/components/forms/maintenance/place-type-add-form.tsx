@@ -15,7 +15,7 @@ import {
 import { toast } from 'sonner';
 import React from 'react';
 import { InputDefault } from '@/components/ui/form-input-default';
-import { Textarea } from '../ui/textarea';
+import { Textarea } from '../../ui/textarea';
 import { placeTypeRoute } from '@/lib/apiRoutes';
 
 const placeTypeFormSchema = z.object({ 

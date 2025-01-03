@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useController, Control } from "react-hook-form"
+import { Control } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 // List of U.S. States
 const states = [
@@ -78,13 +79,28 @@ interface StatePickerProps {
   control: Control<any>
 }
 
-export default function StatePicker({ name, control }: StatePickerProps) {
-  // Use the useController hook to get the field object
-  const { field } = useController({
-    name,
-    control,
-  })
+interface StatePickerContentProps {
+  field: any
+}
 
+export default function StatePicker({ name, control }: StatePickerProps) {
+
+  
+
+  return (
+    <FormField control={control} name={name} render={({ field }) => (
+      <FormItem>
+        <FormLabel>State *</FormLabel>
+        <FormControl>
+          <StatePickerContent field={field} />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    )}/>
+  )
+}
+
+const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
   // State to manage the popover open/close status
   const [open, setOpen] = React.useState(false)
 

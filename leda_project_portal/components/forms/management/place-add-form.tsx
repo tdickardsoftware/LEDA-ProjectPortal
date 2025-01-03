@@ -25,8 +25,9 @@ import SeasonCodeSelector from '@/components/ui/season-code-selector';
 import PlaceTypeSelector from '@/components/ui/place-type-selector';
 import { Textarea } from "@/components/ui/textarea"
 import PlaceOwnerSelector from '@/components/ui/place-owner-select';
-import { InputDefault } from '../ui/form-input-default';
+import { InputDefault } from '../../ui/form-input-default';
 import { placeRoute } from '@/lib/apiRoutes';
+import StatePicker from '../../ui/state-selector';
 
 const placeFormSchema = z.object({ 
     ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }).optional(),
@@ -159,7 +160,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                         <InputDefault control={form.control} name='addressTwo' label='Address Two' />
                         <div className='flex space-x-4'>
                             <InputDefault control={form.control} name='city' label='City *' />
-                            <InputDefault control={form.control} name='state' label='State *' />
+                            <StatePicker control={form.control} name='state' />
                             <InputDefault control={form.control} name='zip' label='Zip Code *' />
                         </div>
                         <InputDefault control={form.control} name='email' label='Email *' type='email'/>

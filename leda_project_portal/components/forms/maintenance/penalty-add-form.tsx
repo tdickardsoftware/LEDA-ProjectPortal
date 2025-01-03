@@ -15,27 +15,27 @@ import {
 import { toast } from 'sonner';
 import React from 'react';
 import { InputDefault } from '@/components/ui/form-input-default';
-import { Textarea } from '../ui/textarea';
-import { peopleTypeRoute } from '@/lib/apiRoutes';
+import { Textarea } from '../../ui/textarea';
+import { penaltyRoute } from '@/lib/apiRoutes';
 
-const peopleTypeFormSchema = z.object({ 
-    peopleTypeCode: z.string().min(1, { message: 'People Type Code is required.' }),
+const penaltyFormSchema = z.object({ 
+    penaltyCode: z.string().min(1, { message: 'Penalty Code is required.' }),
     desc: z.string().optional(),
 });
 
 const formContainerStyle = 'p-4 shadow-lg bg-white rounded-lg border border-gray-300';
 
-export default function PeopleTypeAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
-    const form = useForm<z.infer<typeof peopleTypeFormSchema>>({ 
-            resolver: zodResolver(peopleTypeFormSchema),
+export default function PenaltyAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
+    const form = useForm<z.infer<typeof penaltyFormSchema>>({ 
+            resolver: zodResolver(penaltyFormSchema),
             defaultValues: {
-                peopleTypeCode: '',
+                penaltyCode: '',
             }
     });
 
-    async function onSubmit(values: z.infer<typeof peopleTypeFormSchema>) {
+    async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
                 try {
-                    const response = await fetch(peopleTypeRoute, {
+                    const response = await fetch(penaltyRoute, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -67,7 +67,7 @@ export default function PeopleTypeAddForm({ onClose, onRefresh }: { onClose: () 
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 mx-auto'>
                 <div className='flex space-x-4'>
                     <div className={formContainerStyle}>
-                        <InputDefault control={form.control} name="peopleTypeCode" label="People Type Code *" />
+                        <InputDefault control={form.control} name="penaltyCode" label="Penalty Code *" />
                         <FormField
                             control={form.control}
                             name='desc'
