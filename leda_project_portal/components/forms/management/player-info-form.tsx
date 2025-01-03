@@ -208,17 +208,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name='memberType'
-                            render={() => (
-                                <FormItem>
-                                    <FormLabel>Member Type</FormLabel>
-                                    <PlayerTypeSelector />
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <PlayerTypeSelector control={form.control} name='memberType' label='Member Type' />
                         <InputDefault control={form.control} name='establishedDate' label='Established Date *' type='date' />
                         {/* Bad Standing Checkbox */}
                         <FormField

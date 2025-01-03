@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { useFormContext } from "react-hook-form"
+import { Control, useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -19,13 +19,34 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { peopleTypeRoute } from "@/lib/apiRoutes"
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 // Define the form values interface
 interface FormValues {
   memberType: string
 }
 
-const PlayerTypeSelector: React.FC = () => {
+interface PlayerTypeSelectorProps {
+  control: Control<any>;
+  name: string;
+  label: string;
+}
+
+export default function PlayerTypeSelector({ control, name, label }: PlayerTypeSelectorProps) {
+  return (
+    <FormField control={control} name={name} render={() => (
+      <FormItem>
+        <FormLabel>{label}</FormLabel>
+        <FormControl>
+          <PlayerTypeSelectorContent />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    )} />
+  )
+}
+
+const PlayerTypeSelectorContent: React.FC = () => {
   // Use form context to get watch and setValue functions
   const { watch, setValue } = useFormContext<FormValues>()
   // Watch the memberType field value
@@ -100,5 +121,3 @@ const PlayerTypeSelector: React.FC = () => {
     </div>
   )
 }
-
-export default PlayerTypeSelector
