@@ -164,20 +164,8 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                             <InputDefault control={form.control} name='zip' label='Zip Code *' />
                         </div>
                         <InputDefault control={form.control} name='email' label='Email *' type='email'/>
-                        <FormField
-                            control={form.control}
-                            name='phoneNumber'
-                            render={() => (
-                                <PhoneNumberInput label='Phone Number *' name="phoneNumber"/>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name='otherNumber'
-                            render={() => (
-                                <PhoneNumberInput label='Other Number' name="otherNumber"/>
-                            )}
-                        />
+                        <PhoneNumberInput control={form.control} name='phoneNumber' label='Phone Number *' />
+                        <PhoneNumberInput control={form.control} name='otherNumber' label='Other Number' />
                     </div>
 
                     <div>
