@@ -213,17 +213,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                         />
                         <PlaceOwnerSelector control={form.control} name='contactId' />
                         <SeasonCodeSelector control={form.control} name='lastBarFeePayment' label='Last Bar Fee Payment *' />
-                        <FormField
-                            control={form.control}
-                            name='placeType'
-                            render={() => (
-                                <FormItem>
-                                    <FormLabel>Place Type *</FormLabel>
-                                    <PlaceTypeSelector />
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <PlaceTypeSelector control={form.control} name='placeType' label='Place Type *' />
                         <InputDefault control={form.control} name='establishDate' label='Established Date *' type='date'/>
                         <InputDefault control={form.control} name='lastSanctioningDate' label='Last Sanctioning Date *'  type='date'/>
                         <FormField
