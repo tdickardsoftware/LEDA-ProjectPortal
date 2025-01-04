@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { useFormContext } from "react-hook-form"
+import { Control, useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -19,17 +19,60 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { placeOwnerRoute } from "@/lib/apiRoutes"
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
 
-// Define the form values interface
 interface FormValues {
     contactId: string
 }
 
-const PlaceOwnerSelector: React.FC = () => {
-  // Use form context to get watch and setValue functions
-  const { watch, setValue } = useFormContext<FormValues>()
-  // Watch the placeType field value
-  const contactId = watch("contactId")
+interface PlaceOwnerSelectorProps {
+    name: string
+    control: Control<any>;
+}
+
+interface PlaceOwnerSelectorContentProps {
+  name: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+}
+
+export default function PlaceOwnerSelector({ control, name }: PlaceOwnerSelectorProps) {
+    return (
+        <FormField control={control} name={name} render={({ field }) => (
+            <FormItem>
+                <FormLabel>Place Owner *</FormLabel>
+                <FormControl>
+                    <PlaceOwnerSelectorComponent 
+                      name={name}
+                      defaultValue={field.value}
+                      onChange={field.onChange}
+                    />
+                </FormControl>
+                <FormMessage />
+            </FormItem>
+        )}/>
+    )
+}
+
+const PlaceOwnerSelectorComponent: React.FC<PlaceOwnerSelectorContentProps> = ({
+  name,
+  defaultValue,
+  onChange
+}) => {
+  // Try to use form context if available, otherwise fall back to props
+  const formContext = useFormContext<FormValues>();
+  const [value, setValue] = useState(defaultValue || '');
+
+  const handleValueChange = (newValue: string) => {
+    setValue(newValue);
+    if (formContext) {
+      formContext.setValue('contactId', newValue);
+    }
+    onChange?.(newValue);
+  };
+
+  const currentValue = formContext ? formContext.watch('contactId') : value;
+
   // State to manage the popover open/close status
   const [open, setOpen] = useState(false)
   // State to store the fetched place types
@@ -61,8 +104,8 @@ const PlaceOwnerSelector: React.FC = () => {
               aria-expanded={open}
               className="w-[200px] justify-between"
             >
-              {contactId
-                ? memberTypes.find((type) => type.value === contactId)?.label
+              {currentValue
+                ? memberTypes.find((type) => type.value === currentValue)?.label
                 : "Select a place owner..."}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -78,7 +121,7 @@ const PlaceOwnerSelector: React.FC = () => {
                       key={type.value}
                       value={type.value}
                       onSelect={() => {
-                        setValue("contactId", type.value)
+                        handleValueChange(type.value)
                         setOpen(false)
                       }}
                       className="hover:bg-gray-200"
@@ -86,7 +129,7 @@ const PlaceOwnerSelector: React.FC = () => {
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
-                          type.value === contactId ? "opacity-100" : "opacity-0"
+                          type.value === currentValue ? "opacity-100" : "opacity-0"
                         )}
                       />
                       {type.label}
@@ -101,5 +144,3 @@ const PlaceOwnerSelector: React.FC = () => {
     </div>
   )
 }
-
-export default PlaceOwnerSelector

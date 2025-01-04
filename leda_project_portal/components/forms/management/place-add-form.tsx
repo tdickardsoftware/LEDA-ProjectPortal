@@ -211,17 +211,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name='contactId'
-                            render={() => (
-                                <FormItem>
-                                    <FormLabel>Place Owner *</FormLabel>
-                                    <PlaceOwnerSelector />
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <PlaceOwnerSelector control={form.control} name='contactId' />
                         <SeasonCodeSelector control={form.control} name='lastBarFeePayment' label='Last Bar Fee Payment *' />
                         <FormField
                             control={form.control}
