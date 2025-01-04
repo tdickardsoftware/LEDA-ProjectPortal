@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-button";
+import { DialogWithButton } from "@/components/add-dialog-button";
 import { divisionRoute } from "@/lib/apiRoutes";
 import { fetchDivisions } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/divisions";

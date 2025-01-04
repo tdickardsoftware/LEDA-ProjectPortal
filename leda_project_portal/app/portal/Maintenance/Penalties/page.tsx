@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-button";
+import { DialogWithButton } from "@/components/add-dialog-button";
 import { penaltyRoute } from "@/lib/apiRoutes";
 import { fetchPenalties } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/penalties";

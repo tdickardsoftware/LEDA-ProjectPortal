@@ -19,12 +19,27 @@ import PenaltyAddForm from "@/components/forms/maintenance/penalty-add-form"
 import PeopleTypeAddForm from "@/components/forms/maintenance/people-type-add-form"
 import PlaceTypeAddForm from "@/components/forms/maintenance/place-type-add-form"
 import SeasonAddForm from "@/components/forms/maintenance/season-add-form"
+import React from "react"
 //
 // Interface
 //
+const formComponents = {
+    'PlayerAddInformationForm': PlayerAddInformationForm,
+    'PlaceAddForm': PlaceAddForm,
+    'TeamAddForm': TeamAddForm,
+    'DivisionAddForm': DivisionAddForm,
+    'MentionAddForm': MentionAddForm,
+    'PaymentTypeAddForm': PaymentTypeAddForm,
+    'PayoutTierAddForm': PayoutTierAddForm,
+    'PenaltyAddForm': PenaltyAddForm,
+    'PeopleTypeAddForm': PeopleTypeAddForm,
+    'PlaceTypeAddForm': PlaceTypeAddForm,
+    'SeasonAddForm': SeasonAddForm,
+};
+
 interface DialogWithButtonProps{
     buttonName: string
-    form: string
+    form: keyof typeof formComponents
     title: string
     onRefresh?: any//() => void
 }
@@ -32,34 +47,17 @@ interface DialogWithButtonProps{
 // function
 //
 export function DialogWithButton({buttonName, form, title, onRefresh}:DialogWithButtonProps) {
-    const [activeForm, setActiveForm] = useState<string>("PlayerAddInformationForm");
+    const [activeForm, setActiveForm] = useState<keyof typeof formComponents>("PlayerAddInformationForm");
     const [open, setOpen] = useState(false);
 
     function renderForm() {
-        if (activeForm === 'PlayerAddInformationForm') {
-            return <PlayerAddInformationForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'PlaceAddForm') {
-            return <PlaceAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'TeamAddForm') {
-            return <TeamAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'DivisionAddForm') {
-            return <DivisionAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'MentionAddForm') {
-            return <MentionAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'PaymentTypeAddForm') {
-            return <PaymentTypeAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'PayoutTierAddForm') {
-            return <PayoutTierAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'PenaltyAddForm') {
-            return <PenaltyAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'PeopleTypeAddForm') {
-            return <PeopleTypeAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'PlaceTypeAddForm') {
-            return <PlaceTypeAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
-        } else if (activeForm === 'SeasonAddForm') {
-            return <SeasonAddForm onClose={() => { setOpen(false);}} onRefresh={onRefresh} />
+        const FormComponent = formComponents[activeForm];
+        if (FormComponent) {
+            return <FormComponent onClose={() => { setOpen(false); }} onRefresh={onRefresh} />;
         }
+        return null;
     }
+
     return(
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
