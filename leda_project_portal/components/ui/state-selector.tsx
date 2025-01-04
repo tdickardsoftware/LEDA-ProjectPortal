@@ -1,5 +1,5 @@
+// Import necessary modules and components
 "use client"
-
 import * as React from "react"
 import { Control } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
@@ -74,20 +74,21 @@ const states = [
     { value: "Wyoming", label: "Wyoming" }
 ]
 
+// Define the parameters for the StatePicker component
 interface StatePickerProps {
   name: string
   control: Control<any>
 }
 
+// Define the parameters for the StatePickerContent component
 interface StatePickerContentProps {
   field: any
 }
 
+// StatePicker component definition
 export default function StatePicker({ name, control }: StatePickerProps) {
-
-  
-
   return (
+    // Render the form field with the provided props
     <FormField control={control} name={name} render={({ field }) => (
       <FormItem>
         <FormLabel>State *</FormLabel>
@@ -100,6 +101,7 @@ export default function StatePicker({ name, control }: StatePickerProps) {
   )
 }
 
+// StatePickerContent component definition
 const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
   // State to manage the popover open/close status
   const [open, setOpen] = React.useState(false)

@@ -1,5 +1,5 @@
+// Import necessary modules and components
 "use client"
-
 import React, { useEffect, useState } from "react"
 import { useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
@@ -26,19 +26,23 @@ interface FormValues {
   placeType: string
 }
 
+// Define the parameters for the PlaceTypeSelector component
 interface PlaceTypeSelectorProps {
   control: any;
   name: string;
   label: string;
 }
 
+// Define the parameters for the PlaceTypeSelectorContent component
 interface PlaceTypeSelectorContentProps {
   value?: string;
   onChange?: (value: string) => void;
 }
 
+// PlaceTypeSelector component definition
 export default function PlaceTypeSelector({ control, name, label }: PlaceTypeSelectorProps) {
   return (
+    // Render the form field with the provided props
     <FormField control={control} name={name} render={({ field }) => (
       <FormItem>
         <FormLabel>{label}</FormLabel>
@@ -54,7 +58,9 @@ export default function PlaceTypeSelector({ control, name, label }: PlaceTypeSel
   )
 }
 
+// PlaceTypeSelectorContent component definition
 const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({ value: propValue, onChange }) => {
+  // Try to use form context if available, otherwise fall back to props
   const formContext = useFormContext<FormValues>();
   const [localValue, setLocalValue] = useState(propValue || '');
   const [open, setOpen] = useState(false);
@@ -63,6 +69,7 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({ val
   // Use form context if available, otherwise use props
   const currentValue = formContext ? formContext.watch("placeType") : localValue;
   
+  // Handle value change and update the form context if available
   const handleValueChange = (newValue: string) => {
     if (formContext) {
       formContext.setValue("placeType", newValue);
@@ -72,6 +79,7 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({ val
     }
   };
 
+  // Fetch place types from the API endpoint
   useEffect(() => {
     async function loadPlaceTypes() {
       try {

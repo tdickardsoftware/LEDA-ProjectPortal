@@ -1,5 +1,5 @@
+// Import necessary modules and components
 "use client"
-
 import React, { useEffect, useState } from "react"
 import { Control, useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
@@ -26,11 +26,13 @@ interface FormValues {
     [key: string]: string;  // This allows for dynamic field names
 }
 
+// Define the parameters for the SeasonCodeSelector component
 interface SeasonCodeSelectorPropsContent {
   disabled?: boolean;
   name: string;  // Add name prop to specify which field to watch/set
 }
 
+// Define the parameters for the SeasonCodeSelector component
 interface SeasonCodeSelectorProps {
   disabled?: boolean;
   name: string;
@@ -38,8 +40,10 @@ interface SeasonCodeSelectorProps {
   label: string;
 }
 
+// SeasonCodeSelector component definition
 export default function SeasonCodeSelector({ control, name, disabled, label }: SeasonCodeSelectorProps) {
   return (
+    // Render the form field with the provided props
     <FormField control={control} name={name} render={() => (
       <FormItem>
         <FormLabel>{label}</FormLabel>
@@ -52,7 +56,7 @@ export default function SeasonCodeSelector({ control, name, disabled, label }: S
   )
 }
 
-
+// SeasonCodeSelectorContent component definition
 const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({ disabled, name }) => {
   // Use form context to get watch and setValue functions
   const { watch, setValue } = useFormContext<FormValues>()

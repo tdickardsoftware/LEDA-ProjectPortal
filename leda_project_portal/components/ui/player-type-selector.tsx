@@ -1,3 +1,4 @@
+// Import necessary modules and components
 "use client"
 
 import React, { useEffect, useState } from "react"
@@ -26,14 +27,17 @@ interface FormValues {
   memberType: string
 }
 
+// Define the parameters for the PlayerTypeSelector component
 interface PlayerTypeSelectorProps {
   control: Control<any>;
   name: string;
   label: string;
 }
 
+// PlayerTypeSelector component definition
 export default function PlayerTypeSelector({ control, name, label }: PlayerTypeSelectorProps) {
   return (
+    // Render the form field with the provided props
     <FormField control={control} name={name} render={() => (
       <FormItem>
         <FormLabel>{label}</FormLabel>
@@ -46,6 +50,7 @@ export default function PlayerTypeSelector({ control, name, label }: PlayerTypeS
   )
 }
 
+ // PlayerTypeSelectorContent component definition
 const PlayerTypeSelectorContent: React.FC = () => {
   // Use form context to get watch and setValue functions
   const { watch, setValue } = useFormContext<FormValues>()
