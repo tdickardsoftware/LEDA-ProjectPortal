@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { useFormContext, Controller } from "react-hook-form"
+import { Control, useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,12 @@ import {
 } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+
+interface GenderSelectorProps {
+  control: Control<any>;
+  name: string;
+}
 
 // Define the form values interface
 interface FormValues {
@@ -34,9 +40,25 @@ const genders = [
   { value: "Other", label: "Other" },
 ]
 
-const GenderSelector: React.FC = () => {
+
+export default function GenderSelector({control, name}: GenderSelectorProps) {
+  return (
+      <FormField control={control} name={name} render={() => (
+        <FormItem>
+          <FormLabel>Gender *</FormLabel>
+          <FormControl>
+            <GenderSelectorContent />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+  )
+}
+
+
+const GenderSelectorContent: React.FC = () => {
   // Use form context to get control, watch, setValue, and register functions
-  const { control, watch, setValue, register } = useFormContext<FormValues>()
+  const { watch, setValue, register } = useFormContext<FormValues>()
   // Watch the gender field value
   const gender = watch("gender")
   // State to manage the popover open/close status
@@ -107,5 +129,3 @@ const GenderSelector: React.FC = () => {
     </div>
   )
 }
-
-export default GenderSelector

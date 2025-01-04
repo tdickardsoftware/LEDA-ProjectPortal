@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { useFormContext } from "react-hook-form"
+import { FormProvider, useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -18,35 +18,75 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { placeTypeRoute } from "@/lib/apiRoutes"
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
 
 // Define the form values interface
 interface FormValues {
   placeType: string
 }
 
-const PlaceTypeSelector: React.FC = () => {
-  // Use form context to get watch and setValue functions
-  const { watch, setValue } = useFormContext<FormValues>()
-  // Watch the placeType field value
-  const placeType = watch("placeType")
-  // State to manage the popover open/close status
-  const [open, setOpen] = useState(false)
-  // State to store the fetched place types
-  const [memberTypes, setMemberTypes] = useState<{ value: string; label: string }[]>([])
+interface PlaceTypeSelectorProps {
+  control: any;
+  name: string;
+  label: string;
+}
 
-  // Fetch place types from the API endpoint
+interface PlaceTypeSelectorContentProps {
+  value?: string;
+  onChange?: (value: string) => void;
+}
+
+export default function PlaceTypeSelector({ control, name, label }: PlaceTypeSelectorProps) {
+  return (
+      <FormField control={control} name={name} render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <PlaceTypeSelectorContent 
+              value={field.value}
+              onChange={field.onChange}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+  )
+}
+
+const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({ value: propValue, onChange }) => {
+  const formContext = useFormContext<FormValues>();
+  const [localValue, setLocalValue] = useState(propValue || '');
+  const [open, setOpen] = useState(false);
+  const [memberTypes, setMemberTypes] = useState<{ value: string; label: string }[]>([]);
+
+  // Use form context if available, otherwise use props
+  const currentValue = formContext ? formContext.watch("placeType") : localValue;
+  
+  const handleValueChange = (newValue: string) => {
+    if (formContext) {
+      formContext.setValue("placeType", newValue);
+    } else {
+      setLocalValue(newValue);
+      onChange?.(newValue);
+    }
+  };
+
   useEffect(() => {
     async function loadPlaceTypes() {
       try {
-        const response = await fetch('/api/maintenance/placeType/placeTypeGet')
-        const data = await response.json()
-        setMemberTypes(data.map((type: any) => ({ value: type.placeTypeCode, label: type.placeTypeCode + ' - ' + type.desc})))
+        const response = await fetch(placeTypeRoute);
+        const data = await response.json();
+        setMemberTypes(data.map((type: any) => ({
+          value: type.placeTypeCode,
+          label: type.placeTypeCode + ' - ' + type.desc
+        })));
       } catch (error) {
-        console.error("Failed to fetch place types", error)
+        console.error("Failed to fetch place types", error);
       }
     }
-    loadPlaceTypes()
-  }, [])
+    loadPlaceTypes();
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,8 +99,8 @@ const PlaceTypeSelector: React.FC = () => {
               aria-expanded={open}
               className="w-[200px] justify-between"
             >
-              {placeType
-                ? memberTypes.find((type) => type.value === placeType)?.label
+              {currentValue
+                ? memberTypes.find((type) => type.value === currentValue)?.label
                 : "Select a place type..."}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -76,7 +116,7 @@ const PlaceTypeSelector: React.FC = () => {
                       key={type.value}
                       value={type.value}
                       onSelect={() => {
-                        setValue("placeType", type.value)
+                        handleValueChange(type.value)
                         setOpen(false)
                       }}
                       className="hover:bg-gray-200"
@@ -84,7 +124,7 @@ const PlaceTypeSelector: React.FC = () => {
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
-                          type.value === placeType ? "opacity-100" : "opacity-0"
+                          type.value === currentValue ? "opacity-100" : "opacity-0"
                         )}
                       />
                       {type.label}
@@ -99,5 +139,3 @@ const PlaceTypeSelector: React.FC = () => {
     </div>
   )
 }
-
-export default PlaceTypeSelector

@@ -1,10 +1,9 @@
+// Import necessary modules and components
 'use client'
-
 import * as React from 'react'
 import { DayPicker } from 'react-day-picker'
 import { CalendarIcon } from 'lucide-react'
 import 'react-day-picker/dist/style.css'
-
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,12 +12,17 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 
+// DatePicker component definition
 export function DatePicker({ onDateChange, initialMonth, dateSelected }: { onDateChange: (date: Date | undefined) => void, initialMonth?: Date, dateSelected: Date }) {
+  // State to manage the selected date
   const [date, setDate] = React.useState<Date>(new Date(dateSelected.getTime() + dateSelected.getTimezoneOffset() * 60000))
+  // State to manage the visibility of the popover
   const [isOpen, setIsOpen] = React.useState(false)
 
+  // Handle date change
   const handleDateChange = (selectedDate: Date | undefined) => {
     if (selectedDate) {
+      // Convert selected date to local time
       const localDate = new Date(selectedDate.getTime() + selectedDate.getTimezoneOffset() * 60000)
       setDate(localDate)
       onDateChange(localDate)
@@ -26,7 +30,9 @@ export function DatePicker({ onDateChange, initialMonth, dateSelected }: { onDat
       console.log(localDate)
     }
   }
+
   return (
+    // Popover component to display the date picker
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button

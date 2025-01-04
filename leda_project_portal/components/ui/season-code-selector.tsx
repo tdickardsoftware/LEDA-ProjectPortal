@@ -1,7 +1,7 @@
+// Import necessary modules and components
 "use client"
-
 import React, { useEffect, useState } from "react"
-import { useFormContext } from "react-hook-form"
+import { Control, useFormContext, useForm, FormProvider } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -18,18 +18,48 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { seasonCodeRoute } from "@/lib/apiRoutes"
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 // Update the interface to be more generic
 interface FormValues {
     [key: string]: string;  // This allows for dynamic field names
 }
 
-interface SeasonCodeSelectorProps {
+// Define the parameters for the SeasonCodeSelector component
+interface SeasonCodeSelectorPropsContent {
   disabled?: boolean;
   name: string;  // Add name prop to specify which field to watch/set
 }
 
-const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({ disabled, name }) => {
+// Define the parameters for the SeasonCodeSelector component
+interface SeasonCodeSelectorProps {
+  disabled?: boolean;
+  name: string;
+  control: Control<any>;
+  label: string;
+}
+
+// SeasonCodeSelector component definition
+export default function SeasonCodeSelector({ control, name, disabled, label }: SeasonCodeSelectorProps) {
+  return (
+    // Render the form field with the provided props
+    <FormProvider {...useForm<FormValues>()}>
+      <FormField control={control} name={name} render={() => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <SeasonCodeSelectorContent disabled={disabled} name={name} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}/>
+    </FormProvider>
+  )
+}
+
+// SeasonCodeSelectorContent component definition
+const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({ disabled, name }) => {
   // Use form context to get watch and setValue functions
   const { watch, setValue } = useFormContext<FormValues>()
   // Watch the memberType field value
@@ -43,7 +73,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({ disabled, name 
   useEffect(() => {
     async function loadSeasonCodes() {
       try {
-        const response = await fetch('/api/maintenance/seasonCode')
+        const response = await fetch(seasonCodeRoute)
         const data = await response.json()
         setSeasonCodes(data.map((type: any) => ({ value: type.seasonCode, label: type.seasonCode + ' - ' + type.desc})))
       } catch (error) {
@@ -105,5 +135,3 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({ disabled, name 
     </div>
   )
 }
-
-export default SeasonCodeSelector

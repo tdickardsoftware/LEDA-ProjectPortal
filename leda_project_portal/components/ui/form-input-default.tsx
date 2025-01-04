@@ -13,7 +13,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Control } from "react-hook-form";
+import { Control, FormProvider, useFormContext } from "react-hook-form";
 //
 // Define the parameters
 //
@@ -39,18 +39,20 @@ export function InputDefault({
     disabled
 }: InputDefaultProps) {
     return (
-        <FormField
-            control={control}
-            name={name}
-            render={({ field }) => (
-            <FormItem>
-                <FormLabel>{label}</FormLabel>
-                <FormControl>
-                    <Input placeholder={placeholder} {...field} type={type} className={customClass} disabled={disabled} value={type === 'date' ? field.value?.split('T')[0] : field.value}/>
-                </FormControl>
-                <FormMessage />
-            </FormItem>
-            )}
-        />
+        <FormProvider {...useFormContext()}>
+            <FormField
+                control={control}
+                name={name}
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>{label}</FormLabel>
+                    <FormControl>
+                        <Input placeholder={placeholder} {...field} type={type} className={customClass} disabled={disabled} value={type === 'date' ? field.value?.split('T')[0] : field.value}/>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        </FormProvider>
     );
 }

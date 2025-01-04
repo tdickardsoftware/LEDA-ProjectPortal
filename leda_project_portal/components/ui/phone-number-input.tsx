@@ -1,16 +1,34 @@
 import React from 'react';
-import { useController, useFormContext } from 'react-hook-form';
+import { Control, FormProvider, useController, useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { parsePhoneNumberFromString, AsYouType } from 'libphonenumber-js';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 interface PhoneNumberInputProps {
+    control: Control<any>;
     name: string;
     label: string;
 }
 
-const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({ name, label }) => {
-    const { control } = useFormContext();
+export default function PhoneNumberInput({ control, name, label }: PhoneNumberInputProps) {
+    return (
+        <FormProvider {...useFormContext()}>
+            <FormField control={control} name={name} render={() => (
+                <FormItem>
+                    <FormLabel>{label}</FormLabel>
+                    <FormControl>
+                        <PhoneNumberInputContent control={control} name={name} label={label} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem> 
+                
+            )}/>
+        </FormProvider>
+    );
+}
+
+
+const PhoneNumberInputContent: React.FC<PhoneNumberInputProps> = ({ name, label, control }) => {
     const {
         field: { onChange, onBlur, value, ref },
         fieldState: { error },
@@ -36,7 +54,6 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({ name, label }) => {
 
     return (
         <div>
-            <Label htmlFor={name}>{label}</Label>
             <Input
                 id={name}
                 name={name}
@@ -50,4 +67,3 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({ name, label }) => {
     );
 };
 
-export default PhoneNumberInput;
