@@ -6,15 +6,27 @@ import { columns } from "@/schemas/maintenance/penalties";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Penalties"
-}
+	title: "Penalties",
+};
 
 export default async function Page() {
-    return (
-        <>
-            <div className="container mx-auto py-10">
-                <DataTable columns={columns} data={await fetchPenalties()} pageName="Penalties Page" addDialog={<DialogWithButton form="PenaltyAddForm" title="Add Penalty" buttonName="Add Penalty +"/>} apiEndpoint={penaltyRoute}/>
-            </div>
-        </>
-    );
+	return (
+		<>
+			<div className="container mx-auto py-10">
+				<DataTable
+					columns={columns}
+					data={await fetchPenalties()}
+					pageName="Penalties Page"
+					addDialog={
+						<DialogWithButton
+							form="PenaltyAddForm"
+							title="Add Penalty"
+							buttonName="Add Penalty +"
+						/>
+					}
+					apiEndpoint={penaltyRoute}
+				/>
+			</div>
+		</>
+	);
 }

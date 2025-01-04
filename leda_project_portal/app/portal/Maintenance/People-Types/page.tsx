@@ -6,15 +6,27 @@ import { columns } from "@/schemas/maintenance/people_types";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "People Types"
-}
+	title: "People Types",
+};
 
 export default async function Page() {
-    return (
-        <>
-            <div className="container mx-auto py-10">
-                <DataTable columns={columns} data={await fetchPeopleTypes()} pageName="People Types Page" addDialog={<DialogWithButton form="PeopleTypeAddForm" title="Add People Type" buttonName="Add People Type +"/>} apiEndpoint={peopleTypeRoute}/>
-            </div>
-        </>
-    );
+	return (
+		<>
+			<div className="container mx-auto py-10">
+				<DataTable
+					columns={columns}
+					data={await fetchPeopleTypes()}
+					pageName="People Types Page"
+					addDialog={
+						<DialogWithButton
+							form="PeopleTypeAddForm"
+							title="Add People Type"
+							buttonName="Add People Type +"
+						/>
+					}
+					apiEndpoint={peopleTypeRoute}
+				/>
+			</div>
+		</>
+	);
 }
