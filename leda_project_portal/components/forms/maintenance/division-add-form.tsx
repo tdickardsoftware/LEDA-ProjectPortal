@@ -64,11 +64,11 @@ export default function DivisionAddForm({
 			console.log("Form submitted successfully!", results);
 			onClose(); // Close the form
 			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
-					error.message || "Please try again."
+					(error as Error).message || "Please try again."
 				}`
 			);
 		}

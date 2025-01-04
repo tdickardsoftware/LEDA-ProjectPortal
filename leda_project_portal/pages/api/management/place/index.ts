@@ -19,7 +19,7 @@ export default async function handler(
 			// set status to 200 and send data
 			res.status(200).json(result.rows);
 		} catch (error) {
-			res.status(500).json({ error: "Failed to fetch genders" });
+			res.status(500).json({ message: "Failed to fetch places ", error });
 		}
 		// handle post method
 	} else if (req.method === "POST") {
@@ -62,9 +62,9 @@ export default async function handler(
 			const result = await queryPost(query, values);
 			// send response
 			res.status(201).json({ insert1: result });
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({ message: error.message || "Server error" }); // Send error info in JSON
+			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
 		}
 		// handle invalid method
 	} else {

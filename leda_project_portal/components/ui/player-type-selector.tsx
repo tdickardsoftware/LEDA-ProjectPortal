@@ -38,6 +38,7 @@ interface FormValues {
 }
 
 interface PlayerTypeSelectorProps {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	control: Control<any>;
 	name: string;
 	label: string;
@@ -86,7 +87,7 @@ const PlayerTypeSelectorContent: React.FC = () => {
 				const response = await fetch(peopleTypeRoute);
 				const data = await response.json();
 				setMemberTypes(
-					data.map((type: any) => ({
+					data.map((type: { peopleTypeCode: string; desc: string }) => ({
 						value: type.peopleTypeCode,
 						label: type.peopleTypeCode + " - " + type.desc,
 					}))

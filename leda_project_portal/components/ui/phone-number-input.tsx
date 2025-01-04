@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/form";
 
 interface PhoneNumberInputProps {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	control: Control<any>;
 	name: string;
 	label: string;
@@ -51,7 +52,6 @@ export default function PhoneNumberInput({
 
 const PhoneNumberInputContent: React.FC<PhoneNumberInputProps> = ({
 	name,
-	label,
 	control,
 }) => {
 	const {

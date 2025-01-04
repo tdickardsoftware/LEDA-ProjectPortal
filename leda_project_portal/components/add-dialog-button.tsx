@@ -47,6 +47,7 @@ interface DialogWithButtonProps {
 	buttonName: string;
 	form: keyof typeof formComponents;
 	title: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	onRefresh?: any; //() => void
 }
 //

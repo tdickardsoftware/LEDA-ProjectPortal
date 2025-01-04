@@ -21,7 +21,7 @@ export default async function handler(
 		} catch (error) {
 			// Handle any errors that occur during the query
 			res.status(500).json({
-				error: "Failed to fetch season information",
+				message: "Failed to fetch season information", error
 			});
 		}
 	}
@@ -48,10 +48,10 @@ export default async function handler(
 
 			// Respond with the result of the insert operation
 			res.status(201).json({ insert1: result });
-		} catch (error: any) {
+		} catch (error) {
 			// Handle any errors that occur during the insert operation
 			console.error("Error in SeasonHandler:", error);
-			res.status(500).json({ message: error.message || "Server error" }); // Send error info in JSON
+			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
 		}
 	}
 	// Respond with a 405 status code for unsupported methods

@@ -29,7 +29,8 @@ export default async function handler(
 			res.status(200).json(result.rows);
 		} catch (error) {
 			res.status(500).json({
-				error: "Failed to fetch player information",
+				message: "Failed to fetch player information",
+				error,
 			});
 		}
 	} else if (req.method === "POST") {
@@ -96,9 +97,9 @@ export default async function handler(
 			const result2 = await queryPost(query2, values2);
 
 			res.status(201).json({ insert1: result1, insert2: result2 });
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({ message: error.message || "Server error" });
+			res.status(500).json({ message: (error as Error).message || "Server error" });
 		}
 	} else {
 		res.status(405).json({ error: "Method not allowed" });

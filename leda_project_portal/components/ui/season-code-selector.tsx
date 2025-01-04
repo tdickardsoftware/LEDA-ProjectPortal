@@ -47,6 +47,7 @@ interface SeasonCodeSelectorPropsContent {
 interface SeasonCodeSelectorProps {
 	disabled?: boolean;
 	name: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	control: Control<any>;
 	label: string;
 }
@@ -104,7 +105,7 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 				const response = await fetch(seasonCodeRoute);
 				const data = await response.json();
 				setSeasonCodes(
-					data.map((type: any) => ({
+					data.map((type: { seasonCode: string; desc: string }) => ({
 						value: type.seasonCode,
 						label: type.seasonCode + " - " + type.desc,
 					}))

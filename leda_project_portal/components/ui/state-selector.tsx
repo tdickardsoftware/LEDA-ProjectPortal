@@ -26,6 +26,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 
+
 // List of U.S. States
 const states = [
 	{ value: "Alabama", label: "Alabama" },
@@ -83,12 +84,16 @@ const states = [
 // Define the parameters for the StatePicker component
 interface StatePickerProps {
 	name: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	control: Control<any>;
 }
 
 // Define the parameters for the StatePickerContent component
 interface StatePickerContentProps {
-	field: any;
+	field: {
+		value: string;
+		onChange: (value: string) => void;
+	};
 }
 
 // StatePicker component definition

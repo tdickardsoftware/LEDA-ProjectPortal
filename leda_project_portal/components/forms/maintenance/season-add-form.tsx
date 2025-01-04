@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { DatePicker } from "../../ui/date-picker";
+import { DatePicker } from "@/components/ui/date-picker";
 import { seasonRoute } from "@/lib/apiRoutes";
 
 // Define the schema for form validation using zod
@@ -101,7 +101,7 @@ export default function SeasonAddForm({
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof seasonFormSchema>) {
 		const formattedDates = JSON.parse(dates || "[]").reduce(
-			(acc: any, date: string, index: number) => {
+			(acc: { [key: string]: string }, date: string, index: number) => {
 				acc[`Date${index + 1}`] = new Date(date).toLocaleDateString(
 					"en-US"
 				);
@@ -137,11 +137,11 @@ export default function SeasonAddForm({
 			console.log("Form submitted successfully!", results);
 			onClose(); // Close the form
 			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
-					error.message || "Please try again."
+					(error as Error).message || "Please try again."
 				}`
 			);
 		}

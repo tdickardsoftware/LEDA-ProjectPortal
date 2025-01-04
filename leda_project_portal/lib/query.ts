@@ -15,7 +15,7 @@ export async function queryGet(text: string) {
 }
 
 // Function to execute an INSERT/UPDATE/DELETE query
-export async function queryPost(text: string, values: any) {
+export async function queryPost(text: string, values: unknown[]) {
 	try {
 		// Execute the query with the provided values and return the result
 		const res = await pool.query(text, values);

@@ -23,7 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 
-const teamFormSchema = z.object({
+export const teamFormSchema = z.object({
 	ledaId: z
 		.number()
 		.min(0, { message: "LEDA ID Must be a Postive Number." })
@@ -92,11 +92,11 @@ export default function PlaceAddForm({
 			console.log("Form submitted successfully!", results);
 			onClose(); // Close the form
 			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
-					error.message || "Please try again."
+					(error as Error).message || "Please try again."
 				}`
 			);
 		}

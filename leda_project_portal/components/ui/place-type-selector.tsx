@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FormProvider, useFormContext } from "react-hook-form";
+import { Control, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,8 @@ interface FormValues {
 }
 
 interface PlaceTypeSelectorProps {
-	control: any;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	control: Control<any>;
 	name: string;
 	label: string;
 }
@@ -99,7 +100,7 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 				const response = await fetch(placeTypeRoute);
 				const data = await response.json();
 				setMemberTypes(
-					data.map((type: any) => ({
+					data.map((type: { placeTypeCode: string; desc: string }) => ({
 						value: type.placeTypeCode,
 						label: type.placeTypeCode + " - " + type.desc,
 					}))

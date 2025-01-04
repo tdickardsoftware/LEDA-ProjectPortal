@@ -19,7 +19,7 @@ export default async function handler(
 			res.status(200).json(result.rows);
 		} catch (error) {
 			// Handle any errors that occur during the query
-			res.status(500).json({ error: "Failed to fetch genders" });
+			res.status(500).json({ message: "Failed to fetch place owners ", error });
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods

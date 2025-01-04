@@ -38,6 +38,7 @@ interface FormValues {
 
 interface PlaceOwnerSelectProps {
 	name: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	control: Control<any>;
 	label: string;
 }
@@ -81,7 +82,7 @@ const PlaceOwnerSelectContent: React.FC = () => {
 				const response = await fetch(placeOwnerRoute);
 				const data = await response.json();
 				setOwners(
-					data.map((type: any) => ({
+					data.map((type: { ledaId: string; fullName: string }) => ({
 						value: type.ledaId,
 						label: type.ledaId + " - " + type.fullName,
 					}))
