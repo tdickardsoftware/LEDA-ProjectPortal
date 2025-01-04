@@ -28,6 +28,7 @@ import PlaceOwnerSelector from '@/components/ui/place-owner-select';
 import { InputDefault } from '../../ui/form-input-default';
 import { placeRoute } from '@/lib/apiRoutes';
 import StatePicker from '../../ui/state-selector';
+import CheckboxDefault from '@/components/ui/checkbox-default';
 
 const placeFormSchema = z.object({ 
     ledaId: z.number().min(0, { message: 'LEDA ID Must be a Postive Number.' }).optional(),
@@ -216,82 +217,10 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                         <PlaceTypeSelector control={form.control} name='placeType' label='Place Type *' />
                         <InputDefault control={form.control} name='establishDate' label='Established Date *' type='date'/>
                         <InputDefault control={form.control} name='lastSanctioningDate' label='Last Sanctioning Date *'  type='date'/>
-                        <FormField
-                            control={form.control}
-                            name="sendMailings"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Label className='whitespace-nowrap pr-2' htmlFor="takeOffMailingCheckbox">
-                                        Send Mailings
-                                    </Label>
-                                    <FormControl>
-                                        <Checkbox
-                                            id="takeOffMailingCheckbox"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            className={checkboxWidth}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="regularSponsor"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Label className='whitespace-nowrap pr-2' htmlFor="takeOffMailingCheckbox">
-                                        Regular Sponsor
-                                    </Label>
-                                    <FormControl>
-                                        <Checkbox
-                                            id="takeOffMailingCheckbox"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            className={checkboxWidth}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="currentSponsor"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Label className='whitespace-nowrap pr-2' htmlFor="takeOffMailingCheckbox">
-                                        Current Sponsor
-                                    </Label>
-                                    <FormControl>
-                                        <Checkbox
-                                            id="takeOffMailingCheckbox"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            className={checkboxWidth}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="issues"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Label className='whitespace-nowrap pr-2' htmlFor="takeOffMailingCheckbox">
-                                        Issues
-                                    </Label>
-                                    <FormControl>
-                                        <Checkbox
-                                            id="takeOffMailingCheckbox"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            className={checkboxWidth}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
+                        <CheckboxDefault control={form.control} name='sendMailings' label='Send Mailings' className={checkboxWidth} />
+                        <CheckboxDefault control={form.control} name='regularSponsor' label='Regular Sponsor' className={checkboxWidth} />
+                        <CheckboxDefault control={form.control} name='currentSponsor' label='Current Sponsor' className={checkboxWidth} />
+                        <CheckboxDefault control={form.control} name='issues' label='Issues' className={checkboxWidth} />
                         <FormField
                             control={form.control}
                             name='memo'

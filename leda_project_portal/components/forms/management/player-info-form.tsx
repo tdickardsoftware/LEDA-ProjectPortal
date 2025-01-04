@@ -9,7 +9,6 @@ import {
     FormControl,
     FormField,
     FormItem,
-    FormLabel,
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -27,6 +26,7 @@ import PlayerTypeSelector from '@/components/ui/player-type-selector';
 import SeasonCodeSelector from '@/components/ui/season-code-selector';
 import { InputDefault } from '@/components/ui/form-input-default';
 import { playerRoute } from '@/lib/apiRoutes';
+import CheckboxDefault from '@/components/ui/checkbox-default';
 
 const playerInfoSchema = z.object({
     firstName: z.string().min(1, { message: 'First Name is Required' }),
@@ -294,109 +294,19 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                         />
                         
                         {/* Take Off Mailing Checkbox */}
-                        <FormField
-                            control={form.control}
-                            name="takeOffMailing"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Label className='whitespace-nowrap pr-2' htmlFor="takeOffMailingCheckbox">
-                                        Take Off Mailing
-                                    </Label>
-                                    <FormControl>
-                                        <Checkbox
-                                            id="takeOffMailingCheckbox"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            className={checkboxWidth}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
+                        <CheckboxDefault control={form.control} name='takeOffMailing' label='Take Off Mailing' className={checkboxWidth} />
 
                         {/* Mail Standings Checkbox */}
-                        <FormField
-                            control={form.control}
-                            name="mailStandings"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Label className='whitespace-nowrap pr-2' htmlFor="mailStandingsCheckbox">
-                                        Mail Standings
-                                    </Label>
-                                    <FormControl>
-                                        <Checkbox
-                                            id="mailStandingsCheckbox"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            className={checkboxWidth}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
+                        <CheckboxDefault control={form.control} name='mailStandings' label='Mail Standings' className={checkboxWidth} />
 
                         {/* Form on File Checkbox */}
-                        <FormField
-                            control={form.control}
-                            name="formOnFile"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Label className='whitespace-nowrap pr-2' htmlFor="formOnFileCheckbox">
-                                        Form on File
-                                    </Label>
-                                    <FormControl>
-                                        <Checkbox
-                                            id="formOnFileCheckbox"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            className={checkboxWidth}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
+                        <CheckboxDefault control={form.control} name='formOnFile' label='Form on File' className={checkboxWidth} />
 
                         {/* Needs Member Card Checkbox */}
-                        <FormField
-                            control={form.control}
-                            name="needsMemberCard"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Label className='whitespace-nowrap pr-2' htmlFor="needsMemberCardCheckbox">
-                                        Needs Member Card
-                                    </Label>
-                                    <FormControl>
-                                        <Checkbox
-                                            id="needsMemberCardCheckbox"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            className={checkboxWidth}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
+                        <CheckboxDefault control={form.control} name='needsMemberCard' label='Needs Member Card' className={checkboxWidth} />
 
                         {/* Cannot be Captain Checkbox */}
-                        <FormField
-                            control={form.control}
-                            name="cannotBeCaptain"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Label className='whitespace-nowrap pr-2' htmlFor="cannotBeCaptainCheckbox">
-                                        Cannot be Captain
-                                    </Label>
-                                    <FormControl>
-                                        <Checkbox
-                                            id="cannotBeCaptainCheckbox"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            className={checkboxWidth}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
+                        <CheckboxDefault control={form.control} name='cannotBeCaptain' label='Cannot be Captain' className={checkboxWidth} />
                         <InputDefault control={form.control} name='inactiveDate' label='Inactive Date' type='date' />
                         <SeasonCodeSelector control={form.control} name='lastMembershipFeePayment' label='Last Membership Fee Payment *' />
                         <InputDefault control={form.control} name='lastTrailsDate' label='Last Trails Date' type='date' />
