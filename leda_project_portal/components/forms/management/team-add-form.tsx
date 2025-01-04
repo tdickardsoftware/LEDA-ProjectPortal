@@ -129,17 +129,7 @@ export default function PlaceAddForm({ onClose, onRefresh }: { onClose: () => vo
                             />
                             <InputDefault control={form.control} name='teamName' label='Team Name *' />
                             <InputDefault control={form.control} name='establishedDate' label='Established Date *' type='date' />
-                            <FormField
-                                control={form.control}
-                                name='lastTeamFeePayment'
-                                render={() => (
-                                    <FormItem>
-                                        <FormLabel>Last Team Fee Payment *</FormLabel>
-                                        <SeasonCodeSelector name='lastTeamFeePayment' />
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <SeasonCodeSelector control={form.control} name='seasonCode' label='Season Code *' />
                             <FormField
                                 control={form.control}
                                 name='memo'

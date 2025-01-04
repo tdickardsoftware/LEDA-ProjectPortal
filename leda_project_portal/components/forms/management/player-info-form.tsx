@@ -398,17 +398,7 @@ export default function PlayerAddInformationForm({ onClose, onRefresh }: { onClo
                             )}
                         />
                         <InputDefault control={form.control} name='inactiveDate' label='Inactive Date' type='date' />
-                        <FormField
-                            control={form.control}
-                            name='lastMembershipFeePayment'
-                            render={() => (
-                                <FormItem>
-                                    <FormLabel>Last Membership Fee Payment *</FormLabel>
-                                    <SeasonCodeSelector name='lastMembershipFeePayment'/>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <SeasonCodeSelector control={form.control} name='lastMembershipFeePayment' label='Last Membership Fee Payment *' />
                         <InputDefault control={form.control} name='lastTrailsDate' label='Last Trails Date' type='date' />
                     </div>
                 </div>
