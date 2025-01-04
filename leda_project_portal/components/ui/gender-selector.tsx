@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/form";
 
 interface GenderSelectorProps {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	control: Control<any>;
 	name: string;
 }

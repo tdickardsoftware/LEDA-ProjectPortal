@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 
 interface CheckboxDefaultProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   control: Control<any>;
   name: string;
   label: string;

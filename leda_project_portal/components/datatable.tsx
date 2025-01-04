@@ -92,6 +92,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 
 	React.useEffect(() => {
 		handleRefresh(); // Call handleRefresh without arguments
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [onRefresh]);
 
 	return (
@@ -101,6 +102,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 					<h1 className="text-3xl pb-4 text-center">{pageName}</h1>
 					<div className="items-end">
 						{React.cloneElement(
+							// eslint-disable-next-line @typescript-eslint/no-explicit-any
 							addDialog as React.ReactElement<any>,
 							{ onRefresh: handleRefresh }
 						)}
