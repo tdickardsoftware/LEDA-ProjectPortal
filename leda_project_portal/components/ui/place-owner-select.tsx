@@ -1,5 +1,5 @@
-// Import necessary modules and components
 "use client"
+
 import React, { useEffect, useState } from "react"
 import { Control, useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
@@ -21,28 +21,23 @@ import {
 import { placeOwnerRoute } from "@/lib/apiRoutes"
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
 
-// Define the form values interface
 interface FormValues {
     contactId: string
 }
 
-// Define the parameters for the PlaceOwnerSelector component
 interface PlaceOwnerSelectorProps {
     name: string
     control: Control<any>;
 }
 
-// Define the parameters for the PlaceOwnerSelectorContent component
 interface PlaceOwnerSelectorContentProps {
   name: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
 }
 
-// PlaceOwnerSelector component definition
 export default function PlaceOwnerSelector({ control, name }: PlaceOwnerSelectorProps) {
     return (
-        // Render the form field with the provided props
         <FormField control={control} name={name} render={({ field }) => (
             <FormItem>
                 <FormLabel>Place Owner *</FormLabel>
@@ -59,7 +54,6 @@ export default function PlaceOwnerSelector({ control, name }: PlaceOwnerSelector
     )
 }
 
-// PlaceOwnerSelectorComponent component definition
 const PlaceOwnerSelectorComponent: React.FC<PlaceOwnerSelectorContentProps> = ({
   name,
   defaultValue,
@@ -69,7 +63,6 @@ const PlaceOwnerSelectorComponent: React.FC<PlaceOwnerSelectorContentProps> = ({
   const formContext = useFormContext<FormValues>();
   const [value, setValue] = useState(defaultValue || '');
 
-  // Handle value change and update the form context if available
   const handleValueChange = (newValue: string) => {
     setValue(newValue);
     if (formContext) {
@@ -78,7 +71,6 @@ const PlaceOwnerSelectorComponent: React.FC<PlaceOwnerSelectorContentProps> = ({
     onChange?.(newValue);
   };
 
-  // Watch the current value from the form context if available
   const currentValue = formContext ? formContext.watch('contactId') : value;
 
   // State to manage the popover open/close status
@@ -90,7 +82,8 @@ const PlaceOwnerSelectorComponent: React.FC<PlaceOwnerSelectorContentProps> = ({
   useEffect(() => {
     async function loadPlaceTypes() {
       try {
-        const response = await fetch(placeOwnerRoute)
+        const response = await fetch(placeOwnerRoute
+        )
         const data = await response.json()
         setMemberTypes(data.map((type: any) => ({ value: type.ledaId, label: type.ledaId + ' - ' + type.fullName})))
       } catch (error) {

@@ -1,5 +1,6 @@
 'use client'
 
+// Import necessary libraries and components
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -20,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { mentionRoute } from '@/lib/apiRoutes';
 
+// Define the schema for form validation using zod
 const mentionFormSchema = z.object({ 
     mentionCode: z.string().min(1, { message: 'Mention Code is required.' }),
     desc: z.string().optional(),
@@ -27,10 +29,13 @@ const mentionFormSchema = z.object({
     mentionBasis: z.string().min(1, { message: 'Mention Basis is required.' }),
 });
 
+// Define styles for the form container and input width
 const formContainerStyle = 'p-4 shadow-lg bg-white rounded-lg border border-gray-300';
 const inputWidth = 'w-24';
 
+// Define the MentionAddForm component
 export default function MentionAddForm({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void })  {
+    // Initialize the form using react-hook-form and zodResolver
     const form = useForm<z.infer<typeof mentionFormSchema>>({ 
             resolver: zodResolver(mentionFormSchema),
             defaultValues: {
@@ -41,35 +46,38 @@ export default function MentionAddForm({ onClose, onRefresh }: { onClose: () => 
             }
     });
 
+    // Define the onSubmit function to handle form submission
     async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
-                try {
-                    const response = await fetch(mentionRoute, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify(values),
-                    });
-        
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
-                    }
-        
-                    const results = await response.json();
-                    toast.success("Successfully submitted the form!");
-                    
-                    // Reset form and state
-                    form.reset();
-                    
-                    console.log("Form submitted successfully!", results);
-                    onClose(); // Close the form
-                    onRefresh(); // Refresh the datatable with the place API route
-                } catch (error: any) {
-                    console.error("Form submission error", error);
-                    toast.error(`Failed to submit the form: ${error.message || "Please try again."}`);
-                }
+        try {
+            const response = await fetch(mentionRoute, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(values),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+            }
+
+            const results = await response.json();
+            toast.success("Successfully submitted the form!");
+            
+            // Reset form and state
+            form.reset();
+            
+            console.log("Form submitted successfully!", results);
+            onClose(); // Close the form
+            onRefresh(); // Refresh the datatable with the place API route
+        } catch (error: any) {
+            console.error("Form submission error", error);
+            toast.error(`Failed to submit the form: ${error.message || "Please try again."}`);
+        }
     }
+
+    // Render the form
     return (
         <Form {...form} >
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 mx-auto'>
