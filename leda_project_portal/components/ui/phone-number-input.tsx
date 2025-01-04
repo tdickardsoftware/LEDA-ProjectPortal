@@ -1,7 +1,6 @@
 import React from 'react';
-import { Control, useController, useFormContext } from 'react-hook-form';
+import { Control, FormProvider, useController, useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { parsePhoneNumberFromString, AsYouType } from 'libphonenumber-js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
@@ -13,16 +12,18 @@ interface PhoneNumberInputProps {
 
 export default function PhoneNumberInput({ control, name, label }: PhoneNumberInputProps) {
     return (
-        <FormField control={control} name={name} render={() => (
-            <FormItem>
-                <FormLabel>{label}</FormLabel>
-                <FormControl>
-                    <PhoneNumberInputContent control={control} name={name} label={label} />
-                </FormControl>
-                <FormMessage />
-            </FormItem> 
-            
-        )}/>
+        <FormProvider {...useFormContext()}>
+            <FormField control={control} name={name} render={() => (
+                <FormItem>
+                    <FormLabel>{label}</FormLabel>
+                    <FormControl>
+                        <PhoneNumberInputContent control={control} name={name} label={label} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem> 
+                
+            )}/>
+        </FormProvider>
     );
 }
 

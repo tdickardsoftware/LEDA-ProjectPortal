@@ -1,7 +1,7 @@
 // Import necessary modules and components
 "use client"
 import React, { useEffect, useState } from "react"
-import { Control, useFormContext } from "react-hook-form"
+import { Control, useFormContext, useForm, FormProvider } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -44,15 +44,17 @@ interface SeasonCodeSelectorProps {
 export default function SeasonCodeSelector({ control, name, disabled, label }: SeasonCodeSelectorProps) {
   return (
     // Render the form field with the provided props
-    <FormField control={control} name={name} render={() => (
-      <FormItem>
-        <FormLabel>{label}</FormLabel>
-        <FormControl>
-          <SeasonCodeSelectorContent disabled={disabled} name={name} />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    )}/>
+    <FormProvider {...useForm<FormValues>()}>
+      <FormField control={control} name={name} render={() => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <SeasonCodeSelectorContent disabled={disabled} name={name} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}/>
+    </FormProvider>
   )
 }
 
@@ -133,4 +135,3 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({ d
     </div>
   )
 }
-

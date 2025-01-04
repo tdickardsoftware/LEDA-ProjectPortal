@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { Control, useFormContext } from "react-hook-form"
+import { Control, FormProvider, useFormContext, useForm} from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -25,67 +25,41 @@ interface FormValues {
     contactId: string
 }
 
-interface PlaceOwnerSelectorProps {
+interface PlaceOwnerSelectProps {
     name: string
     control: Control<any>;
+    label: string;
 }
 
-interface PlaceOwnerSelectorContentProps {
-  name: string;
-  defaultValue?: string;
-  onChange?: (value: string) => void;
-}
-
-export default function PlaceOwnerSelector({ control, name }: PlaceOwnerSelectorProps) {
+export default function PlaceOwnerSelect({ control, name, label }: PlaceOwnerSelectProps) {
     return (
-        <FormField control={control} name={name} render={({ field }) => (
-            <FormItem>
-                <FormLabel>Place Owner *</FormLabel>
-                <FormControl>
-                    <PlaceOwnerSelectorComponent 
-                      name={name}
-                      defaultValue={field.value}
-                      onChange={field.onChange}
-                    />
-                </FormControl>
-                <FormMessage />
-            </FormItem>
-        )}/>
+      <FormProvider {...useForm<FormValues>()}>
+        <FormField control={control} name={name} render={() => (
+              <FormItem>
+                  <FormLabel>{label}</FormLabel>
+                  <FormControl>
+                      <PlaceOwnerSelectContent />
+                  </FormControl>
+                  <FormMessage />
+              </FormItem>
+          )}/>
+      </FormProvider>
     )
 }
 
-const PlaceOwnerSelectorComponent: React.FC<PlaceOwnerSelectorContentProps> = ({
-  name,
-  defaultValue,
-  onChange
-}) => {
-  // Try to use form context if available, otherwise fall back to props
+const PlaceOwnerSelectContent: React.FC = () => {
   const formContext = useFormContext<FormValues>();
-  const [value, setValue] = useState(defaultValue || '');
+  const currentValue = formContext ? formContext.watch('contactId') : '';
 
-  const handleValueChange = (newValue: string) => {
-    setValue(newValue);
-    if (formContext) {
-      formContext.setValue('contactId', newValue);
-    }
-    onChange?.(newValue);
-  };
+  const [open, setOpen] = useState(false);
+  const [owners, setOwners] = useState<{ value: string; label: string }[]>([]);
 
-  const currentValue = formContext ? formContext.watch('contactId') : value;
-
-  // State to manage the popover open/close status
-  const [open, setOpen] = useState(false)
-  // State to store the fetched place types
-  const [memberTypes, setMemberTypes] = useState<{ value: string; label: string }[]>([])
-
-  // Fetch place types from the API endpoint
   useEffect(() => {
     async function loadPlaceTypes() {
       try {
-        const response = await fetch(placeOwnerRoute
-        )
+        const response = await fetch(placeOwnerRoute)
         const data = await response.json()
-        setMemberTypes(data.map((type: any) => ({ value: type.ledaId, label: type.ledaId + ' - ' + type.fullName})))
+        setOwners(data.map((type: any) => ({ value: type.ledaId, label: type.ledaId + ' - ' + type.fullName})))
       } catch (error) {
         console.error("Failed to fetch place owners", error)
       }
@@ -105,7 +79,7 @@ const PlaceOwnerSelectorComponent: React.FC<PlaceOwnerSelectorContentProps> = ({
               className="w-[200px] justify-between"
             >
               {currentValue
-                ? memberTypes.find((type) => type.value === currentValue)?.label
+                ? owners.find((type) => type.value === currentValue)?.label
                 : "Select a place owner..."}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -116,12 +90,12 @@ const PlaceOwnerSelectorComponent: React.FC<PlaceOwnerSelectorContentProps> = ({
               <CommandEmpty>No place owner found.</CommandEmpty>
               <CommandGroup>
                 <CommandList>
-                  {memberTypes.map((type) => (
+                  {owners.map((type) => (
                     <CommandItem
                       key={type.value}
                       value={type.value}
                       onSelect={() => {
-                        handleValueChange(type.value)
+                        formContext.setValue('contactId', type.value)
                         setOpen(false)
                       }}
                       className="hover:bg-gray-200"

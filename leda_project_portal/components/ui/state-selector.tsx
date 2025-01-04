@@ -1,7 +1,7 @@
 // Import necessary modules and components
 "use client"
 import * as React from "react"
-import { Control } from "react-hook-form"
+import { Control, FormProvider, useFormContext } from "react-hook-form"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -89,15 +89,17 @@ interface StatePickerContentProps {
 export default function StatePicker({ name, control }: StatePickerProps) {
   return (
     // Render the form field with the provided props
-    <FormField control={control} name={name} render={({ field }) => (
-      <FormItem>
-        <FormLabel>State *</FormLabel>
-        <FormControl>
-          <StatePickerContent field={field} />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    )}/>
+    <FormProvider {...useFormContext()}>
+      <FormField control={control} name={name} render={({ field }) => (
+        <FormItem>
+          <FormLabel>State *</FormLabel>
+          <FormControl>
+            <StatePickerContent field={field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}/>
+    </FormProvider>
   )
 }
 
