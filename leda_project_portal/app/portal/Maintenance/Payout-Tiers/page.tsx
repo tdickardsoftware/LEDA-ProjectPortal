@@ -9,6 +9,8 @@ export const metadata: Metadata = {
 	title: "Payout Tiers",
 };
 
+export const dynamic = 'force-dynamic'
+
 export default async function Page() {
 	return (
 		<>

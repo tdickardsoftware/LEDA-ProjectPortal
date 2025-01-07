@@ -9,6 +9,8 @@ export const metadata: Metadata = {
 	title: "Seasons",
 };
 
+export const dynamic = 'force-dynamic'
+
 export default async function Page() {
 	return (
 		<>

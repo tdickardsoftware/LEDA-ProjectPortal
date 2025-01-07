@@ -9,6 +9,8 @@ export const metadata: Metadata = {
 	title: "People Types",
 };
 
+export const dynamic = 'force-dynamic'
+
 export default async function Page() {
 	return (
 		<>
