@@ -106,7 +106,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 
 	React.useEffect(() => {
 		handleRefresh(); // Call handleRefresh without arguments
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [onRefresh]);
 
 	return (
@@ -127,11 +127,12 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								{React.cloneElement(
 									// eslint-disable-next-line @typescript-eslint/no-explicit-any
 									deleteDialog as React.ReactElement<any>,
-									{ 
+									{
 										selectedRowCount,
-										disabled: selectedRowCount > 0 ? false : true,
+										disabled:
+											selectedRowCount > 0 ? false : true,
 										rowData: selectedRowsData, // Pass the selected rows' data
-										onRefresh: handleRefresh
+										onRefresh: handleRefresh,
 									}
 								)}
 							</div>

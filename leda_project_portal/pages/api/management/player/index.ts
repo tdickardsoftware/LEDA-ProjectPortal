@@ -99,7 +99,9 @@ export default async function handler(
 			res.status(201).json({ insert1: result1, insert2: result2 });
 		} catch (error) {
 			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" });
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
 		}
 	} else if (req.method === "DELETE") {
 		try {
@@ -110,7 +112,9 @@ export default async function handler(
 			res.status(200).json(result);
 		} catch (error) {
 			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" });
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
 		}
 	} else {
 		res.status(405).json({ error: "Method not allowed" });

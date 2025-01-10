@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 	title: "Players",
 };
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
 	return (
@@ -31,10 +31,13 @@ export default async function Page() {
 						<AlertDialogDelete
 							buttonName="Delete Player"
 							title="Delete Player"
-							tables={["leda_player_info", "leda_membership_info"]}
+							tables={[
+								"leda_player_info",
+								"leda_membership_info",
+							]}
 							targetColumn="ledaId"
 							apiEndpoint={playerRoute}
-							/>
+						/>
 					}
 					apiEndpoint={playerRoute}
 				/>
