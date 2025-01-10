@@ -19,9 +19,10 @@ interface AlertDialogDeleteProps {
 	selectedRowCount?: number;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	rowData?: any;
+	disabled?: boolean;
 }
 
-export default function AlertDialogDelete({ buttonName, title, selectedRowCount }: AlertDialogDeleteProps) {
+export default function AlertDialogDelete({ buttonName, title, selectedRowCount, disabled }: AlertDialogDeleteProps) {
 	const [currentSelectedRowCount, setCurrentSelectedRowCount] = useState(0);
 
 	useEffect(() => {
@@ -31,7 +32,7 @@ export default function AlertDialogDelete({ buttonName, title, selectedRowCount 
 	return (
 		<AlertDialog>
 			<AlertDialogTrigger type="button" asChild>
-				<Button variant={"outline"}>{buttonName}</Button>
+				<Button variant={"outline"} disabled={disabled}>{buttonName}</Button>
 			</AlertDialogTrigger>
 			<AlertDialogContent className="bg-white">
 				<AlertDialogHeader>

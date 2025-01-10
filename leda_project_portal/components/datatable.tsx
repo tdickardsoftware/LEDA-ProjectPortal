@@ -121,7 +121,10 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								{React.cloneElement(
 									// eslint-disable-next-line @typescript-eslint/no-explicit-any
 									deleteDialog as React.ReactElement<any>,
-									{ selectedRowCount } // Pass the selectedRowCount prop
+									{ 
+										selectedRowCount,
+										disabled: selectedRowCount > 0 ? false : true,
+									}
 								)}
 							</div>
 						) : null}
