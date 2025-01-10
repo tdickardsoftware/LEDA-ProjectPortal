@@ -1,3 +1,4 @@
+'use client'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -10,23 +11,35 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "./ui/button";
+import { useState, useEffect } from "react";
 
 interface AlertDialogDeleteProps {
     buttonName: string;
     title: string;
-    description: string;
+	selectedRowCount?: number;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	rowData?: any;
 }
-export default function AlertDialogDelete( { buttonName, title, description }: AlertDialogDeleteProps) {
+
+export default function AlertDialogDelete({ buttonName, title, selectedRowCount }: AlertDialogDeleteProps) {
+	const [currentSelectedRowCount, setCurrentSelectedRowCount] = useState(0);
+
+	useEffect(() => {
+		setCurrentSelectedRowCount(selectedRowCount || 0);
+	}, [selectedRowCount]);
+
 	return (
 		<AlertDialog>
-			<AlertDialogTrigger type="button" asChild><Button variant={"outline"}>{buttonName}</Button></AlertDialogTrigger>
+			<AlertDialogTrigger type="button" asChild>
+				<Button variant={"outline"}>{buttonName}</Button>
+			</AlertDialogTrigger>
 			<AlertDialogContent className="bg-white">
 				<AlertDialogHeader>
 					<AlertDialogTitle>
 						{title}
 					</AlertDialogTitle>
 					<AlertDialogDescription>
-						{description}
+						Are you sure you want to delete {currentSelectedRowCount} row(s)?
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>

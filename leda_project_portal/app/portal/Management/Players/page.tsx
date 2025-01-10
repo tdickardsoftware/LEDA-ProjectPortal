@@ -31,7 +31,7 @@ export default async function Page() {
 						<AlertDialogDelete
 							buttonName="Delete Player"
 							title="Delete Player"
-							description="Are you sure you want to delete this player?" />
+							/>
 					}
 					apiEndpoint={playerRoute}
 				/>

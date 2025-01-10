@@ -45,6 +45,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const [debouncedQuery, setDebouncedQuery] = React.useState(""); // State for debounced query
 	const [tableData, setTableData] = React.useState(data); // State for table data
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
+	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
 
 	// Debounce the search input
 	React.useEffect(() => {
@@ -54,6 +55,11 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 
 		return () => clearTimeout(handler); // Cleanup on each change
 	}, [searchQuery]);
+
+	// Update selectedRowCount whenever rowSelection changes
+	React.useEffect(() => {
+		setSelectedRowCount(Object.keys(rowSelection).length);
+	}, [rowSelection]);
 
 	// Filtered data based on debounced query
 	const filteredData = React.useMemo(() => {
@@ -115,7 +121,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								{React.cloneElement(
 									// eslint-disable-next-line @typescript-eslint/no-explicit-any
 									deleteDialog as React.ReactElement<any>,
-									{ onRefresh: handleRefresh }
+									{ selectedRowCount } // Pass the selectedRowCount prop
 								)}
 							</div>
 						) : null}
