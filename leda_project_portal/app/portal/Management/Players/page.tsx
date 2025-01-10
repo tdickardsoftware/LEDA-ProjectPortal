@@ -31,6 +31,9 @@ export default async function Page() {
 						<AlertDialogDelete
 							buttonName="Delete Player"
 							title="Delete Player"
+							tables={["leda_player_info", "leda_membership_info"]}
+							targetColumn="ledaId"
+							apiEndpoint={playerRoute}
 							/>
 					}
 					apiEndpoint={playerRoute}

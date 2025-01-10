@@ -20,14 +20,40 @@ interface AlertDialogDeleteProps {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	rowData?: any;
 	disabled?: boolean;
+	tables: string[];
+	targetColumn: string;
+	apiEndpoint: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	onRefresh?: any; //() => void
 }
 
-export default function AlertDialogDelete({ buttonName, title, selectedRowCount, disabled }: AlertDialogDeleteProps) {
+export default function AlertDialogDelete({ buttonName, title, selectedRowCount, disabled, tables, rowData, apiEndpoint, onRefresh }: AlertDialogDeleteProps) {
 	const [currentSelectedRowCount, setCurrentSelectedRowCount] = useState(0);
 
 	useEffect(() => {
 		setCurrentSelectedRowCount(selectedRowCount || 0);
 	}, [selectedRowCount]);
+
+	async function onClickDelete() {
+		for (let i = 0; i < tables.length; i++) {
+			for (let j = 0; j < rowData.length; j++) {
+				await fetch(apiEndpoint, {
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						tableName: tables[i],
+						targetColumn: "ledaId",
+						targetValue: rowData[j]["ledaId"], // Ensure targetValue is correctly passed
+					}),
+				});
+			}
+		}
+		if (onRefresh) {
+			onRefresh();
+		}
+	}
 
 	return (
 		<AlertDialog>
@@ -46,7 +72,7 @@ export default function AlertDialogDelete({ buttonName, title, selectedRowCount,
 				<AlertDialogFooter>
 					<div className="flex justify-between w-full">
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction className="bg-red-600">Delete</AlertDialogAction>
+						<AlertDialogAction asChild><Button variant={"destructive"} onClick={onClickDelete}>Delete</Button></AlertDialogAction>
 					</div>
 				</AlertDialogFooter>
 			</AlertDialogContent>

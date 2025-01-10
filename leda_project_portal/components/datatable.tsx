@@ -61,6 +61,11 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		setSelectedRowCount(Object.keys(rowSelection).length);
 	}, [rowSelection]);
 
+	// Extract selected rows' data
+	const selectedRowsData = React.useMemo(() => {
+		return Object.keys(rowSelection).map((key) => tableData[parseInt(key)]);
+	}, [rowSelection, tableData]);
+
 	// Filtered data based on debounced query
 	const filteredData = React.useMemo(() => {
 		if (!debouncedQuery) return tableData;
@@ -93,6 +98,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			const response = await fetch(apiEndpoint); // Use the dynamic API endpoint
 			const newData = await response.json();
 			setTableData(newData);
+			setRowSelection({}); // Clear row selection on refresh
 		} catch (error) {
 			console.error("Failed to refresh data", error);
 		}
@@ -124,6 +130,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									{ 
 										selectedRowCount,
 										disabled: selectedRowCount > 0 ? false : true,
+										rowData: selectedRowsData, // Pass the selected rows' data
+										onRefresh: handleRefresh
 									}
 								)}
 							</div>
