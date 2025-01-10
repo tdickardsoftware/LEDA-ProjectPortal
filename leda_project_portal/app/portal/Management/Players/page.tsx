@@ -1,5 +1,6 @@
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/add-dialog-button";
+import { DialogWithButton } from "@/components/dialog-with-button";
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { playerRoute } from "@/lib/apiRoutes";
 import { fetchPlayers } from "@/lib/getData";
 import { columns } from "@/schemas/managment/players";
@@ -25,6 +26,12 @@ export default async function Page() {
 							title="Add Player"
 							buttonName="Add Player +"
 						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Player"
+							title="Delete Player"
+							description="Are you sure you want to delete this player?" />
 					}
 					apiEndpoint={playerRoute}
 				/>

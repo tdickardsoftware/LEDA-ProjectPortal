@@ -26,6 +26,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	data: TData[];
 	pageName: string;
 	addDialog: React.ReactNode;
+	deleteDialog?: React.ReactNode;
 	onRefresh?: (api: string) => void;
 	apiEndpoint: string; // New prop for API endpoint
 }
@@ -35,6 +36,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	data,
 	pageName,
 	addDialog,
+	deleteDialog,
 	onRefresh,
 	apiEndpoint, // Destructure the new prop
 }: DataTableProps<TData, TValue>) {
@@ -100,12 +102,23 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			<div className="p-4 shadow-lg bg-white rounded-lg border border-gray-200 w-full max-w-4xl">
 				<div className="overflow-hidden rounded-md">
 					<h1 className="text-3xl pb-4 text-center">{pageName}</h1>
-					<div className="items-end">
-						{React.cloneElement(
-							// eslint-disable-next-line @typescript-eslint/no-explicit-any
-							addDialog as React.ReactElement<any>,
-							{ onRefresh: handleRefresh }
-						)}
+					<div className="flex items-center justify-between space-x-2">
+						<div>
+							{React.cloneElement(
+								// eslint-disable-next-line @typescript-eslint/no-explicit-any
+								addDialog as React.ReactElement<any>,
+								{ onRefresh: handleRefresh }
+							)}
+						</div>
+						{deleteDialog ? (
+							<div>
+								{React.cloneElement(
+									// eslint-disable-next-line @typescript-eslint/no-explicit-any
+									deleteDialog as React.ReactElement<any>,
+									{ onRefresh: handleRefresh }
+								)}
+							</div>
+						) : null}
 					</div>
 					{/* Search Input */}
 					<div className="mb-4">
