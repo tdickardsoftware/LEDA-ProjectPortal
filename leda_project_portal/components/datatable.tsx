@@ -26,6 +26,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	data: TData[];
 	pageName: string;
 	addDialog: React.ReactNode;
+	deleteDialog?: React.ReactNode;
 	onRefresh?: (api: string) => void;
 	apiEndpoint: string; // New prop for API endpoint
 }
@@ -35,6 +36,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	data,
 	pageName,
 	addDialog,
+	deleteDialog,
 	onRefresh,
 	apiEndpoint, // Destructure the new prop
 }: DataTableProps<TData, TValue>) {
@@ -43,6 +45,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const [debouncedQuery, setDebouncedQuery] = React.useState(""); // State for debounced query
 	const [tableData, setTableData] = React.useState(data); // State for table data
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
+	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
 
 	// Debounce the search input
 	React.useEffect(() => {
@@ -52,6 +55,16 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 
 		return () => clearTimeout(handler); // Cleanup on each change
 	}, [searchQuery]);
+
+	// Update selectedRowCount whenever rowSelection changes
+	React.useEffect(() => {
+		setSelectedRowCount(Object.keys(rowSelection).length);
+	}, [rowSelection]);
+
+	// Extract selected rows' data
+	const selectedRowsData = React.useMemo(() => {
+		return Object.keys(rowSelection).map((key) => tableData[parseInt(key)]);
+	}, [rowSelection, tableData]);
 
 	// Filtered data based on debounced query
 	const filteredData = React.useMemo(() => {
@@ -85,6 +98,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			const response = await fetch(apiEndpoint); // Use the dynamic API endpoint
 			const newData = await response.json();
 			setTableData(newData);
+			setRowSelection({}); // Clear row selection on refresh
 		} catch (error) {
 			console.error("Failed to refresh data", error);
 		}
@@ -92,7 +106,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 
 	React.useEffect(() => {
 		handleRefresh(); // Call handleRefresh without arguments
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [onRefresh]);
 
 	return (
@@ -100,12 +114,29 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			<div className="p-4 shadow-lg bg-white rounded-lg border border-gray-200 w-full max-w-4xl">
 				<div className="overflow-hidden rounded-md">
 					<h1 className="text-3xl pb-4 text-center">{pageName}</h1>
-					<div className="items-end">
-						{React.cloneElement(
-							// eslint-disable-next-line @typescript-eslint/no-explicit-any
-							addDialog as React.ReactElement<any>,
-							{ onRefresh: handleRefresh }
-						)}
+					<div className="flex items-center justify-between space-x-2">
+						<div>
+							{React.cloneElement(
+								// eslint-disable-next-line @typescript-eslint/no-explicit-any
+								addDialog as React.ReactElement<any>,
+								{ onRefresh: handleRefresh }
+							)}
+						</div>
+						{deleteDialog ? (
+							<div>
+								{React.cloneElement(
+									// eslint-disable-next-line @typescript-eslint/no-explicit-any
+									deleteDialog as React.ReactElement<any>,
+									{
+										selectedRowCount,
+										disabled:
+											selectedRowCount > 0 ? false : true,
+										rowData: selectedRowsData, // Pass the selected rows' data
+										onRefresh: handleRefresh,
+									}
+								)}
+							</div>
+						) : null}
 					</div>
 					{/* Search Input */}
 					<div className="mb-4">

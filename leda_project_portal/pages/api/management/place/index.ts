@@ -64,9 +64,23 @@ export default async function handler(
 			res.status(201).json({ insert1: result });
 		} catch (error) {
 			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			}); // Send error info in JSON
 		}
 		// handle invalid method
+	} else if (req.method === "DELETE") {
+		try {
+			const query = `DELETE FROM public.leda_place_info WHERE "ledaId" = $1;`;
+			const values = [req.body.targetValue];
+			const result = await queryPost(query, values);
+			res.status(200).json(result);
+		} catch (error) {
+			console.error("Error in PlayerHandler:", error);
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
+		}
 	} else {
 		res.status(405).json({ error: "Method not allowed" });
 	}

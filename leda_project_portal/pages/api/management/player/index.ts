@@ -6,7 +6,7 @@ import getNextLedaId from "@/lib/getNextLedaId";
 
 /**
  * API handler for managing player information.
- * Supports GET and POST methods.
+ * Supports GET, POST, and DELETE methods.
  */
 export default async function handler(
 	req: NextApiRequest,
@@ -99,7 +99,22 @@ export default async function handler(
 			res.status(201).json({ insert1: result1, insert2: result2 });
 		} catch (error) {
 			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" });
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
+		}
+	} else if (req.method === "DELETE") {
+		try {
+			const { tableName, targetColumn, targetValue } = req.body;
+			const query = `DELETE FROM ${tableName} WHERE "${targetColumn}" = $1`;
+			const values = [targetValue];
+			const result = await queryPost(query, values);
+			res.status(200).json(result);
+		} catch (error) {
+			console.error("Error in PlayerHandler:", error);
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
 		}
 	} else {
 		res.status(405).json({ error: "Method not allowed" });

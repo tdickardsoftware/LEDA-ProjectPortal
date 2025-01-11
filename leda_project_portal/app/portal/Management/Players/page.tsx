@@ -1,5 +1,6 @@
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/add-dialog-button";
+import { DialogWithButton } from "@/components/dialog-with-button";
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { playerRoute } from "@/lib/apiRoutes";
 import { fetchPlayers } from "@/lib/getData";
 import { columns } from "@/schemas/managment/players";
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 	title: "Players",
 };
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
 	return (
@@ -24,6 +25,18 @@ export default async function Page() {
 							form="PlayerAddInformationForm"
 							title="Add Player"
 							buttonName="Add Player +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Player"
+							title="Delete Player"
+							tables={[
+								"leda_player_info",
+								"leda_membership_info",
+							]}
+							targetColumn="ledaId"
+							apiEndpoint={playerRoute}
 						/>
 					}
 					apiEndpoint={playerRoute}

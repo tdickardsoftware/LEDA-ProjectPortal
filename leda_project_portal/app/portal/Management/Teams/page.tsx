@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/add-dialog-button";
+import { DialogWithButton } from "@/components/dialog-with-button";
 import { teamRoute } from "@/lib/apiRoutes";
 import { fetchTeams } from "@/lib/getData";
 import { columns } from "@/schemas/managment/teams";
