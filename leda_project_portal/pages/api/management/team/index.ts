@@ -51,12 +51,22 @@ export default async function handler(
 			res.status(201).json({ insert1: result });
 		} catch (error) {
 			// Handle any errors that occur during the insert operation
-			console.error("Error in PlayerHandler:", error);
+			console.error("Error in TeamHandler:", error);
 			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
 		}
-	}
-	// Respond with a 405 status code for unsupported methods
-	else {
+	} else if (req.method === "DELETE") {
+		try {
+			const query = `DELETE FROM public.leda_team_info WHERE "ledaId" = $1;`;
+			const values = [req.body.targetValue];
+			const result = await queryPost(query, values);
+			res.status(200).json(result);
+		} catch (error) {
+			console.error("Error in TeamHandler:", error);
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
+		}
+	} else {
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }
