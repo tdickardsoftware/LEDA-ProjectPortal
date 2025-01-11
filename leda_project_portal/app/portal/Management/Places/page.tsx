@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 	title: "Places",
 };
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
 	return (
@@ -31,9 +31,7 @@ export default async function Page() {
 						<AlertDialogDelete
 							buttonName="Delete Place"
 							title="Delete Place"
-							tables={[
-								"leda_place_info",
-							]}
+							tables={["leda_place_info"]}
 							targetColumn="ledaId"
 							apiEndpoint={placeRoute}
 						/>

@@ -36,7 +36,7 @@ export default function AlertDialogDelete({
 	rowData,
 	apiEndpoint,
 	onRefresh,
-	targetColumn
+	targetColumn,
 }: AlertDialogDeleteProps) {
 	const [currentSelectedRowCount, setCurrentSelectedRowCount] = useState(0);
 
