@@ -1,3 +1,4 @@
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import { divisionRoute } from "@/lib/apiRoutes";
@@ -24,6 +25,15 @@ export default async function Page() {
 							form="DivisionAddForm"
 							title="Add Division"
 							buttonName="Add Division +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Division"
+							title="Delete Division"
+							tables={["leda_maint_divisions"]}
+							targetColumn="divisionName"
+							apiEndpoint={divisionRoute}
 						/>
 					}
 					apiEndpoint={divisionRoute}
