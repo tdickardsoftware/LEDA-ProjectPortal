@@ -36,6 +36,7 @@ export default function AlertDialogDelete({
 	rowData,
 	apiEndpoint,
 	onRefresh,
+	targetColumn
 }: AlertDialogDeleteProps) {
 	const [currentSelectedRowCount, setCurrentSelectedRowCount] = useState(0);
 
@@ -53,8 +54,8 @@ export default function AlertDialogDelete({
 					},
 					body: JSON.stringify({
 						tableName: tables[i],
-						targetColumn: "ledaId",
-						targetValue: rowData[j]["ledaId"], // Ensure targetValue is correctly passed
+						targetColumn: targetColumn,
+						targetValue: rowData[j][targetColumn], // Ensure targetValue is correctly passed
 					}),
 				});
 			}

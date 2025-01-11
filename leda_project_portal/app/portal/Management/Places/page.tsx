@@ -1,3 +1,4 @@
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import { placeRoute } from "@/lib/apiRoutes";
@@ -24,6 +25,17 @@ export default async function Page() {
 							form="PlaceAddForm"
 							title="Add Place"
 							buttonName="Add Place +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Place"
+							title="Delete Place"
+							tables={[
+								"leda_place_info",
+							]}
+							targetColumn="ledaId"
+							apiEndpoint={placeRoute}
 						/>
 					}
 					apiEndpoint={placeRoute}
