@@ -1,3 +1,4 @@
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import { teamRoute } from "@/lib/apiRoutes";
@@ -24,6 +25,15 @@ export default async function Page() {
 							form="TeamAddForm"
 							title="Add Team"
 							buttonName="Add Team +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Team"
+							title="Delete Team"
+							tables={["leda_team_info"]}
+							targetColumn="ledaId"
+							apiEndpoint={teamRoute}
 						/>
 					}
 					apiEndpoint={teamRoute}
