@@ -45,9 +45,18 @@ export default async function handler(
 			console.error("Error in PlaceTypeHandler:", error);
 			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
 		}
-	}
-	// Respond with a 405 status code for unsupported methods
-	else {
+	} else if (req.method === "DELETE") {
+		try {
+			const data = req.body as PlaceType;
+			const query = `DELETE FROM maint.leda_maint_place_types WHERE "placeTypeCode" = $1 AND "desc" = $2;`;
+			const values = [data.placeTypeCode, data.desc];
+			const result = await queryPost(query, values);
+			res.status(201).json({ delete1: result });
+		} catch (error) {
+			console.error("Error in PlaceTypeHandler:", error as Error);
+			res.status(500).json({ message: (error as Error).message || "Server error" });
+		}
+	} else {
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }
