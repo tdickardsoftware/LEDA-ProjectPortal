@@ -1,3 +1,4 @@
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import { payoutTierRoute } from "@/lib/apiRoutes";
@@ -24,6 +25,13 @@ export default async function Page() {
 							form="PayoutTierAddForm"
 							title="Add Payout Tier"
 							buttonName="Add Payout Tier +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Payout Tier(s)"
+							title="Delete Payout Tier(s)"
+							apiEndpoint={payoutTierRoute}
 						/>
 					}
 					apiEndpoint={payoutTierRoute}
