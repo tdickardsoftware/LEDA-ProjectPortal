@@ -1,3 +1,4 @@
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import { paymentTypeRoute } from "@/lib/apiRoutes";
@@ -24,6 +25,13 @@ export default async function Page() {
 							form="PaymentTypeAddForm"
 							title="Add Payment Types"
 							buttonName="Add Payment Type +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Payment Type(s)"
+							title="Delete Payment Type(s)"
+							apiEndpoint={paymentTypeRoute}
 						/>
 					}
 					apiEndpoint={paymentTypeRoute}
