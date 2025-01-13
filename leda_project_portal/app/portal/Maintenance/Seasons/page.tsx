@@ -1,3 +1,4 @@
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import { seasonRoute } from "@/lib/apiRoutes";
@@ -24,6 +25,13 @@ export default async function Page() {
 							form="SeasonAddForm"
 							title="Add Season"
 							buttonName="Add Season +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Season(s)"
+							title="Delete Season(s)"
+							apiEndpoint={seasonRoute}
 						/>
 					}
 					apiEndpoint={seasonRoute}

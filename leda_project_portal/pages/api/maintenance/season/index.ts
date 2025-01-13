@@ -53,9 +53,18 @@ export default async function handler(
 			console.error("Error in SeasonHandler:", error);
 			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
 		}
-	}
-	// Respond with a 405 status code for unsupported methods
-	else {
+	} else if (req.method === "DELETE") {
+		try {
+			const data = req.body as Season;
+			const query = `DELETE FROM maint.leda_maint_seasons WHERE "seasonCode" = $1 AND "fiscalYear" = $2 AND "desc" = $3 AND "isCurrentSeason" = $4;`;
+			const values = [data.seasonCode, data.fiscalYear, data.desc, data.isCurrentSeason];
+			const result = await queryPost(query, values);
+			res.status(201).json({ delete1: result });
+		} catch (error) {
+			console.error("Error in DivisionHandler:", error as Error);
+			res.status(500).json({ message: (error as Error).message || "Server error" });
+		}
+	} else {
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }
