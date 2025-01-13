@@ -57,7 +57,7 @@ const playerInfoSchema = z.object({
 	gender: z.string().min(1, { message: "Gender is Required" }),
 	dateOfBirth: z.string().optional(),
 	// Membership Information
-	ledaId: z.number().min(0, { message: "LEDA ID Must be a Postive Number." }),
+	ledaId: z.number().min(0, { message: "LEDA ID Must be a Postive Number." }).optional(),
 	establishedDate: z.string(),
 	badStanding: z.boolean(),
 	badStandingReason: z.optional(z.string()),
@@ -66,9 +66,9 @@ const playerInfoSchema = z.object({
 	formOnFile: z.boolean(),
 	needsMemberCard: z.boolean(),
 	inactiveDate: z.optional(z.string().optional()),
-	lastMembershipFeePayment: z.string().min(3).max(4),
+	lastMembershipFeePayment: z.string().min(3, { message: "Last Membership fee is required" }).max(4),
 	lastTrailsDate: z.optional(z.string()),
-	memberType: z.string().min(1),
+	memberType: z.string().min(1, { message: "Member Type is Required" }),
 	cannotBeCaptain: z.boolean(),
 	lifetimeMember: z.boolean(),
 	lifetimeMemberReason: z.optional(z.string()),
@@ -127,6 +127,7 @@ export default function PlayerAddInformationForm({
 			const submissionValues = generateIDStatus
 				? { ...values, ledaId: 0 }
 				: values;
+			
 			const response = await fetch(playerRoute, {
 				method: "POST",
 				headers: {

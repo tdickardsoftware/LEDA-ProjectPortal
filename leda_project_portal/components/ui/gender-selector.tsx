@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Control, useFormContext } from "react-hook-form";
+import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -49,22 +49,24 @@ const genders = [
 
 export default function GenderSelector({ control, name }: GenderSelectorProps) {
 	return (
-		<FormField
-			control={control}
-			name={name}
-			render={({ field }) => (
-				<FormItem>
-					<FormLabel>Gender *</FormLabel>
-					<FormControl>
-						<GenderSelectorContent
-							value={field.value}
-							onChange={field.onChange}
-						/>
-					</FormControl>
-					<FormMessage />
-				</FormItem>
-			)}
-		/>
+		<FormProvider {...useFormContext()}>
+			<FormField
+				control={control}
+				name={name}
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>Gender *</FormLabel>
+						<FormControl>
+							<GenderSelectorContent
+								value={field.value}
+								onChange={field.onChange}
+							/>
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
+			/>
+		</FormProvider>
 	);
 }
 
@@ -123,8 +125,7 @@ const GenderSelectorContent: React.FC<GenderSelectorContentProps> = ({
 											value={g.value}
 											onSelect={() => {
 												handleValueChange(g.value);
-												if (g.value !== "Other")
-													handleValueChange("");
+												
 												setOpen(false);
 											}}
 											className="hover:bg-gray-200"

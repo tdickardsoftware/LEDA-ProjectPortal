@@ -31,8 +31,6 @@ export default async function Page() {
 						<AlertDialogDelete
 							buttonName="Delete Place"
 							title="Delete Place"
-							tables={["leda_place_info"]}
-							targetColumn="ledaId"
 							apiEndpoint={placeRoute}
 						/>
 					}

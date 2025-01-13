@@ -31,8 +31,6 @@ export default async function Page() {
 						<AlertDialogDelete
 							buttonName="Delete Division"
 							title="Delete Division"
-							tables={["leda_maint_divisions"]}
-							targetColumn="divisionName"
 							apiEndpoint={divisionRoute}
 						/>
 					}

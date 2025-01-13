@@ -49,8 +49,9 @@ export default async function handler(
 		}
 	} else if (req.method === "DELETE") {
 		try {
+			const data = req.body as Division;
 			const query = `DELETE FROM maint.leda_maint_divisions WHERE "divisionName" = $1;`;
-			const values = [req.body.targetValue];
+			const values = [data.divisionName];
 			const result = await queryPost(query, values);
 			res.status(201).json({ delete1: result });
 		} catch (error) {

@@ -71,8 +71,9 @@ export default async function handler(
 		// handle invalid method
 	} else if (req.method === "DELETE") {
 		try {
+			const data = req.body as Place;
 			const query = `DELETE FROM public.leda_place_info WHERE "ledaId" = $1;`;
-			const values = [req.body.targetValue];
+			const values = [data.ledaId];
 			const result = await queryPost(query, values);
 			res.status(200).json(result);
 		} catch (error) {

@@ -56,7 +56,7 @@ const PhoneNumberInputContent: React.FC<PhoneNumberInputProps> = ({
 }) => {
 	const {
 		field: { onChange, onBlur, value, ref },
-		fieldState: { error },
+		fieldState: {  },
 	} = useController({
 		name,
 		control,
@@ -87,7 +87,6 @@ const PhoneNumberInputContent: React.FC<PhoneNumberInputProps> = ({
 				onBlur={handleBlur}
 				ref={ref}
 			/>
-			{error && <p>{error.message}</p>}
 		</div>
 	);
 };

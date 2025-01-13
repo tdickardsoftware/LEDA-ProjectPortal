@@ -5,7 +5,6 @@ import {
 	Control,
 	FormProvider,
 	useFormContext,
-	useForm,
 } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,7 +48,7 @@ export default function PlaceOwnerSelect({
 	label,
 }: PlaceOwnerSelectProps) {
 	return (
-		<FormProvider {...useForm<FormValues>()}>
+		<FormProvider {...useFormContext()}>
 			<FormField
 				control={control}
 				name={name}

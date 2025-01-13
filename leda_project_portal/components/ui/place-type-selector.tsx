@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Control, useFormContext } from "react-hook-form";
+import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,22 +50,24 @@ export default function PlaceTypeSelector({
 	label,
 }: PlaceTypeSelectorProps) {
 	return (
-		<FormField
-			control={control}
-			name={name}
-			render={({ field }) => (
-				<FormItem>
-					<FormLabel>{label}</FormLabel>
-					<FormControl>
-						<PlaceTypeSelectorContent
-							value={field.value}
-							onChange={field.onChange}
-						/>
-					</FormControl>
-					<FormMessage />
-				</FormItem>
-			)}
-		/>
+		<FormProvider {...useFormContext()}>
+			<FormField
+				control={control}
+				name={name}
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>{label}</FormLabel>
+						<FormControl>
+							<PlaceTypeSelectorContent
+								value={field.value}
+								onChange={field.onChange}
+							/>
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
+			/>
+		</FormProvider>
 	);
 }
 

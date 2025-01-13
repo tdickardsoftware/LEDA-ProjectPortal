@@ -105,11 +105,13 @@ export default async function handler(
 		}
 	} else if (req.method === "DELETE") {
 		try {
-			const { tableName, targetColumn, targetValue } = req.body;
-			const query = `DELETE FROM ${tableName} WHERE "${targetColumn}" = $1`;
-			const values = [targetValue];
-			const result = await queryPost(query, values);
-			res.status(200).json(result);
+			const data = req.body as Player;
+			const query1 = `DELETE FROM public.leda_player_info WHERE "ledaId" = $1`;
+			const query2 = `DELETE FROM public.leda_membership_info WHERE "ledaId" = $1`;
+			const values = [data.ledaId];
+			const result1 = await queryPost(query1, values);
+			const result2 = await queryPost(query2, values);
+			res.status(200).json({"result1 ":result1,  "result2":result2});
 		} catch (error) {
 			console.error("Error in PlayerHandler:", error);
 			res.status(500).json({

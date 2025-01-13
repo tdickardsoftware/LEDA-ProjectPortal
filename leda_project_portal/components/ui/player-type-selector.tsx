@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
 	Control,
 	useFormContext,
-	useForm,
 	FormProvider,
 } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -50,7 +49,7 @@ export default function PlayerTypeSelector({
 	label,
 }: PlayerTypeSelectorProps) {
 	return (
-		<FormProvider {...useForm<FormValues>()}>
+		<FormProvider {...useFormContext()}>
 			<FormField
 				control={control}
 				name={name}
