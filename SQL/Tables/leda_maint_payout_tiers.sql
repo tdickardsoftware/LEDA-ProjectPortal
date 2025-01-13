@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS maint.leda_maint_payout_tiers
     "place" bigint NOT NULL,
     "amount" numeric(12,2) NOT NULL,
     CONSTRAINT leda_maint_payout_tiers_pkey PRIMARY KEY (id)
+    CONSTRAINT leda_maint_payout_tiers_place_unique UNIQUE (place)
 )
 
 TABLESPACE pg_default;
