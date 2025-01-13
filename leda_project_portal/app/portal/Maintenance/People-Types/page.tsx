@@ -1,3 +1,4 @@
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import { peopleTypeRoute } from "@/lib/apiRoutes";
@@ -24,6 +25,13 @@ export default async function Page() {
 							form="PeopleTypeAddForm"
 							title="Add People Type"
 							buttonName="Add People Type +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete People Type(s)"
+							title="Delete People Type(s)"
+							apiEndpoint={peopleTypeRoute}
 						/>
 					}
 					apiEndpoint={peopleTypeRoute}

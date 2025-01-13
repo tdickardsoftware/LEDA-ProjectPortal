@@ -53,7 +53,7 @@ export default async function handler(
 			const result = await queryPost(query, values);
 			res.status(201).json({ delete1: result });
 		} catch (error) {
-			console.error("Error in DivisionHandler:", error as Error);
+			console.error("Error in PayoutTierHandler:", error as Error);
 			res.status(500).json({ message: (error as Error).message || "Server error" });
 		}
 	} else {
