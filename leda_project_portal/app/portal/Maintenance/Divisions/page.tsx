@@ -29,8 +29,8 @@ export default async function Page() {
 					}
 					deleteDialog={
 						<AlertDialogDelete
-							buttonName="Delete Division"
-							title="Delete Division"
+							buttonName="Delete Division(s)"
+							title="Delete Mention(s)"
 							apiEndpoint={divisionRoute}
 						/>
 					}
