@@ -1,3 +1,4 @@
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import { penaltyRoute } from "@/lib/apiRoutes";
@@ -24,6 +25,13 @@ export default async function Page() {
 							form="PenaltyAddForm"
 							title="Add Penalty"
 							buttonName="Add Penalty +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Penalty"
+							title="Delete Penalty"
+							apiEndpoint={penaltyRoute}
 						/>
 					}
 					apiEndpoint={penaltyRoute}
