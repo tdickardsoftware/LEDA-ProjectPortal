@@ -1,3 +1,4 @@
+import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import { mentionRoute } from "@/lib/apiRoutes";
@@ -24,6 +25,13 @@ export default async function Page() {
 							form="MentionAddForm"
 							title="Add Mention"
 							buttonName="Add Mention +"
+						/>
+					}
+					deleteDialog={
+						<AlertDialogDelete
+							buttonName="Delete Mention(s)"
+							title="Delete Mention(s)"
+							apiEndpoint={mentionRoute}
 						/>
 					}
 					apiEndpoint={mentionRoute}

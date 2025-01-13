@@ -20,7 +20,10 @@ export default async function handler(
 			res.status(200).json(result.rows);
 		} catch (error) {
 			// Handle any errors that occur during the query
-			res.status(500).json({ message: "Failed to fetch mentions ", error });
+			res.status(500).json({
+				message: "Failed to fetch mentions ",
+				error,
+			});
 		}
 	}
 	// Handle POST requests
@@ -48,11 +51,24 @@ export default async function handler(
 		} catch (error) {
 			// Handle any errors that occur during the insert operation
 			console.error("Error in Mention Handler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			}); // Send error info in JSON
 		}
-	}
-	// Respond with a 405 status code for unsupported methods
-	else {
+	} else if (req.method === "DELETE") {
+		try {
+			const data = req.body as Mention;
+			const query = `DELETE FROM maint.leda_maint_mentions WHERE "mentionCode" = $1 AND "desc" = $2;`;
+			const values = [data.mentionCode, data.desc];
+			const result = await queryPost(query, values);
+			res.status(201).json({ delete1: result });
+		} catch (error) {
+			console.error("Error in DivisionHandler:", error as Error);
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
+		}
+	} else {
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }
