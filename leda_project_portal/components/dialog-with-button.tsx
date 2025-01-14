@@ -26,11 +26,13 @@ import PeopleTypeAddForm from "@/components/forms/maintenance/people-type-add-fo
 import PlaceTypeAddForm from "@/components/forms/maintenance/place-type-add-form";
 import SeasonAddForm from "@/components/forms/maintenance/season-add-form";
 import React from "react";
+import PlayerEditInformationForm from "./forms/management/player-edit-form";
 //
 // Interface
 //
 const formComponents = {
 	PlayerAddInformationForm: PlayerAddInformationForm,
+	PlayerEditInformationForm: PlayerEditInformationForm,
 	PlaceAddForm: PlaceAddForm,
 	TeamAddForm: TeamAddForm,
 	DivisionAddForm: DivisionAddForm,
@@ -49,6 +51,9 @@ interface DialogWithButtonProps {
 	title: string;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	onRefresh?: any; //() => void
+	disabled?: boolean;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	rowData?: any;
 }
 //
 // function
@@ -58,13 +63,15 @@ export function DialogWithButton({
 	form,
 	title,
 	onRefresh,
+	disabled,
+	rowData,
 }: DialogWithButtonProps) {
 	const [activeForm, setActiveForm] = useState<keyof typeof formComponents>(
 		"PlayerAddInformationForm"
 	);
 	const [open, setOpen] = useState(false);
-
-	function renderForm() {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	function renderForm(rowData?: any) {
 		const FormComponent = formComponents[activeForm];
 		if (FormComponent) {
 			return (
@@ -73,6 +80,7 @@ export function DialogWithButton({
 						setOpen(false);
 					}}
 					onRefresh={onRefresh}
+					rowData={rowData}
 				/>
 			);
 		}
@@ -82,7 +90,7 @@ export function DialogWithButton({
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button variant="default" onClick={() => setActiveForm(form)}>
+				<Button variant="outline" onClick={() => setActiveForm(form)} disabled={disabled}>
 					{buttonName}
 				</Button>
 			</DialogTrigger>
@@ -90,7 +98,7 @@ export function DialogWithButton({
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>
-				{renderForm()}
+				{renderForm(rowData)}
 			</DialogContent>
 		</Dialog>
 	);

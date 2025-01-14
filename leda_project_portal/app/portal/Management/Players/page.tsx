@@ -34,6 +34,13 @@ export default async function Page() {
 							apiEndpoint={playerRoute}
 						/>
 					}
+					editDialog={
+						<DialogWithButton
+							form="PlayerEditInformationForm"
+							title="Edit Player"
+							buttonName="Edit Player"
+						/>
+					}
 					apiEndpoint={playerRoute}
 				/>
 			</div>

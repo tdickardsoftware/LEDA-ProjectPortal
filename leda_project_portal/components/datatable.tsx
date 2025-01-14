@@ -27,6 +27,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	pageName: string;
 	addDialog: React.ReactNode;
 	deleteDialog?: React.ReactNode;
+	editDialog?: React.ReactNode;
 	onRefresh?: (api: string) => void;
 	apiEndpoint: string; // New prop for API endpoint
 }
@@ -37,6 +38,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	pageName,
 	addDialog,
 	deleteDialog,
+	editDialog,
 	onRefresh,
 	apiEndpoint, // Destructure the new prop
 }: DataTableProps<TData, TValue>) {
@@ -65,7 +67,6 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const selectedRowsData = React.useMemo(() => {
 		return Object.keys(rowSelection).map((key) => tableData[parseInt(key)]);
 	}, [rowSelection, tableData]);
-
 	// Filtered data based on debounced query
 	const filteredData = React.useMemo(() => {
 		if (!debouncedQuery) return tableData;
@@ -122,24 +123,40 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								{ onRefresh: handleRefresh }
 							)}
 						</div>
-						{deleteDialog ? (
-							<div>
-								{React.cloneElement(
-									// eslint-disable-next-line @typescript-eslint/no-explicit-any
-									deleteDialog as React.ReactElement<any>,
-									{
-										selectedRowCount,
-										disabled:
-											selectedRowCount > 0 ? false : true,
-										rowData: selectedRowsData, // Pass the selected rows' data
-										onRefresh: handleRefresh,
-									}
-								)}
-							</div>
-						) : null}
+						<div className="flex space-x-2">
+							{editDialog ? (
+								<div>
+									{React.cloneElement(
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
+										editDialog as React.ReactElement<any>,
+										{
+											disabled:
+												selectedRowCount === 1 ? false : true,
+											rowData: selectedRowsData[0], // Pass the first selected row's data
+											onRefresh: handleRefresh,
+										}
+									)}
+								</div>
+							) : null}
+							{deleteDialog ? (
+								<div>
+									{React.cloneElement(
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
+										deleteDialog as React.ReactElement<any>,
+										{
+											selectedRowCount,
+											disabled:
+												selectedRowCount > 0 ? false : true,
+											rowData: selectedRowsData, // Pass the selected rows' data
+											onRefresh: handleRefresh,
+										}
+									)}
+								</div>
+							) : null}
+						</div>
 					</div>
 					{/* Search Input */}
-					<div className="mb-4">
+					<div className="mb-4 py-2">
 						<Input
 							type="text"
 							value={searchQuery}
