@@ -18,8 +18,6 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	FormControl,
 	FormField,
@@ -125,7 +123,6 @@ const GenderSelectorContent: React.FC<GenderSelectorContentProps> = ({
 											value={g.value}
 											onSelect={() => {
 												handleValueChange(g.value);
-												
 												setOpen(false);
 											}}
 											className="hover:bg-gray-200"
@@ -147,23 +144,6 @@ const GenderSelectorContent: React.FC<GenderSelectorContentProps> = ({
 					</PopoverContent>
 				</Popover>
 			</div>
-
-			{currentValue === "Other" && (
-				<div className="flex items-center gap-2">
-					<Label htmlFor="customGender" className="shrink-0">
-						Custom Gender
-					</Label>
-					<Input
-						id="customGender"
-						type="text"
-						placeholder="Enter gender"
-						{...(formContext
-							? formContext.register("customGender")
-							: {})}
-						className="w-[200px]"
-					/>
-				</div>
-			)}
 		</div>
 	);
 };

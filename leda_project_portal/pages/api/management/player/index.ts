@@ -14,19 +14,58 @@ export default async function handler(
 ) {
 	if (req.method === "GET") {
 		try {
-			// Fetch player information from the database
-			const result = await query<Player>(`
-                SELECT 
-                    "ledaId", 
-                    CONCAT(COALESCE("firstName", ''), ' ', COALESCE("middleInitial", ''), ' ', COALESCE("lastName", '')) as "fullName", 
-                    "lastName", "firstName", "middleInitial", "addressOne", "addressTwo", "city", "state", "zip", 
-                    "phoneNumber", "otherNumber", "email", "gender", 
-                    TO_CHAR("dateOfBirth", 'mm/dd/yyyy') as "dateOfBirth", 
-                    '(' || SUBSTRING("phoneNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("phoneNumber" FROM 4 FOR 3) || '-' || SUBSTRING("phoneNumber" FROM 7 FOR 4) AS "phoneNumberFormatted", 
-                    '(' || SUBSTRING("otherNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("otherNumber" FROM 4 FOR 3) || '-' || SUBSTRING("otherNumber" FROM 7 FOR 4) AS "otherNumberFormatted" 
-                FROM public.leda_player_info;
-            `);
-			res.status(200).json(result.rows);
+			if (req.query.ledaId) {
+				const ledaId = req.query.ledaId;
+				const result = await query<PlayerMemberInfo>(`
+					SELECT 
+						m."ledaId",
+						m."establishDate",
+						m."badStanding",
+						m."badStandingReason",
+						m."takeOffMailing",
+						m."mailStandings",
+						m."formOnFile",
+						m."needsMemberCard",
+						m."inactiveDate",
+						m."lastMembershipFeePayment",
+						m."lastTrailsDate",
+						m."memberType",
+						m."cannotBeCaptainin",
+						m."lifetimeMember",
+						m."lifetimeMemberReason",
+						p."lastName",
+						p."firstName",
+						p."middleInitial",
+						p."addressOne",
+						p."addressTwo",
+						p.city,
+						p.state,
+						p.zip,
+						p."phoneNumber",
+						p."otherNumber",
+						p.email,
+						p.gender,
+						p."dateOfBirth"
+					FROM public.leda_membership_info m
+					JOIN public.leda_player_info p ON m."ledaId" = p."ledaId"
+					WHERE m."ledaId" = $1
+				`, [ledaId as string]);
+				res.status(200).json(result.rows[0]);
+			} else {
+				// Fetch player information from the database
+				const result = await query<Player>(`
+					SELECT 
+						"ledaId", 
+						CONCAT(COALESCE("firstName", ''), ' ', COALESCE("middleInitial", ''), ' ', COALESCE("lastName", '')) as "fullName", 
+						"lastName", "firstName", "middleInitial", "addressOne", "addressTwo", "city", "state", "zip", 
+						"phoneNumber", "otherNumber", "email", "gender", 
+						TO_CHAR("dateOfBirth", 'mm/dd/yyyy') as "dateOfBirth", 
+						'(' || SUBSTRING("phoneNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("phoneNumber" FROM 4 FOR 3) || '-' || SUBSTRING("phoneNumber" FROM 7 FOR 4) AS "phoneNumberFormatted", 
+						'(' || SUBSTRING("otherNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("otherNumber" FROM 4 FOR 3) || '-' || SUBSTRING("otherNumber" FROM 7 FOR 4) AS "otherNumberFormatted" 
+					FROM public.leda_player_info;
+				`);
+				res.status(200).json(result.rows);
+			}
 		} catch (error) {
 			res.status(500).json({
 				message: "Failed to fetch player information",
