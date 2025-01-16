@@ -94,8 +94,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			rowSelection,
 		},
 		initialState: {
-			sorting: [{id: defaultSort ? defaultSort : "", desc: false}],
-		}
+			sorting: [{ id: defaultSort ? defaultSort : "", desc: false }],
+		},
 	});
 
 	// Refresh the table data
@@ -136,7 +136,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 										editDialog as React.ReactElement<any>,
 										{
 											disabled:
-												selectedRowCount === 1 ? false : true,
+												selectedRowCount === 1
+													? false
+													: true,
 											rowData: selectedRowsData[0], // Pass the first selected row's data
 											onRefresh: handleRefresh,
 										}
@@ -151,7 +153,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 										{
 											selectedRowCount,
 											disabled:
-												selectedRowCount > 0 ? false : true,
+												selectedRowCount > 0
+													? false
+													: true,
 											rowData: selectedRowsData, // Pass the selected rows' data
 											onRefresh: handleRefresh,
 										}
