@@ -31,55 +31,57 @@ import { Player, PlayerMemberInfo } from "@/lib/definitions";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const playerInfoSchema = z.object({
-    firstName: z.string().min(1, { message: "First Name is Required" }),
-    middleInitial: z.optional(z.string()),
-    lastName: z.string().min(1, { message: "Last Name is Required" }),
-    addressOne: z.string().min(1, { message: "Address is Required" }),
-    addressTwo: z.optional(z.string()),
-    city: z.string().min(1, { message: "City is Required" }),
-    state: z.string().min(1, { message: "State is Required" }),
-    zip: z.string().min(1, { message: "Zip Code is Required" }),
-    phoneNumber: z
-        .string()
-        .min(1, { message: "Phone Number is Required" })
-        .refine((value) => isValidPhoneNumber(value, "US"), {
-            message: "Phone Number is Invalid",
-        }),
-    otherNumber: z
-        .string()
-        .optional()
-        .refine(
-            (value) => value === "" || isValidPhoneNumber(value ?? "", "US"),
-            { message: "Other Number is Invalid" }
-        ),
-    email: z
-        .string()
-        .min(1, { message: "Email is Required" })
-        .refine(validator.isEmail, { message: "Email is Invalid" }),
-    gender: z.string().min(1, { message: "Gender is Required" }),
-    dateOfBirth: z.string().optional(),
-    // Membership Information
-    ledaId: z
-        .number()
-        .min(0, { message: "LEDA ID Must be a Postive Number." })
-        .optional(),
-    establishedDate: z.string(),
-    badStanding: z.boolean(),
-    badStandingReason: z.optional(z.string()),
-    takeOffMailing: z.boolean(),
-    mailStandings: z.boolean(),
-    formOnFile: z.boolean(),
-    needsMemberCard: z.boolean(),
-    inactiveDate: z.optional(z.string()),
-    lastMembershipFeePayment: z
-        .string()
-        .min(3, { message: "Last Membership fee is required" })
-        .max(4, { message: "Last Membership fee must be between 3 and 4 characters" }),
-    lastTrailsDate: z.optional(z.string()),
-    memberType: z.string().min(1, { message: "Member Type is Required" }),
-    cannotBeCaptain: z.boolean(),
-    lifetimeMember: z.boolean(),
-    lifetimeMemberReason: z.optional(z.string()),
+	firstName: z.string().min(1, { message: "First Name is Required" }),
+	middleInitial: z.optional(z.string()),
+	lastName: z.string().min(1, { message: "Last Name is Required" }),
+	addressOne: z.string().min(1, { message: "Address is Required" }),
+	addressTwo: z.optional(z.string()),
+	city: z.string().min(1, { message: "City is Required" }),
+	state: z.string().min(1, { message: "State is Required" }),
+	zip: z.string().min(1, { message: "Zip Code is Required" }),
+	phoneNumber: z
+		.string()
+		.min(1, { message: "Phone Number is Required" })
+		.refine((value) => isValidPhoneNumber(value, "US"), {
+			message: "Phone Number is Invalid",
+		}),
+	otherNumber: z
+		.string()
+		.optional()
+		.refine(
+			(value) => value === "" || isValidPhoneNumber(value ?? "", "US"),
+			{ message: "Other Number is Invalid" }
+		),
+	email: z
+		.string()
+		.min(1, { message: "Email is Required" })
+		.refine(validator.isEmail, { message: "Email is Invalid" }),
+	gender: z.string().min(1, { message: "Gender is Required" }),
+	dateOfBirth: z.string().optional(),
+	// Membership Information
+	ledaId: z
+		.number()
+		.min(0, { message: "LEDA ID Must be a Postive Number." })
+		.optional(),
+	establishedDate: z.string(),
+	badStanding: z.boolean(),
+	badStandingReason: z.optional(z.string()),
+	takeOffMailing: z.boolean(),
+	mailStandings: z.boolean(),
+	formOnFile: z.boolean(),
+	needsMemberCard: z.boolean(),
+	inactiveDate: z.optional(z.string()),
+	lastMembershipFeePayment: z
+		.string()
+		.min(3, { message: "Last Membership fee is required" })
+		.max(4, {
+			message: "Last Membership fee must be between 3 and 4 characters",
+		}),
+	lastTrailsDate: z.optional(z.string()),
+	memberType: z.string().min(1, { message: "Member Type is Required" }),
+	cannotBeCaptain: z.boolean(),
+	lifetimeMember: z.boolean(),
+	lifetimeMemberReason: z.optional(z.string()),
 });
 
 const formContainerStyle =
@@ -122,7 +124,7 @@ export default function PlayerEditInformationForm({
 			gender: formData.gender || "",
 			dateOfBirth: formData.dateOfBirth
 				? new Date(formData.dateOfBirth).toISOString().split("T")[0]
-					: undefined,
+				: undefined,
 			ledaId: formData.ledaId ?? undefined,
 			establishedDate: formData.establishedDate
 				? new Date(formData.establishedDate).toISOString().split("T")[0]
@@ -135,11 +137,11 @@ export default function PlayerEditInformationForm({
 			needsMemberCard: formData.needsMemberCard || false,
 			inactiveDate: formData.inactiveDate
 				? new Date(formData.inactiveDate).toISOString().split("T")[0]
-					: undefined,
+				: undefined,
 			lastMembershipFeePayment: formData.lastMembershipFeePayment || "",
 			lastTrailsDate: formData.lastTrailsDate
 				? new Date(formData.lastTrailsDate).toISOString().split("T")[0]
-					: undefined,
+				: undefined,
 			memberType: formData.memberType || "",
 			cannotBeCaptain: formData.cannotBeCaptain || false,
 			lifetimeMember: formData.lifetimeMember || false,
@@ -175,18 +177,16 @@ export default function PlayerEditInformationForm({
 				ledaId: data.ledaId ? Number(data.ledaId) : undefined,
 				dateOfBirth: data.dateOfBirth
 					? new Date(data.dateOfBirth).toISOString().split("T")[0]
-						: undefined,
+					: undefined,
 				establishedDate: data.establishedDate
-					? new Date(data.establishedDate)
-						.toISOString()
-						.split("T")[0]
-						: undefined,
+					? new Date(data.establishedDate).toISOString().split("T")[0]
+					: undefined,
 				inactiveDate: data.inactiveDate
 					? new Date(data.inactiveDate).toISOString().split("T")[0]
-						: undefined,
+					: undefined,
 				lastTrailsDate: data.lastTrailsDate
 					? new Date(data.lastTrailsDate).toISOString().split("T")[0]
-						: undefined,
+					: undefined,
 			}); // Set form values to the retrieved data
 			setLoading(false); // Set loading to false after data is fetched
 		};
@@ -260,7 +260,9 @@ export default function PlayerEditInformationForm({
 				<div className="flex space-x-4">
 					{/* Player Information Section */}
 					<div className={formContainerStyle}>
-						<h1>Player Information for LEDA ID #{rowData.ledaId}</h1>
+						<h1>
+							Player Information for LEDA ID #{rowData.ledaId}
+						</h1>
 						<div className="flex space-x-4">
 							<InputDefault
 								control={form.control}
@@ -334,31 +336,31 @@ export default function PlayerEditInformationForm({
 					{/* Membership Info Section */}
 					<div className={formContainerStyle}>
 						<h1>Membership Info</h1>
-                        <FormField
-                            control={form.control}
-                            name="ledaId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="LEDA ID #"
-                                            {...field}
-                                            disabled
-                                            className={inputWidth}
-                                            type="number"
-                                            onChange={(e) => {
-                                                field.onChange(
-                                                    e.target.value
-                                                        ? Number(e.target.value)
-                                                        : undefined
-                                                );
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+						<FormField
+							control={form.control}
+							name="ledaId"
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<Input
+											placeholder="LEDA ID #"
+											{...field}
+											disabled
+											className={inputWidth}
+											type="number"
+											onChange={(e) => {
+												field.onChange(
+													e.target.value
+														? Number(e.target.value)
+														: undefined
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 						<PlayerTypeSelector
 							control={form.control}
 							name="memberType"
@@ -525,7 +527,9 @@ export default function PlayerEditInformationForm({
 				</div>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>Back</Button>
+					<Button type="button" onClick={onClose}>
+						Back
+					</Button>
 					<Button type="submit">Update</Button>
 				</div>
 			</form>

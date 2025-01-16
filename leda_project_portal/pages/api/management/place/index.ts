@@ -11,7 +11,7 @@ export default async function handler(
 ) {
 	// handle get method
 	if (req.method === "GET") {
-		if(req.query.ledaId) {
+		if (req.query.ledaId) {
 			try {
 				const result = await query<Place>(
 					`SELECT "ledaId", "name", CONCAT(COALESCE("addressOne", ''), ' ', COALESCE("addressTwo", ''), ', ', COALESCE("city", ''), ' ', COALESCE("state", ''), ', ', COALESCE("zip", '')) as "addressFull", "addressOne", "addressTwo", "city", "state", "zip", "phoneNumber", "otherNumber", "email", "website", TO_CHAR("establishDate", 'mm/dd/yyyy') as "establishDate", "memo", "numberOfBoards", "sendMailings", "regularSponsor", "currentSponsor", "issues", "lastBarFeePayment", "lastSanctioningDate", "contactId", "placeType" FROM public.leda_place_info WHERE "ledaId" = $1;`,
@@ -19,7 +19,10 @@ export default async function handler(
 				);
 				res.status(200).json(result.rows[0]);
 			} catch (error) {
-				res.status(500).json({ message: "Failed to fetch places ", error });
+				res.status(500).json({
+					message: "Failed to fetch places ",
+					error,
+				});
 			}
 		} else {
 			try {
@@ -30,7 +33,10 @@ export default async function handler(
 				// set status to 200 and send data
 				res.status(200).json(result.rows);
 			} catch (error) {
-				res.status(500).json({ message: "Failed to fetch places ", error });
+				res.status(500).json({
+					message: "Failed to fetch places ",
+					error,
+				});
 			}
 		}
 		// handle post method

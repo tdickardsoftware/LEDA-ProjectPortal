@@ -16,7 +16,8 @@ export default async function handler(
 		try {
 			if (req.query.ledaId) {
 				const ledaId = req.query.ledaId;
-				const result = await query<PlayerMemberInfo>(`
+				const result = await query<PlayerMemberInfo>(
+					`
 					SELECT 
 						m."ledaId",
 						m."establishedDate",
@@ -49,7 +50,9 @@ export default async function handler(
 					FROM public.leda_membership_info m
 					JOIN public.leda_player_info p ON m."ledaId" = p."ledaId"
 					WHERE m."ledaId" = $1
-				`, [ledaId as string]);
+				`,
+					[ledaId as string]
+				);
 				res.status(200).json(result.rows[0]);
 			} else {
 				// Fetch player information from the database
@@ -150,7 +153,7 @@ export default async function handler(
 			const values = [data.ledaId];
 			const result1 = await queryPost(query1, values);
 			const result2 = await queryPost(query2, values);
-			res.status(200).json({"result1 ":result1,  "result2":result2});
+			res.status(200).json({ "result1 ": result1, result2: result2 });
 		} catch (error) {
 			console.error("Error in PlayerHandler:", error);
 			res.status(500).json({
@@ -193,7 +196,7 @@ export default async function handler(
 				data.email,
 				data.gender,
 				data.dateOfBirth,
-				data.ledaId
+				data.ledaId,
 			];
 
 			const query2 = `
@@ -230,7 +233,7 @@ export default async function handler(
 				data.cannotBeCaptain,
 				data.lifetimeMember,
 				data.lifetimeMemberReason,
-				data.ledaId
+				data.ledaId,
 			];
 
 			const result1 = await queryPost(query1, values1);

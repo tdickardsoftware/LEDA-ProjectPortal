@@ -15,7 +15,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 //
-// Form imports
+// Form importsS
 //
 import PlayerAddInformationForm from "@/components/forms/management/player-info-form";
 import PlaceAddForm from "@/components/forms/management/place-add-form";
@@ -49,7 +49,7 @@ const formComponents = {
 	PeopleTypeAddForm: PeopleTypeAddForm,
 	PlaceTypeAddForm: PlaceTypeAddForm,
 	SeasonAddForm: SeasonAddForm,
-	PlaceEditForm
+	PlaceEditForm,
 };
 
 interface DialogWithButtonProps {
@@ -97,7 +97,11 @@ export function DialogWithButton({
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button variant="outline" onClick={() => setActiveForm(form)} disabled={disabled}>
+				<Button
+					variant="outline"
+					onClick={() => setActiveForm(form)}
+					disabled={disabled}
+				>
 					{buttonName}
 				</Button>
 			</DialogTrigger>

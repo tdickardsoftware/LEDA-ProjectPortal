@@ -120,7 +120,9 @@ export default function PlaceEditForm({
 			issues: formData.issues || false,
 			lastBarFeePayment: formData.lastBarFeePayment || "",
 			lastSanctioningDate: formData.lastSanctioningDate
-				? new Date(formData.lastSanctioningDate).toISOString().split("T")[0]
+				? new Date(formData.lastSanctioningDate)
+						.toISOString()
+						.split("T")[0]
 				: undefined,
 			placeType: formData.placeType || "",
 			contactId: formData.contactId ? String(formData.contactId) : "",
@@ -148,18 +150,21 @@ export default function PlaceEditForm({
 			form.reset({
 				...data,
 				ledaId: data.ledaId ? Number(data.ledaId) : undefined,
-                numberOfBoards: data.numberOfBoards ? Number(data.numberOfBoards) : undefined,
+				numberOfBoards: data.numberOfBoards
+					? Number(data.numberOfBoards)
+					: undefined,
 				establishDate: data.establishDate
 					? new Date(data.establishDate).toISOString().split("T")[0]
-						: undefined,
+					: undefined,
 				lastSanctioningDate: data.lastSanctioningDate
-					? new Date(data.lastSanctioningDate).toISOString().split("T")[0]
-						: undefined,
+					? new Date(data.lastSanctioningDate)
+							.toISOString()
+							.split("T")[0]
+					: undefined,
 			}); // Set form values to the retrieved data
 		};
 		fetchData();
 	}, [rowData, form]);
-
 
 	if (!rowData) {
 		return <div>No place data available.</div>;
@@ -393,7 +398,9 @@ export default function PlaceEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>Back</Button>
+					<Button type="button" onClick={onClose}>
+						Back
+					</Button>
 					<Button type="submit">Update</Button>
 				</div>
 			</form>

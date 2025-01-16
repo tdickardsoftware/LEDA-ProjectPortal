@@ -33,7 +33,10 @@ export default async function handler(
 			}
 		} catch (error) {
 			// Handle any errors that occur during the query
-			res.status(500).json({ message: "Failed to fetch team info ", error });
+			res.status(500).json({
+				message: "Failed to fetch team info ",
+				error,
+			});
 		}
 	}
 	// Handle POST requests
@@ -64,7 +67,9 @@ export default async function handler(
 		} catch (error) {
 			// Handle any errors that occur during the insert operation
 			console.error("Error in TeamHandler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			}); // Send error info in JSON
 		}
 	} else if (req.method === "DELETE") {
 		try {

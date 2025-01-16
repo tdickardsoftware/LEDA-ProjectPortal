@@ -22,7 +22,6 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import { Team } from "@/lib/definitions";
 
-
 const teamInfoSchema = z.object({
 	ledaId: z
 		.number()
@@ -49,7 +48,6 @@ export default function TeamEditForm({
 }) {
 	const [formData, setFormData] = useState<Team>({} as Team);
 
-
 	const formRef = React.useRef<HTMLFormElement>(null);
 	const form = useForm<z.infer<typeof teamInfoSchema>>({
 		resolver: zodResolver(teamInfoSchema),
@@ -65,7 +63,6 @@ export default function TeamEditForm({
 	});
 
 	useEffect(() => {
-
 		const fetchData = async () => {
 			const response = await fetch(
 				teamRoute + `?ledaId=${rowData.ledaId}`,
@@ -87,10 +84,8 @@ export default function TeamEditForm({
 				...data,
 				ledaId: data.ledaId ? Number(data.ledaId) : undefined,
 				establishedDate: data.establishedDate
-					? new Date(data.establishedDate)
-						.toISOString()
-						.split("T")[0]
-						: undefined,
+					? new Date(data.establishedDate).toISOString().split("T")[0]
+					: undefined,
 			}); // Set form values to the retrieved data
 		};
 		fetchData();
@@ -211,7 +206,9 @@ export default function TeamEditForm({
 				</div>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>Back</Button>
+					<Button type="button" onClick={onClose}>
+						Back
+					</Button>
 					<Button type="submit">Update</Button>
 				</div>
 			</form>
