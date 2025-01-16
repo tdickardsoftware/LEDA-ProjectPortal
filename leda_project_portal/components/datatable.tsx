@@ -30,6 +30,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	editDialog?: React.ReactNode;
 	onRefresh?: (api: string) => void;
 	apiEndpoint: string; // New prop for API endpoint
+	defaultSort?: string;
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
@@ -41,6 +42,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	editDialog,
 	onRefresh,
 	apiEndpoint, // Destructure the new prop
+	defaultSort,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
@@ -91,6 +93,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			sorting,
 			rowSelection,
 		},
+		initialState: {
+			sorting: [{id: defaultSort ? defaultSort : "", desc: false}],
+		}
 	});
 
 	// Refresh the table data

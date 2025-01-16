@@ -13,12 +13,24 @@ export default async function handler(
 	// Handle GET requests
 	if (req.method === "GET") {
 		try {
-			// Execute the database query to fetch team information
-			const result = await query<Team>(
-				`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/yyyy') as "establishedDate", "memo", "lastTeamFeePayment" FROM public.leda_team_info;`
-			);
-			// Respond with the query result
-			res.status(200).json(result.rows);
+			if (req.query.ledaId) {
+				// Extract the ledaId from the query parameters
+				const ledaId = req.query.ledaId;
+				// Execute the database query to fetch team information
+				const result = await query<Team>(
+					`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/yyyy') as "establishedDate", "memo", "lastTeamFeePayment" FROM public.leda_team_info WHERE "ledaId" = $1;`,
+					[ledaId as string]
+				);
+				// Respond with the query result
+				res.status(200).json(result.rows[0]);
+			} else {
+				// Execute the database query to fetch team information
+				const result = await query<Team>(
+					`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/yyyy') as "establishedDate", "memo", "lastTeamFeePayment" FROM public.leda_team_info;`
+				);
+				// Respond with the query result
+				res.status(200).json(result.rows);
+			}
 		} catch (error) {
 			// Handle any errors that occur during the query
 			res.status(500).json({ message: "Failed to fetch team info ", error });
@@ -59,6 +71,27 @@ export default async function handler(
 			const data = req.body as Team;
 			const query = `DELETE FROM public.leda_team_info WHERE "ledaId" = $1;`;
 			const values = [data.ledaId];
+			const result = await queryPost(query, values);
+			res.status(200).json(result);
+		} catch (error) {
+			console.error("Error in TeamHandler:", error);
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
+		}
+	} else if (req.method === "PUT") {
+		try {
+			const results = req.body as Team;
+			const query = `UPDATE public.leda_team_info
+				SET "teamName" = $2, "establishedDate" = $3, memo = $4, "lastTeamFeePayment" = $5
+				WHERE "ledaId" = $1;`;
+			const values = [
+				results.ledaId,
+				results.teamName,
+				results.establishedDate,
+				results.memo,
+				results.lastTeamFeePayment,
+			];
 			const result = await queryPost(query, values);
 			res.status(200).json(result);
 		} catch (error) {
