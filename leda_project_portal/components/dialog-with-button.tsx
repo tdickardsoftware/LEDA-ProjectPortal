@@ -26,7 +26,8 @@ import PeopleTypeAddForm from "@/components/forms/maintenance/people-type-add-fo
 import PlaceTypeAddForm from "@/components/forms/maintenance/place-type-add-form";
 import SeasonAddForm from "@/components/forms/maintenance/season-add-form";
 import React from "react";
-import PlayerEditInformationForm from "./forms/management/player-edit-form";
+import PlayerEditInformationForm from "@/components/forms/management/player-edit-form";
+import TeamEditForm from "@/components/forms/management/team-edit-form";
 //
 // Interface
 //
@@ -35,6 +36,7 @@ const formComponents = {
 	PlayerEditInformationForm: PlayerEditInformationForm,
 	PlaceAddForm: PlaceAddForm,
 	TeamAddForm: TeamAddForm,
+	TeamEditForm: TeamEditForm,
 	DivisionAddForm: DivisionAddForm,
 	MentionAddForm: MentionAddForm,
 	PaymentTypeAddForm: PaymentTypeAddForm,

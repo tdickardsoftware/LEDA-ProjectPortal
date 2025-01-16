@@ -42,6 +42,7 @@ export default async function Page() {
 						/>
 					}
 					apiEndpoint={playerRoute}
+					defaultSort="ledaId"
 				/>
 			</div>
 		</>

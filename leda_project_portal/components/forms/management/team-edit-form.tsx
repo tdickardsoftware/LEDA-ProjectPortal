@@ -38,7 +38,7 @@ const formContainerStyle =
 	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
 const inputWidth = "w-24";
 
-export default function TeamEditInformationForm({
+export default function TeamEditForm({
 	onClose,
 	onRefresh,
 	rowData,

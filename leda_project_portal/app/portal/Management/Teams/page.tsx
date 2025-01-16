@@ -34,7 +34,15 @@ export default async function Page() {
 							apiEndpoint={teamRoute}
 						/>
 					}
+					editDialog={
+						<DialogWithButton
+							form="TeamEditForm"
+							title="Edit Team"
+							buttonName="Edit Team"
+						/>
+					}
 					apiEndpoint={teamRoute}
+					defaultSort="ledaId"
 				/>
 			</div>
 		</>
