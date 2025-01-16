@@ -34,6 +34,14 @@ export default async function Page() {
 							apiEndpoint={placeRoute}
 						/>
 					}
+					editDialog={
+						<DialogWithButton
+							form="PlaceEditForm"
+							title="Edit Place"
+							buttonName="Edit Place"
+						/>
+					}
+					defaultSort="ledaId"
 					apiEndpoint={placeRoute}
 				/>
 			</div>

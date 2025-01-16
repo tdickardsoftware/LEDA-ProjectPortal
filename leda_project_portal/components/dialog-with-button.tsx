@@ -14,6 +14,9 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+//
+// Form imports
+//
 import PlayerAddInformationForm from "@/components/forms/management/player-info-form";
 import PlaceAddForm from "@/components/forms/management/place-add-form";
 import TeamAddForm from "@/components/forms/management/team-add-form";
@@ -28,6 +31,7 @@ import SeasonAddForm from "@/components/forms/maintenance/season-add-form";
 import React from "react";
 import PlayerEditInformationForm from "@/components/forms/management/player-edit-form";
 import TeamEditForm from "@/components/forms/management/team-edit-form";
+import PlaceEditForm from "@/components/forms/management/place-edit-form";
 //
 // Interface
 //
@@ -45,6 +49,7 @@ const formComponents = {
 	PeopleTypeAddForm: PeopleTypeAddForm,
 	PlaceTypeAddForm: PlaceTypeAddForm,
 	SeasonAddForm: SeasonAddForm,
+	PlaceEditForm
 };
 
 interface DialogWithButtonProps {
