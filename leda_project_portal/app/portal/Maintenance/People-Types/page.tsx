@@ -34,6 +34,13 @@ export default async function Page() {
 							apiEndpoint={peopleTypeRoute}
 						/>
 					}
+					editDialog={
+						<DialogWithButton
+							form="PeopleTypeEditForm"
+							title="Edit People Type"
+							buttonName="Edit People Type"
+						/>
+					}
 					apiEndpoint={peopleTypeRoute}
 				/>
 			</div>

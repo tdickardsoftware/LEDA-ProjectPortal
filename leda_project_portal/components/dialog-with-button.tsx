@@ -14,8 +14,9 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import React from "react";
 //
-// Form importsS
+// Form imports
 //
 import PlayerAddInformationForm from "@/components/forms/management/player-info-form";
 import PlaceAddForm from "@/components/forms/management/place-add-form";
@@ -28,10 +29,17 @@ import PenaltyAddForm from "@/components/forms/maintenance/penalty-add-form";
 import PeopleTypeAddForm from "@/components/forms/maintenance/people-type-add-form";
 import PlaceTypeAddForm from "@/components/forms/maintenance/place-type-add-form";
 import SeasonAddForm from "@/components/forms/maintenance/season-add-form";
-import React from "react";
 import PlayerEditInformationForm from "@/components/forms/management/player-edit-form";
 import TeamEditForm from "@/components/forms/management/team-edit-form";
 import PlaceEditForm from "@/components/forms/management/place-edit-form";
+import MentionEditForm from "@/components/forms/maintenance/mention-edit-form";
+import PaymentTypeEditForm from "@/components/forms/maintenance/payment-type-edit-form";
+import PayoutTierEditForm from "@/components/forms/maintenance/payout-tier-edit-form";
+import PenaltyEditForm from "@/components/forms/maintenance/penalty-edit-form";
+import PlaceTypeEditForm from "@/components/forms/maintenance/place-type-edit-form";
+import PeopleTypeEditForm from "@/components/forms/maintenance/people-type-edit-form";
+import SeasonEditForm from "./forms/maintenance/season-edit-form";
+
 //
 // Interface
 //
@@ -49,7 +57,14 @@ const formComponents = {
 	PeopleTypeAddForm: PeopleTypeAddForm,
 	PlaceTypeAddForm: PlaceTypeAddForm,
 	SeasonAddForm: SeasonAddForm,
-	PlaceEditForm,
+	PlaceEditForm: PlaceEditForm,
+	MentionEditForm: MentionEditForm,
+	PaymentTypeEditForm: PaymentTypeEditForm,
+	PayoutTierEditForm: PayoutTierEditForm,
+	PenaltyEditForm: PenaltyEditForm,
+	PlaceTypeEditForm: PlaceTypeEditForm,
+	PeopleTypeEditForm: PeopleTypeEditForm,
+	SeasonEditForm: SeasonEditForm,
 };
 
 interface DialogWithButtonProps {
@@ -105,7 +120,7 @@ export function DialogWithButton({
 					{buttonName}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit">
+			<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>

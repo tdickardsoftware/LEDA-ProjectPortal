@@ -34,6 +34,13 @@ export default async function Page() {
 							apiEndpoint={paymentTypeRoute}
 						/>
 					}
+					editDialog={
+						<DialogWithButton
+							form="PaymentTypeEditForm"
+							title="Edit Payment Type"
+							buttonName="Edit Payment Type"
+						/>
+					}
 					apiEndpoint={paymentTypeRoute}
 				/>
 			</div>

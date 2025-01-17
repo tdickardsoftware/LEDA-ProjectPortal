@@ -34,6 +34,13 @@ export default async function Page() {
 							apiEndpoint={seasonRoute}
 						/>
 					}
+					editDialog={
+						<DialogWithButton
+							form="SeasonEditForm"
+							title="Edit Season"
+							buttonName="Edit Season"
+						/>
+					}
 					apiEndpoint={seasonRoute}
 				/>
 			</div>

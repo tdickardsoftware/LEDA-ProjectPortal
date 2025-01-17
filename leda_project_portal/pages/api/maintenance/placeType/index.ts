@@ -11,16 +11,32 @@ export default async function handler(
 ) {
 	// Handle GET requests
 	if (req.method === "GET") {
-		try {
-			// Execute the database query to fetch place type information
-			const result = await query<PlaceType>(
-				'SELECT "placeTypeCode", "desc" FROM maint.leda_maint_place_types;'
-			);
-			// Respond with the query result
-			res.status(200).json(result.rows);
-		} catch (error) {
-			// Handle any errors that occur during the query
-			res.status(500).json({ message: "Failed to fetch place type", error });
+		if (req.query.placeTypeCode) {
+			try {
+				const placeTypeCode = req.query.placeTypeCode;
+				const result = await query<PlaceType>(
+					`SELECT "placeTypeCode", "desc" FROM maint.leda_maint_place_types WHERE "placeTypeCode" = $1;`,
+					[placeTypeCode as string]
+				);
+				res.status(200).json(result.rows[0]);
+			} catch (error) {
+				res.status(500).json({
+					message: "Failed to fetch place type",
+					error,
+				});
+			}
+		} else {
+			try {
+				// Execute the database query to fetch place type information
+				const result = await query<PlaceType>(
+					'SELECT "placeTypeCode", "desc" FROM maint.leda_maint_place_types;'
+				);
+				// Respond with the query result
+				res.status(200).json(result.rows);
+			} catch (error) {
+				// Handle any errors that occur during the query
+				res.status(500).json({ message: "Failed to fetch place type", error });
+			}
 		}
 	}
 	// Handle POST requests
@@ -52,6 +68,17 @@ export default async function handler(
 			const values = [data.placeTypeCode, data.desc];
 			const result = await queryPost(query, values);
 			res.status(201).json({ delete1: result });
+		} catch (error) {
+			console.error("Error in PlaceTypeHandler:", error as Error);
+			res.status(500).json({ message: (error as Error).message || "Server error" });
+		}
+	} else if (req.method === "PUT") {
+		try {
+			const data = req.body as PlaceType;
+			const query = `UPDATE maint.leda_maint_place_types SET "desc" = $2 WHERE "placeTypeCode" = $1;`;
+			const values = [data.placeTypeCode, data.desc];
+			const result = await queryPost(query, values);
+			res.status(201).json({ update1: result });
 		} catch (error) {
 			console.error("Error in PlaceTypeHandler:", error as Error);
 			res.status(500).json({ message: (error as Error).message || "Server error" });

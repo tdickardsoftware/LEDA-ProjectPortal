@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/popover'
 
 // DatePicker component definition
-export function DatePicker({ onDateChange, initialMonth, dateSelected }: { onDateChange: (date: Date | undefined) => void, initialMonth?: Date, dateSelected: Date }) {
+export function DatePickerCustom({ onDateChange, initialMonth, dateSelected }: { onDateChange: (date: Date | undefined) => void, initialMonth?: Date, dateSelected: Date }) {
   // State to manage the selected date
   const [date, setDate] = React.useState<Date>(new Date(dateSelected.getTime() + dateSelected.getTimezoneOffset() * 60000))
   // State to manage the visibility of the popover
@@ -27,7 +27,6 @@ export function DatePicker({ onDateChange, initialMonth, dateSelected }: { onDat
       setDate(localDate)
       onDateChange(localDate)
       setIsOpen(false)
-      console.log(localDate)
     }
   }
 

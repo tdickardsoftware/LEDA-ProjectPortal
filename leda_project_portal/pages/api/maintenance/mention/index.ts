@@ -11,19 +11,35 @@ export default async function handler(
 ) {
 	// Handle GET requests
 	if (req.method === "GET") {
-		try {
-			// Execute the database query to fetch mention information
-			const result = await query<Mention>(
-				'SELECT "mentionCode", "desc", "points", "mentionBasis" FROM maint.leda_maint_mentions;'
-			);
-			// Respond with the query result
-			res.status(200).json(result.rows);
-		} catch (error) {
-			// Handle any errors that occur during the query
-			res.status(500).json({
-				message: "Failed to fetch mentions ",
-				error,
-			});
+		if (req.query.mentionCode) {
+			try {
+				const mentionCode = req.query.mentionCode;
+				const result = await query<Mention>(
+					`SELECT "mentionCode", "desc", "points", "mentionBasis" FROM maint.leda_maint_mentions WHERE "mentionCode" = $1;`,
+					[mentionCode as string]
+				);
+				res.status(200).json(result.rows[0]);
+			} catch (error) {
+				res.status(500).json({
+					message: "Failed to fetch mentions ",
+					error,
+				});
+			}
+		} else {
+			try {
+				// Execute the database query to fetch mention information
+				const result = await query<Mention>(
+					'SELECT "mentionCode", "desc", "points", "mentionBasis" FROM maint.leda_maint_mentions;'
+				);
+				// Respond with the query result
+				res.status(200).json(result.rows);
+			} catch (error) {
+				// Handle any errors that occur during the query
+				res.status(500).json({
+					message: "Failed to fetch mentions ",
+					error,
+				});
+			}
 		}
 	}
 	// Handle POST requests
@@ -62,6 +78,24 @@ export default async function handler(
 			const values = [data.mentionCode, data.desc];
 			const result = await queryPost(query, values);
 			res.status(201).json({ delete1: result });
+		} catch (error) {
+			console.error("Error in MentionHandler:", error as Error);
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
+		}
+	} else if (req.method === "PUT") {
+		try {
+			const data = req.body as Mention;
+			const query = `UPDATE maint.leda_maint_mentions
+				SET 
+					"desc" = $2,
+					"points" = $3,
+					"mentionBasis" = $4
+				WHERE "mentionCode" = $1;`;
+			const values = [data.mentionCode, data.desc, data.points, data.mentionBasis];
+			const result = await queryPost(query, values);
+			res.status(201).json({ update1: result });
 		} catch (error) {
 			console.error("Error in MentionHandler:", error as Error);
 			res.status(500).json({
