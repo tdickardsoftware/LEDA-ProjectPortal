@@ -50,13 +50,16 @@ export default function MentionEditForm({
 		defaultValues: {
 			mentionCode: formData.mentionCode || "",
 			desc: formData.desc || "",
-			points: formData.points || 0,
+			points: formData.points || undefined,
 			mentionBasis: formData.mentionBasis || "",
 		},
 	});
 
 	useEffect(() => {
 		const fetchData = async () => {
+			if (!rowData || !rowData.mentionCode) {
+				return;
+			}
 			const response = await fetch(
 				mentionRoute + `?mentionCode=${rowData.mentionCode}`,
 				{

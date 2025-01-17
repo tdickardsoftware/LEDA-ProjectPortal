@@ -29,7 +29,7 @@ export default async function handler(
 			try {
 				// Execute the database query to fetch place type information
 				const result = await query<PlaceType>(
-					'SELECT "placeTypeCode", "desc" FROM maint.leda_maint_place_types;'
+					'SELECT "placeTypeCode", "desc" FROM maint.leda_maint_place_types ORDER BY "placeTypeCode";'
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);

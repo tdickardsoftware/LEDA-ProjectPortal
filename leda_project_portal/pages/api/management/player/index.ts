@@ -65,7 +65,7 @@ export default async function handler(
 						TO_CHAR("dateOfBirth", 'mm/dd/yyyy') as "dateOfBirth", 
 						'(' || SUBSTRING("phoneNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("phoneNumber" FROM 4 FOR 3) || '-' || SUBSTRING("phoneNumber" FROM 7 FOR 4) AS "phoneNumberFormatted", 
 						'(' || SUBSTRING("otherNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("otherNumber" FROM 4 FOR 3) || '-' || SUBSTRING("otherNumber" FROM 7 FOR 4) AS "otherNumberFormatted" 
-					FROM public.leda_player_info;
+					FROM public.leda_player_info ORDER BY "ledaId";
 				`);
 				res.status(200).json(result.rows);
 			}

@@ -29,7 +29,7 @@ export default async function handler(
 			try {
 				// Execute the database query to fetch payout tier information
 				const result = await query<PayoutTier>(
-					`SELECT "place", trunc("amount"::numeric, 2) as "amount"  FROM maint.leda_maint_payout_tiers;`
+					`SELECT "place", trunc("amount"::numeric, 2) as "amount"  FROM maint.leda_maint_payout_tiers ORDER BY "place";`
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);

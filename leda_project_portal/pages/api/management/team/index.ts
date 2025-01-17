@@ -26,7 +26,7 @@ export default async function handler(
 			} else {
 				// Execute the database query to fetch team information
 				const result = await query<Team>(
-					`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/yyyy') as "establishedDate", "memo", "lastTeamFeePayment" FROM public.leda_team_info;`
+					`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/yyyy') as "establishedDate", "memo", "lastTeamFeePayment" FROM public.leda_team_info ORDER BY "ledaId";`
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);

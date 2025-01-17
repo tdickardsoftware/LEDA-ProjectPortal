@@ -29,7 +29,7 @@ export default async function handler(
 			try {
 				// Execute the database query to fetch mention information
 				const result = await query<Mention>(
-					'SELECT "mentionCode", "desc", "points", "mentionBasis" FROM maint.leda_maint_mentions;'
+					'SELECT "mentionCode", "desc", "points", "mentionBasis" FROM maint.leda_maint_mentions ORDER BY "mentionCode";'
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);

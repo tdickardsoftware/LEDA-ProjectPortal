@@ -63,6 +63,9 @@ export default function TeamEditForm({
 	});
 
 	useEffect(() => {
+		if (!rowData || !rowData.ledaId) {
+			return;
+		}
 		const fetchData = async () => {
 			const response = await fetch(
 				teamRoute + `?ledaId=${rowData.ledaId}`,

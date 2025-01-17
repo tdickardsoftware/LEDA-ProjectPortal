@@ -43,6 +43,9 @@ export default function PenaltyEditForm({
 
 	useEffect(() => {
 		const fetchData = async () => {
+			if (!rowData || !rowData.penaltyCode) {
+				return;
+			}
 			const response = await fetch(
 				penaltyRoute + `?penaltyCode=${rowData.penaltyCode}`,
 				{

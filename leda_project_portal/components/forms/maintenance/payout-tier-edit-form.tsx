@@ -45,6 +45,9 @@ export default function PayoutTierEditForm({
 
 	useEffect(() => {
 		const fetchData = async () => {
+			if (!rowData || !rowData.place) {
+				return;
+			}
 			const response = await fetch(
 				payoutTierRoute + `?place=${rowData.place}`,
 				{

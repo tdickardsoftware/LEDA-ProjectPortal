@@ -68,7 +68,6 @@ export default function SeasonEditForm({
 
 	// Define state for dates
 	const [dates, setDates] = React.useState<string>(JSON.stringify(rowData.dates));
-    console.log(dates)
 
 	// Handle date change for manual date selection
 	const handleDateChange = (
@@ -186,24 +185,24 @@ export default function SeasonEditForm({
                                     {(() => {
                                         try {
                                             const datesObject = JSON.parse(dates || "{}");
-                                            console.log(datesObject);
                                             if (datesObject && typeof datesObject === "object") {
                                                 return Object.entries(datesObject).map(
                                                     ([key, value], index) => (
                                                         <TableRow key={index}>
                                                             <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                                 {key}
-                                                                <DatePicker
-                                                                    selected={new Date(value as string)}
-                                                                    onChange={(date) =>
-                                                                        handleDateChange(date, index)
-                                                                    }
-                                                                    dateFormat="MM/dd/yyyy"
-                                                                    className="w-full border border-gray-300 rounded-md p-2"
-                                                                />
+                                                                
                                                             </TableCell>
                                                             <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                                {value as string}
+                                                                <DatePicker
+                                                                        showIcon
+                                                                        selected={new Date(value as string)}
+                                                                        onChange={(date) =>
+                                                                            handleDateChange(date, index)
+                                                                        }
+                                                                        dateFormat="MM/dd/yyyy"
+                                                                        className="w-full border border-gray-300 rounded-md p-2"
+                                                                    />
                                                             </TableCell>
                                                         </TableRow>
                                                     )

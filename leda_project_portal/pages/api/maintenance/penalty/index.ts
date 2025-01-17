@@ -29,7 +29,7 @@ export default async function handler(
 			try {
 				// Execute the database query to fetch penalty information
 				const result = await query<Penalty>(
-					'SELECT "penaltyCode", "desc" FROM maint.leda_maint_penalties;'
+					'SELECT "penaltyCode", "desc" FROM maint.leda_maint_penalties ORDER BY "penaltyCode";'
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);

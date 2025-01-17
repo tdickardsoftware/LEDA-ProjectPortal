@@ -29,7 +29,7 @@ export default async function handler(
 			try {
 				// Execute the database query to fetch people type information
 				const result = await query<PeopleType>(
-					'SELECT "peopleTypeCode", "desc" FROM maint.leda_maint_people_types;'
+					'SELECT "peopleTypeCode", "desc" FROM maint.leda_maint_people_types ORDER BY "peopleTypeCode";'
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);

@@ -14,7 +14,7 @@ export default async function handler(
 		try {
 			// Execute the database query to fetch division information
 			const result = await query<Division>(
-				'SELECT "divisionName" FROM maint.leda_maint_divisions;'
+				'SELECT "divisionName" FROM maint.leda_maint_divisions ORDER BY "divisionName";'
 			);
 			// Respond with the query result
 			res.status(200).json(result.rows);

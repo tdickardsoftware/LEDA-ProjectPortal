@@ -29,7 +29,7 @@ export default async function handler(
 			try {
 				// Execute the database query to fetch payment type information
 				const result = await query<PaymentType>(
-					'SELECT "paymentType", "desc" FROM maint.leda_maint_payment_types;'
+					'SELECT "paymentType", "desc" FROM maint.leda_maint_payment_types ORDER BY "paymentType"; '
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);

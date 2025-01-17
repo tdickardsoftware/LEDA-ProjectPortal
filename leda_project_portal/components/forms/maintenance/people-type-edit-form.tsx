@@ -44,6 +44,9 @@ export default function PeopleTypeEditForm({
 	});
 
 	useEffect(() => {
+		if (!rowData || !rowData.peopleTypeCode) {
+			return;
+		}
 		const fetchData = async () => {
 			const response = await fetch(
 				peopleTypeRoute + `?peopleTypeCode=${rowData.peopleTypeCode}`,
