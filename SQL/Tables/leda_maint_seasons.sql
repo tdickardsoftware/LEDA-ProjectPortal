@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS maint.leda_maint_seasons
     "fiscalYear" text COLLATE pg_catalog."default" NOT NULL,
     "dates" json NOT NULL,
     "isCurrentSeason" boolean NOT NULL,
-    CONSTRAINT leda_maint_seasons_pkey PRIMARY KEY (id)
+    CONSTRAINT leda_maint_seasons_pkey PRIMARY KEY (id),
+    CONSTRAINT "leda_maint_seasons_seasonCode_key" UNIQUE ("seasonCode")
 )
 
 TABLESPACE pg_default;
