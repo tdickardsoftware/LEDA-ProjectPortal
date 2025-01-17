@@ -21,8 +21,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DatePickerCustom } from "@/components/ui/date-picker";
 import { seasonRoute } from "@/lib/apiRoutes";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Define the schema for form validation using zod
 const seasonFormSchema = z.object({
@@ -52,6 +55,7 @@ export default function SeasonAddForm({
 	const [howManyWeeks, setHowManyWeeks] = React.useState(14);
 	const [initialDate, setInitialDate] = React.useState(new Date());
 	const [dates, setDates] = React.useState<string>();
+	
 
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof seasonFormSchema>>({
@@ -71,10 +75,10 @@ export default function SeasonAddForm({
 			const generatedDates: string[] = [];
 			const currentDate = new Date(initialDate);
 			for (let i = 0; i < howManyWeeks; i++) {
-				generatedDates.push(currentDate.toISOString().split("T")[0]);
+				const formattedDate = currentDate.toLocaleDateString("en-US");
+				generatedDates.push(formattedDate);
 				currentDate.setDate(currentDate.getDate() + 7);
 			}
-			console.log(generatedDates);
 			setDates(JSON.stringify(generatedDates));
 		} else {
 			setDates("");
@@ -88,11 +92,11 @@ export default function SeasonAddForm({
 	) => {
 		if (selectedDate) {
 			const updatedDates = JSON.parse(dates || "[]");
-			updatedDates[index] = selectedDate.toISOString().split("T")[0];
+			updatedDates[index] = selectedDate.toLocaleDateString("en-US");
 			for (let i = index + 1; i < updatedDates.length; i++) {
 				const previousDate = new Date(updatedDates[i - 1]);
 				previousDate.setDate(previousDate.getDate() + 7);
-				updatedDates[i] = previousDate.toISOString().split("T")[0];
+				updatedDates[i] = previousDate.toLocaleDateString("en-US");
 			}
 			setDates(JSON.stringify(updatedDates));
 		}
@@ -102,15 +106,12 @@ export default function SeasonAddForm({
 	async function onSubmit(values: z.infer<typeof seasonFormSchema>) {
 		const formattedDates = JSON.parse(dates || "[]").reduce(
 			(acc: { [key: string]: string }, date: string, index: number) => {
-				acc[`Date${index + 1}`] = new Date(date).toLocaleDateString(
-					"en-US"
-				);
+				acc[`Date${index + 1}`] = date;
 				return acc;
 			},
 			{}
 		);
 		values.dates = JSON.stringify(formattedDates);
-		console.log("Submitting form with values", values);
 		try {
 			const response = await fetch(seasonRoute, {
 				method: "POST",
@@ -248,89 +249,52 @@ export default function SeasonAddForm({
 									{" "}
 									Initial Date{" "}
 								</Label>
-								<Input
+								<DatePicker
+									showIcon
 									id="initialDate"
-									type="date"
-									value={
-										initialDate.toISOString().split("T")[0]
-									}
-									onChange={(e) => {
-										const value = new Date(e.target.value);
-										if (!isNaN(value.getTime())) {
-											setInitialDate(value);
+									selected={new Date(initialDate)}
+									onChange={(date: Date | null) => {
+										if (date) {
+											setInitialDate(date);
 										}
 									}}
+									dateFormat="MM/dd/yyyy"
+									className="w-full border border-gray-300 rounded-md p-2"
 								/>
 								<div className="mt-2 max-w-[65vw] overflow-x-auto">
 									<Label className="whitespace-nowrap text-gray-500">
 										Generated Dates
 									</Label>
 									<Separator className="my-2" />
-									<table className="max-w-[65vw] divide-y divide-gray-200 overflow-auto">
-										<thead className="bg-gray-50">
-											<tr>
-												{dates &&
-													Array.isArray(
-														JSON.parse(dates)
-													) &&
-													JSON.parse(dates).map(
-														(
-															date: string,
-															index: number
-														) => (
-															<th
-																key={index}
-																scope="col"
-																className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-															>
-																Date {index + 1}
-																<DatePicker
-																	onDateChange={(
-																		date
-																	) =>
-																		handleDateChange(
-																			date,
-																			index
-																		)
-																	}
-																	initialMonth={
-																		new Date(
-																			date
-																		)
-																	}
-																	dateSelected={
-																		new Date(
-																			date
-																		)
-																	}
-																/>
-															</th>
-														)
-													)}
-											</tr>
-										</thead>
-										<tbody className="bg-white divide-y divide-gray-200">
-											<tr>
-												{dates &&
-													Array.isArray(
-														JSON.parse(dates)
-													) &&
-													JSON.parse(dates).map(
-														(
-															date: string,
-															index: number
-														) => (
-															<td
-																key={index}
-																className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 cursor-pointer"
-															>
-																{date}
-															</td>
-														)
-													)}
-											</tr>
-										</tbody>
-									</table>
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+													Action Date
+												</TableHead>
+												<TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+													Date Selected
+												</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{(dates ? JSON.parse(dates) : []).map((date: string, index: number) => (
+												<TableRow key={index}>
+													<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														Date {index + 1}
+														<DatePickerCustom
+															onDateChange={(date) => handleDateChange(date, index)}
+															initialMonth={new Date(date)}
+															dateSelected={new Date(date)}
+														/>
+													</TableCell>
+													<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														{date}
+													</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
 								</div>
 							</>
 						)}
