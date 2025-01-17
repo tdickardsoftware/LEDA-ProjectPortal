@@ -27,7 +27,6 @@ export function DatePicker({ onDateChange, initialMonth, dateSelected }: { onDat
       setDate(localDate)
       onDateChange(localDate)
       setIsOpen(false)
-      console.log(localDate)
     }
   }
 

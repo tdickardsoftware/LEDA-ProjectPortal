@@ -11,20 +11,36 @@ export default async function handler(
 ) {
 	// Handle GET requests
 	if (req.method === "GET") {
-		try {
-			// Execute the database query to fetch payout tier information
-			const result = await query<PayoutTier>(
-				`SELECT "place", trunc("amount"::numeric, 2) as "amount"  FROM maint.leda_maint_payout_tiers;`
-			);
-			// Respond with the query result
-			res.status(200).json(result.rows);
-		} catch (error) {
-			// Handle any errors that occur during the query
-			res.status(500).json({ message: "Failed to fetch payout tiers ", error });
+		if (req.query.place) {
+			try {
+				const place = req.query.place;
+				const result = await query<PayoutTier>(
+					`SELECT "place", trunc("amount"::numeric, 2) as "amount" FROM maint.leda_maint_payout_tiers WHERE "place" = $1;`,
+					[place as string]
+				);
+				res.status(200).json(result.rows[0]);
+			} catch (error) {
+				res.status(500).json({
+					message: "Failed to fetch payout tiers ",
+					error,
+				});
+			}
+		} else {
+			try {
+				// Execute the database query to fetch payout tier information
+				const result = await query<PayoutTier>(
+					`SELECT "place", trunc("amount"::numeric, 2) as "amount"  FROM maint.leda_maint_payout_tiers;`
+				);
+				// Respond with the query result
+				res.status(200).json(result.rows);
+			} catch (error) {
+				// Handle any errors that occur during the query
+				res.status(500).json({ message: "Failed to fetch payout tiers ", error });
+			}
 		}
 	}
 	// Handle PUT requests
-	else if (req.method === "PUT") {
+	else if (req.method === "POST") {
 		try {
 			console.log(req.body);
 			const results = req.body as PayoutTier;
@@ -52,6 +68,17 @@ export default async function handler(
 			const values = [data.place, data.amount];
 			const result = await queryPost(query, values);
 			res.status(201).json({ delete1: result });
+		} catch (error) {
+			console.error("Error in PayoutTierHandler:", error as Error);
+			res.status(500).json({ message: (error as Error).message || "Server error" });
+		}
+	} else if (req.method === "PUT") {
+		try {
+			const data = req.body as PayoutTier;
+			const query = `UPDATE maint.leda_maint_payout_tiers SET "amount" = $1 WHERE "place" = $2;`;
+			const values = [data.amount, data.place];
+			const result = await queryPost(query, values);
+			res.status(201).json({ update1: result });
 		} catch (error) {
 			console.error("Error in PayoutTierHandler:", error as Error);
 			res.status(500).json({ message: (error as Error).message || "Server error" });

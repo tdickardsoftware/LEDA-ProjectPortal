@@ -11,16 +11,32 @@ export default async function handler(
 ) {
 	// Handle GET requests
 	if (req.method === "GET") {
-		try {
-			// Execute the database query to fetch penalty information
-			const result = await query<Penalty>(
-				'SELECT "penaltyCode", "desc" FROM maint.leda_maint_penalties;'
-			);
-			// Respond with the query result
-			res.status(200).json(result.rows);
-		} catch (error) {
-			// Handle any errors that occur during the query
-			res.status(500).json({ message: "Failed to fetch penalties ", error });
+		if (req.query.penaltyCode) {
+			try {
+				const penaltyCode = req.query.penaltyCode;
+				const result = await query<Penalty>(
+					`SELECT "penaltyCode", "desc" FROM maint.leda_maint_penalties WHERE "penaltyCode" = $1;`,
+					[penaltyCode as string]
+				);
+				res.status(200).json(result.rows[0]);
+			} catch (error) {
+				res.status(500).json({
+					message: "Failed to fetch penalties ",
+					error,
+				});
+			}
+		} else {
+			try {
+				// Execute the database query to fetch penalty information
+				const result = await query<Penalty>(
+					'SELECT "penaltyCode", "desc" FROM maint.leda_maint_penalties;'
+				);
+				// Respond with the query result
+				res.status(200).json(result.rows);
+			} catch (error) {
+				// Handle any errors that occur during the query
+				res.status(500).json({ message: "Failed to fetch penalties ", error });
+			}
 		}
 	}
 	// Handle POST requests
@@ -56,7 +72,18 @@ export default async function handler(
 			console.error("Error in PenaltyHandler:", error as Error);
 			res.status(500).json({ message: (error as Error).message || "Server error" });
 		}
-	}else {
+	} else if (req.method === "PUT") {
+		try {
+			const data = req.body as Penalty;
+			const query = `UPDATE maint.leda_maint_penalties SET "desc" = $2 WHERE "penaltyCode" = $1;`;
+			const values = [data.penaltyCode, data.desc];
+			const result = await queryPost(query, values);
+			res.status(201).json({ update1: result });
+		} catch (error) {
+			console.error("Error in PenaltyHandler:", error as Error);
+			res.status(500).json({ message: (error as Error).message || "Server error" });
+		}
+	} else {
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

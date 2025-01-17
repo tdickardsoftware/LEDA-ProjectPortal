@@ -34,6 +34,13 @@ export default async function Page() {
 							apiEndpoint={mentionRoute}
 						/>
 					}
+					editDialog={
+						<DialogWithButton
+							form="MentionEditForm"
+							title="Edit Mention"
+							buttonName="Edit Mention"
+						/>
+					}
 					apiEndpoint={mentionRoute}
 				/>
 			</div>

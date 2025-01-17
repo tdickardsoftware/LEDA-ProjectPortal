@@ -129,6 +129,7 @@ export default function PeopleTypeEditForm({
 							control={form.control}
 							name="peopleTypeCode"
 							label="People Type Code *"
+                            disabled
 						/>
 						<FormField
 							control={form.control}

@@ -32,6 +32,12 @@ import React from "react";
 import PlayerEditInformationForm from "@/components/forms/management/player-edit-form";
 import TeamEditForm from "@/components/forms/management/team-edit-form";
 import PlaceEditForm from "@/components/forms/management/place-edit-form";
+import MentionEditForm from "@/components/forms/maintenance/mention-edit-form";
+import PaymentTypeEditForm from "@/components/forms/maintenance/payment-type-edit-form";
+import PayoutTierEditForm from "@/components/forms/maintenance/payout-tier-edit-form";
+import PenaltyEditForm from "@/components/forms/maintenance/penalty-edit-form";
+import PlaceTypeEditForm from "@/components/forms/maintenance/place-type-edit-form";
+import PeopleTypeEditForm from "@/components/forms/maintenance/people-type-edit-form";
 //
 // Interface
 //
@@ -49,7 +55,13 @@ const formComponents = {
 	PeopleTypeAddForm: PeopleTypeAddForm,
 	PlaceTypeAddForm: PlaceTypeAddForm,
 	SeasonAddForm: SeasonAddForm,
-	PlaceEditForm,
+	PlaceEditForm: PlaceEditForm,
+	MentionEditForm: MentionEditForm,
+	PaymentTypeEditForm: PaymentTypeEditForm,
+	PayoutTierEditForm: PayoutTierEditForm,
+	PenaltyEditForm: PenaltyEditForm,
+	PlaceTypeEditForm: PlaceTypeEditForm,
+	PeopleTypeEditForm: PeopleTypeEditForm,
 };
 
 interface DialogWithButtonProps {
@@ -105,7 +117,7 @@ export function DialogWithButton({
 					{buttonName}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit">
+			<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>

@@ -11,18 +11,33 @@ export default async function handler(
 ) {
 	// Handle GET requests
 	if (req.method === "GET") {
-		try {
-			// Execute the database query to fetch season information
-			const result = await query<Season>(
-				'SELECT "seasonCode", "desc", "fiscalYear", "dates", "isCurrentSeason" FROM maint.leda_maint_seasons;'
-			);
-			// Respond with the query result
-			res.status(200).json(result.rows);
-		} catch (error) {
-			// Handle any errors that occur during the query
-			res.status(500).json({
-				message: "Failed to fetch season information", error
-			});
+		if (req.query.seasonCode) {
+			try {
+				const seasonCode = req.query.seasonCode;
+				const result = await query<Season>(
+					`SELECT "seasonCode", "desc", "fiscalYear", "dates", "isCurrentSeason" FROM maint.leda_maint_seasons WHERE "seasonCode" = $1;`,
+					[seasonCode as string]
+				);
+				res.status(200).json(result.rows[0]);
+			} catch (error) {
+				res.status(500).json({
+					message: "Failed to fetch season information", error,
+				});
+			}
+		} else {
+			try {
+				// Execute the database query to fetch season information
+				const result = await query<Season>(
+					'SELECT "seasonCode", "desc", "fiscalYear", "dates", "isCurrentSeason" FROM maint.leda_maint_seasons;'
+				);
+				// Respond with the query result
+				res.status(200).json(result.rows);
+			} catch (error) {
+				// Handle any errors that occur during the query
+				res.status(500).json({
+					message: "Failed to fetch season information", error
+				});
+			}
 		}
 	}
 	// Handle POST requests
@@ -60,6 +75,17 @@ export default async function handler(
 			const values = [data.seasonCode, data.fiscalYear, data.desc, data.isCurrentSeason];
 			const result = await queryPost(query, values);
 			res.status(201).json({ delete1: result });
+		} catch (error) {
+			console.error("Error in DivisionHandler:", error as Error);
+			res.status(500).json({ message: (error as Error).message || "Server error" });
+		}
+	} else if (req.method === "PUT") {
+		try {
+			const data = req.body as Season;
+			const query = `UPDATE maint.leda_maint_seasons SET "fiscalYear" = $2, "dates" = $3, "desc" = $4, "isCurrentSeason" = $5 WHERE "seasonCode" = $1;`;
+			const values = [data.seasonCode, data.fiscalYear, data.dates, data.desc, data.isCurrentSeason];
+			const result = await queryPost(query, values);
+			res.status(201).json({ update1: result });
 		} catch (error) {
 			console.error("Error in DivisionHandler:", error as Error);
 			res.status(500).json({ message: (error as Error).message || "Server error" });

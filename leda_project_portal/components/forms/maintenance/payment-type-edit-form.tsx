@@ -124,6 +124,7 @@ export default function PaymentTypeEditForm({
 							control={form.control}
 							name="paymentType"
 							label="Payment Type *"
+                            disabled
 						/>
 						<FormField
 							control={form.control}

@@ -124,6 +124,7 @@ export default function PenaltyEditForm({
 							control={form.control}
 							name="penaltyCode"
 							label="Penalty Code *"
+                            disabled
 						/>
 						<FormField
 							control={form.control}

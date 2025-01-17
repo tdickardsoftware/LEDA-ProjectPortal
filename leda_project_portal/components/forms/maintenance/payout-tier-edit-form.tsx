@@ -143,6 +143,7 @@ export default function PayoutTierEditForm({
 														: undefined
 												);
 											}}
+                                            disabled
 										/>
 									</FormControl>
 									<FormMessage />

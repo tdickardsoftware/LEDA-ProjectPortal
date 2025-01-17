@@ -139,6 +139,7 @@ export default function MentionEditForm({
 							control={form.control}
 							name="mentionCode"
 							label="Mention Code *"
+                            disabled
 						/>
 						<FormField
 							control={form.control}

@@ -11,16 +11,32 @@ export default async function handler(
 ) {
 	// Handle GET requests
 	if (req.method === "GET") {
-		try {
-			// Execute the database query to fetch people type information
-			const result = await query<PeopleType>(
-				'SELECT "peopleTypeCode", "desc" FROM maint.leda_maint_people_types;'
-			);
-			// Respond with the query result
-			res.status(200).json(result.rows);
-		} catch (error) {
-			// Handle any errors that occur during the query
-			res.status(500).json({ message: "Failed to fetch people type ", error });
+		if (req.query.peopleTypeCode) {
+			try {
+				const peopleTypeCode = req.query.peopleTypeCode;
+				const result = await query<PeopleType>(
+					`SELECT "peopleTypeCode", "desc" FROM maint.leda_maint_people_types WHERE "peopleTypeCode" = $1;`,
+					[peopleTypeCode as string]
+				);
+				res.status(200).json(result.rows[0]);
+			} catch (error) {
+				res.status(500).json({
+					message: "Failed to fetch people type ",
+					error,
+				});
+			}
+		} else {
+			try {
+				// Execute the database query to fetch people type information
+				const result = await query<PeopleType>(
+					'SELECT "peopleTypeCode", "desc" FROM maint.leda_maint_people_types;'
+				);
+				// Respond with the query result
+				res.status(200).json(result.rows);
+			} catch (error) {
+				// Handle any errors that occur during the query
+				res.status(500).json({ message: "Failed to fetch people type ", error });
+			}
 		}
 	}
 	// Handle POST requests
@@ -52,6 +68,17 @@ export default async function handler(
 			const values = [data.peopleTypeCode, data.desc];
 			const result = await queryPost(query, values);
 			res.status(201).json({ delete1: result });
+		} catch (error) {
+			console.error("Error in PeopleTypeHandler:", error as Error);
+			res.status(500).json({ message: (error as Error).message || "Server error" });
+		}
+	} else if (req.method === "PUT") {
+		try {
+			const data = req.body as PeopleType;
+			const query = `UPDATE maint.leda_maint_people_types SET "desc" = $2 WHERE "peopleTypeCode" = $1;`;
+			const values = [data.peopleTypeCode, data.desc];
+			const result = await queryPost(query, values);
+			res.status(201).json({ update1: result });
 		} catch (error) {
 			console.error("Error in PeopleTypeHandler:", error as Error);
 			res.status(500).json({ message: (error as Error).message || "Server error" });

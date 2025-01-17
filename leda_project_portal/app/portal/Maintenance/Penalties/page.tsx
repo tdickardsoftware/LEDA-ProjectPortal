@@ -34,6 +34,13 @@ export default async function Page() {
 							apiEndpoint={penaltyRoute}
 						/>
 					}
+					editDialog={
+						<DialogWithButton
+							form="PenaltyEditForm"
+							title="Edit Penalty"
+							buttonName="Edit Penalty"
+						/>
+					}
 					apiEndpoint={penaltyRoute}
 				/>
 			</div>

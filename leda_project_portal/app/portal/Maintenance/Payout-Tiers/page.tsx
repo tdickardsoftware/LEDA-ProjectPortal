@@ -34,6 +34,13 @@ export default async function Page() {
 							apiEndpoint={payoutTierRoute}
 						/>
 					}
+					editDialog={
+						<DialogWithButton
+							form="PayoutTierEditForm"
+							title="Edit Payout Tier"
+							buttonName="Edit Payout Tier"
+						/>
+					}
 					apiEndpoint={payoutTierRoute}
 				/>
 			</div>

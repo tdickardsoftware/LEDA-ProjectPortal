@@ -129,6 +129,7 @@ export default function PlaceTypeEditForm({
 							control={form.control}
 							name="placeTypeCode"
 							label="Place Type Code *"
+                            disabled
 						/>
 						<FormField
 							control={form.control}
