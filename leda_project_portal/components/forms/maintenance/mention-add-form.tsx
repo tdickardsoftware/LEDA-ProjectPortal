@@ -53,6 +53,8 @@ export default function MentionAddForm({
 		},
 	});
 
+	const [mentionCodeExists, setMentionCodeExists] = React.useState(false);
+
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
 		try {
@@ -65,6 +67,9 @@ export default function MentionAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setMentionCodeExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -105,6 +110,9 @@ export default function MentionAddForm({
 							name="mentionCode"
 							label="Mention Code *"
 						/>
+						{mentionCodeExists && (
+							<p className="text-red-500 text-sm">Mention code already exists</p>
+						)}
 						<FormField
 							control={form.control}
 							name="points"

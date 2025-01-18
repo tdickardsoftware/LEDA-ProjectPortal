@@ -45,6 +45,8 @@ export default function PeopleTypeAddForm({
 			peopleTypeCode: "",
 		},
 	});
+	
+	const [peopleTypeExists, setPeopleTypeExists] = React.useState(false);
 
 	// Handle form submission
 	async function onSubmit(values: z.infer<typeof peopleTypeFormSchema>) {
@@ -58,6 +60,9 @@ export default function PeopleTypeAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setPeopleTypeExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -97,6 +102,9 @@ export default function PeopleTypeAddForm({
 							name="peopleTypeCode"
 							label="People Type Code *"
 						/>
+						{peopleTypeExists && (
+							<p className="text-red-500 text-sm mt-1">People Type Code already exists</p>
+						)}
 						<FormField
 							control={form.control}
 							name="desc"

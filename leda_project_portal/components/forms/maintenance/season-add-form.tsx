@@ -55,6 +55,7 @@ export default function SeasonAddForm({
 	const [howManyWeeks, setHowManyWeeks] = React.useState(14);
 	const [initialDate, setInitialDate] = React.useState(new Date());
 	const [dates, setDates] = React.useState<string>();
+	const [seasonCodeExists, setSeasonCodeExists] = React.useState(false);
 	
 
 	// Initialize the form using react-hook-form and zodResolver
@@ -122,6 +123,9 @@ export default function SeasonAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setSeasonCodeExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -186,6 +190,11 @@ export default function SeasonAddForm({
 								label="Season Code *"
 								customClass={inputWidth}
 							/>
+							{seasonCodeExists && (
+								<p className="text-red-500 text-sm mt-1">
+									Season Code already exists
+								</p>
+							)}
 							<InputDefault
 								control={form.control}
 								name="fiscalYear"

@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { Division } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { DatabaseError } from "pg";
 
 // Define the API route handler
 export default async function handler(
@@ -41,8 +42,11 @@ export default async function handler(
 			// Respond with the result of the insert operation
 			res.status(201).json({ insert1: result });
 		} catch (error) {
-			// Handle any errors that occur during the insert operation
-			console.error("Error in PlayerHandler:", error as Error);
+			if (error instanceof DatabaseError && error.code === "23505") {
+				res.status(422).json({
+					message: "division name already exists",
+				});
+			}
 			res.status(500).json({
 				message: (error as Error).message || "Server error",
 			}); // Send error info in JSON

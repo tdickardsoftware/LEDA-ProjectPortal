@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { Penalty } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { DatabaseError } from "pg";
 
 // Define the API route handler
 export default async function handler(
@@ -57,15 +58,19 @@ export default async function handler(
 			// Respond with the result of the insert operation
 			res.status(201).json({ insert1: result });
 		} catch (error) {
-			// Handle any errors that occur during the insert operation
-			console.error("Error in PenaltyHandler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			if (error instanceof DatabaseError && error.code === "23505") {
+				res.status(422).json({
+					message: "penaltyCode already exists",
+				});
+			} else {
+				res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			}
 		}
 	} else if (req.method === "DELETE") {
 		try {
 			const data = req.body as Penalty;
-			const query = `DELETE FROM maint.leda_maint_penalties WHERE "penaltyCode" = $1 AND "desc" = $2;`;
-			const values = [data.penaltyCode, data.desc];
+			const query = `DELETE FROM maint.leda_maint_penalties WHERE "penaltyCode" = $1;`;
+			const values = [data.penaltyCode];
 			const result = await queryPost(query, values);
 			res.status(201).json({ delete1: result });
 		} catch (error) {

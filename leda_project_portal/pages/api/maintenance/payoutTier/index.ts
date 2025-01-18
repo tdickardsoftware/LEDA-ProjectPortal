@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PayoutTier } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { DatabaseError } from "pg";
 
 // Define the API route handler
 export default async function handler(
@@ -57,9 +58,13 @@ export default async function handler(
 			// Respond with the result of the insert operation
 			res.status(201).json({ insert1: result });
 		} catch (error) {
-			// Handle any errors that occur during the insert operation
-			console.error("Error in PayoutTierHandler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			if (error instanceof DatabaseError && error.code === "23505") {
+				res.status(422).json({
+					message: "place already exists",
+				});
+			} else {
+				res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			}
 		}
 	} else if (req.method === "DELETE") {
 		try {
