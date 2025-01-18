@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PayoutTier } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { DatabaseError } from "pg";
 
 // Define the API route handler
 export default async function handler(
@@ -29,7 +30,7 @@ export default async function handler(
 			try {
 				// Execute the database query to fetch payout tier information
 				const result = await query<PayoutTier>(
-					`SELECT "place", trunc("amount"::numeric, 2) as "amount"  FROM maint.leda_maint_payout_tiers;`
+					`SELECT "place", trunc("amount"::numeric, 2) as "amount"  FROM maint.leda_maint_payout_tiers ORDER BY "place";`
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);
@@ -57,9 +58,13 @@ export default async function handler(
 			// Respond with the result of the insert operation
 			res.status(201).json({ insert1: result });
 		} catch (error) {
-			// Handle any errors that occur during the insert operation
-			console.error("Error in PayoutTierHandler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			if (error instanceof DatabaseError && error.code === "23505") {
+				res.status(422).json({
+					message: "place already exists",
+				});
+			} else {
+				res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			}
 		}
 	} else if (req.method === "DELETE") {
 		try {

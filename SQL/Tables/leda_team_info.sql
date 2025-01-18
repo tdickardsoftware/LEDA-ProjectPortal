@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.leda_team_info
     "memo" text COLLATE pg_catalog."default",
     "lastTeamFeePayment" text COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT leda_team_info_pkey PRIMARY KEY (id)
+    CONSTRAINT "leda_team_info_ledaId_key" UNIQUE ("ledaId")
 )
 
 TABLESPACE pg_default;

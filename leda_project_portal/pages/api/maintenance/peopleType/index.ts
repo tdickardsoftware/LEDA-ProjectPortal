@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PeopleType } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { DatabaseError } from "pg";
 
 // Define the API route handler
 export default async function handler(
@@ -29,13 +30,16 @@ export default async function handler(
 			try {
 				// Execute the database query to fetch people type information
 				const result = await query<PeopleType>(
-					'SELECT "peopleTypeCode", "desc" FROM maint.leda_maint_people_types;'
+					'SELECT "peopleTypeCode", "desc" FROM maint.leda_maint_people_types ORDER BY "peopleTypeCode";'
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);
 			} catch (error) {
 				// Handle any errors that occur during the query
-				res.status(500).json({ message: "Failed to fetch people type ", error });
+				res.status(500).json({
+					message: "Failed to fetch people type ",
+					error,
+				});
 			}
 		}
 	}
@@ -57,20 +61,28 @@ export default async function handler(
 			// Respond with the result of the insert operation
 			res.status(201).json({ insert1: result });
 		} catch (error) {
-			// Handle any errors that occur during the insert operation
-			console.error("Error in PeopleTypeHandler:", error);
-			res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+			if (error instanceof DatabaseError && error.code === "23505") {
+				res.status(422).json({
+					message: "People type code already exists",
+				});
+			} else {
+				res.status(500).json({
+					message: (error as Error).message || "Server error",
+				}); // Send error info in JSON
+			}
 		}
 	} else if (req.method === "DELETE") {
 		try {
 			const data = req.body as PeopleType;
-			const query = `DELETE FROM maint.leda_maint_people_types WHERE "peopleTypeCode" = $1 AND "desc" = $2;`;
-			const values = [data.peopleTypeCode, data.desc];
+			const query = `DELETE FROM maint.leda_maint_people_types WHERE "peopleTypeCode" = $1;`;
+			const values = [data.peopleTypeCode];
 			const result = await queryPost(query, values);
 			res.status(201).json({ delete1: result });
 		} catch (error) {
 			console.error("Error in PeopleTypeHandler:", error as Error);
-			res.status(500).json({ message: (error as Error).message || "Server error" });
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
 		}
 	} else if (req.method === "PUT") {
 		try {
@@ -81,7 +93,9 @@ export default async function handler(
 			res.status(201).json({ update1: result });
 		} catch (error) {
 			console.error("Error in PeopleTypeHandler:", error as Error);
-			res.status(500).json({ message: (error as Error).message || "Server error" });
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
 		}
 	} else {
 		res.status(405).json({ error: "Method not allowed" });

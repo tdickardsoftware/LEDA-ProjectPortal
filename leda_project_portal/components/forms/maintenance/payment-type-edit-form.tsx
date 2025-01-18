@@ -43,6 +43,9 @@ export default function PaymentTypeEditForm({
 
 	useEffect(() => {
 		const fetchData = async () => {
+			if (!rowData || !rowData.paymentType) {
+				return;
+			}
 			const response = await fetch(
 				paymentTypeRoute + `?paymentType=${rowData.paymentType}`,
 				{

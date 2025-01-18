@@ -57,7 +57,10 @@ const playerInfoSchema = z.object({
 	gender: z.string().min(1, { message: "Gender is Required" }),
 	dateOfBirth: z.string().optional(),
 	// Membership Information
-	ledaId: z.number().min(0, { message: "LEDA ID Must be a Postive Number." }).optional(),
+	ledaId: z
+		.number()
+		.min(0, { message: "LEDA ID Must be a Postive Number." })
+		.optional(),
 	establishedDate: z.string(),
 	badStanding: z.boolean(),
 	badStandingReason: z.optional(z.string()),
@@ -66,7 +69,10 @@ const playerInfoSchema = z.object({
 	formOnFile: z.boolean(),
 	needsMemberCard: z.boolean(),
 	inactiveDate: z.optional(z.string().optional()),
-	lastMembershipFeePayment: z.string().min(3, { message: "Last Membership fee is required" }).max(4),
+	lastMembershipFeePayment: z
+		.string()
+		.min(3, { message: "Last Membership fee is required" })
+		.max(4),
 	lastTrailsDate: z.optional(z.string()),
 	memberType: z.string().min(1, { message: "Member Type is Required" }),
 	cannotBeCaptain: z.boolean(),
@@ -89,6 +95,7 @@ export default function PlayerAddInformationForm({
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
+	const [ledaIdExists, setLedaIdExists] = useState(false);
 
 	const formRef = React.useRef<HTMLFormElement>(null);
 
@@ -127,7 +134,7 @@ export default function PlayerAddInformationForm({
 			const submissionValues = generateIDStatus
 				? { ...values, ledaId: 0 }
 				: values;
-			
+
 			const response = await fetch(playerRoute, {
 				method: "POST",
 				headers: {
@@ -137,11 +144,17 @@ export default function PlayerAddInformationForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setLedaIdExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
 						`HTTP error! status: ${response.status}`
 				);
+			}
+			if (response.status === 422) {
+				setLedaIdExists(true);
 			}
 
 			const results = await response.json();
@@ -291,6 +304,11 @@ export default function PlayerAddInformationForm({
 										/>
 									</FormControl>
 									<FormMessage />
+									{ledaIdExists && (
+										<p className="text-red-500 text-sm mt-1">
+											This LEDA ID is already in use
+										</p>
+									)}
 								</FormItem>
 							)}
 						/>

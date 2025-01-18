@@ -4,6 +4,7 @@ import { query } from "@/lib/dbTypeGet";
 import { Place } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import getNextLedaId from "@/lib/getNextLedaId";
+import { DatabaseError } from "pg";
 // handler function
 export default async function handler(
 	req: NextApiRequest,
@@ -28,7 +29,7 @@ export default async function handler(
 			try {
 				// get data from database
 				const result = await query<Place>(
-					`SELECT "ledaId", "name", CONCAT(COALESCE("addressOne", ''), ' ', COALESCE("addressTwo", ''), ', ', COALESCE("city", ''), ' ', COALESCE("state", ''), ', ', COALESCE("zip", '')) as "addressFull", "addressOne", "addressTwo", "city", "state", "zip", "phoneNumber", "otherNumber", "email", "website", TO_CHAR("establishDate", 'mm/dd/yyyy') as "establishDate", "memo", "numberOfBoards", "sendMailings", "regularSponsor", "currentSponsor", "issues", "lastBarFeePayment", "lastSanctioningDate", "contactId", "placeType" FROM public.leda_place_info;`
+					`SELECT "ledaId", "name", CONCAT(COALESCE("addressOne", ''), ' ', COALESCE("addressTwo", ''), ', ', COALESCE("city", ''), ' ', COALESCE("state", ''), ', ', COALESCE("zip", '')) as "addressFull", "addressOne", "addressTwo", "city", "state", "zip", "phoneNumber", "otherNumber", "email", "website", TO_CHAR("establishDate", 'mm/dd/yyyy') as "establishDate", "memo", "numberOfBoards", "sendMailings", "regularSponsor", "currentSponsor", "issues", "lastBarFeePayment", "lastSanctioningDate", "contactId", "placeType" FROM public.leda_place_info ORDER BY "ledaId";`
 				);
 				// set status to 200 and send data
 				res.status(200).json(result.rows);
@@ -81,10 +82,15 @@ export default async function handler(
 			// send response
 			res.status(201).json({ insert1: result });
 		} catch (error) {
-			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({
-				message: (error as Error).message || "Server error",
-			}); // Send error info in JSON
+			if (error instanceof DatabaseError && error.code === "23505") {
+				res.status(422).json({
+					message: "A place with the same ledaId already exists",
+				});
+			} else {
+				res.status(500).json({
+					message: (error as Error).message || "Server error",
+				}); // Send error info in JSON
+			}
 		}
 		// handle invalid method
 	} else if (req.method === "DELETE") {

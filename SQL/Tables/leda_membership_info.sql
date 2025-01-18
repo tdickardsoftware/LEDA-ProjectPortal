@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS public.leda_membership_info
     "cannotBeCaptainin" boolean NOT NULL,
     "lifetimeMember" boolean NOT NULL,
     "lifetimeMemberReason" text COLLATE pg_catalog."default",
-    CONSTRAINT leda_membership_info_pkey PRIMARY KEY (id)
+    CONSTRAINT leda_membership_info_pkey PRIMARY KEY (id),
+    CONSTRAINT "leda_membership_info_ledaId_key" UNIQUE ("ledaId")
 )
 
 TABLESPACE pg_default;

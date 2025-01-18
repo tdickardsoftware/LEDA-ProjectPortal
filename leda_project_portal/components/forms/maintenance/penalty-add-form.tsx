@@ -44,6 +44,8 @@ export default function PenaltyAddForm({
 		},
 	});
 
+	const [penaltyExists, setPenaltyExists] = React.useState(false);
+
 	// Handle form submission
 	async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
 		try {
@@ -56,6 +58,9 @@ export default function PenaltyAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setPenaltyExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -95,6 +100,11 @@ export default function PenaltyAddForm({
 							name="penaltyCode"
 							label="Penalty Code *"
 						/>
+						{penaltyExists && (
+							<p className="text-red-500 text-sm">
+								Penalty code already exists.
+							</p>
+						)}
 						<FormField
 							control={form.control}
 							name="desc"

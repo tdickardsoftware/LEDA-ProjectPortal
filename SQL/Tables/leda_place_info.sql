@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS public.leda_place_info
     "lastSanctioningDate" date NOT NULL,
     "contactId" bigint NOT NULL,
     "placeType" text COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT leda_place_info_pkey PRIMARY KEY (id)
+    CONSTRAINT leda_place_info_pkey PRIMARY KEY (id),
+    CONSTRAINT "leda_place_info_ledaId_key" UNIQUE ("ledaId")
 )
 
 TABLESPACE pg_default;

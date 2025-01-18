@@ -47,6 +47,8 @@ export default function PayoutTierAddForm({
 		},
 	});
 
+	const [payoutTierExists, setPayoutTierExists] = React.useState(false);
+
 	// Handle form submission
 	async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
 		try {
@@ -59,6 +61,9 @@ export default function PayoutTierAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setPayoutTierExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -115,6 +120,11 @@ export default function PayoutTierAddForm({
 										/>
 									</FormControl>
 									<FormMessage />
+									{payoutTierExists && (
+										<p className="text-red-500 text-sm mt-1">
+											This Place Already Exists
+										</p>
+									)}
 								</FormItem>
 							)}
 						/>

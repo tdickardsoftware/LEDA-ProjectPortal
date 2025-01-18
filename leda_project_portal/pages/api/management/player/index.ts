@@ -3,6 +3,7 @@ import { query } from "@/lib/dbTypeGet";
 import { Player, PlayerMemberInfo } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import getNextLedaId from "@/lib/getNextLedaId";
+import { DatabaseError } from "pg";
 
 /**
  * API handler for managing player information.
@@ -65,7 +66,7 @@ export default async function handler(
 						TO_CHAR("dateOfBirth", 'mm/dd/yyyy') as "dateOfBirth", 
 						'(' || SUBSTRING("phoneNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("phoneNumber" FROM 4 FOR 3) || '-' || SUBSTRING("phoneNumber" FROM 7 FOR 4) AS "phoneNumberFormatted", 
 						'(' || SUBSTRING("otherNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("otherNumber" FROM 4 FOR 3) || '-' || SUBSTRING("otherNumber" FROM 7 FOR 4) AS "otherNumberFormatted" 
-					FROM public.leda_player_info;
+					FROM public.leda_player_info ORDER BY "ledaId";
 				`);
 				res.status(200).json(result.rows);
 			}
@@ -140,10 +141,15 @@ export default async function handler(
 
 			res.status(201).json({ insert1: result1, insert2: result2 });
 		} catch (error) {
-			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({
-				message: (error as Error).message || "Server error",
-			});
+			if (error instanceof DatabaseError && error.code === "23505") {
+				res.status(422).json({
+					message: "A player with the same ledaId already exists",
+				});
+			} else {
+				res.status(500).json({
+					message: (error as Error).message || "Server error",
+				});
+			}
 		}
 	} else if (req.method === "DELETE") {
 		try {

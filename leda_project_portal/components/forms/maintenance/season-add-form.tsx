@@ -25,7 +25,14 @@ import { DatePickerCustom } from "@/components/ui/date-picker";
 import { seasonRoute } from "@/lib/apiRoutes";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
 // Define the schema for form validation using zod
 const seasonFormSchema = z.object({
@@ -55,7 +62,7 @@ export default function SeasonAddForm({
 	const [howManyWeeks, setHowManyWeeks] = React.useState(14);
 	const [initialDate, setInitialDate] = React.useState(new Date());
 	const [dates, setDates] = React.useState<string>();
-	
+	const [seasonCodeExists, setSeasonCodeExists] = React.useState(false);
 
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof seasonFormSchema>>({
@@ -122,6 +129,9 @@ export default function SeasonAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setSeasonCodeExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -186,6 +196,11 @@ export default function SeasonAddForm({
 								label="Season Code *"
 								customClass={inputWidth}
 							/>
+							{seasonCodeExists && (
+								<p className="text-red-500 text-sm mt-1">
+									Season Code already exists
+								</p>
+							)}
 							<InputDefault
 								control={form.control}
 								name="fiscalYear"
@@ -278,21 +293,44 @@ export default function SeasonAddForm({
 											</TableRow>
 										</TableHeader>
 										<TableBody>
-											{(dates ? JSON.parse(dates) : []).map((date: string, index: number) => (
-												<TableRow key={index}>
-													<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-														Date {index + 1}
-														<DatePickerCustom
-															onDateChange={(date) => handleDateChange(date, index)}
-															initialMonth={new Date(date)}
-															dateSelected={new Date(date)}
-														/>
-													</TableCell>
-													<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-														{date}
-													</TableCell>
-												</TableRow>
-											))}
+											{(dates
+												? JSON.parse(dates)
+												: []
+											).map(
+												(
+													date: string,
+													index: number
+												) => (
+													<TableRow key={index}>
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+															Date {index + 1}
+															<DatePickerCustom
+																onDateChange={(
+																	date
+																) =>
+																	handleDateChange(
+																		date,
+																		index
+																	)
+																}
+																initialMonth={
+																	new Date(
+																		date
+																	)
+																}
+																dateSelected={
+																	new Date(
+																		date
+																	)
+																}
+															/>
+														</TableCell>
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+															{date}
+														</TableCell>
+													</TableRow>
+												)
+											)}
 										</TableBody>
 									</Table>
 								</div>

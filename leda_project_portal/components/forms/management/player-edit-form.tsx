@@ -28,7 +28,6 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { Player, PlayerMemberInfo } from "@/lib/definitions";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -104,7 +103,6 @@ export default function PlayerEditInformationForm({
 	const [formData, setFormData] = useState<PlayerMemberInfo>(
 		{} as PlayerMemberInfo
 	);
-	const [loading, setLoading] = useState(true);
 
 	const formRef = React.useRef<HTMLFormElement>(null);
 	const form = useForm<z.infer<typeof playerInfoSchema>>({
@@ -151,7 +149,6 @@ export default function PlayerEditInformationForm({
 
 	useEffect(() => {
 		if (!rowData) {
-			setLoading(false);
 			return;
 		}
 
@@ -188,22 +185,9 @@ export default function PlayerEditInformationForm({
 					? new Date(data.lastTrailsDate).toISOString().split("T")[0]
 					: undefined,
 			}); // Set form values to the retrieved data
-			setLoading(false); // Set loading to false after data is fetched
 		};
 		fetchData();
 	}, [rowData, form]);
-
-	if (loading) {
-		return (
-			<div className="flex flex-col space-y-3">
-				<Skeleton className="h-[125px] w-[250px] rounded-xl" />
-				<div className="space-y-2">
-					<Skeleton className="h-4 w-[250px]" />
-					<Skeleton className="h-4 w-[200px]" />
-				</div>
-			</div>
-		);
-	}
 
 	if (!rowData) {
 		return <div>No player data available.</div>;

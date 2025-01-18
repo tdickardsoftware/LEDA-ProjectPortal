@@ -46,6 +46,8 @@ export default function PaymentTypeAddForm({
 		},
 	});
 
+	const [paymentTypeExists, setPaymentTypeExists] = React.useState(false);
+
 	// Handle form submission
 	async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
 		try {
@@ -58,6 +60,9 @@ export default function PaymentTypeAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setPaymentTypeExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -97,6 +102,12 @@ export default function PaymentTypeAddForm({
 							name="paymentType"
 							label="Payment Type *"
 						/>
+						{paymentTypeExists && (
+							<p className="text-red-500 text-sm">
+								{" "}
+								Payment type already exists{" "}
+							</p>
+						)}
 						<FormField
 							control={form.control}
 							name="desc"

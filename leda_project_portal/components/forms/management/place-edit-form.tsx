@@ -131,6 +131,9 @@ export default function PlaceEditForm({
 
 	useEffect(() => {
 		const fetchData = async () => {
+			if (!rowData || !rowData.ledaId) {
+				return;
+			}
 			const response = await fetch(
 				placeRoute + `?ledaId=${rowData.ledaId}`,
 				{

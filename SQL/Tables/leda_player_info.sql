@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS public.leda_player_info
     "email" text COLLATE pg_catalog."default" NOT NULL,
     "gender" text COLLATE pg_catalog."default" NOT NULL,
     "dateOfBirth" date NOT NULL,
-    CONSTRAINT leda_player_info_pkey PRIMARY KEY (id)
+    CONSTRAINT leda_player_info_pkey PRIMARY KEY (id),
+    CONSTRAINT "leda_player_info_ledaId_key" UNIQUE ("ledaId")
 )
 
 TABLESPACE pg_default;

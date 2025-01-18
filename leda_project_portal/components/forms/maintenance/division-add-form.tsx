@@ -36,6 +36,8 @@ export default function DivisionAddForm({
 		},
 	});
 
+	const [divisionNameExists, setDivisionNameExists] = React.useState(false);
+
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
 		try {
@@ -48,6 +50,9 @@ export default function DivisionAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setDivisionNameExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -88,6 +93,11 @@ export default function DivisionAddForm({
 							name="divisionName"
 							label="Division Name *"
 						/>
+						{divisionNameExists && (
+							<p className="text-red-500 text-sm">
+								Division name already exists.
+							</p>
+						)}
 					</div>
 				</div>
 				<div className="flex justify-center">

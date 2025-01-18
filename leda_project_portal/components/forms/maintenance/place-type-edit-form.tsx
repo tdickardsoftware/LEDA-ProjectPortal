@@ -45,6 +45,9 @@ export default function PlaceTypeEditForm({
 
 	useEffect(() => {
 		const fetchData = async () => {
+			if (!rowData || !rowData.placeTypeCode) {
+				return;
+			}
 			const response = await fetch(
 				placeTypeRoute + `?placeTypeCode=${rowData.placeTypeCode}`,
 				{

@@ -47,6 +47,8 @@ export default function PlaceTypeAddForm({
 		},
 	});
 
+	const [placeTypeExists, setPlaceTypeExists] = React.useState(false);
+
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
 		try {
@@ -59,6 +61,9 @@ export default function PlaceTypeAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setPlaceTypeExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -99,6 +104,11 @@ export default function PlaceTypeAddForm({
 							name="placeTypeCode"
 							label="Place Type Code *"
 						/>
+						{placeTypeExists && (
+							<p className="text-red-500 text-sm mt-1">
+								Place Type Code already exists
+							</p>
+						)}
 						<FormField
 							control={form.control}
 							name="desc"

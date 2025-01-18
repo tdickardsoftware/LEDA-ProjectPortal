@@ -47,6 +47,7 @@ export default function PlaceAddForm({
 	onRefresh: () => void;
 }) {
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
+	const [ledaIdExists, setLedaIdExists] = useState(false);
 
 	const form = useForm<z.infer<typeof teamFormSchema>>({
 		resolver: zodResolver(teamFormSchema),
@@ -75,6 +76,9 @@ export default function PlaceAddForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setLedaIdExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
@@ -150,6 +154,11 @@ export default function PlaceAddForm({
 										/>
 									</FormControl>
 									<FormMessage />
+									{ledaIdExists && (
+										<p className="text-red-500 text-sm mt-1">
+											This LEDA ID is already in use
+										</p>
+									)}
 								</FormItem>
 							)}
 						/>
