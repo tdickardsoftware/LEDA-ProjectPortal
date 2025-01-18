@@ -3,6 +3,7 @@ import { query } from "@/lib/dbTypeGet";
 import { Player, PlayerMemberInfo } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import getNextLedaId from "@/lib/getNextLedaId";
+import { DatabaseError } from "pg";
 
 /**
  * API handler for managing player information.
@@ -140,10 +141,15 @@ export default async function handler(
 
 			res.status(201).json({ insert1: result1, insert2: result2 });
 		} catch (error) {
-			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({
-				message: (error as Error).message || "Server error",
-			});
+			if (error instanceof DatabaseError && error.code === "23505") {
+				res.status(422).json({
+					message: "A player with the same ledaId already exists",
+				});
+			} else {
+				res.status(500).json({
+					message: (error as Error).message || "Server error",
+				});
+			}
 		}
 	} else if (req.method === "DELETE") {
 		try {

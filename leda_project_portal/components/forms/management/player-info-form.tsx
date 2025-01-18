@@ -89,6 +89,7 @@ export default function PlayerAddInformationForm({
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
+	const [ledaIdExists, setLedaIdExists] = useState(false);
 
 	const formRef = React.useRef<HTMLFormElement>(null);
 
@@ -137,11 +138,17 @@ export default function PlayerAddInformationForm({
 			});
 
 			if (!response.ok) {
+				if (response.status === 422) {
+					setLedaIdExists(true);
+				}
 				const errorData = await response.json();
 				throw new Error(
 					errorData?.message ||
 						`HTTP error! status: ${response.status}`
 				);
+			}
+			if (response.status === 422) {
+				setLedaIdExists(true);
 			}
 
 			const results = await response.json();
@@ -291,6 +298,9 @@ export default function PlayerAddInformationForm({
 										/>
 									</FormControl>
 									<FormMessage />
+									{ledaIdExists && (
+										<p className="text-red-500 text-sm mt-1">This LEDA ID is already in use</p>
+									)}
 								</FormItem>
 							)}
 						/>

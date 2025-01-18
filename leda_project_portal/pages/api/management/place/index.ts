@@ -4,6 +4,7 @@ import { query } from "@/lib/dbTypeGet";
 import { Place } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import getNextLedaId from "@/lib/getNextLedaId";
+import { DatabaseError } from "pg";
 // handler function
 export default async function handler(
 	req: NextApiRequest,
@@ -81,10 +82,15 @@ export default async function handler(
 			// send response
 			res.status(201).json({ insert1: result });
 		} catch (error) {
-			console.error("Error in PlayerHandler:", error);
-			res.status(500).json({
-				message: (error as Error).message || "Server error",
-			}); // Send error info in JSON
+			if (error instanceof DatabaseError && error.code === "23505") {
+				res.status(422).json({
+					message: "A place with the same ledaId already exists",
+				});
+			} else {
+				res.status(500).json({
+					message: (error as Error).message || "Server error",
+				}); // Send error info in JSON
+			}
 		}
 		// handle invalid method
 	} else if (req.method === "DELETE") {
