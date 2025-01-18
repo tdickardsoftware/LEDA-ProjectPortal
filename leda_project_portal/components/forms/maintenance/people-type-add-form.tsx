@@ -45,7 +45,7 @@ export default function PeopleTypeAddForm({
 			peopleTypeCode: "",
 		},
 	});
-	
+
 	const [peopleTypeExists, setPeopleTypeExists] = React.useState(false);
 
 	// Handle form submission
@@ -103,7 +103,9 @@ export default function PeopleTypeAddForm({
 							label="People Type Code *"
 						/>
 						{peopleTypeExists && (
-							<p className="text-red-500 text-sm mt-1">People Type Code already exists</p>
+							<p className="text-red-500 text-sm mt-1">
+								People Type Code already exists
+							</p>
 						)}
 						<FormField
 							control={form.control}

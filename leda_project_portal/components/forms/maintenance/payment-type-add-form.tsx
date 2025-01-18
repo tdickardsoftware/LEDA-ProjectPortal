@@ -103,7 +103,10 @@ export default function PaymentTypeAddForm({
 							label="Payment Type *"
 						/>
 						{paymentTypeExists && (
-							<p className="text-red-500 text-sm"> Payment type already exists </p>
+							<p className="text-red-500 text-sm">
+								{" "}
+								Payment type already exists{" "}
+							</p>
 						)}
 						<FormField
 							control={form.control}

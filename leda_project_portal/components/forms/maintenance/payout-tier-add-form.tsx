@@ -121,7 +121,9 @@ export default function PayoutTierAddForm({
 									</FormControl>
 									<FormMessage />
 									{payoutTierExists && (
-										<p className="text-red-500 text-sm mt-1">This Place Already Exists</p>
+										<p className="text-red-500 text-sm mt-1">
+											This Place Already Exists
+										</p>
 									)}
 								</FormItem>
 							)}

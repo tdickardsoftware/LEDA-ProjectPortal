@@ -301,7 +301,9 @@ export default function PlaceAddForm({
 									</FormControl>
 									<FormMessage />
 									{ledaIdExists && (
-										<p className="text-red-500 text-sm mt-1">This LEDA ID is already in use</p>
+										<p className="text-red-500 text-sm mt-1">
+											This LEDA ID is already in use
+										</p>
 									)}
 								</FormItem>
 							)}

@@ -105,7 +105,9 @@ export default function PlaceTypeAddForm({
 							label="Place Type Code *"
 						/>
 						{placeTypeExists && (
-							<p className="text-red-500 text-sm mt-1">Place Type Code already exists</p>
+							<p className="text-red-500 text-sm mt-1">
+								Place Type Code already exists
+							</p>
 						)}
 						<FormField
 							control={form.control}

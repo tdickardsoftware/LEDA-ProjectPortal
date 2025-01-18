@@ -111,7 +111,9 @@ export default function MentionAddForm({
 							label="Mention Code *"
 						/>
 						{mentionCodeExists && (
-							<p className="text-red-500 text-sm">Mention code already exists</p>
+							<p className="text-red-500 text-sm">
+								Mention code already exists
+							</p>
 						)}
 						<FormField
 							control={form.control}

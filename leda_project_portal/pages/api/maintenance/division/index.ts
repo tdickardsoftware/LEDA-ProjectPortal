@@ -60,7 +60,9 @@ export default async function handler(
 			res.status(201).json({ delete1: result });
 		} catch (error) {
 			console.error("Error in DivisionHandler:", error as Error);
-			res.status(500).json({ message: (error as Error).message || "Server error" });
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
 		}
 	} else {
 		res.status(405).json({ error: "Method not allowed" });

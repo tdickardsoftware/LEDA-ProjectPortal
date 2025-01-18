@@ -98,7 +98,12 @@ export default async function handler(
 					"points" = $3,
 					"mentionBasis" = $4
 				WHERE "mentionCode" = $1;`;
-			const values = [data.mentionCode, data.desc, data.points, data.mentionBasis];
+			const values = [
+				data.mentionCode,
+				data.desc,
+				data.points,
+				data.mentionBasis,
+			];
 			const result = await queryPost(query, values);
 			res.status(201).json({ update1: result });
 		} catch (error) {
