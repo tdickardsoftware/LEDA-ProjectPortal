@@ -55,7 +55,11 @@ export default async function handler(
 				`,
 					[ledaId as string]
 				);
-				res.status(200).json(result.rows[0]);
+				if (result.rows.length === 0) {
+					res.status(404).json({ message: "Player not found" });
+				} else {
+					res.status(200).json(result.rows[0]);
+				}
 			} else {
 				// Fetch player information from the database
 				const result = await query<Player>(`

@@ -53,7 +53,7 @@ export async function fetchPlayers() {
 	}
 }
 //
-//
+// get data for a specific player with both player and membership information
 //
 export async function fetchPlayerMember(ledaId: string) {
 	// attempt to get data
@@ -65,6 +65,9 @@ export async function fetchPlayerMember(ledaId: string) {
 			},
 		});
 		if (!response.ok) {
+			if (response.status === 404) {
+				return null;
+			}
 			console.log(response)
 			throw new Error("Network response was not ok");
 		}
