@@ -5,6 +5,7 @@ import { playerRoute } from "@/lib/apiRoutes";
 import { fetchPlayers } from "@/lib/getData";
 import { columns } from "@/schemas/managment/players";
 import { Metadata } from "next";
+import CustomLink from "@/components/ui/custom-link";
 
 export const metadata: Metadata = {
 	title: "Players",
@@ -40,6 +41,9 @@ export default async function Page() {
 							title="Edit Player"
 							buttonName="Edit Player"
 						/>
+					}
+					viewLink={
+						<CustomLink linkName="View Player"/>
 					}
 					apiEndpoint={playerRoute}
 					defaultSort="ledaId"

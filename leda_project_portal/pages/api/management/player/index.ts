@@ -47,14 +47,19 @@ export default async function handler(
 						p."otherNumber",
 						p.email,
 						p.gender,
-						p."dateOfBirth"
+						p."dateOfBirth",
+						CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName"
 					FROM public.leda_membership_info m
 					JOIN public.leda_player_info p ON m."ledaId" = p."ledaId"
 					WHERE m."ledaId" = $1
 				`,
 					[ledaId as string]
 				);
-				res.status(200).json(result.rows[0]);
+				if (result.rows.length === 0) {
+					res.status(404).json({ message: "Player not found" });
+				} else {
+					res.status(200).json(result.rows[0]);
+				}
 			} else {
 				// Fetch player information from the database
 				const result = await query<Player>(`
