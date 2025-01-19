@@ -28,6 +28,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	addDialog: React.ReactNode;
 	deleteDialog?: React.ReactNode;
 	editDialog?: React.ReactNode;
+	viewLink?: React.ReactNode;
 	onRefresh?: (api: string) => void;
 	apiEndpoint: string; // New prop for API endpoint
 	defaultSort?: string;
@@ -40,6 +41,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	addDialog,
 	deleteDialog,
 	editDialog,
+	viewLink,
 	onRefresh,
 	apiEndpoint, // Destructure the new prop
 	defaultSort,
@@ -129,6 +131,22 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 							)}
 						</div>
 						<div className="flex space-x-2">
+							{viewLink ? (
+								<div>
+									{React.cloneElement(
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
+										viewLink as React.ReactElement<any>,
+										{
+											disabled:
+												selectedRowCount === 1
+													? false
+													: true,
+											rowData: selectedRowsData[0], // Pass the first selected row's data
+											href: `/Portal/Management/Players/${selectedRowsData[0]?.ledaId}`,
+										}
+									)}
+								</div>	
+							): null}
 							{editDialog ? (
 								<div>
 									{React.cloneElement(

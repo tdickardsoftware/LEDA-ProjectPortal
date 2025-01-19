@@ -47,7 +47,8 @@ export default async function handler(
 						p."otherNumber",
 						p.email,
 						p.gender,
-						p."dateOfBirth"
+						p."dateOfBirth",
+						CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName"
 					FROM public.leda_membership_info m
 					JOIN public.leda_player_info p ON m."ledaId" = p."ledaId"
 					WHERE m."ledaId" = $1

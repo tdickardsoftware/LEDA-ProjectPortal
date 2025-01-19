@@ -4,6 +4,7 @@
 
 import {
 	Player,
+	PlayerMemberInfo,
 	Team,
 	Place,
 	Division,
@@ -51,7 +52,30 @@ export async function fetchPlayers() {
 		throw new Error("Failed to fetch Player Information");
 	}
 }
-
+//
+//
+//
+export async function fetchPlayerMember(ledaId: string) {
+	// attempt to get data
+	try {
+		const response = await fetch(`${playerRouteServer}?ledaId=${ledaId}`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+		if (!response.ok) {
+			console.log(response)
+			throw new Error("Network response was not ok");
+		}
+		const data = (await response.json()) as PlayerMemberInfo;
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Player Member Information");
+	}
+}
 //
 // async function to get all team data from the database
 //
