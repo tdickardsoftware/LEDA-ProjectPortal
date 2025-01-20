@@ -7,8 +7,11 @@ import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page({ params }: { params: { ledaId: string } }) {
-	const ledaId = await params.ledaId;
+type PageProps = Promise<{ledaId: string}>;
+
+export default async function Page(props : {params: PageProps}) {
+	const params = await props.params;
+	const ledaId  = params.ledaId;
 	
 	const teamData = await fetchTeam(ledaId);
 	if (!teamData) {

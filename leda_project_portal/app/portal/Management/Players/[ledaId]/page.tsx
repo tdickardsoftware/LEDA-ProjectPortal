@@ -3,8 +3,13 @@ import { fetchPlayerMember } from "@/lib/getData";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default async function Page({ params }: { params: { ledaId: string } }) {
-	const ledaId = params.ledaId;
+export const dynamic = "force-dynamic";
+
+type PageProps = Promise<{ledaId: string}>;
+
+export default async function Page(props : {params: PageProps}) {
+	const params = await props.params;
+	const ledaId  = params.ledaId;
 	const playerData = await fetchPlayerMember(ledaId);
 	if (!playerData) {
 		notFound();
