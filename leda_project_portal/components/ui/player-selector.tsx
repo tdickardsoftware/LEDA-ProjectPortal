@@ -18,12 +18,15 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { playerRoute } from "@/lib/apiRoutes";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipContent } from "@radix-ui/react-tooltip";
 
 // Define the player interface
 interface Player {
 	ledaId: string;
 	fullName: string;
 	isCaptain: boolean;
+    cannotBeCaptain: boolean;
 }
 
 interface PlayerSelectorProps {
@@ -45,9 +48,10 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 			try {
 				const response = await fetch(playerRoute);
 				const data = await response.json();
-				setPlayers(data.map((player: { ledaId: string; fullName: string }) => ({
+				setPlayers(data.map((player: { ledaId: string; fullName: string; cannotBeCaptain: boolean }) => ({
 					ledaId: player.ledaId,
 					fullName: player.fullName,
+                    cannotBeCaptain: player.cannotBeCaptain,
 					isCaptain: false,
 				})));
 			} catch (error) {
@@ -67,6 +71,7 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
                     ledaId: parsedList[key].ledaId,
                     fullName: players.find((p) => p.ledaId === parsedList[key].ledaId)?.fullName || "",
                     isCaptain: parsedList[key].isCaptain,
+                    cannotBeCaptain: players.find((p) => p.ledaId === parsedList[key].ledaId)?.cannotBeCaptain || false,
                 }));
                 setSelectedPlayers(existingPlayers);
             } catch (error) {
@@ -93,9 +98,10 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 	};
 
 	// Handle captain selection
-	const handleCaptainSelection = (playerId: string) => {
+	const handleCaptainSelection = (playerId: string, event: React.MouseEvent) => {
+		event.preventDefault();
 		const updatedPlayers = selectedPlayers.map((player) =>
-			player.ledaId === playerId
+			player.ledaId === playerId && !player.cannotBeCaptain
 				? { ...player, isCaptain: !player.isCaptain }
 				: { ...player, isCaptain: false }
 		);
@@ -174,19 +180,30 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 					>
 						<div className="flex items-center gap-2">
 							<span>{player.fullName}</span>
-							<Button
-								variant="ghost"
-								size="sm"
-								type="button"
-								onClick={() => handleCaptainSelection(player.ledaId)}
-							>
-								<Star
-									className={cn(
-										"h-4 w-4",
-										player.isCaptain ? "text-yellow-500" : "text-gray-400"
-									)}
-								/>
-							</Button>
+                            <TooltipProvider>
+                                <Tooltip >
+                                    <TooltipTrigger>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            type="button"
+                                            onClick={(event) => handleCaptainSelection(player.ledaId, event)}
+											disabled={player.cannotBeCaptain}
+                                        >
+                                            <Star
+                                                className={cn(
+                                                    "h-4 w-4",
+                                                    player.isCaptain ? "text-yellow-500" : "text-gray-400"
+                                                )}
+                                            />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-white p-2 rounded shadow-lg">
+                                        <p>{player.cannotBeCaptain ? "Cannot be Captain" : "Set as Captain"}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+							
 						</div>
 						<Button
 							variant="ghost"
