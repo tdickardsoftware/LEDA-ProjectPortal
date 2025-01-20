@@ -27,7 +27,7 @@ export default function PortalPageContent() {
 		<div className="flex flex-row space-x-4">
 			<div className="flex flex-col space-y-4">
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
-					<Link href="/Portal/Management">
+					<Link href="/portal/Management">
 						<CardHeader>
 							<CardTitle>Management</CardTitle>
 							<Separator className="my-4 bg-gray-500" />
@@ -49,19 +49,19 @@ export default function PortalPageContent() {
 								<Separator className="my-4 bg-gray-500" />
 								<div className="flex flex-col space-y-2">
 									<Link
-										href="/Portal/Management/Players"
+										href="/portal/Management/Players"
 										className="border-b"
 									>
 										Players
 									</Link>
 									<Link
-										href="/Portal/Management/Places"
+										href="/portal/Management/Places"
 										className="border-b"
 									>
 										Places
 									</Link>
 									<Link
-										href="/Portal/Management/Teams"
+										href="/portal/Management/Teams"
 										className="border-b"
 									>
 										Teams
@@ -74,7 +74,7 @@ export default function PortalPageContent() {
 			</div>
 			<div className="flex flex-col space-y-4">
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
-					<Link href="/Portal/Maintenance">
+					<Link href="/portal/Maintenance">
 						<CardHeader>
 							<CardTitle>Maintenance</CardTitle>
 							<Separator className="my-4 bg-gray-500" />
@@ -96,49 +96,49 @@ export default function PortalPageContent() {
 								<Separator className="my-4 bg-gray-500" />
 								<div className="flex flex-col space-y-2">
 									<Link
-										href="/Portal/Maintenance/Divisions"
+										href="/portal/Maintenance/Divisions"
 										className="border-b"
 									>
 										Divisions
 									</Link>
 									<Link
-										href="/Portal/Maintenance/Mentions"
+										href="/portal/Maintenance/Mentions"
 										className="border-b"
 									>
 										Mentions
 									</Link>
 									<Link
-										href="/Portal/Maintenance/Payment-Types"
+										href="/portal/Maintenance/Payment-Types"
 										className="border-b"
 									>
 										Payment Types
 									</Link>
 									<Link
-										href="/Portal/Maintenance/Payout-Tiers"
+										href="/portal/Maintenance/Payout-Tiers"
 										className="border-b"
 									>
 										Payout Tiers
 									</Link>
 									<Link
-										href="/Portal/Maintenance/Penalties"
+										href="/portal/Maintenance/Penalties"
 										className="border-b"
 									>
 										Penalties
 									</Link>
 									<Link
-										href="/Portal/Maintenance/People-Types"
+										href="/portal/Maintenance/People-Types"
 										className="border-b"
 									>
 										People Types
 									</Link>
 									<Link
-										href="/Portal/Maintenance/Place-Types"
+										href="/portal/Maintenance/Place-Types"
 										className="border-b"
 									>
 										Place Types
 									</Link>
 									<Link
-										href="/Portal/Maintenance/Seasons"
+										href="/portal/Maintenance/Seasons"
 										className="border-b"
 									>
 										Seasons
@@ -151,7 +151,7 @@ export default function PortalPageContent() {
 			</div>
 			<div className="flex flex-col space-y-4">
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
-					<Link href="/Portal/Reports">
+					<Link href="/portal/Reports">
 						<CardHeader>
 							<CardTitle>Reports *WORK IN PROGRESS*</CardTitle>
 							<Separator className="my-4 bg-gray-500" />
@@ -173,25 +173,25 @@ export default function PortalPageContent() {
 								<Separator className="my-4 bg-gray-500" />
 								<div className="flex flex-col space-y-2">
 									<Link
-										href="/Portal/Reports/Captains-Meeting"
+										href="/portal/Reports/Captains-Meeting"
 										className="border-b"
 									>
 										Captains Meeting
 									</Link>
 									<Link
-										href="/Portal/Reports/League-Play"
+										href="/portal/Reports/League-Play"
 										className="border-b"
 									>
 										League Play
 									</Link>
 									<Link
-										href="/Portal/Reports/Lists"
+										href="/portal/Reports/Lists"
 										className="border-b"
 									>
 										Lists
 									</Link>
 									<Link
-										href="/Portal/Reports/Trails"
+										href="/portal/Reports/Trails"
 										className="border-b"
 									>
 										Trails
@@ -204,7 +204,7 @@ export default function PortalPageContent() {
 			</div>
 			<div className="flex flex-col space-y-4">
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
-					<Link href="/Portal/Activities">
+					<Link href="/portal/Activities">
 						<CardHeader>
 							<CardTitle>Activities *WORK IN PROGRESS*</CardTitle>
 							<Separator className="my-4 bg-gray-500" />
@@ -227,31 +227,31 @@ export default function PortalPageContent() {
 								<Separator className="my-4 bg-gray-500" />
 								<div className="flex flex-col space-y-2">
 									<Link
-										href="/Portal/Activities/Payouts"
+										href="/portal/Activities/Payouts"
 										className="border-b"
 									>
 										Payouts
 									</Link>
 									<Link
-										href="/Portal/Activities/Rosters"
+										href="/portal/Activities/Rosters"
 										className="border-b"
 									>
 										Rosters
 									</Link>
 									<Link
-										href="/Portal/Activities/Scheduling"
+										href="/portal/Activities/Scheduling"
 										className="border-b"
 									>
 										Scheduling
 									</Link>
 									<Link
-										href="/Portal/Activities/Trails"
+										href="/portal/Activities/Trails"
 										className="border-b"
 									>
 										Trails
 									</Link>
 									<Link
-										href="/Portal/Activities/Weekly-Score"
+										href="/portal/Activities/Weekly-Score"
 										className="border-b"
 									>
 										Weekly Score
