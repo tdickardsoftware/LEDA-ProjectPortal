@@ -1,0 +1,412 @@
+"use client";
+
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import validator from "validator";
+import { useEffect, useState } from "react";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import PhoneNumberInput from "@/components/ui/phone-number-input";
+import { isValidPhoneNumber } from "libphonenumber-js";
+import React from "react";
+import SeasonCodeSelector from "@/components/ui/season-code-selector";
+import PlaceTypeSelector from "@/components/ui/place-type-selector";
+import { Textarea } from "@/components/ui/textarea";
+import PlaceOwnerSelector from "@/components/ui/place-owner-select";
+import { InputDefault } from "../../ui/form-input-default";
+import { placeRoute } from "@/lib/apiRoutes";
+import StatePicker from "../../ui/state-selector";
+import CheckboxDefault from "@/components/ui/checkbox-default";
+import { Place } from "@/lib/definitions";
+
+const placeFormSchema = z.object({
+	ledaId: z
+		.number()
+		.min(0, { message: "LEDA ID Must be a Postive Number." })
+		.optional(),
+	name: z.string().min(1, { message: "Name is required." }),
+	addressOne: z.string().min(1, { message: "Address is required." }),
+	addressTwo: z.string().optional(),
+	city: z.string().min(1, { message: "City is required." }),
+	state: z.string().min(1, { message: "State is required." }),
+	zip: z.string().min(1, { message: "Zip is required." }),
+	phoneNumber: z
+		.string()
+		.min(1, { message: "Phone Number is Required" })
+		.refine((value) => isValidPhoneNumber(value, "US"), {
+			message: "Phone Number is Invalid",
+		}),
+	otherNumber: z
+		.string()
+		.optional()
+		.refine(
+			(value) => value === "" || isValidPhoneNumber(value ?? "", "US"),
+			{ message: "Other Number is Invalid" }
+		),
+	email: z
+		.string()
+		.min(1, { message: "Email is Required" })
+		.refine(validator.isEmail, { message: "Email is Invalid" }),
+	website: z
+		.string()
+		.optional()
+		.refine((value) => value === undefined || validator.isURL(value), {
+			message: "Website is Invalid",
+		}),
+	establishDate: z.string(),
+	memo: z.string().optional(),
+	numberOfBoards: z
+		.number()
+		.min(0, { message: "Number of Boards Must be a Postive Number." }),
+	sendMailings: z.boolean(),
+	regularSponsor: z.boolean(),
+	currentSponsor: z.boolean(),
+	issues: z.boolean(),
+	lastBarFeePayment: z.string(),
+	lastSanctioningDate: z.string().optional(),
+	placeType: z.string().min(1, { message: "Place Type is Required" }),
+	contactId: z.string().min(1, { message: "Place Owner is Required" }),
+});
+
+const formContainerStyle =
+	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+const inputWidth = "w-24";
+const checkboxWidth = "h-5 w-5";
+
+export default function PlaceEditForm({
+	onClose,
+	onRefresh,
+	rowData,
+}: {
+	onClose: () => void;
+	onRefresh: () => void;
+	rowData: Place;
+}) {
+	const [formData, setFormData] = useState<Place>({} as Place);
+
+	const formRef = React.useRef<HTMLFormElement>(null);
+	const form = useForm<z.infer<typeof placeFormSchema>>({
+		resolver: zodResolver(placeFormSchema),
+		defaultValues: {
+			ledaId: formData.ledaId ?? undefined,
+			name: formData.name || "",
+			addressOne: formData.addressOne || "",
+			addressTwo: formData.addressTwo || "",
+			city: formData.city || "",
+			state: formData.state || "",
+			zip: formData.zip || "",
+			phoneNumber: formData.phoneNumber || "",
+			otherNumber: formData.otherNumber || "",
+			email: formData.email || "",
+			website: formData.website || "",
+			establishDate: formData.establishDate
+				? new Date(formData.establishDate).toISOString().split("T")[0]
+				: undefined,
+			memo: formData.memo || "",
+			numberOfBoards: formData.numberOfBoards || 0,
+			sendMailings: formData.sendMailings || false,
+			regularSponsor: formData.regularSponsor || false,
+			currentSponsor: formData.currentSponsor || false,
+			issues: formData.issues || false,
+			lastBarFeePayment: formData.lastBarFeePayment || "",
+			lastSanctioningDate: formData.lastSanctioningDate
+				? new Date(formData.lastSanctioningDate)
+						.toISOString()
+						.split("T")[0]
+				: undefined,
+			placeType: formData.placeType || "",
+			contactId: formData.contactId ? String(formData.contactId) : "",
+		},
+	});
+
+	useEffect(() => {
+		const fetchData = async () => {
+			if (!rowData || !rowData.ledaId) {
+				return;
+			}
+			const response = await fetch(
+				placeRoute + `?ledaId=${rowData.ledaId}`,
+				{
+					method: "GET",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				}
+			);
+			if (!response.ok) {
+				throw new Error(
+					`Failed to fetch place data: ${response.status} ${response.statusText}`
+				);
+			}
+			const data = await response.json();
+			setFormData(data);
+			form.reset({
+				...data,
+				ledaId: data.ledaId ? Number(data.ledaId) : undefined,
+				numberOfBoards: data.numberOfBoards
+					? Number(data.numberOfBoards)
+					: undefined,
+				establishDate: data.establishDate
+					? new Date(data.establishDate).toISOString().split("T")[0]
+					: undefined,
+				lastSanctioningDate: data.lastSanctioningDate
+					? new Date(data.lastSanctioningDate)
+							.toISOString()
+							.split("T")[0]
+					: undefined,
+			}); // Set form values to the retrieved data
+		};
+		fetchData();
+	}, [rowData, form]);
+
+	if (!rowData) {
+		return <div>No place data available.</div>;
+	}
+
+	async function onSubmit(values: z.infer<typeof placeFormSchema>) {
+		try {
+			const response = await fetch(placeRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+
+			const results = await response.json();
+			toast.success("Successfully updated the form!");
+
+			// Reset form and state
+			form.reset();
+
+			console.log("Form updated successfully!", results);
+			onClose(); // Close the form
+			onRefresh(); // Refresh the datatable with the place API route
+		} catch (error) {
+			console.error("Form update error", error);
+			toast.error(
+				`Failed to update the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		}
+	}
+
+	return (
+		<Form {...form}>
+			<form
+				onSubmit={form.handleSubmit(onSubmit)}
+				className="space-y-4 mx-auto"
+				ref={formRef}
+				// Prevent form from reloading the page
+				onSubmitCapture={(e) => e.preventDefault()}
+			>
+				<div className="flex space-x-4">
+					{/* Place Information Section */}
+					<div className={formContainerStyle}>
+						<h1>Place Information for LEDA ID #{rowData.ledaId}</h1>
+						<InputDefault
+							control={form.control}
+							name="name"
+							label="Name of Place *"
+						/>
+						<InputDefault
+							control={form.control}
+							name="website"
+							label="Website *"
+						/>
+						<FormField
+							control={form.control}
+							name="numberOfBoards"
+							render={({ field }) => (
+								<FormItem>
+									<Label>Number of Boards *</Label>
+									<FormControl>
+										<Input
+											placeholder="Number of Boards..."
+											{...field}
+											className={inputWidth}
+											type="number"
+											onChange={(e) => {
+												field.onChange(
+													e.target.value
+														? Number(e.target.value)
+														: undefined
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<InputDefault
+							control={form.control}
+							name="addressOne"
+							label="Address One *"
+						/>
+						<InputDefault
+							control={form.control}
+							name="addressTwo"
+							label="Address Two"
+						/>
+						<div className="flex space-x-4">
+							<InputDefault
+								control={form.control}
+								name="city"
+								label="City *"
+							/>
+							<StatePicker control={form.control} name="state" />
+							<InputDefault
+								control={form.control}
+								name="zip"
+								label="Zip Code *"
+							/>
+						</div>
+						<InputDefault
+							control={form.control}
+							name="email"
+							label="Email *"
+							type="email"
+						/>
+						<PhoneNumberInput
+							control={form.control}
+							name="phoneNumber"
+							label="Phone Number *"
+						/>
+						<PhoneNumberInput
+							control={form.control}
+							name="otherNumber"
+							label="Other Number"
+						/>
+					</div>
+
+					<div>
+						<hr className="w-px h-full my-0 bg-gray-300 border-0 dark:bg-gray-700" />
+					</div>
+
+					{/* Place Membership Info Section */}
+					<div className={formContainerStyle}>
+						<h1>Place Membership Info</h1>
+						<FormField
+							control={form.control}
+							name="ledaId"
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<Input
+											placeholder="LEDA ID #"
+											{...field}
+											disabled
+											className={inputWidth}
+											type="number"
+											onChange={(e) => {
+												field.onChange(
+													e.target.value
+														? Number(e.target.value)
+														: undefined
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<PlaceOwnerSelector
+							control={form.control}
+							name="contactId"
+							label="Select Place Owner *"
+						/>
+						<SeasonCodeSelector
+							control={form.control}
+							name="lastBarFeePayment"
+							label="Last Bar Fee Payment *"
+						/>
+						<PlaceTypeSelector
+							control={form.control}
+							name="placeType"
+							label="Place Type *"
+						/>
+						<InputDefault
+							control={form.control}
+							name="establishDate"
+							label="Established Date *"
+							type="date"
+						/>
+						<InputDefault
+							control={form.control}
+							name="lastSanctioningDate"
+							label="Last Sanctioning Date *"
+							type="date"
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="sendMailings"
+							label="Send Mailings"
+							className={checkboxWidth}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="regularSponsor"
+							label="Regular Sponsor"
+							className={checkboxWidth}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="currentSponsor"
+							label="Current Sponsor"
+							className={checkboxWidth}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="issues"
+							label="Issues"
+							className={checkboxWidth}
+						/>
+						<FormField
+							control={form.control}
+							name="memo"
+							render={({ field }) => (
+								<FormItem>
+									<Label>Memo *</Label>
+									<FormControl>
+										<Textarea
+											placeholder="Additional Data Here..."
+											{...field}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				</div>
+				<div className="flex justify-between">
+					<Button type="button" onClick={onClose}>
+						Back
+					</Button>
+					<Button type="submit">Update</Button>
+				</div>
+			</form>
+		</Form>
+	);
+}
