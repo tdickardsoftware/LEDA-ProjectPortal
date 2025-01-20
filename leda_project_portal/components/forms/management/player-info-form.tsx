@@ -25,7 +25,7 @@ import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
-import { playerRoute } from "@/lib/apiRoutes";
+import { playerRouteServer } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 
 const playerInfoSchema = z.object({
@@ -135,7 +135,7 @@ export default function PlayerAddInformationForm({
 				? { ...values, ledaId: 0 }
 				: values;
 
-			const response = await fetch(playerRoute, {
+			const response = await fetch(playerRouteServer, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

@@ -25,7 +25,7 @@ import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
-import { playerRoute } from "@/lib/apiRoutes";
+import { playerRouteServer } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { Player, PlayerMemberInfo } from "@/lib/definitions";
 
@@ -154,7 +154,7 @@ export default function PlayerEditInformationForm({
 
 		const fetchData = async () => {
 			const response = await fetch(
-				playerRoute + `?ledaId=${rowData.ledaId}`,
+				playerRouteServer + `?ledaId=${rowData.ledaId}`,
 				{
 					method: "GET",
 					headers: {
@@ -195,7 +195,7 @@ export default function PlayerEditInformationForm({
 
 	async function onSubmit(values: z.infer<typeof playerInfoSchema>) {
 		try {
-			const response = await fetch(playerRoute, {
+			const response = await fetch(playerRouteServer, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",

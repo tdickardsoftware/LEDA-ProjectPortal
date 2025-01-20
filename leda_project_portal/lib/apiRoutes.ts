@@ -36,8 +36,8 @@ export const seasonCodeRoute = "/api/maintenance/season/seasonCode";
 //
 
 // Define Route for players api
-export const playerRouteServer = "https://" + process.env.VERCEL_PROJECT_PRODUCTION_URL + playerRoute;
-// Define Route for places api\
+export const playerRouteServer = "https://" + process.env.VERCEL_URL + playerRoute;
+// Define Route for places api
 export const placeRouteServer = "https://" + process.env.VERCEL_URL + placeRoute;
 // Define Route for teams api
 export const teamRouteServer = "https://" + process.env.VERCEL_URL + teamRoute;

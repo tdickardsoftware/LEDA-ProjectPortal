@@ -17,7 +17,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { playerRoute } from "@/lib/apiRoutes";
+import { playerRouteServer } from "@/lib/apiRoutes";
 import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TooltipContent } from "@radix-ui/react-tooltip";
 
@@ -46,7 +46,7 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 	useEffect(() => {
 		async function loadPlayers() {
 			try {
-				const response = await fetch(playerRoute);
+				const response = await fetch(playerRouteServer);
 				const data = await response.json();
 				setPlayers(data.map((player: { ledaId: string; fullName: string; cannotBeCaptain: boolean }) => ({
 					ledaId: player.ledaId,
