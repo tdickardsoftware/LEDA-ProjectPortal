@@ -35,7 +35,6 @@ import {
 export async function fetchPlayers() {
 	// attempt to get data
 	try {
-		console.log(playerRouteServer);
 		const response = await fetch(playerRouteServer, {
 			method: "GET",
 			headers: {
