@@ -19,7 +19,7 @@ export default async function handler(
 				const ledaId = req.query.ledaId;
 				// Execute the database query to fetch team information
 				const result = await query<Team>(
-					`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/yyyy') as "establishedDate", "memo", "lastTeamFeePayment" FROM public.leda_team_info WHERE "ledaId" = $1;`,
+					`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/yyyy') as "establishedDate", "memo", "lastTeamFeePayment", "memberIdList" FROM public.leda_team_info WHERE "ledaId" = $1;`,
 					[ledaId as string]
 				);
 				// Respond with the query result
@@ -27,7 +27,7 @@ export default async function handler(
 			} else {
 				// Execute the database query to fetch team information
 				const result = await query<Team>(
-					`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/yyyy') as "establishedDate", "memo", "lastTeamFeePayment" FROM public.leda_team_info ORDER BY "ledaId";`
+					`SELECT "ledaId", "teamName", TO_CHAR("establishedDate", 'mm/dd/yyyy') as "establishedDate", "memo", "lastTeamFeePayment", "memberIdList" FROM public.leda_team_info ORDER BY "ledaId";`
 				);
 				// Respond with the query result
 				res.status(200).json(result.rows);
@@ -52,14 +52,15 @@ export default async function handler(
 
 			// Define the query to insert a new team
 			const query = `INSERT INTO public.leda_team_info(
-                        "ledaId", "teamName", "establishedDate", memo, "lastTeamFeePayment")
-                        VALUES ($1, $2, $3, $4, $5);`;
+                        "ledaId", "teamName", "establishedDate", memo, "lastTeamFeePayment", "memberIdList")
+                        VALUES ($1, $2, $3, $4, $5, $6);`;
 			const values = [
 				results.ledaId,
 				results.teamName,
 				results.establishedDate,
 				results.memo,
 				results.lastTeamFeePayment,
+				results.memberIdList
 			];
 			// Execute the insert query
 			const result = await queryPost(query, values);
@@ -93,7 +94,7 @@ export default async function handler(
 		try {
 			const results = req.body as Team;
 			const query = `UPDATE public.leda_team_info
-				SET "teamName" = $2, "establishedDate" = $3, memo = $4, "lastTeamFeePayment" = $5
+				SET "teamName" = $2, "establishedDate" = $3, memo = $4, "lastTeamFeePayment" = $5, "memberIdList" = $6
 				WHERE "ledaId" = $1;`;
 			const values = [
 				results.ledaId,
@@ -101,6 +102,7 @@ export default async function handler(
 				results.establishedDate,
 				results.memo,
 				results.lastTeamFeePayment,
+				results.memberIdList
 			];
 			const result = await queryPost(query, values);
 			res.status(200).json(result);

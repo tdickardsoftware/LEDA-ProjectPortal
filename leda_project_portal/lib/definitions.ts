@@ -29,6 +29,7 @@ export type Team = {
 	establishedDate: Date;
 	memo: string;
 	lastTeamFeePayment: string;
+	memberIdList: JSON;
 };
 //
 //Define type to identify the shape of our data from postgres for places

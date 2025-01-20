@@ -195,6 +195,11 @@ export default function PlaceAddForm({
 							)}
 						/>
 					</div>
+					<div className={formContainerStyle}>
+						<h1>Team Member Information</h1>
+						<hr className="bg-gray-300"></hr>
+						
+					</div>
 				</div>
 				<div className="flex justify-between">
 					<Button type="button">Back</Button>
