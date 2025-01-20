@@ -1,11 +1,13 @@
 // Import the database connection pool
-import getPool from "@/lib/getPool";
+import { pool } from "@/lib/getPool";
 
 // Function to execute a SELECT query
 export async function queryGet(text: string) {
 	try {
+		const client = await pool.connect();
 		// Execute the query and return the result
-		const res = await (await getPool()).query(text);
+		const res = await client.query(text);
+		client.release();
 		return res;
 	} catch (error) {
 		// Log and rethrow any errors
@@ -17,8 +19,10 @@ export async function queryGet(text: string) {
 // Function to execute an INSERT/UPDATE/DELETE query
 export async function queryPost(text: string, values: unknown[]) {
 	try {
+		const client = await pool.connect();
 		// Execute the query with the provided values and return the result
-		const res = await (await getPool()).query(text, values);
+		const res = await client.query(text, values);
+		client.release();
 		return res;
 	} catch (error) {
 		// Log and rethrow any errors
