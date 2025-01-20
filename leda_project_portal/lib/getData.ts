@@ -43,7 +43,7 @@ export async function fetchPlayers() {
 			},
 		});
 		if (!response.ok) {
-			throw new Error("Network response was not ok: " + response.statusText);
+			throw new Error("Network response was not ok: " + response.text());
 		}
 		const data = (await response.json()) as Player[];
 		return data;
