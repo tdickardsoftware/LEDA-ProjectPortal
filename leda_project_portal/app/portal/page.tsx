@@ -1,5 +1,5 @@
 // Import necessary components and types
-import PortalPageContent from "@/app/Portal/portal-page-content";
+import PortalPageContent from "@/components/portal-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 
