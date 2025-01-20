@@ -1,6 +1,8 @@
 //
 // Local Routes
 //
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+require ("dotenv").config(".env.preview.local");
 
 // Define Route for place owner api
 export const placeOwnerRoute = "/api/management/player/placeOwner";
@@ -34,7 +36,7 @@ export const seasonCodeRoute = "/api/maintenance/season/seasonCode";
 //
 
 // Define Route for players api
-export const playerRouteServer = "https://" + process.env.VERCEL_URL + playerRoute;
+export const playerRouteServer = "httpsL//" + process.env.VERCEL_URL + playerRoute;
 // Define Route for places api\
 export const placeRouteServer = "https://" + process.env.VERCEL_URL + placeRoute;
 // Define Route for teams api

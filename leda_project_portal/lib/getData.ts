@@ -35,6 +35,7 @@ import {
 export async function fetchPlayers() {
 	// attempt to get data
 	try {
+		console.log(playerRouteServer);
 		const response = await fetch(playerRouteServer, {
 			method: "GET",
 			headers: {
@@ -42,7 +43,7 @@ export async function fetchPlayers() {
 			},
 		});
 		if (!response.ok) {
-			throw new Error("Network response was not ok");
+			throw new Error("Network response was not ok: " + response.statusText);
 		}
 		const data = (await response.json()) as Player[];
 		return data;
