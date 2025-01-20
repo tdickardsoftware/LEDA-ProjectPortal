@@ -1,3 +1,4 @@
+import UnderConstruction from "@/components/ui/under-construction";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
 export default function Page() {
     return (
         <main>
-            <p>Activities Page</p>
+            <UnderConstruction />
         </main>
     );
 }
