@@ -141,8 +141,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 												selectedRowCount === 1
 													? false
 													: true,
-											rowData: selectedRowsData[0], // Pass the first selected row's data
-											href: `/Portal/Management/Players/${selectedRowsData[0]?.ledaId}`,
+
+											href: `/Portal/Management/**REPLACE**/${selectedRowsData[0]?.ledaId}`,
 										}
 									)}
 								</div>	

@@ -43,7 +43,7 @@ export default async function Page() {
 						/>
 					}
 					viewLink={
-						<CustomLink linkName="View Player"/>
+						<CustomLink linkName="View Player" parentPage="Players"/>
 					}
 					apiEndpoint={playerRoute}
 					defaultSort="ledaId"
