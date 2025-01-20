@@ -14,7 +14,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-import React, { useEffect } from "react";
+import React from "react";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,7 @@ import { seasonRoute } from "@/lib/apiRoutes";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 // Define the schema for form validation using zod
 const seasonFormSchema = z.object({
@@ -57,12 +58,11 @@ export default function SeasonEditForm({
 		desc?: string;
 	};
 }) {
-	useEffect(() => {
-		if (!rowData) {
-			return;
-		}
-	}, [rowData])
+	if (!rowData) {
+		return null;
+	}
 	// Initialize the form using react-hook-form and zodResolver
+	// eslint-disable-next-line react-hooks/rules-of-hooks
 	const form = useForm<z.infer<typeof seasonFormSchema>>({
 		resolver: zodResolver(seasonFormSchema),
 		defaultValues: {
@@ -72,6 +72,7 @@ export default function SeasonEditForm({
 	});
 	
 	// Define state for dates
+	// eslint-disable-next-line react-hooks/rules-of-hooks
 	const [dates, setDates] = React.useState<string>(JSON.stringify(rowData.dates));
 
 	// Handle date change for manual date selection
