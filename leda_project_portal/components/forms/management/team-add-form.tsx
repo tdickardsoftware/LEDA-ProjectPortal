@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
+import PlayerSelector from "@/components/ui/player-selector";
 
 export const teamFormSchema = z.object({
 	ledaId: z
@@ -32,6 +33,7 @@ export const teamFormSchema = z.object({
 	establishedDate: z.string(),
 	memo: z.string().optional(),
 	lastTeamFeePayment: z.string(),
+	memberIdList: z.string().optional(),
 });
 
 const formContainerStyle =
@@ -48,6 +50,7 @@ export default function PlaceAddForm({
 }) {
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [ledaIdExists, setLedaIdExists] = useState(false);
+	const [memberIdList, setMemberIdList] = useState<string>("");
 
 	const form = useForm<z.infer<typeof teamFormSchema>>({
 		resolver: zodResolver(teamFormSchema),
@@ -57,22 +60,26 @@ export default function PlaceAddForm({
 			establishedDate: "",
 			memo: "",
 			lastTeamFeePayment: "",
+			memberIdList: "",
 		},
 	});
-
+	function handleSetMemberIdList(memberIdList: string) {
+		setMemberIdList(memberIdList);
+	}
 	async function onSubmit(values: z.infer<typeof teamFormSchema>) {
+		console.log(memberIdList)
 		try {
 			// If generateIDStatus is true, set ledaId to 0
 			const submissionValues = generateIDStatus
 				? { ...values, ledaId: 0 }
 				: values;
-
+			const submissionValues2 = { ...submissionValues, memberIdList: memberIdList }
 			const response = await fetch(teamRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(submissionValues),
+				body: JSON.stringify(submissionValues2),
 			});
 
 			if (!response.ok) {
@@ -175,8 +182,8 @@ export default function PlaceAddForm({
 						/>
 						<SeasonCodeSelector
 							control={form.control}
-							name="seasonCode"
-							label="Season Code *"
+							name="lastTeamFeePayment"
+							label="Last Team Fee Payment *"
 						/>
 						<FormField
 							control={form.control}
@@ -198,7 +205,7 @@ export default function PlaceAddForm({
 					<div className={formContainerStyle}>
 						<h1>Team Member Information</h1>
 						<hr className="bg-gray-300"></hr>
-						
+						<PlayerSelector setMemberIdList={handleSetMemberIdList}/>
 					</div>
 				</div>
 				<div className="flex justify-between">
