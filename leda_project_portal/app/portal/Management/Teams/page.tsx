@@ -1,6 +1,7 @@
 import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
+import CustomLink from "@/components/ui/custom-link";
 import { teamRoute } from "@/lib/apiRoutes";
 import { fetchTeams } from "@/lib/getData";
 import { columns } from "@/schemas/managment/teams";
@@ -40,6 +41,9 @@ export default async function Page() {
 							title="Edit Team"
 							buttonName="Edit Team"
 						/>
+					}
+					viewLink={
+						<CustomLink linkName="View Team" parentPage="Teams"/>
 					}
 					apiEndpoint={teamRoute}
 					defaultSort="ledaId"
