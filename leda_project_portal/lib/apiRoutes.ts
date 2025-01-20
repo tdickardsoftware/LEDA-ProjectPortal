@@ -34,24 +34,24 @@ export const seasonCodeRoute = "/api/maintenance/season/seasonCode";
 //
 
 // Define Route for players api
-export const playerRouteServer = process.env.URL + playerRoute;
+export const playerRouteServer = "https://" + process.env.VERCEL_URL + playerRoute;
 // Define Route for places api\
-export const placeRouteServer = process.env.URL + placeRoute;
+export const placeRouteServer = "https://" + process.env.VERCEL_URL + placeRoute;
 // Define Route for teams api
-export const teamRouteServer = process.env.URL + teamRoute;
+export const teamRouteServer = "https://" + process.env.VERCEL_URL + teamRoute;
 // Define route for division api
-export const divisionRouteServer = process.env.URL + divisionRoute;
+export const divisionRouteServer = "https://" + process.env.VERCEL_URL + divisionRoute;
 // Define route for mention api
-export const mentionRouteServer = process.env.URL + mentionRoute;
+export const mentionRouteServer = "https://" + process.env.VERCEL_URL + mentionRoute;
 // Define route for paymentType api
-export const paymentTypeRouteServer = process.env.URL + paymentTypeRoute;
+export const paymentTypeRouteServer = "https://" + process.env.VERCEL_URL + paymentTypeRoute;
 // Define route for payoutTier api
-export const payoutTierRouteServer = process.env.URL + payoutTierRoute;
+export const payoutTierRouteServer = "https://" + process.env.VERCEL_URL + payoutTierRoute;
 // Define route for penalty api
-export const penaltyRouteServer = process.env.URL + penaltyRoute;
+export const penaltyRouteServer = "https://" + process.env.VERCEL_URL + penaltyRoute;
 // Define route for peopleType api
-export const peopleTypeRouteServer = process.env.URL + peopleTypeRoute;
+export const peopleTypeRouteServer = "https://" + process.env.VERCEL_URL + peopleTypeRoute;
 // Define route for placeType api
-export const placeTypeRouteServer = process.env.URL + placeTypeRoute;
+export const placeTypeRouteServer = "https://" + process.env.VERCEL_URL + placeTypeRoute;
 // Define route for season api
-export const seasonRouteServer = process.env.URL + seasonRoute;
+export const seasonRouteServer = "https://" + process.env.VERCEL_URL + seasonRoute;
