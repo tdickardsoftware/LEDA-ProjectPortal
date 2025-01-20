@@ -76,6 +76,7 @@ export default async function handler(
 				res.status(200).json(result.rows);
 			}
 		} catch (error) {
+			console.error("Error in PlayerHandler:", error);
 			res.status(500).json({
 				message: "Failed to fetch player information",
 				error,

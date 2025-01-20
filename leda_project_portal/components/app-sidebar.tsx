@@ -42,188 +42,188 @@ const data = {
 	navMain: [
 		{
 			title: "Management",
-			url: "/Portal/Management",
+			url: "/portal/Management",
 			icon: Book,
 			items: [
 				{
 					title: "Places",
-					url: "/Portal/Management/Places",
+					url: "/portal/Management/Places",
 				},
 				{
 					title: "Players",
-					url: "/Portal/Management/Players",
+					url: "/portal/Management/Players",
 				},
 				{
 					title: "Teams",
-					url: "/Portal/Management/Teams",
+					url: "/portal/Management/Teams",
 				},
 			],
 		},
 		{
 			title: "Maintenance",
-			url: "/Portal/Maintenance",
+			url: "/portal/Maintenance",
 			icon: Wrench,
 			items: [
 				{
 					title: "Divisions",
-					url: "/Portal/Maintenance/Divisions",
+					url: "/portal/Maintenance/Divisions",
 				},
 				{
 					title: "Mentions",
-					url: "/Portal/Maintenance/Mentions",
+					url: "/portal/Maintenance/Mentions",
 				},
 				{
 					title: "Payment Types",
-					url: "/Portal/Maintenance/Payment-Types",
+					url: "/portal/Maintenance/Payment-Types",
 				},
 				{
 					title: "Payout Tiers",
-					url: "/Portal/Maintenance/Payout-Tiers",
+					url: "/portal/Maintenance/Payout-Tiers",
 				},
 				{
 					title: "Penalties",
-					url: "/Portal/Maintenance/Penalties",
+					url: "/portal/Maintenance/Penalties",
 				},
 				{
 					title: "People Types",
-					url: "/Portal/Maintenance/People-Types",
+					url: "/portal/Maintenance/People-Types",
 				},
 				{
 					title: "Place Types",
-					url: "/Portal/Maintenance/Place-Types",
+					url: "/portal/Maintenance/Place-Types",
 				},
 				{
 					title: "Seasons",
-					url: "/Portal/Maintenance/Seasons",
+					url: "/portal/Maintenance/Seasons",
 				},
 			],
 		},
 		{
 			title: "Reports",
-			url: "/Portal/Reports",
+			url: "/portal/Reports",
 			icon: FileText,
 			items: [
 				{
 					title: "Captains Meeting",
-					url: "/Portal/Reports/Captains-Meeting",
+					url: "/portal/Reports/Captains-Meeting",
 					items: [
 						{
 							title: "Folder Labels",
-							url: "/Portal/Reports/Captains-Meeting/Folder-Labels",
+							url: "/portal/Reports/Captains-Meeting/Folder-Labels",
 						},
 						{
 							title: "Schedules",
-							url: "/Portal/Reports/Captains-Meeting/Schedules",
+							url: "/portal/Reports/Captains-Meeting/Schedules",
 						},
 						{
 							title: "Team Report",
-							url: "/Portal/Reports/Captains-Meeting/Team-Report",
+							url: "/portal/Reports/Captains-Meeting/Team-Report",
 						},
 					],
 				},
 				{
 					title: "League Play",
-					url: "/Portal/Reports/League-Play",
+					url: "/portal/Reports/League-Play",
 					items: [
 						{
 							title: "Bar Affiliation Fee Not Paid",
-							url: "/Portal/Reports/League-Play/Bar-Affiliation-Fee-Not-Paid",
+							url: "/portal/Reports/League-Play/Bar-Affiliation-Fee-Not-Paid",
 						},
 						{
 							title: "Mentions - Best of Division",
-							url: "/Portal/Reports/League-Play/Mentions-Best-Of-Division",
+							url: "/portal/Reports/League-Play/Mentions-Best-Of-Division",
 						},
 						{
 							title: "Mentions - For Plaques",
-							url: "/Portal/Reports/League-Play/Mentions-For-Plaques",
+							url: "/portal/Reports/League-Play/Mentions-For-Plaques",
 						},
 						{
 							title: "Mentions - Weekly League",
-							url: "/Portal/Reports/League-Play/Mentions-Weekly-League",
+							url: "/portal/Reports/League-Play/Mentions-Weekly-League",
 						},
 						{
 							title: "Players No Form",
-							url: "/Portal/Reports/League-Play/Players-No-Form",
+							url: "/portal/Reports/League-Play/Players-No-Form",
 						},
 						{
 							title: "Players Not Paid",
-							url: "/Portal/Reports/League-Play/Players-Not-Paid",
+							url: "/portal/Reports/League-Play/Players-Not-Paid",
 						},
 						{
 							title: "Team Roster Fee Not Paid",
-							url: "/Portal/Reports/League-Play/Team-Roster-Fee-Not-Paid",
+							url: "/portal/Reports/League-Play/Team-Roster-Fee-Not-Paid",
 						},
 						{
 							title: "Ton 80's Weekly League",
-							url: "/Portal/Reports/League-Play/Ton-80-Weekly-League",
+							url: "/portal/Reports/League-Play/Ton-80-Weekly-League",
 						},
 						{
 							title: "Top Darter",
-							url: "/Portal/Reports/League-Play/Top-Darter",
+							url: "/portal/Reports/League-Play/Top-Darter",
 						},
 						{
 							title: "Weekly Scoresheets",
-							url: "/Portal/Reports/League-Play/Weekly-Scoresheets",
+							url: "/portal/Reports/League-Play/Weekly-Scoresheets",
 						},
 					],
 				},
 				{
 					title: "Lists",
-					url: "/Portal/Reports/Lists",
+					url: "/portal/Reports/Lists",
 					items: [
 						{
 							title: "Captains",
-							url: "/Portal/Reports/Lists/Captains",
+							url: "/portal/Reports/Lists/Captains",
 						},
 						{
 							title: "Election List",
-							url: "/Portal/Reports/Lists/Election-List",
+							url: "/portal/Reports/Lists/Election-List",
 						},
 						{
 							title: "Mailing Labels",
-							url: "/Portal/Reports/Lists/Mailing-Labels",
+							url: "/portal/Reports/Lists/Mailing-Labels",
 						},
 						{
 							title: "Members",
-							url: "/Portal/Reports/Lists/Members",
+							url: "/portal/Reports/Lists/Members",
 						},
 						{
 							title: "Places",
-							url: "/Portal/Reports/Lists/Places",
+							url: "/portal/Reports/Lists/Places",
 						},
 						{
 							title: "Season Members",
-							url: "/Portal/Reports/Lists/Season-Members",
+							url: "/portal/Reports/Lists/Season-Members",
 						},
 						{
 							title: "Teams",
-							url: "/Portal/Reports/Lists/Teams",
+							url: "/portal/Reports/Lists/Teams",
 						},
 					],
 				},
 				{
 					title: "Trails",
-					url: "/Portal/Reports/Trails",
+					url: "/portal/Reports/Trails",
 					items: [
 						{
 							title: "Eligible for Trip",
-							url: "/Portal/Reports/Trails/Eligible-For-Trip",
+							url: "/portal/Reports/Trails/Eligible-For-Trip",
 						},
 						{
 							title: "History of Wins",
-							url: "/Portal/Reports/Trails/History-Of-Wins",
+							url: "/portal/Reports/Trails/History-Of-Wins",
 						},
 						{
 							title: "Membership List",
-							url: "/Portal/Reports/Trails/Membership-List",
+							url: "/portal/Reports/Trails/Membership-List",
 						},
 						{
 							title: "Points List",
-							url: "/Portal/Reports/Trails/Points-List",
+							url: "/portal/Reports/Trails/Points-List",
 						},
 						{
 							title: "Save Points Letter",
-							url: "/Portal/Reports/Trails/Save-Points-Letter",
+							url: "/portal/Reports/Trails/Save-Points-Letter",
 						},
 					],
 				},
@@ -231,28 +231,28 @@ const data = {
 		},
 		{
 			title: "Activites",
-			url: "/Portal/Activities",
+			url: "/portal/Activities",
 			icon: ListCheck,
 			items: [
 				{
 					title: "Payouts",
-					url: "/Portal/Activities/Payouts",
+					url: "/portal/Activities/Payouts",
 				},
 				{
 					title: "Rosters",
-					url: "/Portal/Activities/Rosters",
+					url: "/portal/Activities/Rosters",
 				},
 				{
 					title: "Scheduling",
-					url: "/Portal/Activities/Scheduling",
+					url: "/portal/Activities/Scheduling",
 				},
 				{
 					title: "Trails",
-					url: "/Portal/Activities/Trails",
+					url: "/portal/Activities/Trails",
 				},
 				{
 					title: "Weekly Score",
-					url: "/Portal/Activities/Weekly-Score",
+					url: "/portal/Activities/Weekly-Score",
 				},
 			],
 		},
@@ -306,7 +306,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 										Lake Erie Dart Association
 									</span>
 									<span className="truncate text-xs">
-										Portal
+										portal
 									</span>
 								</div>
 							</Link>
