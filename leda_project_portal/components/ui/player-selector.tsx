@@ -18,6 +18,8 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { playerRoute } from "@/lib/apiRoutes";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "./tooltip";
+import { TooltipContent } from "@radix-ui/react-tooltip";
 
 // Define the player interface
 interface Player {
@@ -174,19 +176,29 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 					>
 						<div className="flex items-center gap-2">
 							<span>{player.fullName}</span>
-							<Button
-								variant="ghost"
-								size="sm"
-								type="button"
-								onClick={() => handleCaptainSelection(player.ledaId)}
-							>
-								<Star
-									className={cn(
-										"h-4 w-4",
-										player.isCaptain ? "text-yellow-500" : "text-gray-400"
-									)}
-								/>
-							</Button>
+                            <TooltipProvider>
+                                <Tooltip >
+                                    <TooltipTrigger>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            type="button"
+                                            onClick={() => handleCaptainSelection(player.ledaId)}
+                                        >
+                                            <Star
+                                                className={cn(
+                                                    "h-4 w-4",
+                                                    player.isCaptain ? "text-yellow-500" : "text-gray-400"
+                                                )}
+                                            />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-white p-2 rounded shadow-lg">
+                                        <p>Set as Captain</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+							
 						</div>
 						<Button
 							variant="ghost"
