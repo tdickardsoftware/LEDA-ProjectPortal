@@ -14,7 +14,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-import React from "react";
+import React, { useEffect } from "react";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -57,6 +57,11 @@ export default function SeasonEditForm({
 		desc?: string;
 	};
 }) {
+	useEffect(() => {
+		if (!rowData) {
+			return;
+		}
+	}, [rowData])
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof seasonFormSchema>>({
 		resolver: zodResolver(seasonFormSchema),
@@ -65,7 +70,7 @@ export default function SeasonEditForm({
 			dates: JSON.stringify(rowData.dates),
 		},
 	});
-
+	
 	// Define state for dates
 	const [dates, setDates] = React.useState<string>(JSON.stringify(rowData.dates));
 
