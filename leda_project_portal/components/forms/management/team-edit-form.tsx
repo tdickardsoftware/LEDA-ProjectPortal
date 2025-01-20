@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import { Team } from "@/lib/definitions";
+import PlayerSelector from "@/components/ui/player-selector";
 
 const teamInfoSchema = z.object({
 	ledaId: z
@@ -47,6 +48,7 @@ export default function TeamEditForm({
 	rowData: Team;
 }) {
 	const [formData, setFormData] = useState<Team>({} as Team);
+	const [memberIdList, setMemberIdList] = useState<string>("");
 
 	const formRef = React.useRef<HTMLFormElement>(null);
 	const form = useForm<z.infer<typeof teamInfoSchema>>({
@@ -61,7 +63,9 @@ export default function TeamEditForm({
 			lastTeamFeePayment: formData.lastTeamFeePayment || "",
 		},
 	});
-
+	function handleSetMemberIdList(memberIdList: string) {
+		setMemberIdList(memberIdList);
+	}
 	useEffect(() => {
 		if (!rowData || !rowData.ledaId) {
 			return;
@@ -83,6 +87,7 @@ export default function TeamEditForm({
 			}
 			const data = await response.json();
 			setFormData(data);
+			setMemberIdList(JSON.stringify(data.memberIdList));
 			form.reset({
 				...data,
 				ledaId: data.ledaId ? Number(data.ledaId) : undefined,
@@ -99,13 +104,14 @@ export default function TeamEditForm({
 	}
 
 	async function onSubmit(values: z.infer<typeof teamInfoSchema>) {
+		const submittedValues = {...values, memberIdList: memberIdList}
 		try {
 			const response = await fetch(teamRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(values),
+				body: JSON.stringify(submittedValues),
 			});
 
 			if (!response.ok) {
@@ -206,8 +212,13 @@ export default function TeamEditForm({
 							)}
 						/>
 					</div>
+					<div className={formContainerStyle}>
+						<h1>Team Member Information</h1>
+						<hr className="bg-gray-300"></hr>
+						<PlayerSelector setMemberIdList={handleSetMemberIdList} existingJsonList={memberIdList}/>
+					</div>
 				</div>
-
+				
 				<div className="flex justify-between">
 					<Button type="button" onClick={onClose}>
 						Back
