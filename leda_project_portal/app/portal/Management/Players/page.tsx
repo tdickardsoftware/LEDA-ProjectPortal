@@ -1,7 +1,7 @@
 import { DataTable } from "@/components/datatable";
 import { DialogWithButton } from "@/components/dialog-with-button";
 import AlertDialogDelete from "@/components/alert-dialog-delete";
-import { playerRoute } from "@/lib/apiRoutes";
+import { playerRouteServer } from "@/lib/apiRoutes";
 import { fetchPlayers } from "@/lib/getData";
 import { columns } from "@/schemas/managment/players";
 import { Metadata } from "next";
@@ -32,7 +32,7 @@ export default async function Page() {
 						<AlertDialogDelete
 							buttonName="Delete Player"
 							title="Delete Player"
-							apiEndpoint={playerRoute}
+							apiEndpoint={playerRouteServer}
 						/>
 					}
 					editDialog={
@@ -45,7 +45,7 @@ export default async function Page() {
 					viewLink={
 						<CustomLink linkName="View Player" parentPage="Players"/>
 					}
-					apiEndpoint={playerRoute}
+					apiEndpoint={playerRouteServer}
 					defaultSort="ledaId"
 				/>
 			</div>
