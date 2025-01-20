@@ -27,7 +27,7 @@ export default function CustomLink({
     href = href.replace("**REPLACE**", parentPage);
     return (
         <Button disabled={disabled} variant={"outline"}>
-            <Link href={href} className={className}>{linkName}</Link>
+            <Link href={href} className={className} prefetch={true}>{linkName}</Link>
         </Button>
     )
 }
