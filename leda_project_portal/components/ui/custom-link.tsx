@@ -14,6 +14,7 @@ interface CustomLinkProps {
     linkName: string;
     className?: string;
     disabled?: boolean;
+    parentPage: string;
 }
 
 export default function CustomLink({
@@ -21,7 +22,9 @@ export default function CustomLink({
     linkName,
     className,
     disabled,
+    parentPage
 }: CustomLinkProps) {
+    href = href.replace("**REPLACE**", parentPage);
     return (
         <Button disabled={disabled} variant={"outline"}>
             <Link href={href} className={className}>{linkName}</Link>

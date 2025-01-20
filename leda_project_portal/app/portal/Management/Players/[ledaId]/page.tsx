@@ -64,6 +64,7 @@ export default async function Page({ params }: { params: { ledaId: string } }) {
 			<Link
 				href="/Portal/Management/Players"
 				className="mt-4 rounded-md bg-blue-500 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-400"
+                prefetch={true}
 			>
 				Go Back
 			</Link>
