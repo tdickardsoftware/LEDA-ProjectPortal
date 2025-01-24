@@ -478,7 +478,7 @@ export default function PlayerAddInformationForm({
 				</div>
 
 				<div className="flex justify-between">
-					<Button type="button">Back</Button>
+					<Button type="button" onClick={onClose}>Back</Button>
 					<Button type="submit">Next</Button>
 				</div>
 			</form>

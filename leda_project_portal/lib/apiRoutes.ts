@@ -2,7 +2,7 @@
 // Local Routes
 //
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-require ("dotenv").config(".env.preview.local");
+require ("dotenv").config();
 
 // Define Route for place owner api
 export const placeOwnerRoute = "/api/management/player/placeOwner";
@@ -36,24 +36,24 @@ export const seasonCodeRoute = "/api/maintenance/season/seasonCode";
 //
 
 // Define Route for players api
-export const playerRouteServer = "https://" + process.env.VERCEL_URL + playerRoute;
+export const playerRouteServer = "http://" + process.env.VERCEL_URL + playerRoute;
 // Define Route for places api
-export const placeRouteServer = "https://" + process.env.VERCEL_URL + placeRoute;
+export const placeRouteServer = "http://" + process.env.VERCEL_URL + placeRoute;
 // Define Route for teams api
-export const teamRouteServer = "https://" + process.env.VERCEL_URL + teamRoute;
+export const teamRouteServer = "http://" + process.env.VERCEL_URL + teamRoute;
 // Define route for division api
-export const divisionRouteServer = "https://" + process.env.VERCEL_URL + divisionRoute;
+export const divisionRouteServer = "http://" + process.env.VERCEL_URL + divisionRoute;
 // Define route for mention api
-export const mentionRouteServer = "https://" + process.env.VERCEL_URL + mentionRoute;
+export const mentionRouteServer = "http://" + process.env.VERCEL_URL + mentionRoute;
 // Define route for paymentType api
-export const paymentTypeRouteServer = "https://" + process.env.VERCEL_URL + paymentTypeRoute;
+export const paymentTypeRouteServer = "http://" + process.env.VERCEL_URL + paymentTypeRoute;
 // Define route for payoutTier api
-export const payoutTierRouteServer = "https://" + process.env.VERCEL_URL + payoutTierRoute;
+export const payoutTierRouteServer = "http://" + process.env.VERCEL_URL + payoutTierRoute;
 // Define route for penalty api
-export const penaltyRouteServer = "https://" + process.env.VERCEL_URL + penaltyRoute;
+export const penaltyRouteServer = "http://" + process.env.VERCEL_URL + penaltyRoute;
 // Define route for peopleType api
-export const peopleTypeRouteServer = "https://" + process.env.VERCEL_URL + peopleTypeRoute;
+export const peopleTypeRouteServer = "http://" + process.env.VERCEL_URL + peopleTypeRoute;
 // Define route for placeType api
-export const placeTypeRouteServer = "https://" + process.env.VERCEL_URL + placeTypeRoute;
+export const placeTypeRouteServer = "http://" + process.env.VERCEL_URL + placeTypeRoute;
 // Define route for season api
-export const seasonRouteServer = "https://" + process.env.VERCEL_URL + seasonRoute;
+export const seasonRouteServer = "http://" + process.env.VERCEL_URL + seasonRoute;

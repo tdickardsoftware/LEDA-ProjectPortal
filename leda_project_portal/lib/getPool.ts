@@ -1,13 +1,13 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-require ("dotenv").config(".env.preview.local");
+require ("dotenv").config();
 import { Pool } from "pg";
-
-const connectionString = `postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.PGHOST}/leda_db?sslmode=require`
 
 // returns the pool
 export const pool = new Pool({
-	connectionString: connectionString,
-	ssl: {
-	  rejectUnauthorized: false,
-	},
+	user: process.env.POSTGRES_USER,
+	host: process.env.PGHOST,
+	database: "leda_db",
+	password: process.env.POSTGRES_PASSWORD,
+	port: 5432,
+	ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
 });
