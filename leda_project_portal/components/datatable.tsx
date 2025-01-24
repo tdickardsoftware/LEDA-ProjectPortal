@@ -142,7 +142,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 													? false
 													: true,
 
-											href: `/portal/Management/**REPLACE**/${selectedRowsData[0]?.ledaId}`,
+											href: `/Portal/Management/**REPLACE**/${selectedRowsData[0]?.ledaId}`,
 										}
 									)}
 								</div>	
