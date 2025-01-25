@@ -363,3 +363,26 @@ export async function fetchSeasons() {
 		throw new Error("Failed to fetch Player Information");
 	}
 }
+//
+//
+//
+export async function fetchSeason(seasonCode: string) {
+	// attempt to get data
+	try {
+		const response = await fetch(`${seasonRouteServer}?seasonCode=${seasonCode}`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}
+		const data = (await response.json()) as Season;
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Player Information");
+	}
+}
