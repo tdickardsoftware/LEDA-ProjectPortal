@@ -23,7 +23,7 @@ export default function MaintenancePageContent() {
 					<CardContent>
 						<p className="text-gray-700">View, Add, or Delete Divisions</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance/Divisions" className="text-gray-700 hover:text-gray-500">
+					<Link href="/Portal/Maintenance/Divisions" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
 								<span className="font-medium">View Divisions</span>
 								<ArrowRight className="w-5 h-5" />
@@ -39,7 +39,7 @@ export default function MaintenancePageContent() {
 					<CardContent>
 						<p className="text-gray-700">View, Add, Edit, or Delete Mentions</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance/Mentions" className="text-gray-700 hover:text-gray-500">
+					<Link href="/Portal/Maintenance/Mentions" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
 								<span className="font-medium">View Mentions</span>
 								<ArrowRight className="w-5 h-5" />
@@ -55,7 +55,7 @@ export default function MaintenancePageContent() {
 					<CardContent>
 						<p className="text-gray-700">View, Add, Edit, or Delete Payment Types</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance/Payment-Types" className="text-gray-700 hover:text-gray-500">
+					<Link href="/Portal/Maintenance/Payment-Types" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
 								<span className="font-medium">View Payment Types</span>
 								<ArrowRight className="w-5 h-5" />
@@ -71,7 +71,7 @@ export default function MaintenancePageContent() {
 					<CardContent>
 						<p className="text-gray-700">View, Add, Edit, or Delete Payout Tiers</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance/Payout-Tiers" className="text-gray-700 hover:text-gray-500">
+					<Link href="/Portal/Maintenance/Payout-Tiers" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
 								<span className="font-medium">View Payout Tiers</span>
 								<ArrowRight className="w-5 h-5" />
@@ -87,7 +87,7 @@ export default function MaintenancePageContent() {
 					<CardContent>
 						<p className="text-gray-700">View, Add, Edit, or Delete Penalties</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance/Penalties" className="text-gray-700 hover:text-gray-500">
+					<Link href="/Portal/Maintenance/Penalties" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
 								<span className="font-medium">View Penalties</span>
 								<ArrowRight className="w-5 h-5" />
@@ -103,7 +103,7 @@ export default function MaintenancePageContent() {
 					<CardContent>
 						<p className="text-gray-700">View, Add, Edit, or Delete People Types</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance/People-Types" className="text-gray-700 hover:text-gray-500">
+					<Link href="/Portal/Maintenance/People-Types" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
 								<span className="font-medium">View People Types</span>
 								<ArrowRight className="w-5 h-5" />
@@ -119,7 +119,7 @@ export default function MaintenancePageContent() {
 					<CardContent>
 						<p className="text-gray-700">View, Add, Edit, or Delete Place Types</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance/Place-Types" className="text-gray-700 hover:text-gray-500">
+					<Link href="/Portal/Maintenance/Place-Types" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
 								<span className="font-medium">View Place Types</span>
 								<ArrowRight className="w-5 h-5" />
@@ -135,7 +135,7 @@ export default function MaintenancePageContent() {
 					<CardContent>
 						<p className="text-gray-700">View, Add, Edit, or Delete Seasons</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance/Seasons" className="text-gray-700 hover:text-gray-500">
+					<Link href="/Portal/Maintenance/Seasons" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
 								<span className="font-medium">View Seasons</span>
 								<ArrowRight className="w-5 h-5" />
