@@ -141,11 +141,14 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 												selectedRowCount === 1
 													? false
 													: true,
-
-											href: `/Portal/Management/**REPLACE**/${selectedRowsData[0]?.ledaId}`,
+											href: `/Portal/${
+												selectedRowsData[0]?.ledaId ? "Management" : "Maintenance"
+											}/**REPLACE**/${
+												selectedRowsData[0]?.ledaId ?? selectedRowsData[0]?.seasonCode
+											}`,
 										}
 									)}
-								</div>	
+								</div>
 							): null}
 							{editDialog ? (
 								<div>
