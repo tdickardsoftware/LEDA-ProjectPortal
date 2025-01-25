@@ -26,7 +26,7 @@ export default function PortalPageContent() {
 	return (
 		<div className="flex flex-row space-x-4">
 			<div className="flex flex-col space-y-4">
-				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
+				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<Link href="/Portal/Management">
 						<CardHeader>
 							<CardTitle>Management</CardTitle>
@@ -73,7 +73,7 @@ export default function PortalPageContent() {
 				</Card>
 			</div>
 			<div className="flex flex-col space-y-4">
-				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
+				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<Link href="/Portal/Maintenance">
 						<CardHeader>
 							<CardTitle>Maintenance</CardTitle>
@@ -150,7 +150,7 @@ export default function PortalPageContent() {
 				</Card>
 			</div>
 			<div className="flex flex-col space-y-4">
-				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
+				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<Link href="/Portal/Reports">
 						<CardHeader>
 							<CardTitle>Reports *WORK IN PROGRESS*</CardTitle>
@@ -203,7 +203,7 @@ export default function PortalPageContent() {
 				</Card>
 			</div>
 			<div className="flex flex-col space-y-4">
-				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
+				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<Link href="/Portal/Activities">
 						<CardHeader>
 							<CardTitle>Activities *WORK IN PROGRESS*</CardTitle>
