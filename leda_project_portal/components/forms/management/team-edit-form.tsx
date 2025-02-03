@@ -42,10 +42,12 @@ export default function TeamEditForm({
 	onClose,
 	onRefresh,
 	rowData,
+	handleRefresh
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
 	rowData: Team;
+	handleRefresh?: () => void;
 }) {
 	const [formData, setFormData] = useState<Team>({} as Team);
 	const [memberIdList, setMemberIdList] = useState<string>("");
@@ -220,9 +222,16 @@ export default function TeamEditForm({
 				</div>
 				
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
-						Back
-					</Button>
+					{!handleRefresh && (
+						<Button type="button" onClick={onClose}>
+							Back
+						</Button>
+					)}
+					{handleRefresh && (
+						<Button type="button" onClick={handleRefresh}>
+							Back
+						</Button>
+					)}
 					<Button type="submit">Update</Button>
 				</div>
 			</form>
