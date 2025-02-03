@@ -27,7 +27,7 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
-import { Player, PlayerMemberInfo } from "@/lib/definitions";
+import { PlayerMemberInfo } from "@/lib/definitions";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -92,11 +92,13 @@ export default function PlayerEditInformationForm({
 	onClose,
 	onRefresh,
 	rowData,
+	handleEdit,
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	rowData: Player;
+	rowData: PlayerMemberInfo;
+	handleEdit?: () => void;
 }) {
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
@@ -511,9 +513,19 @@ export default function PlayerEditInformationForm({
 				</div>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
-						Back
-					</Button>
+					{!handleEdit && (
+						<Button type="button" onClick={onClose}>
+							Back
+						</Button>
+					)}
+					{handleEdit && (
+						<Button
+							type="button"
+							onClick={handleEdit}
+						>
+							Edit
+						</Button>
+					)}
 					<Button type="submit">Update</Button>
 				</div>
 			</form>

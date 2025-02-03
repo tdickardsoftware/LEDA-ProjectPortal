@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components//ui/card"
 import PlaceEditForm from "@/components/forms/management/place-edit-form";
 import Link from "next/link";
 import { useState } from "react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 
 
 
@@ -89,7 +89,6 @@ export default function PlacePageContent({placeData} : {placeData: Place}) {
                         Go Back
                     </Link>
                 </div>
-
             )}
             {editValues && (
                 <PlaceEditForm rowData={placeData} handleEdit={handleEdit} onRefresh={handleRefresh} onClose={handleEdit}/>
