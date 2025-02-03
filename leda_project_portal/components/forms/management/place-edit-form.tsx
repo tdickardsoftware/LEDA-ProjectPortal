@@ -87,10 +87,12 @@ export default function PlaceEditForm({
 	onClose,
 	onRefresh,
 	rowData,
+	handleEdit,
 }: {
-	onClose: () => void;
-	onRefresh: () => void;
+	onClose?: () => void;
+	onRefresh?: () => void;
 	rowData: Place;
+	handleEdit?: () => void;
 }) {
 	const [formData, setFormData] = useState<Place>({} as Place);
 
@@ -198,8 +200,12 @@ export default function PlaceEditForm({
 			form.reset();
 
 			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
+			if (onClose) {
+				onClose(); // Close the form
+			}
+			if (onRefresh) {
+				onRefresh(); // Refresh the data table
+			}
 		} catch (error) {
 			console.error("Form update error", error);
 			toast.error(
@@ -401,9 +407,16 @@ export default function PlaceEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
-						Back
-					</Button>
+					{!handleEdit && (
+						<Button type="button" onClick={onClose}>
+							Back
+						</Button>
+					)}
+					{handleEdit && (
+						<Button type="button" onClick={handleEdit}>
+							Back
+						</Button>
+					)}
 					<Button type="submit">Update</Button>
 				</div>
 			</form>
