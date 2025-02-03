@@ -19,12 +19,12 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-
 import { Separator } from "@/components/ui/separator";
 import { seasonRoute } from "@/lib/apiRoutes";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 
 // Define the schema for form validation using zod
@@ -47,6 +47,7 @@ export default function SeasonEditForm({
 	onClose,
 	onRefresh,
 	rowData,
+	handleRefresh,
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
@@ -57,6 +58,7 @@ export default function SeasonEditForm({
 		isCurrentSeason: boolean;
 		desc?: string;
 	};
+	handleRefresh?: () => void;
 }) {
 	if (!rowData) {
 		return null;
@@ -253,7 +255,17 @@ export default function SeasonEditForm({
 						/>
 					</div>
 				</div>
-				<div className="flex justify-center">
+				<div className="flex justify-between items-center">
+					{!handleRefresh && (
+						<Button type="button" onClick={onClose}>
+							Back
+						</Button>
+					)}
+					{handleRefresh && (
+						<Button type="button" onClick={handleRefresh}>
+							Back
+						</Button>
+					)}
 					<Button type="submit">Update</Button>
 				</div>
 			</form>
