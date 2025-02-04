@@ -1,4 +1,5 @@
-import UnderConstruction from "@/components/ui/under-construction";
+import ReportsPageContent from "@/components/landing-content/reports-page-content";
+import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,7 +9,12 @@ export const metadata: Metadata = {
 export default function Page() {
     return (
         <main>
-            <UnderConstruction />
+            {/* Page title */}
+			<h1 className="text-4xl font-bold antialiased">Reports Page</h1>
+			{/* Separator line */}
+			<Separator className="my-4 bg-gray-500" />
+            {/* Reports page content */}
+            <ReportsPageContent />
         </main>
     );
 }

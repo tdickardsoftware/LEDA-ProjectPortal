@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import {
@@ -10,75 +9,75 @@ import {
 	CardContent,
 	CardFooter,
 } from "@/components/ui/card";
+import { ArrowRight } from "lucide-react";
 
-
-export default function PortalPageContent() {
-	return (
-		<div className="flex flex-wrap gap-4">
-			<div>
+export default function ReportsPageContent() {
+    return (
+        <div className="flex flex-wrap gap-4">
+            <div>
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
-						<CardTitle>Management</CardTitle>
+						<CardTitle className="text-lg font-semibold">Captains Meeting *WORK IN PROGRESS*</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-gray-700">Manage Player, Place, or Team data</p>
+						<p className="text-gray-700">Generate reports for a Captains Meeting</p>
 					</CardContent>
-					<Link href="/Portal/Management" className="text-gray-700 hover:text-gray-500" prefetch>
+					<Link href="/Portal/Reports/Captains-Meeting" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
-								<span className="font-medium">Go To Management Page</span>
+								<span className="font-medium">View Avaliable Reports</span>
 								<ArrowRight className="w-5 h-5" />
 						</CardFooter>
 					</Link>
 				</Card>
 			</div>
-			<div>
+            <div>
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
-						<CardTitle>Maintenance</CardTitle>
+						<CardTitle className="text-lg font-semibold">League Play *WORK IN PROGRESS*</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-gray-700">Handle any typically static data used for Activies</p>
+						<p className="text-gray-700">Generate Reports for Legaue Play</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance" className="text-gray-700 hover:text-gray-500" prefetch>
+					<Link href="/Portal/Reports/League-Play" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
-								<span className="font-medium">Go To Maintenance Page</span>
+								<span className="font-medium">View Avaliable Reports</span>
 								<ArrowRight className="w-5 h-5" />
 						</CardFooter>
 					</Link>
 				</Card>
 			</div>
-			<div>
+            <div>
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
-						<CardTitle>Reports</CardTitle>
+						<CardTitle className="text-lg font-semibold">Lists *WORK IN PROGRESS*</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-gray-700">Generate Reports using data from activities</p>
+						<p className="text-gray-700">Generate Reports for Lists</p>
 					</CardContent>
-					<Link href="/Portal/Reports" className="text-gray-700 hover:text-gray-500" prefetch>
+					<Link href="/Portal/Reports/Lists" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
-								<span className="font-medium">Go To Reports Page</span>
+								<span className="font-medium">View Avaliable Reports</span>
 								<ArrowRight className="w-5 h-5" />
 						</CardFooter>
 					</Link>
 				</Card>
 			</div>
-			<div>
+            <div>
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
-						<CardTitle>Activities *WIP*</CardTitle>
+						<CardTitle className="text-lg font-semibold">Trails *WORK IN PROGRESS*</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-gray-700">Input data for processing/use for reports</p>
+						<p className="text-gray-700">Generate Reports for Trails</p>
 					</CardContent>
-					<Link href="/Portal/Activities" className="text-gray-700 hover:text-gray-500" prefetch>
+					<Link href="/Portal/Reports/Trails" className="text-gray-700 hover:text-gray-500" prefetch>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
-								<span className="font-medium">Go To Activities Page</span>
+								<span className="font-medium">View Avaliable Reports</span>
 								<ArrowRight className="w-5 h-5" />
 						</CardFooter>
 					</Link>
 				</Card>
 			</div>
-		</div>
-	);
+        </div>
+    );
 }
