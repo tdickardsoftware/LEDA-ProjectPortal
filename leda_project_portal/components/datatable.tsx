@@ -25,7 +25,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	columns: ColumnDef<TData, TValue>[];
 	data: TData[];
 	pageName: string;
-	addDialog: React.ReactNode;
+	addDialog?: React.ReactNode;
 	deleteDialog?: React.ReactNode;
 	editDialog?: React.ReactNode;
 	viewLink?: React.ReactNode;
@@ -123,13 +123,15 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 				<div className="overflow-hidden rounded-md">
 					<h1 className="text-3xl pb-4 text-center">{pageName}</h1>
 					<div className="flex items-center justify-between space-x-2">
-						<div>
-							{React.cloneElement(
-								// eslint-disable-next-line @typescript-eslint/no-explicit-any
-								addDialog as React.ReactElement<any>,
-								{ onRefresh: handleRefresh }
-							)}
-						</div>
+						{addDialog ? (
+							<div>
+								{React.cloneElement(
+									// eslint-disable-next-line @typescript-eslint/no-explicit-any
+									addDialog as React.ReactElement<any>,
+									{ onRefresh: handleRefresh }
+								)}
+							</div>
+						) : null}
 						<div className="flex space-x-2">
 							{viewLink ? (
 								<div>

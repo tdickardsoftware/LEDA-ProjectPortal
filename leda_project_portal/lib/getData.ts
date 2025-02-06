@@ -15,7 +15,8 @@ import {
 	PeopleType,
 	PlaceType,
 	Season,
-} from "./definitions";
+	TrailsDate,
+} from "@/lib/definitions";
 import {
 	divisionRouteServer,
 	mentionRouteServer,
@@ -28,7 +29,8 @@ import {
 	playerRouteServer,
 	seasonRouteServer,
 	teamRouteServer,
-} from "./apiRoutes";
+	trailsDateRoute,
+} from "@/lib/apiRoutes";
 //
 // async function to get all player data from the database
 //
@@ -364,7 +366,7 @@ export async function fetchSeasons() {
 	}
 }
 //
-//
+// fetch a specific season
 //
 export async function fetchSeason(seasonCode: string) {
 	// attempt to get data
@@ -379,6 +381,29 @@ export async function fetchSeason(seasonCode: string) {
 			throw new Error("Network response was not ok");
 		}
 		const data = (await response.json()) as Season;
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Player Information");
+	}
+}
+//
+// Fetch trails dates
+//
+export async function fetchTrailsDates() {
+	// attempt to get data
+	try {
+		const response = await fetch(trailsDateRoute, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}
+		const data = (await response.json()) as TrailsDate[];
 		return data;
 		// if it cannot get data error out
 	} catch (error) {

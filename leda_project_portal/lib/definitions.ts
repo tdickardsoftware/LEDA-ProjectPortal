@@ -155,3 +155,9 @@ export type PlayerMemberInfo = {
 	lifetimeMember: boolean;
 	lifetimeMemberReason?: string;
 };
+//
+// Define type to identify the shape of our data from postgres for Trails Dates
+//
+export type TrailsDate = {
+	trailsDate: string;
+};
