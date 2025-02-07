@@ -25,6 +25,8 @@ export default function TrainsPageContent() {
     }, []);
 
     return(
-        <DataTable columns={columns} data={data} pageName="Trails Page" apiEndpoint={trailsDateRoute} />
+        <div className="flex ">
+            <DataTable columns={columns} data={data} pageName="Prior Trails Dates" apiEndpoint={trailsDateRoute} singleRowSelection={true}/>
+        </div>
     )
 }

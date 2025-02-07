@@ -32,6 +32,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	onRefresh?: (api: string) => void;
 	apiEndpoint: string; // New prop for API endpoint
 	defaultSort?: string;
+	singleRowSelection?: boolean;
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
@@ -45,6 +46,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	onRefresh,
 	apiEndpoint, // Destructure the new prop
 	defaultSort,
+	singleRowSelection,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
@@ -91,6 +93,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		onSortingChange: setSorting,
 		getSortedRowModel: getSortedRowModel(),
 		onRowSelectionChange: setRowSelection,
+		enableRowSelection: true,
+		enableMultiRowSelection: !singleRowSelection,
 		state: {
 			sorting,
 			rowSelection,
@@ -118,7 +122,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	}, [onRefresh]);
 
 	return (
-		<div className="flex items-center justify-center min-h-screen bg-gray-100">
+		<div>
 			<div className="p-4 shadow-lg bg-white rounded-lg border border-gray-200 w-full max-w-4xl">
 				<div className="overflow-hidden rounded-md">
 					<h1 className="text-3xl pb-4 text-center">{pageName}</h1>

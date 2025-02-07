@@ -14,16 +14,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 export const columns: ColumnDef<TrailsDate>[] = [
 	{
 		id: "select",
-		header: ({ table }) => (
+		header: () => (
 			<Checkbox
-				checked={
-					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && "indeterminate")
-				}
-				onCheckedChange={(value) =>
-					table.toggleAllPageRowsSelected(!!value)
-				}
 				aria-label="Select All"
+				disabled
 			/>
 		),
 		cell: ({ row }) => (
