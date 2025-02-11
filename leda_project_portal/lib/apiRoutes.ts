@@ -32,6 +32,8 @@ export const seasonRoute = "/api/maintenance/season";
 export const seasonCodeRoute = "/api/maintenance/season/seasonCode";
 // Define route for trailsDate not on the serverside
 export const trailsDateRoute = "/api/activities/trails/trailsDates";
+// Define route for trails not on the serverside
+export const trailsRoute = "/api/activities/trails";
 
 //
 // Server Routes
@@ -61,3 +63,5 @@ export const placeTypeRouteServer = "http://" + process.env.VERCEL_URL + placeTy
 export const seasonRouteServer = "http://" + process.env.VERCEL_URL + seasonRoute;
 // Define route for trailsDate api
 export const trailsDateRouteServer = "http://" + process.env.VERCEL_URL + trailsDateRoute;
+// Define route for trails api
+export const trailsRouteServer = "http://" + process.env.VERCEL_URL + trailsRoute;

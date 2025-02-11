@@ -161,3 +161,14 @@ export type PlayerMemberInfo = {
 export type TrailsDate = {
 	trailsDate: string;
 };
+//
+// Define type to identify the shape of our data from postgres for a Trails Date Data
+//
+export type TrailsDateData = {
+	ledaId: number;
+	trailsDate: string;
+	notes?: string;
+	singlesPlace: number;
+	doublesPlace: number;
+	trailsPoints: number;
+}

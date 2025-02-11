@@ -33,6 +33,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	apiEndpoint: string; // New prop for API endpoint
 	defaultSort?: string;
 	singleRowSelection?: boolean;
+	passValueToParent?: (value: string) => void;
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
@@ -47,6 +48,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	apiEndpoint, // Destructure the new prop
 	defaultSort,
 	singleRowSelection,
+	passValueToParent,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
@@ -64,15 +66,19 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		return () => clearTimeout(handler); // Cleanup on each change
 	}, [searchQuery]);
 
-	// Update selectedRowCount whenever rowSelection changes
-	React.useEffect(() => {
-		setSelectedRowCount(Object.keys(rowSelection).length);
-	}, [rowSelection]);
-
 	// Extract selected rows' data
 	const selectedRowsData = React.useMemo(() => {
 		return Object.keys(rowSelection).map((key) => tableData[parseInt(key)]);
 	}, [rowSelection, tableData]);
+
+	// Update selectedRowCount whenever rowSelection changes
+	React.useEffect(() => {
+		setSelectedRowCount(Object.keys(rowSelection).length);
+		if (passValueToParent) {
+			passValueToParent(JSON.stringify(selectedRowsData)); // Send selected row data to parent
+		}
+	}, [rowSelection, passValueToParent, selectedRowsData]);
+
 	// Filtered data based on debounced query
 	const filteredData = React.useMemo(() => {
 		if (!debouncedQuery) return tableData;
