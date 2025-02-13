@@ -9,6 +9,7 @@ import { format } from "date-fns"
 import { useEffect, useState } from "react";
 import { TrailsDate, TrailsDateData } from "@/lib/definitions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 
 export default function TrainsPageContent() {
     const [data, setData] = useState<TrailsDate[]>([]);
@@ -50,7 +51,7 @@ export default function TrainsPageContent() {
             
             <DataTable columns={columns} data={data} pageName="Prior Trails Dates" apiEndpoint={trailsDateRoute} singleRowSelection={true} passValueToParent={handleSetTrailsDate}/>
 
-            <Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px]">
+            <Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] max-h-[80vh] overflow-y-auto">
                 {trailsDate && (
                     <>
                         <CardHeader>
@@ -61,10 +62,19 @@ export default function TrainsPageContent() {
                             {trailsDateData.length != 0 && (
                                 <div className="flex flex-col gap-2">
                                     {trailsDateData.map((item, index) => (
-                                        <div key={index} className="flex justify-between">
-                                            <span>{item.ledaId} - {item.fullName}</span>
-                                            <span>{item.singlesPlace}</span>
-                                        </div>
+                                        <Accordion type="single" collapsible key={index}>
+                                            <AccordionItem value={index.toString()}>
+                                                <AccordionTrigger>{item.ledaId} - {item.fullName}</AccordionTrigger>
+                                                <AccordionContent>
+                                                    <div className="flex flex-col gap-2">
+                                                        {item.notes && <p>Notes: {item.notes}</p>}
+                                                        <p>Trails Points: {item.trailsPoints}</p>
+                                                        <p>Singles Place: {item.singlesPlace}</p>
+                                                        <p>Doubles Place: {item.doublesPlace}</p>
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </Accordion>
                                     ))}
                                 </div>
                             )}
