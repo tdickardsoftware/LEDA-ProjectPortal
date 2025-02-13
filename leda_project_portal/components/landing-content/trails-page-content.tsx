@@ -42,7 +42,9 @@ export default function TrainsPageContent() {
         }
         fetchData();
     }, []);
-    // TODO define a datatable in the card to show all players for a selected trails date, sort by points by default
+    // TODO Render each row as ledaId - fullName
+    // TODO then have it render as a accordian and inside there is more information (notes, points, singles place, doublesplace)
+    // TODO have a button to collapse all accordians and expand all accordians
     return(
         <div className="flex gap-20">
             
@@ -60,7 +62,7 @@ export default function TrainsPageContent() {
                                 <div className="flex flex-col gap-2">
                                     {trailsDateData.map((item, index) => (
                                         <div key={index} className="flex justify-between">
-                                            <span>{item.ledaId}</span>
+                                            <span>{item.ledaId} - {item.fullName}</span>
                                             <span>{item.singlesPlace}</span>
                                         </div>
                                     ))}
@@ -68,6 +70,11 @@ export default function TrainsPageContent() {
                             )}
                         </CardContent>
                     </>
+                )}
+                {!trailsDate && (
+                    <CardHeader>
+                        <CardTitle className="text-lg font-semibold">Add a Trails Date</CardTitle>
+                    </CardHeader>
                 )}
             </Card>
         </div>

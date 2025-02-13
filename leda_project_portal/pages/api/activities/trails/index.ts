@@ -14,10 +14,14 @@ export default async function handler(
             if (req.query.trailsDate) {
                 const trailsDate = req.query.trailsDate;
 			    // Execute the database query to fetch season code information
-                const result = await query<TrailsDateData>(
-					'SELECT * FROM public.leda_trails_history WHERE "trailsDate" = $1;',
+				const result = await query<TrailsDateData>(
+					`SELECT th.*, 
+							CONCAT(COALESCE(pi."firstName", ''), ' ', COALESCE(pi."middleInitial", ''), ' ', COALESCE(pi."lastName", '')) as "fullName"
+					 FROM public.leda_trails_history th
+					 JOIN public.leda_player_info pi ON th."ledaId" = pi."ledaId"
+					 WHERE th."trailsDate" = $1;`,
 					[trailsDate as string]
-                );
+				);
                 
                 // Respond with the query result
                 res.status(200).json(result);

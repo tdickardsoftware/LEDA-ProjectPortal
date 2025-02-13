@@ -171,4 +171,5 @@ export type TrailsDateData = {
 	singlesPlace: number;
 	doublesPlace: number;
 	trailsPoints: number;
+	fullName: string;
 }
