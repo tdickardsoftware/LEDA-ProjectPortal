@@ -60,9 +60,6 @@ export default function TrainsPageContent() {
         }
         fetchData();
     }, []);
-    // TODO Render each row as ledaId - fullName
-    // TODO then have it render as a accordian and inside there is more information (notes, points, singles place, doublesplace)
-    // TODO have a button to collapse all accordians and expand all accordians
     return(
         <div className="flex gap-20">
             
