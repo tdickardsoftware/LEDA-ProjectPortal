@@ -12,13 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { Pencil } from "lucide-react"
 import { Button } from "../ui/button"
+import TrailsDateEditForm from "../forms/activities/trails-date-edit-form"
 
 export default function TrainsPageContent() {
     const [data, setData] = useState<TrailsDate[]>([]);
     const [trailsDate, setTrailsDate] = useState<string | null>(null);
     const [trailsDateData, setTrailsDateData] = useState<TrailsDateData[]>([]); // Ensure this is an array
-    const [showEdit, setShowEdit] = useState<boolean>(false);
-    const [edit, setEdit] = useState<boolean>(false);
+    const [editStates, setEditStates] = useState<{ [key: string]: boolean }>({});
 
     const handleSetTrailsDate = async (value: string) => {
         const parsedValue = JSON.parse(value)[0];
@@ -35,6 +35,19 @@ export default function TrainsPageContent() {
             setTrailsDateData(fetchData);
         }
     }
+    const handleRefresh = async (index:string) => {
+        if (trailsDate) {
+            const fetchData = await fetchTrailsDateData(trailsDate);
+            setTrailsDateData(fetchData);
+        }
+        handleEditToggle(index);
+    }
+    const handleEditToggle = (index: string) => {
+        setEditStates(prevState => ({
+            ...prevState,
+            [index]: !prevState[index]
+        }));
+    };
 
     useEffect(() => {
         async function fetchData() {
@@ -68,7 +81,7 @@ export default function TrainsPageContent() {
                                     {trailsDateData.map((item, index) => (
                                         <Accordion type="single" collapsible key={index}>
                                             <AccordionItem value={index.toString()}>
-                                                <AccordionTrigger onClick={() => setShowEdit(!showEdit)}>
+                                                <AccordionTrigger>
                                                     <div className="flex justify-between w-full">
                                                         <span>
                                                             {item.ledaId} - {item.fullName}
@@ -77,20 +90,21 @@ export default function TrainsPageContent() {
                                                 </AccordionTrigger>
                                                 <AccordionContent>
                                                     <div className="flex justify-between">
-                                                        {!edit && (
-                                                        <div className="flex flex-col gap-2">
-                                                            {item.notes && <p>Notes: {item.notes}</p>}
-                                                            <p>Trails Points: {item.trailsPoints}</p>
-                                                            <p>Singles Place: {item.singlesPlace}</p>
-                                                            <p>Doubles Place: {item.doublesPlace}</p>
-                                                        </div>
-                                                        )}  
+                                                        {!editStates[index.toString()] && (
+                                                            <div className="flex flex-col gap-2">
+                                                                {item.notes && <p>Notes: {item.notes}</p>}
+                                                                <p>Trails Points: {item.trailsPoints}</p>
+                                                                <p>Singles Place: {item.singlesPlace}</p>
+                                                                <p>Doubles Place: {item.doublesPlace}</p>
+                                                            </div>
+                                                        )}
+                                                        {editStates[index.toString()] && (
+                                                            <TrailsDateEditForm rowData={item} handleRefresh={() => handleRefresh(index.toString())} index={index.toString()}/>
+                                                        )}
                                                         <div>
-                                                            {showEdit && (
-                                                                <Button variant={"ghost"} size="icon" onClick={() => setEdit(!edit)}>
-                                                                    <Pencil className="w-4 h-4" />
-                                                                </Button>
-                                                            )}
+                                                            <Button variant={"ghost"} size="icon" onClick={() => handleEditToggle(index.toString())}>
+                                                                <Pencil className="w-4 h-4" />
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                 </AccordionContent>
