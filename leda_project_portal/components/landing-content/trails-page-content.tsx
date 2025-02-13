@@ -10,11 +10,15 @@ import { useEffect, useState } from "react";
 import { TrailsDate, TrailsDateData } from "@/lib/definitions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { Pencil } from "lucide-react"
+import { Button } from "../ui/button"
 
 export default function TrainsPageContent() {
     const [data, setData] = useState<TrailsDate[]>([]);
     const [trailsDate, setTrailsDate] = useState<string | null>(null);
     const [trailsDateData, setTrailsDateData] = useState<TrailsDateData[]>([]); // Ensure this is an array
+    const [showEdit, setShowEdit] = useState<boolean>(false);
+    const [edit, setEdit] = useState<boolean>(false);
 
     const handleSetTrailsDate = async (value: string) => {
         const parsedValue = JSON.parse(value)[0];
@@ -64,13 +68,30 @@ export default function TrainsPageContent() {
                                     {trailsDateData.map((item, index) => (
                                         <Accordion type="single" collapsible key={index}>
                                             <AccordionItem value={index.toString()}>
-                                                <AccordionTrigger>{item.ledaId} - {item.fullName}</AccordionTrigger>
+                                                <AccordionTrigger onClick={() => setShowEdit(!showEdit)}>
+                                                    <div className="flex justify-between w-full">
+                                                        <span>
+                                                            {item.ledaId} - {item.fullName}
+                                                        </span>
+                                                    </div>
+                                                </AccordionTrigger>
                                                 <AccordionContent>
-                                                    <div className="flex flex-col gap-2">
-                                                        {item.notes && <p>Notes: {item.notes}</p>}
-                                                        <p>Trails Points: {item.trailsPoints}</p>
-                                                        <p>Singles Place: {item.singlesPlace}</p>
-                                                        <p>Doubles Place: {item.doublesPlace}</p>
+                                                    <div className="flex justify-between">
+                                                        {!edit && (
+                                                        <div className="flex flex-col gap-2">
+                                                            {item.notes && <p>Notes: {item.notes}</p>}
+                                                            <p>Trails Points: {item.trailsPoints}</p>
+                                                            <p>Singles Place: {item.singlesPlace}</p>
+                                                            <p>Doubles Place: {item.doublesPlace}</p>
+                                                        </div>
+                                                        )}  
+                                                        <div>
+                                                            {showEdit && (
+                                                                <Button variant={"ghost"} size="icon" onClick={() => setEdit(!edit)}>
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </AccordionContent>
                                             </AccordionItem>
