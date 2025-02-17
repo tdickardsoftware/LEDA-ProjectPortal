@@ -21,6 +21,7 @@ export default function TrainsPageContent() {
     const [editStates, setEditStates] = useState<{ [key: string]: boolean }>({});
 
     const handleSetTrailsDate = async (value: string) => {
+        
         const parsedValue = JSON.parse(value)[0];
         if (!parsedValue) {
             if (trailsDate !== null) {
@@ -31,6 +32,7 @@ export default function TrainsPageContent() {
         }
         if (parsedValue.trailsDate !== trailsDate) {
             setTrailsDate(parsedValue.trailsDate);
+            setTrailsDateData([]); // Clear trailsDateData when a new row is selected
             const fetchData = await fetchTrailsDateData(parsedValue.trailsDate);
             setTrailsDateData(fetchData);
         }
@@ -60,6 +62,10 @@ export default function TrainsPageContent() {
         }
         fetchData();
     }, []);
+    // TODO
+    // [ ] * - Add the ability to add a new trails date, this will be the default.
+    // [ ] * - Implement the logic to handle trails points history, i.e. when a record is added, add a points history to the audit table, if a record is updated update the audit record for later calculation
+    // [ ] * - Implement the ability to remove a player/trails date and update the audit table accordingly
     return(
         <div className="flex gap-20">
             
