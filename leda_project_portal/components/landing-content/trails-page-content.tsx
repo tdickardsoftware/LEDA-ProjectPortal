@@ -13,12 +13,14 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Pencil } from "lucide-react"
 import { Button } from "../ui/button"
 import TrailsDateEditForm from "../forms/activities/trails-date-edit-form"
+import { Spinner } from "@/components/ui/skeleton"
 
 export default function TrainsPageContent() {
     const [data, setData] = useState<TrailsDate[]>([]);
     const [trailsDate, setTrailsDate] = useState<string | null>(null);
     const [trailsDateData, setTrailsDateData] = useState<TrailsDateData[]>([]); // Ensure this is an array
     const [editStates, setEditStates] = useState<{ [key: string]: boolean }>({});
+    const [loadingTrailsDateData, setLoadingTrailsDateData] = useState<boolean>(false);
 
     const handleSetTrailsDate = async (value: string) => {
         
@@ -33,7 +35,9 @@ export default function TrainsPageContent() {
         if (parsedValue.trailsDate !== trailsDate) {
             setTrailsDate(parsedValue.trailsDate);
             setTrailsDateData([]); // Clear trailsDateData when a new row is selected
+            setLoadingTrailsDateData(true);
             const fetchData = await fetchTrailsDateData(parsedValue.trailsDate);
+            setLoadingTrailsDateData(false);
             setTrailsDateData(fetchData);
         }
     }
@@ -79,7 +83,8 @@ export default function TrainsPageContent() {
                             <h1 className="font-semibold">{trailsDate}</h1>
                         </CardHeader>
                         <CardContent>
-                            {trailsDateData.length != 0 && (
+                            {loadingTrailsDateData && (<Spinner />)}
+                            {(trailsDateData.length != 0 && !loadingTrailsDateData)&& (
                                 <div className="flex flex-col gap-2">
                                     {trailsDateData.map((item, index) => (
                                         <Accordion type="single" collapsible key={index}>
