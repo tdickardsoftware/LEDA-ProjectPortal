@@ -14,13 +14,35 @@ import { Pencil } from "lucide-react"
 import { Button } from "../ui/button"
 import TrailsDateEditForm from "../forms/activities/trails-date-edit-form"
 import { Spinner } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import TrailsDateAddForm from "../forms/activities/trails-date-add-form"
+import { Separator } from "../ui/separator"
 
 export default function TrainsPageContent() {
     const [data, setData] = useState<TrailsDate[]>([]);
-    const [trailsDate, setTrailsDate] = useState<string | null>(null);
+    const [trailsDate, setTrailsDate] = useState<string | null>("");
     const [trailsDateData, setTrailsDateData] = useState<TrailsDateData[]>([]); // Ensure this is an array
     const [editStates, setEditStates] = useState<{ [key: string]: boolean }>({});
     const [loadingTrailsDateData, setLoadingTrailsDateData] = useState<boolean>(false);
+    const [addPlayer, setAddPlayer] = useState<boolean>(false);
+    const [addTrailsDate, setAddTrailsDate] = useState<string | null>("");
+
+    const handleAddPlayer = (values: TrailsDateData) => {
+        setAddPlayer(false);
+        setTrailsDateData(prevData => [...prevData, values]);
+        console.log(trailsDateData)
+        console.log(values);
+    }
+
+    const goBack= (value: boolean) => {
+        setAddPlayer(value);
+    }
+    const handleDateSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedDate = (new Date(event.target.value).getTime() + new Date(event.target.value).getTimezoneOffset() * 60000)
+        const formattedDate = format(selectedDate, "MM-dd-yyyy");
+        setAddTrailsDate(formattedDate);
+    }
 
     const handleSetTrailsDate = async (value: string) => {
         
@@ -125,9 +147,30 @@ export default function TrainsPageContent() {
                     </>
                 )}
                 {!trailsDate && (
-                    <CardHeader>
-                        <CardTitle className="text-lg font-semibold">Add a Trails Date</CardTitle>
-                    </CardHeader>
+                    <>
+                        <CardHeader>
+                            <CardTitle className="text-lg font-semibold">Add a Trails Date</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Label>Trails Date</Label>
+                            <Input type="date" onChange={handleDateSelect}/>
+                            {!addPlayer && (
+                                <div className="flex justify-end pt-4">
+                                    <Button variant={"outline"} onClick={() => setAddPlayer(!addPlayer)}>Add Player</Button>
+                                </div>
+                            )}
+                            {addPlayer && (
+                                <>
+                                    <TrailsDateAddForm handleFormSubmit={handleAddPlayer} trailsDate={addTrailsDate} goBack={goBack}/>
+                                </>
+                            )}
+                            
+                            <Separator orientation="horizontal" className="my-2 bg-gray-300"/>
+                            <div className="flex items-center justify-center">
+                                <Button variant={"outline"}>Add Trails Date</Button>
+                            </div>
+                        </CardContent>
+                    </>
                 )}
             </Card>
         </div>
