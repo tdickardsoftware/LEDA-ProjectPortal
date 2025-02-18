@@ -153,7 +153,7 @@ export default function TrainsPageContent() {
                         </CardHeader>
                         <CardContent>
                             <Label>Trails Date</Label>
-                            <Input type="date" onChange={handleDateSelect}/>
+                            <Input type="date" onChange={handleDateSelect} defaultValue={format((new Date().getTime() + new Date().getTimezoneOffset() * 60000), "yyyy-MM-dd" )}/>
                             {!addPlayer && (
                                 <div className="flex justify-end pt-4">
                                     <Button variant={"outline"} onClick={() => setAddPlayer(!addPlayer)}>Add Player</Button>
