@@ -164,9 +164,35 @@ export default function TrainsPageContent() {
                                     <TrailsDateAddForm handleFormSubmit={handleAddPlayer} trailsDate={addTrailsDate} goBack={goBack}/>
                                 </>
                             )}
-                            
                             <Separator orientation="horizontal" className="my-2 bg-gray-300"/>
-                            <div className="flex items-center justify-center">
+                            {trailsDateData.length != 0 && (
+                                <div className="flex flex-col gap-2">
+                                    {trailsDateData.map((item, index) => (
+                                        <Accordion type="single" collapsible key={index}>
+                                            <AccordionItem value={index.toString()}>
+                                                <AccordionTrigger>
+                                                    <div className="flex justify-between w-full">
+                                                        <span>
+                                                            {item.ledaId} - {item.fullName}
+                                                        </span>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent>
+                                                    <div className="flex justify-between">
+                                                        <div className="flex flex-col gap-2">
+                                                            {item.notes && <p>Notes: {item.notes}</p>}
+                                                            <p>Trails Points: {item.trailsPoints}</p>
+                                                            <p>Singles Place: {item.singlesPlace}</p>
+                                                            <p>Doubles Place: {item.doublesPlace}</p>
+                                                        </div>
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </Accordion>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="flex items-center justify-center py-2">
                                 <Button variant={"outline"}>Add Trails Date</Button>
                             </div>
                         </CardContent>

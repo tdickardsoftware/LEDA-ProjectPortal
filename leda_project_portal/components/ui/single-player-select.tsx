@@ -33,6 +33,7 @@ import {
 
 interface FormValues {
 	ledaId: number;
+	fullName: string;
 }
 
 interface PlaceOwnerSelectProps {
@@ -126,6 +127,10 @@ const PlaceOwnerSelectContent: React.FC = () => {
 												formContext.setValue(
 													"ledaId",
 													Number(type.value)
+												);
+												formContext.setValue(
+													"fullName",
+													type.label.split(" - ")[1]
 												);
 												setOpen(false);
 											}}
