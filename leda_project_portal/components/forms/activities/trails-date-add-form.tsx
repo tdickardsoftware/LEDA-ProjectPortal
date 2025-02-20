@@ -29,10 +29,12 @@ export default function TrailsDateAddForm({
     goBack,
 	handleFormSubmit,
     trailsDate,
+	trailsDateData,
 }: {
     goBack: (values: boolean) => void;
 	handleFormSubmit: (values: TrailsDateData) => void;
     trailsDate: string | null;
+	trailsDateData: TrailsDateData[];
 }) {
 
 	const formRef = React.useRef<HTMLFormElement>(null);
@@ -74,7 +76,7 @@ export default function TrailsDateAddForm({
 				<div className="flex space-x-4">
 					{/* Place Type Information Section */}
 					<div className={formContainerStyle}>
-                        <PlayerSelect control={form.control} name="ledaId" label="Player *" />
+                        <PlayerSelect control={form.control} name="ledaId" label="Player *" trailsDateData={trailsDateData}/>
 						<FormField
 							control={form.control}
 							name="trailsPoints"

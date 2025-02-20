@@ -161,7 +161,7 @@ export default function TrainsPageContent() {
                             )}
                             {addPlayer && (
                                 <>
-                                    <TrailsDateAddForm handleFormSubmit={handleAddPlayer} trailsDate={addTrailsDate} goBack={goBack}/>
+                                    <TrailsDateAddForm handleFormSubmit={handleAddPlayer} trailsDate={addTrailsDate} goBack={goBack} trailsDateData={trailsDateData}/>
                                 </>
                             )}
                             <Separator orientation="horizontal" className="my-2 bg-gray-300"/>
