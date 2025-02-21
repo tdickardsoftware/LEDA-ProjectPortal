@@ -1,49 +1,74 @@
+// Use Client
 "use client"
-
-import { DataTable } from "../datatable"
+// Imports
+import { DataTable } from "@/components/datatable"
 import { columns } from "@/schemas/activities/trails_dates"
 import { fetchTrailsDateData, fetchTrailsDates } from "@/lib/getData"
 import { trailsDateRoute } from "@/lib/apiRoutes"
 import { format } from "date-fns"
-
 import { useEffect, useState } from "react";
 import { TrailsDate, TrailsDateData } from "@/lib/definitions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { Pencil } from "lucide-react"
-import { Button } from "../ui/button"
-import TrailsDateEditForm from "../forms/activities/trails-date-edit-form"
+import { Button } from "@/components/ui/button"
+import TrailsDateEditForm from "@/components/forms/activities/trails-date-edit-form"
 import { Spinner } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import TrailsDateAddForm from "../forms/activities/trails-date-add-form"
-import { Separator } from "../ui/separator"
-
+import TrailsDateAddForm from "@/components/forms/activities/trails-date-add-form"
+import { Separator } from "@/components/ui/separator"
+//
+// Component export
+//
 export default function TrainsPageContent() {
+    //
+    // States
+    //
+    // set trails date data (i.e. all of the trails dates in the table)
     const [data, setData] = useState<TrailsDate[]>([]);
+    // Set the selected trails dates
     const [trailsDate, setTrailsDate] = useState<string | null>("");
-    const [trailsDateData, setTrailsDateData] = useState<TrailsDateData[]>([]); // Ensure this is an array
+    // Set the data pertaining to that trails date
+    const [trailsDateData, setTrailsDateData] = useState<TrailsDateData[]>([]);
+    // Boolean to determine if you are editing the data
     const [editStates, setEditStates] = useState<{ [key: string]: boolean }>({});
+    // Boolean to determine if you need to load
     const [loadingTrailsDateData, setLoadingTrailsDateData] = useState<boolean>(false);
+    // Boolean to determine if you are adding a player
     const [addPlayer, setAddPlayer] = useState<boolean>(false);
+    // The trails date for when you are adding an entry
     const [addTrailsDate, setAddTrailsDate] = useState<string | null>("");
-
+    //
+    // Function Name: handleAddPlayer
+    // Description: this function handles adding a player to a trails date (DOES NOT ADD TO DB)
+    //
     const handleAddPlayer = (values: TrailsDateData) => {
         setAddPlayer(false);
         setTrailsDateData(prevData => [...prevData, values]);
         console.log(trailsDateData)
         console.log(values);
     }
-
+    //
+    // Function Name: goBack
+    // Description: this function handles displaying the add/edit form for a player
+    //
     const goBack= (value: boolean) => {
         setAddPlayer(value);
     }
+    //
+    // Function Name: handleDateSelect
+    // Description: this function handles selecting a date for the trails date
+    //
     const handleDateSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedDate = (new Date(event.target.value).getTime() + new Date(event.target.value).getTimezoneOffset() * 60000)
         const formattedDate = format(selectedDate, "MM-dd-yyyy");
         setAddTrailsDate(formattedDate);
     }
-
+    //
+    // Function Name: handleSetTrailsDate
+    // Description: this function handles setting the trails date and loading the data for that date
+    //
     const handleSetTrailsDate = async (value: string) => {
         
         const parsedValue = JSON.parse(value)[0];
@@ -63,6 +88,10 @@ export default function TrainsPageContent() {
             setTrailsDateData(fetchData);
         }
     }
+    //
+    // Function Name: handleRefresh
+    // Description: this function handles refreshing the data for a selected trails date
+    //
     const handleRefresh = async (index:string) => {
         if (trailsDate) {
             const fetchData = await fetchTrailsDateData(trailsDate);
@@ -70,13 +99,20 @@ export default function TrainsPageContent() {
         }
         handleEditToggle(index);
     }
+    //
+    // Function Name: handleEditToggle
+    // Description: this function handles toggling the edit state for a selected row
+    //
     const handleEditToggle = (index: string) => {
         setEditStates(prevState => ({
             ...prevState,
             [index]: !prevState[index]
         }));
     };
-
+    //
+    // UseEffect
+    // Description: this useEffect fetches the data for the trails dates
+    //
     useEffect(() => {
         async function fetchData() {
             const result = await fetchTrailsDates();
@@ -89,9 +125,9 @@ export default function TrainsPageContent() {
         fetchData();
     }, []);
     // TODO
-    // [ ] * - Add the ability to add a new trails date, this will be the default.
-    // [ ] * - Implement the logic to handle trails points history, i.e. when a record is added, add a points history to the audit table, if a record is updated update the audit record for later calculation
-    // [ ] * - Implement the ability to remove a player/trails date and update the audit table accordingly
+    // [X] * - Add the ability to add a new trails date, this will be the default.
+    // [-] * - Implement the logic to handle trails points history, i.e. when a record is added, add a points history to the audit table, if a record is updated update the audit record for later calculation
+    // [-] * - Implement the ability to remove a player/trails date and update the audit table accordingly
     return(
         <div className="flex gap-20">
             
