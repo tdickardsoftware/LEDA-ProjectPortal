@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { TrailsDate, TrailsDateData } from "@/lib/definitions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
-import { Pencil } from "lucide-react"
+import { Pencil, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TrailsDateEditForm from "@/components/forms/activities/trails-date-edit-form"
 import { Spinner } from "@/components/ui/skeleton"
@@ -110,6 +110,15 @@ export default function TrainsPageContent() {
         }));
     };
     //
+    //Function name: handleAddDelete
+    // Description: this function handles deleting a player from the trails date data locally, before it is saved to the database
+    //
+    const handleAddDelete = (index: number) => {
+        const updatedTrailsDateData = [...trailsDateData];
+        updatedTrailsDateData.splice(index, 1);
+        setTrailsDateData(updatedTrailsDateData);
+    }
+    //
     // UseEffect
     // Description: this useEffect fetches the data for the trails dates
     //
@@ -206,20 +215,26 @@ export default function TrainsPageContent() {
                                     {trailsDateData.map((item, index) => (
                                         <Accordion type="single" collapsible key={index}>
                                             <AccordionItem value={index.toString()}>
-                                                <AccordionTrigger>
-                                                    <div className="flex justify-between w-full">
-                                                        <span>
-                                                            {item.ledaId} - {item.fullName}
-                                                        </span>
+                                                <div className="flex justify-between items-center w-full">
+                                                    <span className="text-left">
+                                                        {item.ledaId} - {item.fullName}
+                                                    </span>
+                                                    <div className="flex items-center">
+                                                        <AccordionTrigger />
+                                                        <Button variant={"ghost"} size="icon" onClick={() => handleAddDelete(index)}>
+                                                            <X className="text-red-500"/>
+                                                        </Button>
                                                     </div>
-                                                </AccordionTrigger>
+                                                </div>
                                                 <AccordionContent>
                                                     <div className="flex justify-between">
-                                                        <div className="flex flex-col gap-2">
-                                                            {item.notes && <p>Notes: {item.notes}</p>}
-                                                            <p>Trails Points: {item.trailsPoints}</p>
-                                                            <p>Singles Place: {item.singlesPlace}</p>
-                                                            <p>Doubles Place: {item.doublesPlace}</p>
+                                                        <div className="flex justify-between">
+                                                            <div className="flex flex-col gap-2">
+                                                                {item.notes && <p>Notes: {item.notes}</p>}
+                                                                <p>Trails Points: {item.trailsPoints}</p>
+                                                                <p>Singles Place: {item.singlesPlace}</p>
+                                                                <p>Doubles Place: {item.doublesPlace}</p>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </AccordionContent>
