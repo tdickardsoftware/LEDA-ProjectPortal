@@ -34,7 +34,6 @@ export default async function handler(
 	} else if (req.method === "PUT") {
 		try {
 			const data = req.body as TrailsDateData;
-			console.log(data);
 			const query = `UPDATE public.leda_trails_history SET "trailsPoints" = $3, "singlesPlace" = $4, "doublesPlace" = $5, "notes" = $6 WHERE "ledaId" = $1 AND "trailsDate" = $2;`;
 			const values = [data.ledaId, data.trailsDate, data.trailsPoints, data.singlesPlace, data.doublesPlace, data.notes];
 			const result = await queryPost(query, values);
@@ -45,7 +44,20 @@ export default async function handler(
 				message: (error as Error).message || "Server error",
 			});
 		}
-	} else {
+	} else if (req.method === 'POST') {
+		const data = req.body as TrailsDateData;
+		console.log(data)
+		const query = `INSERT INTO public.leda_trails_history ("ledaId", "trailsDate", "trailsPoints", "singlesPlace", "doublesPlace", "notes") VALUES ($1, $2, $3, $4, $5, $6);`;
+		const values = [data.ledaId, data.trailsDate, data.trailsPoints, data.singlesPlace, data.doublesPlace, data.notes];
+		const result = await queryPost(query, values);
+		res.status(201).json({ insert1: result });
+	} else if (req.method === 'DELETE') {
+		const data = req.body as TrailsDateData;
+		const query = `DELETE FROM public.leda_trails_history WHERE "ledaId" = $1 AND "trailsDate" = $2;`;
+		const values = [data.ledaId, data.trailsDate];
+		const result = await queryPost(query, values);
+		res.status(201).json({ delete1: result });
+	}else {
 		// Respond with a 405 status code for unsupported methods
 		res.status(405).json({ error: "Method not allowed" });
 	}

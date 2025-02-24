@@ -4,7 +4,7 @@
 import { DataTable } from "@/components/datatable"
 import { columns } from "@/schemas/activities/trails_dates"
 import { fetchTrailsDateData, fetchTrailsDates } from "@/lib/getData"
-import { trailsDateRoute } from "@/lib/apiRoutes"
+import { trailsDateRoute, trailsRoute } from "@/lib/apiRoutes"
 import { format } from "date-fns"
 import { useEffect, useState } from "react";
 import { TrailsDate, TrailsDateData } from "@/lib/definitions"
@@ -50,7 +50,28 @@ export default function TrainsPageContent() {
         console.log(values);
     }
     //
+    // Function Name: handleAddPlayerDB
+    // Description: this function handles adding a player to a trails date and saving it to the database
     //
+    const handleAddPlayerDB = async (values: TrailsDateData) => {
+        if (trailsDate !== null){
+            values.trailsDate = trailsDate
+        }
+        setLoadingTrailsDateData(true);
+        await fetch(trailsRoute, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(values),
+        });
+        setLoadingTrailsDateData(false);
+        handleRefresh();
+        setAddPlayer(false);
+    }
+    //
+    // Function Name: handleEditAddPlayer
+    // Description: enable the editing of a player during the add process of a trails date
     //
     const handleEditAddPlayer = (values: TrailsDateData, index?: number) => {
         setTrailsDateData(prevData => {
@@ -110,12 +131,17 @@ export default function TrainsPageContent() {
     // Function Name: handleRefresh
     // Description: this function handles refreshing the data for a selected trails date
     //
-    const handleRefresh = async (index:string) => {
+    const handleRefresh = async (index?:string) => {
         if (trailsDate) {
+            setLoadingTrailsDateData(true);
             const fetchData = await fetchTrailsDateData(trailsDate);
+            setLoadingTrailsDateData(false);
             setTrailsDateData(fetchData);
+            
         }
-        handleEditToggle(index);
+        if (index !== undefined) {
+            handleEditToggle(index);
+        }
     }
     //
     // Function Name: handleEditToggle
@@ -135,6 +161,26 @@ export default function TrainsPageContent() {
         const updatedTrailsDateData = [...trailsDateData];
         updatedTrailsDateData.splice(index, 1);
         setTrailsDateData(updatedTrailsDateData);
+        if (updatedTrailsDateData.length === 0) {
+            handleRefresh();
+        }
+    }
+    //
+    //
+    //
+    const handleDelete = async (value: TrailsDateData) => {
+        await fetch(trailsRoute, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(value),
+        });
+        handleRefresh();
+        if (trailsDateData.length === 1) {
+            setTrailsDate(null);
+            setData(data.filter(item => item.trailsDate !== trailsDate));
+        }
     }
     //
     // UseEffect
@@ -170,17 +216,33 @@ export default function TrainsPageContent() {
                         <CardContent>
                             {loadingTrailsDateData && (<Spinner />)}
                             {(trailsDateData.length != 0 && !loadingTrailsDateData)&& (
+                                
                                 <div className="flex flex-col gap-2">
+                                    {!addPlayer && (
+                                        <div className="flex justify-end pt-4">
+                                            <Button variant={"outline"} onClick={() => setAddPlayer(!addPlayer)}>Add Player</Button>
+                                        </div>
+                                    )}
+                                    {addPlayer && (
+                                        <>
+                                            <TrailsDateAddForm handleFormSubmit={handleAddPlayerDB} trailsDate={addTrailsDate} goBack={goBack} trailsDateData={trailsDateData}/>
+                                        </>
+                                    )}
+                                    <Separator orientation="horizontal" className="my-2 bg-gray-300"/>
                                     {trailsDateData.map((item, index) => (
                                         <Accordion type="single" collapsible key={index}>
                                             <AccordionItem value={index.toString()}>
-                                                <AccordionTrigger>
-                                                    <div className="flex justify-between w-full">
-                                                        <span>
-                                                            {item.ledaId} - {item.fullName}
-                                                        </span>
+                                                <div className="flex justify-between items-center w-full">
+                                                    <span className="text-left">
+                                                        {item.ledaId} - {item.fullName}
+                                                    </span>
+                                                    <div className="flex items-center">
+                                                        <AccordionTrigger />
+                                                        <Button variant={"ghost"} size="icon" onClick={() => handleDelete(item)}>
+                                                            <X className="text-red-500"/>
+                                                        </Button>
                                                     </div>
-                                                </AccordionTrigger>
+                                                </div>
                                                 <AccordionContent>
                                                     <div className="flex justify-between">
                                                         {!editStates[index.toString()] && (

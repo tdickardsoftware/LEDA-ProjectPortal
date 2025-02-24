@@ -93,7 +93,7 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({ trail
 				const data = await response.json();
 				const filteredData = data.filter(
 					(type: { ledaId: string }) =>
-						!trailsDateData.some((trail) => trail.ledaId === Number(type.ledaId))
+						!trailsDateData.some((trail) => Number(trail.ledaId) === Number(type.ledaId))
 				);
 				setPlayers(
 					filteredData.map((type: { ledaId: string; fullName: string }) => ({
