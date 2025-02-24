@@ -168,6 +168,13 @@ export default function TrainsPageContent() {
     //
     //
     //
+    const getData = async (trailsDate: string) => {
+        const result = await fetchTrailsDateData(trailsDate);
+        return result
+    }
+    //
+    //
+    //
     const handleDelete = async (value: TrailsDateData) => {
         await fetch(trailsRoute, {
             method: "DELETE",
@@ -176,10 +183,10 @@ export default function TrainsPageContent() {
             },
             body: JSON.stringify(value),
         });
-        handleRefresh();
-        if (trailsDateData.length === 1) {
-            setTrailsDate(null);
-            setData(data.filter(item => item.trailsDate !== trailsDate));
+        await handleRefresh();
+        console.log(trailsDateData.length)
+        if ((await getData(value.trailsDate)).length === 0) {
+            window.location.reload();
         }
     }
     //
