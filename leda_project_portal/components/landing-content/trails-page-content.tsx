@@ -38,7 +38,7 @@ export default function TrainsPageContent() {
     // Boolean to determine if you are adding a player
     const [addPlayer, setAddPlayer] = useState<boolean>(false);
     // The trails date for when you are adding an entry
-    const [addTrailsDate, setAddTrailsDate] = useState<string | null>("");
+    const [addTrailsDate, setAddTrailsDate] = useState<string | null>(format(new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" })), "MM-dd-yyyy"));
     //
     // Function Name: handleAddPlayer
     // Description: this function handles adding a player to a trails date (DOES NOT ADD TO DB)
@@ -166,14 +166,16 @@ export default function TrainsPageContent() {
         }
     }
     //
-    //
+    // Function Name: getData
+    // Description: this function fetches the data for a selected trails date
     //
     const getData = async (trailsDate: string) => {
         const result = await fetchTrailsDateData(trailsDate);
         return result
     }
     //
-    //
+    // Function Name: handleDelete
+    // Description: this function handles deleting a player from the trails date data and saving it to the db
     //
     const handleDelete = async (value: TrailsDateData) => {
         await fetch(trailsRoute, {
@@ -188,6 +190,22 @@ export default function TrainsPageContent() {
         if ((await getData(value.trailsDate)).length === 0) {
             window.location.reload();
         }
+    }
+    //
+    //
+    //
+    const handleSubmit = async (values: TrailsDateData[]) => {
+        for (const value of values) {
+            value.trailsDate = addTrailsDate as string;
+            await fetch(trailsRoute, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(value),
+            });
+        }
+        window.location.reload();
     }
     //
     // UseEffect
@@ -341,7 +359,7 @@ export default function TrainsPageContent() {
                                 </div>
                             )}
                             <div className="flex items-center justify-center py-2">
-                                <Button variant={"outline"}>Add Trails Date</Button>
+                                <Button variant={"outline"} onClick={() => handleSubmit(trailsDateData)} disabled={trailsDateData.length === 0}>Add Trails Date</Button>
                             </div>
                         </CardContent>
                     </>
