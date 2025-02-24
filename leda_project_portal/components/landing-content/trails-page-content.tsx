@@ -50,6 +50,23 @@ export default function TrainsPageContent() {
         console.log(values);
     }
     //
+    //
+    //
+    const handleEditAddPlayer = (values: TrailsDateData, index?: number) => {
+        setTrailsDateData(prevData => {
+            if (index !== undefined) {
+                handleEditToggle(index.toString());
+            }
+            const updatedData = [...prevData];
+            if (index !== undefined) {
+            updatedData[index] = values;
+            } else {
+            updatedData.push(values);
+            }
+            return updatedData;
+        });
+    }
+    //
     // Function Name: goBack
     // Description: this function handles displaying the add/edit form for a player
     //
@@ -61,7 +78,8 @@ export default function TrainsPageContent() {
     // Description: this function handles selecting a date for the trails date
     //
     const handleDateSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedDate = (new Date(event.target.value).getTime() + new Date(event.target.value).getTimezoneOffset() * 60000)
+        const selectedDate = new Date(new Date(event.target.value).toLocaleString("en-US", { timeZone: "America/New_York" }));
+        console.log(selectedDate);
         const formattedDate = format(selectedDate, "MM-dd-yyyy");
         setAddTrailsDate(formattedDate);
     }
@@ -198,7 +216,7 @@ export default function TrainsPageContent() {
                         </CardHeader>
                         <CardContent>
                             <Label>Trails Date</Label>
-                            <Input type="date" onChange={handleDateSelect} defaultValue={format((new Date().getTime() + new Date().getTimezoneOffset() * 60000), "yyyy-MM-dd" )}/>
+                            <Input type="date" onChange={handleDateSelect} defaultValue={format(new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" })), "yyyy-MM-dd")}/>
                             {!addPlayer && (
                                 <div className="flex justify-end pt-4">
                                     <Button variant={"outline"} onClick={() => setAddPlayer(!addPlayer)}>Add Player</Button>
@@ -228,13 +246,23 @@ export default function TrainsPageContent() {
                                                 </div>
                                                 <AccordionContent>
                                                     <div className="flex justify-between">
-                                                        <div className="flex justify-between">
+                                                        {!editStates[index.toString()] && (
+                                                        <div>
                                                             <div className="flex flex-col gap-2">
                                                                 {item.notes && <p>Notes: {item.notes}</p>}
                                                                 <p>Trails Points: {item.trailsPoints}</p>
                                                                 <p>Singles Place: {item.singlesPlace}</p>
                                                                 <p>Doubles Place: {item.doublesPlace}</p>
                                                             </div>
+                                                        </div>
+                                                        )}
+                                                        {editStates[index.toString()] && (
+                                                            <TrailsDateAddForm handleFormSubmit={handleEditAddPlayer} trailsDate={addTrailsDate} goBack={goBack} trailsDateData={trailsDateData} editData={item} index={index}/>
+                                                        )}
+                                                        <div>
+                                                            <Button variant={"ghost"} size="icon" onClick={() => handleEditToggle(index.toString())}>
+                                                                <Pencil className="w-4 h-4" />
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                 </AccordionContent>

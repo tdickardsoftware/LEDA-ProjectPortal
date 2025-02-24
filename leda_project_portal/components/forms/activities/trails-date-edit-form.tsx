@@ -38,9 +38,9 @@ export default function TrailsDateEditForm({
 	const form = useForm<z.infer<typeof TrailsDateDataFormSchema>>({
 		resolver: zodResolver(TrailsDateDataFormSchema),
 		defaultValues: {
-			singlesPlace: rowData.singlesPlace || 0,
-			doublesPlace: rowData.doublesPlace || 0,
-			trailsPoints: rowData.trailsPoints || 0,
+			singlesPlace: rowData.singlesPlace || undefined,
+			doublesPlace: rowData.doublesPlace || undefined,
+			trailsPoints: rowData.trailsPoints || undefined,
 			notes: rowData.notes || "",
 		},
 	});
@@ -109,11 +109,12 @@ export default function TrailsDateEditForm({
 										<Input
 											{...field}
 											type="number"
+											value={field.value ?? ""}
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(e.target.value)
 												);
 											}}
 										/>
@@ -132,11 +133,12 @@ export default function TrailsDateEditForm({
 										<Input
 											{...field}
 											type="number"
+											value={field.value ?? ""}
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(e.target.value)
 												);
 											}}
 										/>
@@ -155,11 +157,12 @@ export default function TrailsDateEditForm({
 										<Input
 											{...field}
 											type="number"
+											value={field.value ?? ""}
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(e.target.value)
 												);
 											}}
 										/>

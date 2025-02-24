@@ -43,6 +43,7 @@ interface PlaceOwnerSelectProps {
 	control: Control<any>;
 	label: string;
 	trailsDateData: TrailsDateData[];
+	disabled?: boolean;
 }
 
 export default function PlayerSelect({
@@ -50,6 +51,7 @@ export default function PlayerSelect({
 	name,
 	label,
 	trailsDateData,
+	disabled,
 }: PlaceOwnerSelectProps) {
 	return (
 		<FormProvider {...useFormContext()}>
@@ -60,7 +62,7 @@ export default function PlayerSelect({
 					<FormItem>
 						<FormLabel>{label}</FormLabel>
 						<FormControl>
-							<PlaceOwnerSelectContent trailsDateData={trailsDateData} />
+							<PlaceOwnerSelectContent trailsDateData={trailsDateData}  disabled={disabled}/>
 						</FormControl>
 						<FormMessage />
 					</FormItem>
@@ -72,9 +74,10 @@ export default function PlayerSelect({
 
 interface PlaceOwnerSelectContentProps {
 	trailsDateData: TrailsDateData[];
+	disabled?: boolean;
 }
 
-const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({ trailsDateData }) => {
+const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({ trailsDateData, disabled }) => {
 	const formContext = useFormContext<FormValues>();
 	const currentValue = formContext ? formContext.watch("ledaId") : "";
 
@@ -109,7 +112,7 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({ trail
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild>
+					<PopoverTrigger asChild disabled={disabled}>
 						<Button
 							variant="outline"
 							role="combobox"

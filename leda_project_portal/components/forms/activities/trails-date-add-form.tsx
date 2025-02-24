@@ -26,20 +26,32 @@ const formContainerStyle =
 	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
 
 export default function TrailsDateAddForm({
-    goBack,
+	goBack,
 	handleFormSubmit,
-    trailsDate,
+	trailsDate,
 	trailsDateData,
+	editData,
+	index,
 }: {
-    goBack: (values: boolean) => void;
-	handleFormSubmit: (values: TrailsDateData) => void;
-    trailsDate: string | null;
+	goBack: (values: boolean) => void;
+	handleFormSubmit: (values: TrailsDateData, index?: number) => void;
+	trailsDate: string | null;
 	trailsDateData: TrailsDateData[];
+	editData?: TrailsDateData;
+	index?: number;
 }) {
 
 	const formRef = React.useRef<HTMLFormElement>(null);
 	const form = useForm<z.infer<typeof TrailsDateDataFormSchema>>({
 		resolver: zodResolver(TrailsDateDataFormSchema),
+		defaultValues: {
+			singlesPlace: editData?.singlesPlace || undefined,
+			doublesPlace: editData?.doublesPlace || undefined,
+			trailsPoints: editData?.trailsPoints || undefined,
+			notes: editData?.notes || "",
+			ledaId: editData?.ledaId || undefined,
+			fullName: editData?.fullName || "",
+		}
 	});
 
 
@@ -48,7 +60,11 @@ export default function TrailsDateAddForm({
 			// Convert ledaId to a number
 			values.ledaId = Number(values.ledaId);
             values.trailsDate = trailsDate as string;
-			handleFormSubmit(values as TrailsDateData);
+			if (index !== undefined) {
+				handleFormSubmit(values as TrailsDateData, index);
+			} else {
+				handleFormSubmit(values as TrailsDateData);
+			}
 			toast.success("Form values submitted successfully!");
 
 			// Reset form and state
@@ -76,7 +92,9 @@ export default function TrailsDateAddForm({
 				<div className="flex space-x-4">
 					{/* Place Type Information Section */}
 					<div className={formContainerStyle}>
-                        <PlayerSelect control={form.control} name="ledaId" label="Player *" trailsDateData={trailsDateData}/>
+						{!editData && (
+                        	<PlayerSelect control={form.control} name="ledaId" label="Player *" trailsDateData={trailsDateData} />
+						)}
 						<FormField
 							control={form.control}
 							name="trailsPoints"
@@ -87,11 +105,12 @@ export default function TrailsDateAddForm({
 										<Input
 											{...field}
 											type="number"
+											value={field.value ?? ""}
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(e.target.value)
 												);
 											}}
 										/>
@@ -110,11 +129,12 @@ export default function TrailsDateAddForm({
 										<Input
 											{...field}
 											type="number"
+											value={field.value ?? ""}
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(e.target.value)
 												);
 											}}
 										/>
@@ -133,11 +153,12 @@ export default function TrailsDateAddForm({
 										<Input
 											{...field}
 											type="number"
+											value={field.value ?? ""}
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(e.target.value)
 												);
 											}}
 										/>
@@ -166,7 +187,11 @@ export default function TrailsDateAddForm({
 				</div>
 				<div className="flex items-center justify-between">
                     <Button type="button" variant={"outline"} onClick={() => goBack(false)}>Cancel</Button>
-					<Button type="submit" variant={"outline"}>Add Player</Button>
+					{index !== undefined ? (
+						<Button type="submit" variant={"outline"}>Update Player</Button>
+					) : (
+						<Button type="submit" variant={"outline"}>Add Player</Button>
+					)}
 				</div>
 			</form>
 		</Form>
