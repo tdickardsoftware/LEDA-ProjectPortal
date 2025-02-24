@@ -52,6 +52,8 @@ export default function TrailsDateEditForm({
 	async function onSubmit(values: z.infer<typeof TrailsDateDataFormSchema>) {
 		values.ledaId = rowData.ledaId;
 		values.trailsDate = rowData.trailsDate;
+		values.singlesPlace = values.singlesPlace ? Number(values.singlesPlace) : undefined;
+		values.doublesPlace = values.doublesPlace ? Number(values.doublesPlace) : undefined;
 		try {
 			const response = await fetch(trailsRoute, {
 				method: "PUT",
