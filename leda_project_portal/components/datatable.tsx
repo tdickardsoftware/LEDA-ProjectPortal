@@ -25,13 +25,16 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	columns: ColumnDef<TData, TValue>[];
 	data: TData[];
 	pageName: string;
-	addDialog: React.ReactNode;
+	addDialog?: React.ReactNode;
 	deleteDialog?: React.ReactNode;
 	editDialog?: React.ReactNode;
 	viewLink?: React.ReactNode;
 	onRefresh?: (api: string) => void;
 	apiEndpoint: string; // New prop for API endpoint
 	defaultSort?: string;
+	singleRowSelection?: boolean;
+	passValueToParent?: (value: string) => void;
+	defaultSelectedRow?: number; // Optional prop for default selected row
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
@@ -45,6 +48,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	onRefresh,
 	apiEndpoint, // Destructure the new prop
 	defaultSort,
+	singleRowSelection,
+	passValueToParent,
+	defaultSelectedRow,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
@@ -62,15 +68,19 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		return () => clearTimeout(handler); // Cleanup on each change
 	}, [searchQuery]);
 
-	// Update selectedRowCount whenever rowSelection changes
-	React.useEffect(() => {
-		setSelectedRowCount(Object.keys(rowSelection).length);
-	}, [rowSelection]);
-
 	// Extract selected rows' data
 	const selectedRowsData = React.useMemo(() => {
 		return Object.keys(rowSelection).map((key) => tableData[parseInt(key)]);
 	}, [rowSelection, tableData]);
+
+	// Update selectedRowCount whenever rowSelection changes
+	React.useEffect(() => {
+		setSelectedRowCount(Object.keys(rowSelection).length);
+		if (passValueToParent) {
+			passValueToParent(JSON.stringify(selectedRowsData)); // Send selected row data to parent
+		}
+	}, [rowSelection, passValueToParent, selectedRowsData]);
+
 	// Filtered data based on debounced query
 	const filteredData = React.useMemo(() => {
 		if (!debouncedQuery) return tableData;
@@ -91,6 +101,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		onSortingChange: setSorting,
 		getSortedRowModel: getSortedRowModel(),
 		onRowSelectionChange: setRowSelection,
+		enableRowSelection: true,
+		enableMultiRowSelection: !singleRowSelection,
 		state: {
 			sorting,
 			rowSelection,
@@ -117,19 +129,28 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [onRefresh]);
 
+	// Set default selected row if provided
+	React.useEffect(() => {
+		if (defaultSelectedRow !== undefined && defaultSelectedRow >= 0) {
+			setRowSelection({ [defaultSelectedRow]: true });
+		}
+	}, [defaultSelectedRow]);
+
 	return (
-		<div className="flex items-center justify-center min-h-screen bg-gray-100">
+		<div>
 			<div className="p-4 shadow-lg bg-white rounded-lg border border-gray-200 w-full max-w-4xl">
 				<div className="overflow-hidden rounded-md">
 					<h1 className="text-3xl pb-4 text-center">{pageName}</h1>
 					<div className="flex items-center justify-between space-x-2">
-						<div>
-							{React.cloneElement(
-								// eslint-disable-next-line @typescript-eslint/no-explicit-any
-								addDialog as React.ReactElement<any>,
-								{ onRefresh: handleRefresh }
-							)}
-						</div>
+						{addDialog ? (
+							<div>
+								{React.cloneElement(
+									// eslint-disable-next-line @typescript-eslint/no-explicit-any
+									addDialog as React.ReactElement<any>,
+									{ onRefresh: handleRefresh }
+								)}
+							</div>
+						) : null}
 						<div className="flex space-x-2">
 							{viewLink ? (
 								<div>

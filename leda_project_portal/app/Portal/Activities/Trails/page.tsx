@@ -1,4 +1,5 @@
-import UnderConstruction from "@/components/ui/under-construction";
+import TrailsPageContent from "@/components/landing-content/trails-page-content";
+import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,8 +8,12 @@ export const metadata: Metadata = {
 
 export default function Page() {
     return (
-        <main>
-            <UnderConstruction />
+        <main>{/* Page title */}
+            <h1 className="text-4xl font-bold antialiased">Trails Page</h1>
+            {/* Separator line */}
+            <Separator className="my-4 bg-gray-500" />
+            {/* Trails page content */}
+            <TrailsPageContent />
         </main>
     );
 }
