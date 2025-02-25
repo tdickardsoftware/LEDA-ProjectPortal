@@ -85,10 +85,20 @@ export default async function handler(
 		// create query to insert audit record
 		const query3 = 'INSERT into public.leda_trails_point_totals_audit ("ledaId", "modifyDate", "previousTotalPoints", "totalPoints", "changeBy", "trailsDate") VALUES ($1, current_timestamp, $2, $3, $4, $5);';
 		const values3 = [data.ledaId, oldTotalPoints, newTotalPoints, data.trailsPoints, data.trailsDate];
+
+		const query4 = 'select "lastTrailsDate" from public.leda_membership_info where "ledaId" = $1;';
+		const values4 = [data.ledaId];
+		const lastTrailsDate = (await queryPost(query4, values4)).rows[0].lastTrailsDate;
+		let result4;
+		if (lastTrailsDate === null || lastTrailsDate < data.trailsDate) {
+			const query5 = 'update public.leda_membership_info set "lastTrailsDate" = $2 where "ledaId" = $1;';
+			const values5 = [data.ledaId, data.trailsDate];
+			result4= await queryPost(query5, values5);
+		}
 		// execute queries
 		const result3 = await queryPost(query3, values3);
 		const result = await queryPost(query, values);
-		res.status(201).json({ insert1: result, insert2: result3 });
+		res.status(201).json({ insert1: result, insert2: result3, update1: result4 });
 	} else if (req.method === 'DELETE') {
 		// get data passed to body
 		const data = req.body as TrailsDateData;
