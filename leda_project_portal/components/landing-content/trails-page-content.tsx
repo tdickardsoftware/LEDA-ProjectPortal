@@ -14,10 +14,12 @@ import { Pencil, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TrailsDateEditForm from "@/components/forms/activities/trails-date-edit-form"
 import { Spinner } from "@/components/ui/skeleton"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+//import { Input } from "@/components/ui/input"
 import TrailsDateAddForm from "@/components/forms/activities/trails-date-add-form"
 import { Separator } from "@/components/ui/separator"
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { Calendar } from "lucide-react"
 //
 // Component export
 //
@@ -98,9 +100,9 @@ export default function TrainsPageContent() {
     // Function Name: handleDateSelect
     // Description: this function handles selecting a date for the trails date
     //
-    const handleDateSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedDate = new Date(new Date(event.target.value).toLocaleString("en-US", { timeZone: "America/New_York" }));
-        console.log(selectedDate);
+    const handleDateSelect = (date: Date | null) => {
+        if (date === null) return;
+        const selectedDate = new Date(date.toLocaleString("en-US", { timeZone: "America/New_York" }));
         const formattedDate = format(selectedDate, "MM-dd-yyyy");
         setAddTrailsDate(formattedDate);
     }
@@ -235,6 +237,14 @@ export default function TrainsPageContent() {
     // [X] * - Add the ability to add a new trails date, this will be the default.
     // [-] * - Implement the logic to handle trails points history, i.e. when a record is added, add a points history to the audit table, if a record is updated update the audit record for later calculation
     // [-] * - Implement the ability to remove a player/trails date and update the audit table accordingly
+
+    const CustomDatePickerInput = ({ value, onClick }: { value: string; onClick: () => void }) => (
+        <Button variant="outline" onClick={onClick} className="w-full flex items-center justify-between text-left px-4 py-2 border border-gray-300 rounded-lg">
+            <span>{value || "Select a date"}</span>
+            <Calendar className="text-gray-500" />
+        </Button>
+    );
+
     return(
         <div className="flex gap-20">
             
@@ -311,8 +321,14 @@ export default function TrainsPageContent() {
                             <CardTitle className="text-lg font-semibold">Add a Trails Date</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <Label>Trails Date</Label>
-                            <Input type="date" onChange={handleDateSelect} defaultValue={format(new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" })), "yyyy-MM-dd")}/>
+                            <DatePicker
+                                selected={addTrailsDate ? new Date(addTrailsDate) : null}
+                                onChange={handleDateSelect}
+                                excludeDates={data.map(item => new Date(item.trailsDate))}
+                                dateFormat="yyyy-MM-dd"
+                                customInput={<CustomDatePickerInput value={addTrailsDate || ""} onClick={() => {}} />}
+                                className="w-full rounded-lg border border-gray-300 p-2"
+                            />
                             {!addPlayer && (
                                 <div className="flex justify-end pt-4">
                                     <Button variant={"outline"} onClick={() => setAddPlayer(!addPlayer)}>Add Player</Button>
