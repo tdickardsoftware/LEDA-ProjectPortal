@@ -192,7 +192,8 @@ export default function TrainsPageContent() {
         }
     }
     //
-    //
+    // Function Name: handleSubmit
+    // Description: this function handles submitting the data for the trails date
     //
     const handleSubmit = async (values: TrailsDateData[]) => {
         for (const value of values) {
@@ -219,6 +220,14 @@ export default function TrainsPageContent() {
                 trailsDate: format(new Date(item.trailsDate), "MM-dd-yyyy")
             }));
             setData(formattedResult);
+
+            const currentDate = format(new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" })), "MM-dd-yyyy");
+            const currentTrailsDate = formattedResult.find(item => item.trailsDate === currentDate);
+            if (currentTrailsDate) {
+                setTrailsDate(currentDate);
+                const fetchData = await fetchTrailsDateData(currentDate);
+                setTrailsDateData(fetchData);
+            }
         }
         fetchData();
     }, []);
@@ -229,7 +238,7 @@ export default function TrainsPageContent() {
     return(
         <div className="flex gap-20">
             
-            <DataTable columns={columns} data={data} pageName="Prior Trails Dates" apiEndpoint={trailsDateRoute} singleRowSelection={true} passValueToParent={handleSetTrailsDate}/>
+            <DataTable columns={columns} data={data} pageName="Prior Trails Dates" apiEndpoint={trailsDateRoute} singleRowSelection={true} passValueToParent={handleSetTrailsDate} defaultSelectedRow={data.findIndex(item => item.trailsDate === trailsDate)}/>
 
             <Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] max-h-[80vh] overflow-y-auto">
                 {trailsDate && (

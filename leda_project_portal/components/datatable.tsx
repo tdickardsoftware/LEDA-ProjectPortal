@@ -34,6 +34,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	defaultSort?: string;
 	singleRowSelection?: boolean;
 	passValueToParent?: (value: string) => void;
+	defaultSelectedRow?: number; // Optional prop for default selected row
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
@@ -49,6 +50,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	defaultSort,
 	singleRowSelection,
 	passValueToParent,
+	defaultSelectedRow,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
@@ -126,6 +128,13 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		handleRefresh(); // Call handleRefresh without arguments
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [onRefresh]);
+
+	// Set default selected row if provided
+	React.useEffect(() => {
+		if (defaultSelectedRow !== undefined && defaultSelectedRow >= 0) {
+			setRowSelection({ [defaultSelectedRow]: true });
+		}
+	}, [defaultSelectedRow]);
 
 	return (
 		<div>
