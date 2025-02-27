@@ -9,6 +9,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import React from "react";
 
 interface BreadcrumbDynamicItemsProps {
     /**
@@ -74,21 +75,25 @@ export function BreadcrumbDynamicItems({
                                     <Link href="/">{homeLabel}</Link>
                                 </BreadcrumbLink>
                             </BreadcrumbItem>
-                            {breadcrumbs.length > 0 && <BreadcrumbSeparator />}
+                            {breadcrumbs.length > 0 && (
+                                <BreadcrumbSeparator />
+                            )}
                         </>
                     )}
                     
                     {breadcrumbs.map((breadcrumb) => (
-                        <BreadcrumbItem key={breadcrumb.href}>
-                            {breadcrumb.isLast ? (
-                                <BreadcrumbPage>{breadcrumb.label}</BreadcrumbPage>
-                            ) : (
-                                <BreadcrumbLink asChild>
-                                    <Link href={breadcrumb.href} prefetch>{breadcrumb.label}</Link>
-                                </BreadcrumbLink>
-                            )}
+                        <React.Fragment key={breadcrumb.href}>
+                            <BreadcrumbItem>
+                                {breadcrumb.isLast ? (
+                                    <BreadcrumbPage>{breadcrumb.label}</BreadcrumbPage>
+                                ) : (
+                                    <BreadcrumbLink asChild>
+                                        <Link href={breadcrumb.href} prefetch>{breadcrumb.label}</Link>
+                                    </BreadcrumbLink>
+                                )}
+                            </BreadcrumbItem>
                             {!breadcrumb.isLast && <BreadcrumbSeparator />}
-                        </BreadcrumbItem>
+                        </React.Fragment>
                     ))}
                 </BreadcrumbList>
             </nav>
