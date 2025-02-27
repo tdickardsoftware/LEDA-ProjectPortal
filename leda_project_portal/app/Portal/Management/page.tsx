@@ -10,10 +10,14 @@ export const dynamic = 'force-dynamic'
 
 export default async function Page() {
 	return (
-		<main>
-			<h1 className="text-4xl font-bold antialiased">Management Page</h1>
-			{/* Separator line */}
-			<Separator className="my-4 bg-gray-500" />
+		<main className="container pl-4">
+			<div className="mb-6 py-2">
+                <h1 className="text-4xl font-bold antialiased">Management</h1>
+                <p className="text-muted-foreground mt-2 mb-4">
+                    View and manage all Player, Place and Team Data.
+                </p>
+                <Separator />
+            </div>
 			<ManagementPageContent />
 		</main>
 	);

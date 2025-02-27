@@ -8,10 +8,14 @@ export const metadata: Metadata = {
 
 export default function Page() {
 	return (
-		<main>
-			<h1 className="text-4xl font-bold antialiased">Maintenance Page</h1>
-			{/* Separator line */}
-			<Separator className="my-4 bg-gray-500" />
+		<main className="container pl-4">
+			<div className="mb-6 py-2">
+                <h1 className="text-4xl font-bold antialiased">Maintenance</h1>
+                <p className="text-muted-foreground mt-2 mb-4">
+                    View and manage all typlically hard coded values used in Activities/Player information.
+                </p>
+                <Separator />
+            </div>
 			<MaintenancePageContent />
 		</main>
 	);

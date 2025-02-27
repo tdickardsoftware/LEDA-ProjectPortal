@@ -292,7 +292,11 @@ const data = {
 //
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	return (
-		<Sidebar variant="inset" {...props}>
+		<Sidebar 
+			collapsible="icon" 
+			{...props} 
+			className="w-auto max-w-[300px]"
+		>
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
@@ -301,7 +305,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
 									<Target className="size-8" />
 								</div>
-								<div className="grid flex-1 text-left text-sm leading-tight">
+								<div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
 									<span className="truncate font-semibold">
 										Lake Erie Dart Association
 									</span>
@@ -314,7 +318,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					</SidebarMenuItem>
 				</SidebarMenu>
 			</SidebarHeader>
-			<SidebarContent>
+			<SidebarContent className="w-full overflow-hidden">
 				<NavMain items={data.navMain} />
 			</SidebarContent>
 			<SidebarFooter>
