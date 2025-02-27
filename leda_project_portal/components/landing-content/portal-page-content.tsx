@@ -66,7 +66,7 @@ export default function PortalPageContent() {
 			<div>
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
-						<CardTitle>Activities *WIP*</CardTitle>
+						<CardTitle>Activities</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<p className="text-gray-700">Input data for processing/use for reports</p>
