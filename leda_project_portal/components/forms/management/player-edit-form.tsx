@@ -23,7 +23,7 @@ import PhoneNumberInput from "@/components/ui/phone-number-input";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
-import SeasonCodeSelector from "@/components/ui/season-code-selector";
+import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";

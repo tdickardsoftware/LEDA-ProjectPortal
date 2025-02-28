@@ -17,7 +17,7 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import React from "react";
-import SeasonCodeSelector from "@/components/ui/season-code-selector";
+import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputDefault } from "@/components/ui/form-input-default";
