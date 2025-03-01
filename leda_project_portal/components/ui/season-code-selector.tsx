@@ -22,13 +22,14 @@ import { seasonCodeRoute } from "@/lib/apiRoutes";
 interface SeasonCodeSelectorProps {
 	disabled?: boolean;
 	handleSelect: (value: string) => void;
-	label: string;
+	setDisabled: (value: boolean) => void;
 }
 
 // SeasonCodeSelector component definition
 const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 	disabled,
 	handleSelect,
+	setDisabled
 }) => {
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
@@ -52,12 +53,15 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 					}))
 				);
 				setSelectedSeasonCode(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
+				if (data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)) {
+					setDisabled(false);
+				}
 			} catch (error) {
 				console.error("Failed to fetch season codes", error);
 			}
 		}
 		loadSeasonCodes();
-	}, []);
+	}, [setDisabled]);
 
 	return (
 		<div className="flex flex-col gap-4">

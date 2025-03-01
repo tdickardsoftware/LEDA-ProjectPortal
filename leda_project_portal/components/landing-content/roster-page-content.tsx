@@ -11,12 +11,14 @@ export default function RostersContent() {
 
     const [seasonCode, setSeasonCode] = useState<string | null>(null);
     const [selectedDivisions, setSelectedDivisions] = useState<string[]>([]);
+    const [disabled, setDisabled] = useState<boolean>(true);
     const [divisionsData, setDivisionsData] = useState<{ [key: string]: { subdivisions: string[] } }>({});
     const [open, setOpen] = useState(false);
 
     const handleSeasonCodeSelect = (value: string) => {
         console.log(value);
         setSeasonCode(value);
+        setDisabled(false);
         console.log(seasonCode)
     }
 
@@ -46,6 +48,7 @@ export default function RostersContent() {
                 <DialogTrigger asChild>
                     <Button
                         variant="outline"
+                        disabled={disabled}
                     >
                         Add Division
                     </Button>
@@ -68,7 +71,7 @@ export default function RostersContent() {
     return(
         <div className="flex flex-col max-w-[65vw]">
             <div className="flex justify-between">
-                <SeasonCodeSelector disabled={false} handleSelect={handleSeasonCodeSelect} label="Select Season Code" />
+                <SeasonCodeSelector disabled={false} handleSelect={handleSeasonCodeSelect} setDisabled={setDisabled} />
                 {handleAddDivision()}
             </div>
             <Accordion type="single" collapsible className="w-full mt-4">
@@ -81,7 +84,7 @@ export default function RostersContent() {
                             </div>
                             <Accordion type="single" collapsible className="w-full mt-2">
                                 {divisionsData[division].subdivisions.map((subdivision, subIndex) => (
-                                    <AccordionItem key={subIndex} value={`subdivision-${subIndex}`}>
+                                    <AccordionItem key={subIndex} value={`subdivision-${subIndex}`} className="border-b border-gray-200">
                                         <AccordionTrigger>{subdivision}</AccordionTrigger>
                                         <AccordionContent>
                                             {/* Add content for each subdivision here */}
