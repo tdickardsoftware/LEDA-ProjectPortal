@@ -11,6 +11,7 @@ export default function RostersContent() {
 
     const [seasonCode, setSeasonCode] = useState<string | null>(null);
     const [selectedDivisions, setSelectedDivisions] = useState<string[]>([]);
+    const [divisionsData, setDivisionsData] = useState<{ [key: string]: { subdivisions: string[] } }>({});
     const [open, setOpen] = useState(false);
 
     const handleSeasonCodeSelect = (value: string) => {
@@ -21,11 +22,24 @@ export default function RostersContent() {
 
     const handleSelectDivision = (value: string) => {
         setSelectedDivisions([...selectedDivisions, value]);
+        setDivisionsData({
+            ...divisionsData,
+            [value]: { subdivisions: [] }
+        });
     }
-    
-    const handleAddDivision = () => {
-        
 
+    const handleAddSubdivision = (division: string) => {
+        const newSubdivision = `Subdivision ${divisionsData[division].subdivisions.length + 1}`;
+        setDivisionsData({
+            ...divisionsData,
+            [division]: {
+                subdivisions: [...divisionsData[division].subdivisions, newSubdivision]
+            }
+        });
+        console.log(divisionsData)
+    }
+
+    const handleAddDivision = () => {
         return (
             <>
                 <Dialog open={open} onOpenChange={setOpen}>
@@ -46,7 +60,6 @@ export default function RostersContent() {
         </>
         )
     }
-    // TODO - Add the ability to create a subdivision (Name them Subdivision 1, Subdivision 2, etc.)
     // TODO - Add the ability to add a team to a subdivision (Teams can only be added to one division and one subdivision within that division)
     // TODO - Add the ability to delete a division, subdivision, or team
     // TODO - Add the ability to copy a roster from a previous season (i.e. only select data that has a seasonCode present in the roster history table)
@@ -59,11 +72,23 @@ export default function RostersContent() {
                 {handleAddDivision()}
             </div>
             <Accordion type="single" collapsible className="w-full mt-4">
-                {selectedDivisions.map((division, index) => (
+                {Object.keys(divisionsData).map((division, index) => (
                     <AccordionItem key={index} value={`division-${index}`}>
                         <AccordionTrigger>{division}</AccordionTrigger>
                         <AccordionContent>
-                            {/* Render subdivision and team management components here */}
+                            <div className="flex justify-end">
+                                <Button onClick={() => handleAddSubdivision(division)}>Add Subdivision</Button>
+                            </div>
+                            <Accordion type="single" collapsible className="w-full mt-2">
+                                {divisionsData[division].subdivisions.map((subdivision, subIndex) => (
+                                    <AccordionItem key={subIndex} value={`subdivision-${subIndex}`}>
+                                        <AccordionTrigger>{subdivision}</AccordionTrigger>
+                                        <AccordionContent>
+                                            {/* Add content for each subdivision here */}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
                         </AccordionContent>
                     </AccordionItem>
                 ))}
