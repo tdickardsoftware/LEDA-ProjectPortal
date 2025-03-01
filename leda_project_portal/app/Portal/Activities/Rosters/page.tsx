@@ -1,3 +1,4 @@
+import RostersContent from "@/components/landing-content/roster-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 
@@ -15,7 +16,7 @@ export default function Page() {
                 </p>
                 <Separator />
             </div>
-            
+            <RostersContent />
         </main>
     );
 }

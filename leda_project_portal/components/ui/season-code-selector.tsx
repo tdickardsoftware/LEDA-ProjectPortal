@@ -51,6 +51,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 						label: type.seasonCode + " - " + type.desc,
 					}))
 				);
+				setSelectedSeasonCode(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
 			} catch (error) {
 				console.error("Failed to fetch season codes", error);
 			}
