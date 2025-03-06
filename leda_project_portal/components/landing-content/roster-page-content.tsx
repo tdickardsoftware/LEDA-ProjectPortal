@@ -9,6 +9,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "..
 import TeamAddForm from "../forms/activities/team-add-form";
 import { X } from "lucide-react";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "../ui/alert-dialog";
+import { Separator } from "../ui/separator";
 
 export default function RostersContent() {
 
@@ -194,7 +195,6 @@ export default function RostersContent() {
             }
         });
     }
-
     // TODO - Add the ability to copy a roster from a previous season (i.e. only select data that has a seasonCode present in the roster history table)
     // TODO - Add the ability to save the roster to the database once completed(i.e. seasonCode, and a json object of all of the divisions, subdivisions, and teams)
     // TODO - If a seasonCode is selected, load the roster from the database and display it in the UI
@@ -205,9 +205,9 @@ export default function RostersContent() {
                     <SeasonCodeSelector disabled={false} handleSelect={handleSeasonCodeSelect} setDisabled={setDisabled} />
                     {handleAddDivision()}
                 </div>
-                <Accordion type="single" collapsible className="w-full mt-4">
+                <Accordion type="single" collapsible className="w-full mt-4" defaultValue="divisions" >
                     {Object.keys(divisionsData).map((division, index) => (
-                        <AccordionItem key={index} value={`division-${index}`}>
+                        <AccordionItem key={index} value={`divisions`}>
                             <div className="flex justify-between items-center">
                                 <AccordionTrigger>
                                     {division}
@@ -234,9 +234,10 @@ export default function RostersContent() {
                                 <div className="flex justify-end">
                                     <Button onClick={() => handleAddSubdivision(division)} variant={"outline"}>Add Subdivision</Button>
                                 </div>
-                                <Accordion type="single" collapsible className="w-full mt-2">
+                                <Separator orientation="horizontal" className="my-2 bg-gray-300"/>
+                                <Accordion type="single" collapsible className="w-full mt-2" defaultValue="subdivisions">
                                     {Object.keys(divisionsData[division].subdivisions).map((subdivision, subIndex) => (
-                                        <AccordionItem key={subIndex} value={`subdivision-${subIndex}`} className="border-b border-gray-200">
+                                        <AccordionItem key={subIndex} value={`subdivisions`} className="border-b border-gray-200">
                                             <div className="flex justify-between items-center">
                                                 <AccordionTrigger>
                                                     {subdivision}
