@@ -31,19 +31,6 @@ export default function RostersContent() {
     const [initialData, setInitialData] = useState<{ [key: string]: { subdivisions: { [key: string]: { [key: string]: { teamId: string, placeId: string, teamName: string } } } } }>({});
     const [update, setUpdate] = useState(false);
 
-    
-    // Add a utility function to check for changes
-    const checkForChanges = useCallback((currentData: typeof divisionsData) => {
-        try {
-            // Compare the stringified versions of the objects to detect any changes
-            const dataChanged = JSON.stringify(currentData) !== JSON.stringify(initialData);
-            console.log("Change detected:", dataChanged);
-            setHasChanges(dataChanged);
-        } catch (error) {
-            console.error("Error comparing data:", error);
-        }
-    }, [initialData]);
-
     // Handle season code selection
     const handleSeasonCodeSelect = useCallback(async (value: string) => {
         setSeasonCode(value);
