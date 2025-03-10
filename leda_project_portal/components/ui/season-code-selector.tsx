@@ -53,6 +53,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 					}))
 				);
 				setSelectedSeasonCode(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
+				handleSelect(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
 				if (data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)) {
 					setDisabled(false);
 				}
@@ -61,7 +62,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 			}
 		}
 		loadSeasonCodes();
-	}, [setDisabled]);
+	}, [setDisabled, handleSelect]);
 
 	return (
 		<div className="flex flex-col gap-4">
