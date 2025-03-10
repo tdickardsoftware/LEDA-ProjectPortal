@@ -50,6 +50,16 @@ export default async function handler(
         } catch (error) {
             res.status(500).json({ message: "Failed to update roster information", error });
         }
+    } else if (req.method === 'DELETE') {
+        try {
+            const seasonCode = req.query.seasonCode;
+            const query = `DELETE FROM public.leda_roster_info WHERE "seasonCode" = $1;`;
+            const values = [seasonCode as string];
+            const result = await queryPost(query, values);
+            res.status(200).json(result);
+        } catch (error) {
+            res.status(500).json({ message: "Failed to delete roster information", error });
+        }
     } else {
         res.status(405).json({ message: "Method not allowed" });
     }
