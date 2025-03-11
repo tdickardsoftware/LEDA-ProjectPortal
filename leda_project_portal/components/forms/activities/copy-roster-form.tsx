@@ -49,6 +49,7 @@ export default function RosterCopyForm({
 		})
 		console.log(values)
         setOpen(false)
+		window.location.reload()
 	}
 
 	// Render the form
