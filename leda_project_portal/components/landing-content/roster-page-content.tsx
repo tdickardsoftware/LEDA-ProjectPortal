@@ -30,6 +30,7 @@ import {
 } from "../ui/alert-dialog";
 import { Separator } from "../ui/separator";
 import { rosterRoute } from "@/lib/apiRoutes";
+import CopyRosterForm from "../forms/activities/copy-roster-form";
 
 export default function RostersContent() {
 	// State variables
@@ -52,6 +53,7 @@ export default function RostersContent() {
 	}>({});
 	const [teamOpen, setTeamOpen] = useState<{ [key: string]: boolean }>({});
 	const [open, setOpen] = useState(false);
+	const [copyOpen, setCopyOpen] = useState(false);
 	const [divisionToDelete, setDivisionToDelete] = useState<string | null>(
 		null
 	);
@@ -305,6 +307,24 @@ export default function RostersContent() {
 		[open, disabled, selectedDivisions, handleSelectDivision]
 	);
 
+	// Render Copy Roster Dialog
+	const handleCopyRoster = useCallback(
+		() => (
+			<Dialog open={copyOpen} onOpenChange={setCopyOpen}>
+				<DialogTrigger asChild>
+					<Button variant="outline">Copy Roster</Button>
+				</DialogTrigger>
+				<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
+					<DialogHeader>
+						<DialogTitle>Copy Roster</DialogTitle>
+					</DialogHeader>
+					<CopyRosterForm setOpen={setCopyOpen} />
+				</DialogContent>
+			</Dialog>
+		),
+		[copyOpen]
+	);
+
 	// Handle removing a division
 	const handleRemoveDivision = useCallback(
 		(division: string) => {
@@ -490,7 +510,6 @@ export default function RostersContent() {
 			console.error("Failed to delete roster:", error);
 		}
 	}, [seasonCode]);
-	// TODO - Add the ability to copy a roster from a previous season
 
 	return (
 		<div className="flex flex-col max-w-[65vw]">
@@ -510,6 +529,7 @@ export default function RostersContent() {
 							Delete Roster
 						</Button>
 					)}
+					{handleCopyRoster()}
 				</div>
 			</div>
 			<AlertDialog

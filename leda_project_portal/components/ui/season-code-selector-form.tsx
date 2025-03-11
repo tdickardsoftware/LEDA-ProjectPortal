@@ -1,11 +1,7 @@
 // Import necessary modules and components
 "use client";
 import React, { useEffect, useState } from "react";
-import {
-	Control,
-	useFormContext,
-	FormProvider,
-} from "react-hook-form";
+import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,7 +18,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { seasonCodeRoute } from "@/lib/apiRoutes";
+import { rosterRoute, seasonCodeRoute } from "@/lib/apiRoutes";
 import {
 	FormControl,
 	FormField,
@@ -40,6 +36,8 @@ interface FormValues {
 interface SeasonCodeSelectorPropsContent {
 	disabled?: boolean;
 	name: string; // Add name prop to specify which field to watch/set
+	exclusive?: boolean;
+	excludeCode?: string; // Optional single season code to exclude
 }
 
 // Define the parameters for the SeasonCodeSelector component
@@ -49,6 +47,8 @@ interface SeasonCodeSelectorProps {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	control: Control<any>;
 	label: string;
+	excludeCode?: string; // Optional single season code to exclude
+	exclusive?: boolean;
 }
 
 // SeasonCodeSelector component definition
@@ -57,6 +57,8 @@ export default function SeasonCodeSelector({
 	name,
 	disabled,
 	label,
+	excludeCode,
+	exclusive,
 }: SeasonCodeSelectorProps) {
 	return (
 		// Render the form field with the provided props
@@ -71,6 +73,8 @@ export default function SeasonCodeSelector({
 							<SeasonCodeSelectorContent
 								disabled={disabled}
 								name={name}
+								excludeCode={excludeCode}
+								exclusive={exclusive}
 							/>
 						</FormControl>
 						<FormMessage />
@@ -85,6 +89,8 @@ export default function SeasonCodeSelector({
 const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 	disabled,
 	name,
+	excludeCode,
+	exclusive,
 }) => {
 	// Use form context to get watch and setValue functions
 	const { watch, setValue } = useFormContext<FormValues>();
@@ -96,6 +102,7 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 	const [seasonCodes, setSeasonCodes] = useState<
 		{ value: string; label: string }[]
 	>([]);
+	const [loading, setLoading] = useState(true);
 
 	// Fetch season codes from the API endpoint
 	useEffect(() => {
@@ -103,24 +110,56 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 			try {
 				const response = await fetch(seasonCodeRoute);
 				const data = await response.json();
-				setSeasonCodes(
-					data.map((type: { seasonCode: string; desc: string }) => ({
+				let codes = data.map(
+					(type: { seasonCode: string; desc: string }) => ({
 						value: type.seasonCode,
 						label: type.seasonCode + " - " + type.desc,
-					}))
+					})
 				);
+
+				let filterList: string[] = [];
+				if (exclusive) {
+					const response = await fetch(
+						rosterRoute + "/rostersWithData"
+					);
+					console.log(response);
+					const rosterData = await response.json();
+					filterList = rosterData.map(
+						(item: { seasonCode: string }) => item.seasonCode
+					);
+					console.log(filterList);
+				}
+
+				// Filter the season codes if filterList is provided
+				if (filterList.length > 0) {
+					codes = codes.filter(
+						(code: { value: string; label: string }) =>
+							filterList.includes(code.value)
+					);
+				}
+
+				// Exclude the season code if excludeCode is provided
+				if (excludeCode) {
+					codes = codes.filter(
+						(code: { value: string; label: string }) =>
+							code.value !== excludeCode
+					);
+				}
+
+				setSeasonCodes(codes);
 			} catch (error) {
-				console.error("Failed to fetch member types", error);
+				console.error("Failed to fetch season codes", error);
 			}
 		}
 		loadSeasonCodes();
-	}, []);
+		setLoading(false);
+	}, [excludeCode, exclusive]);
 
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild>
+					<PopoverTrigger asChild disabled={loading}>
 						<Button
 							variant="outline"
 							role="combobox"
@@ -141,7 +180,7 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
-							<CommandInput placeholder="Search member type..." />
+							<CommandInput placeholder="Search season code..." />
 							<CommandEmpty>No season code found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
