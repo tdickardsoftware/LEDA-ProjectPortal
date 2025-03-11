@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import PhoneNumberInput from "@/components/ui/phone-number-input";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
-import SeasonCodeSelector from "@/components/ui/season-code-selector";
+import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import PlaceTypeSelector from "@/components/ui/place-type-selector";
 import { Textarea } from "@/components/ui/textarea";
 import PlaceOwnerSelector from "@/components/ui/place-owner-select";

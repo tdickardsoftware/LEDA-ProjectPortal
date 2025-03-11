@@ -1,4 +1,5 @@
-import UnderConstruction from "@/components/ui/under-construction";
+import RostersContent from "@/components/landing-content/roster-page-content";
+import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,7 +9,14 @@ export const metadata: Metadata = {
 export default function Page() {
     return (
         <main>
-            <UnderConstruction />
+            <div className="mb-6 py-2 ">
+                <h1 className="text-4xl font-bold antialiased">Rosters</h1>
+                <p className="text-muted-foreground mt-2 mb-4">
+                    View and manage all Roster information.
+                </p>
+                <Separator />
+            </div>
+            <RostersContent />
         </main>
     );
 }

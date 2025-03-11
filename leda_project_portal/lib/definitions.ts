@@ -173,3 +173,10 @@ export type TrailsDateData = {
 	trailsPoints: number;
 	fullName: string;
 }
+//
+// define type to identify te shape of our data from postgres for a Roster
+//
+export type Roster = {
+	seasonCode: string;
+	teamInformation: JSON;
+}

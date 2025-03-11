@@ -4,7 +4,14 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
 import { toast } from "sonner";
 import React from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,7 +47,6 @@ export default function TrailsDateAddForm({
 	editData?: TrailsDateData;
 	index?: number;
 }) {
-
 	const formRef = React.useRef<HTMLFormElement>(null);
 	const form = useForm<z.infer<typeof TrailsDateDataFormSchema>>({
 		resolver: zodResolver(TrailsDateDataFormSchema),
@@ -51,15 +57,14 @@ export default function TrailsDateAddForm({
 			notes: editData?.notes || "",
 			ledaId: editData?.ledaId || undefined,
 			fullName: editData?.fullName || "",
-		}
+		},
 	});
-
 
 	async function onSubmit(values: z.infer<typeof TrailsDateDataFormSchema>) {
 		try {
 			// Convert ledaId to a number
 			values.ledaId = Number(values.ledaId);
-            values.trailsDate = trailsDate as string;
+			values.trailsDate = trailsDate as string;
 			if (index !== undefined) {
 				handleFormSubmit(values as TrailsDateData, index);
 			} else {
@@ -69,7 +74,6 @@ export default function TrailsDateAddForm({
 
 			// Reset form and state
 			form.reset();
-
 		} catch (error) {
 			console.error("Form submission error", error);
 			toast.error(
@@ -93,7 +97,12 @@ export default function TrailsDateAddForm({
 					{/* Place Type Information Section */}
 					<div className={formContainerStyle}>
 						{!editData && (
-                        	<PlayerSelect control={form.control} name="ledaId" label="Player *" trailsDateData={trailsDateData} />
+							<PlayerSelect
+								control={form.control}
+								name="ledaId"
+								label="Player *"
+								trailsDateData={trailsDateData}
+							/>
 						)}
 						<FormField
 							control={form.control}
@@ -110,7 +119,9 @@ export default function TrailsDateAddForm({
 												field.onChange(
 													e.target.value === ""
 														? undefined
-														: parseFloat(e.target.value)
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>
@@ -134,7 +145,9 @@ export default function TrailsDateAddForm({
 												field.onChange(
 													e.target.value === ""
 														? undefined
-														: parseFloat(e.target.value)
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>
@@ -158,7 +171,9 @@ export default function TrailsDateAddForm({
 												field.onChange(
 													e.target.value === ""
 														? undefined
-														: parseFloat(e.target.value)
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>
@@ -186,11 +201,21 @@ export default function TrailsDateAddForm({
 					</div>
 				</div>
 				<div className="flex items-center justify-between">
-                    <Button type="button" variant={"outline"} onClick={() => goBack(false)}>Cancel</Button>
+					<Button
+						type="button"
+						variant={"outline"}
+						onClick={() => goBack(false)}
+					>
+						Cancel
+					</Button>
 					{index !== undefined ? (
-						<Button type="submit" variant={"outline"}>Update Player</Button>
+						<Button type="submit" variant={"outline"}>
+							Update Player
+						</Button>
 					) : (
-						<Button type="submit" variant={"outline"}>Add Player</Button>
+						<Button type="submit" variant={"outline"}>
+							Add Player
+						</Button>
 					)}
 				</div>
 			</form>

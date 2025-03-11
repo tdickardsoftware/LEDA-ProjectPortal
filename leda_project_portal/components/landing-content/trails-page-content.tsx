@@ -233,10 +233,6 @@ export default function TrainsPageContent() {
         }
         fetchData();
     }, []);
-    // TODO
-    // [X] * - Add the ability to add a new trails date, this will be the default.
-    // [-] * - Implement the logic to handle trails points history, i.e. when a record is added, add a points history to the audit table, if a record is updated update the audit record for later calculation
-    // [-] * - Implement the ability to remove a player/trails date and update the audit table accordingly
 
     const CustomDatePickerInput = ({ value, onClick }: { value: string; onClick: () => void }) => (
         <Button variant="outline" onClick={onClick} className="w-full flex items-center justify-between text-left px-4 py-2 border border-gray-300 rounded-lg">

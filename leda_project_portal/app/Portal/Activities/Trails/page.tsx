@@ -9,9 +9,13 @@ export const metadata: Metadata = {
 export default function Page() {
     return (
         <main>{/* Page title */}
-            <h1 className="text-4xl font-bold antialiased">Trails Page</h1>
-            {/* Separator line */}
-            <Separator className="my-4 bg-gray-500" />
+            <div className="mb-6 py-2 ">
+                <h1 className="text-4xl font-bold antialiased">Trails</h1>
+                <p className="text-muted-foreground mt-2 mb-4">
+                    View and manage all Trails information.
+                </p>
+                <Separator />
+            </div>
             {/* Trails page content */}
             <TrailsPageContent />
         </main>

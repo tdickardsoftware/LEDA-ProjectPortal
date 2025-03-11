@@ -1,11 +1,5 @@
-// Import necessary modules and components
 "use client";
 import React, { useEffect, useState } from "react";
-import {
-	Control,
-	useFormContext,
-	FormProvider,
-} from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,79 +17,28 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { seasonCodeRoute } from "@/lib/apiRoutes";
-import {
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-
-// Update the interface to be more generic
-interface FormValues {
-	[key: string]: string; // This allows for dynamic field names
-}
-
-// Define the parameters for the SeasonCodeSelector component
-interface SeasonCodeSelectorPropsContent {
-	disabled?: boolean;
-	name: string; // Add name prop to specify which field to watch/set
-}
 
 // Define the parameters for the SeasonCodeSelector component
 interface SeasonCodeSelectorProps {
 	disabled?: boolean;
-	name: string;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>;
-	label: string;
+	handleSelect: (value: string) => void;
+	setDisabled: (value: boolean) => void;
 }
 
 // SeasonCodeSelector component definition
-export default function SeasonCodeSelector({
-	control,
-	name,
+const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 	disabled,
-	label,
-}: SeasonCodeSelectorProps) {
-	return (
-		// Render the form field with the provided props
-		<FormProvider {...useFormContext()}>
-			<FormField
-				control={control}
-				name={name}
-				render={() => (
-					<FormItem>
-						<FormLabel>{label}</FormLabel>
-						<FormControl>
-							<SeasonCodeSelectorContent
-								disabled={disabled}
-								name={name}
-							/>
-						</FormControl>
-						<FormMessage />
-					</FormItem>
-				)}
-			/>
-		</FormProvider>
-	);
-}
-
-// SeasonCodeSelectorContent component definition
-const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
-	disabled,
-	name,
+	handleSelect,
+	setDisabled
 }) => {
-	// Use form context to get watch and setValue functions
-	const { watch, setValue } = useFormContext<FormValues>();
-	// Watch the memberType field value
-	const seasonCode = watch(name); // Use the dynamic name prop
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
 	// State to store the fetched season codes
 	const [seasonCodes, setSeasonCodes] = useState<
 		{ value: string; label: string }[]
 	>([]);
+	// State to store the selected season code
+	const [selectedSeasonCode, setSelectedSeasonCode] = useState<string | null>(null);
 
 	// Fetch season codes from the API endpoint
 	useEffect(() => {
@@ -109,12 +52,17 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 						label: type.seasonCode + " - " + type.desc,
 					}))
 				);
+				setSelectedSeasonCode(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
+				handleSelect(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
+				if (data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)) {
+					setDisabled(false);
+				}
 			} catch (error) {
-				console.error("Failed to fetch member types", error);
+				console.error("Failed to fetch season codes", error);
 			}
 		}
 		loadSeasonCodes();
-	}, []);
+	}, [setDisabled, handleSelect]);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -128,9 +76,9 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 							className="w-[200px] justify-between"
 							disabled={disabled} // Disable the button if the prop is true
 						>
-							{seasonCode
+							{selectedSeasonCode
 								? seasonCodes.find(
-										(type) => type.value === seasonCode
+										(type) => type.value === selectedSeasonCode
 								  )?.label
 								: "Select a season code..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -141,7 +89,7 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
-							<CommandInput placeholder="Search member type..." />
+							<CommandInput placeholder="Search season code..." />
 							<CommandEmpty>No season code found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
@@ -150,7 +98,8 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 											key={type.value}
 											value={type.value}
 											onSelect={() => {
-												setValue(name, type.value); // Use the dynamic name prop
+												setSelectedSeasonCode(type.value);
+												handleSelect(type.value);
 												setOpen(false);
 											}}
 											className="hover:bg-gray-200"
@@ -158,7 +107,7 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 											<Check
 												className={cn(
 													"mr-2 h-4 w-4",
-													type.value === seasonCode
+													type.value === selectedSeasonCode
 														? "opacity-100"
 														: "opacity-0"
 												)}
@@ -175,3 +124,5 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 		</div>
 	);
 };
+
+export default SeasonCodeSelector;
