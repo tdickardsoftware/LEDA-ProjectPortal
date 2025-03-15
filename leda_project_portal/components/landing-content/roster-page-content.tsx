@@ -31,6 +31,7 @@ import {
 import { Separator } from "../ui/separator";
 import { rosterRoute } from "@/lib/apiRoutes";
 import CopyRosterForm from "../forms/activities/copy-roster-form";
+import { Spinner } from "../ui/skeleton";
 
 export default function RostersContent() {
 	// State variables
@@ -86,11 +87,14 @@ export default function RostersContent() {
 	}>({});
 	const [update, setUpdate] = useState(false);
 	const [deleteRosterAlertOpen, setDeleteRosterAlertOpen] = useState(false);
+	const [loading, setLoading] = useState(false);
 
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(async (value: string) => {
+		if (value === seasonCode) return;
 		setSeasonCode(value);
-
+		
+		setLoading(true);
 		const result = await fetch(`${rosterRoute}?seasonCode=${value}`, {
 			method: "GET",
 			headers: {
@@ -98,6 +102,7 @@ export default function RostersContent() {
 			},
 		});
 		if (result.status === 200) {
+			setLoading(true);
 			const data = await result.json();
 			if (data) {
 				const roster = data;
@@ -109,16 +114,18 @@ export default function RostersContent() {
 				setInitialData(fetchedData);
 				setUpdate(true);
 				setHasChanges(false); // Reset hasChanges when loading new data
+				
 			}
 		} else {
 			setInitialData({});
 			setUpdate(false);
 			setDivisionsData({});
 			setHasChanges(false); // Reset hasChanges when clearing data
+			
 		}
-
+		setLoading(false);
 		setDisabled(false);
-	}, []);
+	}, [seasonCode]);
 
 	// Handle updating the roster to the database
 	const handleUpdateRoster = useCallback(async () => {
@@ -511,360 +518,362 @@ export default function RostersContent() {
 		}
 	}, [seasonCode]);
 
-	return (
-		<div className="flex flex-col max-w-[65vw]">
-			<div className="flex justify-between">
-				<SeasonCodeSelector
-					disabled={false}
-					handleSelect={handleSeasonCodeSelect}
-					setDisabled={setDisabled}
-				/>
-				<div className="flex gap-4">
-					{handleAddDivision()}
-					{update && (
-						<Button
-							variant="outline"
-							onClick={() => setDeleteRosterAlertOpen(true)}
-						>
-							Delete Roster
-						</Button>
-					)}
-					{handleCopyRoster()}
+	return !loading ? (
+			<div className="flex flex-col max-w-[65vw]">
+				<div className="flex justify-between">
+					<SeasonCodeSelector
+						disabled={false}
+						handleSelect={handleSeasonCodeSelect}
+						setDisabled={setDisabled}
+					/>
+					<div className="flex gap-4">
+						{handleAddDivision()}
+						{update && (
+							<Button
+								variant="outline"
+								onClick={() => setDeleteRosterAlertOpen(true)}
+							>
+								Delete Roster
+							</Button>
+						)}
+						{handleCopyRoster()}
+					</div>
 				</div>
-			</div>
-			<AlertDialog
-				open={deleteRosterAlertOpen}
-				onOpenChange={setDeleteRosterAlertOpen}
-			>
-				<AlertDialogTrigger asChild>
-					<div></div>
-				</AlertDialogTrigger>
-				<AlertDialogContent className="bg-white text-black">
-					<AlertDialogHeader>
-						<AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-						<AlertDialogDescription>
-							Are you sure you want to delete this roster?
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<Button onClick={() => setDeleteRosterAlertOpen(false)}>
-							Cancel
-						</Button>
-						<Button
-							onClick={() => {
-								handleDeleteRoster();
-								setDeleteRosterAlertOpen(false);
-							}}
-							variant="destructive"
-						>
-							Delete
-						</Button>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
-			{Object.keys(divisionsData).length > 0 && (
-				<Accordion
-					type="single"
-					collapsible
-					className="w-full mt-4"
-					defaultValue="divisions"
+				<AlertDialog
+					open={deleteRosterAlertOpen}
+					onOpenChange={setDeleteRosterAlertOpen}
 				>
-					{Object.keys(divisionsData).map((division, index) => (
-						<AccordionItem key={index} value={`divisions`}>
-							<div className="flex justify-between items-center">
-								<AccordionTrigger>{division}</AccordionTrigger>
-								<AlertDialog
-									open={divisionAlertOpen}
-									onOpenChange={setDivisionAlertOpen}
-								>
-									<AlertDialogTrigger asChild>
-										<div
-											onClick={() => {
-												confirmRemoveDivision(division);
-												setDivisionAlertOpen(true);
-											}}
-											className="cursor-pointer"
-										>
-											<X className="text-red-500" />
-										</div>
-									</AlertDialogTrigger>
-									<AlertDialogContent className="bg-white text-black">
-										<AlertDialogHeader>
-											<AlertDialogTitle>
-												Confirm Deletion
-											</AlertDialogTitle>
-											<AlertDialogDescription>
-												Are you sure you want to delete
-												this division?
-											</AlertDialogDescription>
-										</AlertDialogHeader>
-										<AlertDialogFooter>
-											<Button
-												onClick={() =>
-													setDivisionAlertOpen(false)
-												}
-											>
-												Cancel
-											</Button>
-											<Button
-												onClick={() => {
-													handleConfirmRemoveDivision();
-													setDivisionAlertOpen(false);
-												}}
-												variant="destructive"
-											>
-												Delete
-											</Button>
-										</AlertDialogFooter>
-									</AlertDialogContent>
-								</AlertDialog>
-							</div>
-							<AccordionContent>
-								<div className="flex justify-end">
-									<Button
-										onClick={() =>
-											handleAddSubdivision(division)
-										}
-										variant={"outline"}
+					<AlertDialogTrigger asChild>
+						<div></div>
+					</AlertDialogTrigger>
+					<AlertDialogContent className="bg-white text-black">
+						<AlertDialogHeader>
+							<AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+							<AlertDialogDescription>
+								Are you sure you want to delete this roster?
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<Button onClick={() => setDeleteRosterAlertOpen(false)}>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => {
+									handleDeleteRoster();
+									setDeleteRosterAlertOpen(false);
+								}}
+								variant="destructive"
+							>
+								Delete
+							</Button>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+				{Object.keys(divisionsData).length > 0 && (
+					<Accordion
+						type="single"
+						collapsible
+						className="w-full mt-4"
+						defaultValue="divisions"
+					>
+						{Object.keys(divisionsData).map((division, index) => (
+							<AccordionItem key={index} value={`divisions`}>
+								<div className="flex justify-between items-center">
+									<AccordionTrigger>{division}</AccordionTrigger>
+									<AlertDialog
+										open={divisionAlertOpen}
+										onOpenChange={setDivisionAlertOpen}
 									>
-										Add Subdivision
-									</Button>
-								</div>
-								<Separator
-									orientation="horizontal"
-									className="my-2 bg-gray-300"
-								/>
-								<Accordion
-									type="single"
-									collapsible
-									className="w-full mt-2"
-									defaultValue="subdivisions"
-								>
-									{Object.keys(
-										divisionsData[division].subdivisions
-									).map((subdivision, subIndex) => (
-										<AccordionItem
-											key={subIndex}
-											value={`subdivisions`}
-											className="border-b border-gray-200"
-										>
-											<div className="flex justify-between items-center">
-												<AccordionTrigger>
-													{subdivision}
-												</AccordionTrigger>
-												<AlertDialog
-													open={subdivisionAlertOpen}
-													onOpenChange={
-														setSubdivisionAlertOpen
+										<AlertDialogTrigger asChild>
+											<div
+												onClick={() => {
+													confirmRemoveDivision(division);
+													setDivisionAlertOpen(true);
+												}}
+												className="cursor-pointer"
+											>
+												<X className="text-red-500" />
+											</div>
+										</AlertDialogTrigger>
+										<AlertDialogContent className="bg-white text-black">
+											<AlertDialogHeader>
+												<AlertDialogTitle>
+													Confirm Deletion
+												</AlertDialogTitle>
+												<AlertDialogDescription>
+													Are you sure you want to delete
+													this division?
+												</AlertDialogDescription>
+											</AlertDialogHeader>
+											<AlertDialogFooter>
+												<Button
+													onClick={() =>
+														setDivisionAlertOpen(false)
 													}
 												>
-													<AlertDialogTrigger asChild>
-														<div
-															onClick={() => {
-																confirmRemoveSubdivision(
-																	division,
-																	subdivision
-																);
-																setSubdivisionAlertOpen(
-																	true
-																);
-															}}
-															className="cursor-pointer"
-														>
-															<X className="text-red-500" />
-														</div>
-													</AlertDialogTrigger>
-													<AlertDialogContent className="bg-white text-black">
-														<AlertDialogHeader>
-															<AlertDialogTitle>
-																Confirm Deletion
-															</AlertDialogTitle>
-															<AlertDialogDescription>
-																Are you sure you
-																want to delete
-																this
-																subdivision?
-															</AlertDialogDescription>
-														</AlertDialogHeader>
-														<AlertDialogFooter>
-															<Button
-																onClick={() =>
-																	setSubdivisionAlertOpen(
-																		false
-																	)
-																}
-															>
-																Cancel
-															</Button>
-															<Button
+													Cancel
+												</Button>
+												<Button
+													onClick={() => {
+														handleConfirmRemoveDivision();
+														setDivisionAlertOpen(false);
+													}}
+													variant="destructive"
+												>
+													Delete
+												</Button>
+											</AlertDialogFooter>
+										</AlertDialogContent>
+									</AlertDialog>
+								</div>
+								<AccordionContent>
+									<div className="flex justify-end">
+										<Button
+											onClick={() =>
+												handleAddSubdivision(division)
+											}
+											variant={"outline"}
+										>
+											Add Subdivision
+										</Button>
+									</div>
+									<Separator
+										orientation="horizontal"
+										className="my-2 bg-gray-300"
+									/>
+									<Accordion
+										type="single"
+										collapsible
+										className="w-full mt-2"
+										defaultValue="subdivisions"
+									>
+										{Object.keys(
+											divisionsData[division].subdivisions
+										).map((subdivision, subIndex) => (
+											<AccordionItem
+												key={subIndex}
+												value={`subdivisions`}
+												className="border-b border-gray-200"
+											>
+												<div className="flex justify-between items-center">
+													<AccordionTrigger>
+														{subdivision}
+													</AccordionTrigger>
+													<AlertDialog
+														open={subdivisionAlertOpen}
+														onOpenChange={
+															setSubdivisionAlertOpen
+														}
+													>
+														<AlertDialogTrigger asChild>
+															<div
 																onClick={() => {
-																	handleConfirmRemoveSubdivision();
+																	confirmRemoveSubdivision(
+																		division,
+																		subdivision
+																	);
 																	setSubdivisionAlertOpen(
-																		false
+																		true
 																	);
 																}}
-																variant="destructive"
+																className="cursor-pointer"
 															>
-																Delete
-															</Button>
-														</AlertDialogFooter>
-													</AlertDialogContent>
-												</AlertDialog>
-											</div>
-											<AccordionContent>
-												<div className="flex justify-end">
-													{handleAddTeam(
-														division,
-														subdivision
-													)}
-												</div>
-												<ul>
-													{Object.keys(
-														divisionsData[division]
-															.subdivisions[
-															subdivision
-														]
-													).map((team, teamIndex) => (
-														<li key={teamIndex}>
-															<div className="flex justify-start items-center">
-																{team} -{" "}
-																{
-																	divisionsData[
-																		division
-																	]
-																		.subdivisions[
-																		subdivision
-																	][team]
-																		.teamName
-																}
-																<AlertDialog
-																	open={
-																		teamAlertOpen
-																	}
-																	onOpenChange={
-																		setTeamAlertOpen
+																<X className="text-red-500" />
+															</div>
+														</AlertDialogTrigger>
+														<AlertDialogContent className="bg-white text-black">
+															<AlertDialogHeader>
+																<AlertDialogTitle>
+																	Confirm Deletion
+																</AlertDialogTitle>
+																<AlertDialogDescription>
+																	Are you sure you
+																	want to delete
+																	this
+																	subdivision?
+																</AlertDialogDescription>
+															</AlertDialogHeader>
+															<AlertDialogFooter>
+																<Button
+																	onClick={() =>
+																		setSubdivisionAlertOpen(
+																			false
+																		)
 																	}
 																>
-																	<AlertDialogTrigger
-																		asChild
+																	Cancel
+																</Button>
+																<Button
+																	onClick={() => {
+																		handleConfirmRemoveSubdivision();
+																		setSubdivisionAlertOpen(
+																			false
+																		);
+																	}}
+																	variant="destructive"
+																>
+																	Delete
+																</Button>
+															</AlertDialogFooter>
+														</AlertDialogContent>
+													</AlertDialog>
+												</div>
+												<AccordionContent>
+													<div className="flex justify-end">
+														{handleAddTeam(
+															division,
+															subdivision
+														)}
+													</div>
+													<ul>
+														{Object.keys(
+															divisionsData[division]
+																.subdivisions[
+																subdivision
+															]
+														).map((team, teamIndex) => (
+															<li key={teamIndex}>
+																<div className="flex justify-start items-center">
+																	{team} -{" "}
+																	{
+																		divisionsData[
+																			division
+																		]
+																			.subdivisions[
+																			subdivision
+																		][team]
+																			.teamName
+																	}
+																	<AlertDialog
+																		open={
+																			teamAlertOpen
+																		}
+																		onOpenChange={
+																			setTeamAlertOpen
+																		}
 																	>
-																		<div
-																			onClick={() => {
-																				confirmRemoveTeam(
-																					division,
-																					subdivision,
-																					team,
-																					divisionsData[
-																						division
-																					]
-																						.subdivisions[
-																						subdivision
-																					][
-																						team
-																					]
-																						.teamId
-																				);
-																				setTeamAlertOpen(
-																					true
-																				);
-																			}}
-																			className="cursor-pointer"
+																		<AlertDialogTrigger
+																			asChild
 																		>
-																			<X className="text-red-500" />
-																		</div>
-																	</AlertDialogTrigger>
-																	<AlertDialogContent className="bg-white text-black">
-																		<AlertDialogHeader>
-																			<AlertDialogTitle>
-																				Confirm
-																				Deletion
-																			</AlertDialogTitle>
-																			<AlertDialogDescription>
-																				Are
-																				you
-																				sure
-																				you
-																				want
-																				to
-																				delete
-																				this
-																				team?
-																			</AlertDialogDescription>
-																		</AlertDialogHeader>
-																		<AlertDialogFooter>
-																			<Button
-																				onClick={() =>
-																					setTeamAlertOpen(
-																						false
-																					)
-																				}
-																			>
-																				Cancel
-																			</Button>
-																			<Button
+																			<div
 																				onClick={() => {
-																					handleConfirmRemoveTeam();
+																					confirmRemoveTeam(
+																						division,
+																						subdivision,
+																						team,
+																						divisionsData[
+																							division
+																						]
+																							.subdivisions[
+																							subdivision
+																						][
+																							team
+																						]
+																							.teamId
+																					);
 																					setTeamAlertOpen(
-																						false
+																						true
 																					);
 																				}}
-																				variant="destructive"
+																				className="cursor-pointer"
 																			>
-																				Delete
-																			</Button>
-																		</AlertDialogFooter>
-																	</AlertDialogContent>
-																</AlertDialog>
-															</div>
-														</li>
-													))}
-												</ul>
-											</AccordionContent>
-										</AccordionItem>
-									))}
-								</Accordion>
-							</AccordionContent>
-						</AccordionItem>
-					))}
-				</Accordion>
-			)}
-			{!update && (
-				<div className="flex justify-center">
-					<Button
-						className="mt-4"
-						variant="outline"
-						disabled={!hasChanges}
-						onClick={() => handleSaveRoster()}
-					>
-						Save Roster
-					</Button>
-				</div>
-			)}
-			{update && (
-				<div className="flex justify-center gap-4">
-					<Button
-						className="mt-4"
-						variant="outline"
-						disabled={!hasChanges}
-						onClick={() => handleUpdateRoster()}
-					>
-						Update Roster
-					</Button>
-					<Button
-						className="mt-4"
-						variant="outline"
-						disabled={!hasChanges}
-						onClick={() => {
-							setDivisionsData(
-								JSON.parse(JSON.stringify(initialData))
-							);
-							setHasChanges(false); // Reset hasChanges when reverting changes
-						}}
-					>
-						Reset Changes
-					</Button>
-				</div>
-			)}
-		</div>
+																				<X className="text-red-500" />
+																			</div>
+																		</AlertDialogTrigger>
+																		<AlertDialogContent className="bg-white text-black">
+																			<AlertDialogHeader>
+																				<AlertDialogTitle>
+																					Confirm
+																					Deletion
+																				</AlertDialogTitle>
+																				<AlertDialogDescription>
+																					Are
+																					you
+																					sure
+																					you
+																					want
+																					to
+																					delete
+																					this
+																					team?
+																				</AlertDialogDescription>
+																			</AlertDialogHeader>
+																			<AlertDialogFooter>
+																				<Button
+																					onClick={() =>
+																						setTeamAlertOpen(
+																							false
+																						)
+																					}
+																				>
+																					Cancel
+																				</Button>
+																				<Button
+																					onClick={() => {
+																						handleConfirmRemoveTeam();
+																						setTeamAlertOpen(
+																							false
+																						);
+																					}}
+																					variant="destructive"
+																				>
+																					Delete
+																				</Button>
+																			</AlertDialogFooter>
+																		</AlertDialogContent>
+																	</AlertDialog>
+																</div>
+															</li>
+														))}
+													</ul>
+												</AccordionContent>
+											</AccordionItem>
+										))}
+									</Accordion>
+								</AccordionContent>
+							</AccordionItem>
+						))}
+					</Accordion>
+				)}
+				{!update && (
+					<div className="flex justify-center">
+						<Button
+							className="mt-4"
+							variant="outline"
+							disabled={!hasChanges}
+							onClick={() => handleSaveRoster()}
+						>
+							Save Roster
+						</Button>
+					</div>
+				)}
+				{update && (
+					<div className="flex justify-center gap-4">
+						<Button
+							className="mt-4"
+							variant="outline"
+							disabled={!hasChanges}
+							onClick={() => handleUpdateRoster()}
+						>
+							Update Roster
+						</Button>
+						<Button
+							className="mt-4"
+							variant="outline"
+							disabled={!hasChanges}
+							onClick={() => {
+								setDivisionsData(
+									JSON.parse(JSON.stringify(initialData))
+								);
+								setHasChanges(false); // Reset hasChanges when reverting changes
+							}}
+						>
+							Reset Changes
+						</Button>
+					</div>
+				)}
+			</div>
+	) : (
+		<Spinner />
 	);
 }
