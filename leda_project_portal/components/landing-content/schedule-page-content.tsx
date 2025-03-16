@@ -35,6 +35,7 @@ export default function ScheduleContent() {
     const [currentSeason, setCurrentSeason] = useState<boolean>(true);
     const [gameDates, setGameDates] = useState<Record<string, string>>({});
 
+
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(async (value: string) => {
 		if (value === seasonCode) return;
@@ -103,7 +104,7 @@ export default function ScheduleContent() {
                             defaultValue={`division-${index}`}
                         >
                             <AccordionItem value={`division-${index}`}>
-                                <AccordionTrigger>{division}</AccordionTrigger>
+                                <AccordionTrigger className="underline">{division}</AccordionTrigger>
                                 <AccordionContent>
                                     {Object.keys(divisionsData[division].subdivisions).map((subdivision, subIndex) => (
                                         <Accordion
