@@ -16,7 +16,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import SchedulingAddMatchupForm from "./forms/activities/schedule-add-matchup-form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SubdivisionSchedulerProps {
 	teams: Record<
@@ -47,15 +47,50 @@ interface SubdivisionSchedulerProps {
 			>
 		>
 	>;
+	setEnabledSaveButton: (value: boolean) => void;
+	handleSaveData: (updatedMatchData: Record<
+		string,
+		Record<
+			string,
+			Record<
+				string,
+				{
+					teamName: string;
+					teamId: string;
+					matchesData: Record<
+						string,
+						{
+							matchDate: string;
+							matchTime: string;
+							home: boolean;
+							opposingTeamId: string;
+							opposingTeamLetter: string;
+						}
+					>;
+				}
+			>
+		>
+	>) => void;
 }
 
 export function SubdivisionScheduler({
 	teams,
 	gameDates,
 	matchData,
+	setEnabledSaveButton,
+	handleSaveData,
 }: SubdivisionSchedulerProps) {
 
 	const [MatchData, setMatchData] = useState(matchData);
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const [initialMatchData, setInitialMatchData] = useState(matchData);
+	
+	// Monitor for changes in match data
+	useEffect(() => {
+		const hasChanged = JSON.stringify(MatchData) !== JSON.stringify(initialMatchData);
+		setEnabledSaveButton(hasChanged);
+	}, [MatchData, initialMatchData, setEnabledSaveButton]);
+	
 	// Convert teams object to array for mapping
 	const teamEntries = Object.entries(teams);
 
@@ -75,7 +110,7 @@ export function SubdivisionScheduler({
 		const period = hours >= 12 ? 'PM' : 'AM';
 		const hours12 = hours % 12 || 12; // Convert 0 to 12
 		
-		return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+		return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`; 
 	};
 	
 	// Find matchup data for a team on a specific game date
@@ -101,6 +136,7 @@ export function SubdivisionScheduler({
 		}
 		return "Unknown Team";
 	};
+	
 
 	const handleAddMatchup = (
 		selectedTeamLetter: string, teamId: string, gameTitle: string, date: string, matchTime?: string, home?: boolean, opposingTeamId?: string, opposingTeamLetter?: string
@@ -154,6 +190,8 @@ export function SubdivisionScheduler({
 				
 				// Update the state with the new data that includes all previous matchups
 				setMatchData(updatedMatchData);
+				handleSaveData(updatedMatchData);
+				setEnabledSaveButton(true); // Enable save button when data changes
 				
 				console.log("Updated match data:", updatedMatchData);
 				return;
@@ -292,6 +330,8 @@ export function SubdivisionScheduler({
 					</TableBody>
 				</Table>
 			</div>
+			
+			
 		</div>
 	);
 }
