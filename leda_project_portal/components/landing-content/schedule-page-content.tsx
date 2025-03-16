@@ -31,10 +31,31 @@ export default function ScheduleContent() {
 		};
 	}>({});
 	const [loading, setLoading] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [disabled, setDisabled] = useState<boolean>(true);
     const [currentSeason, setCurrentSeason] = useState<boolean>(true);
     const [gameDates, setGameDates] = useState<Record<string, string>>({});
-
+    const [matchData, setMatchData] = useState<{
+        [key:string]: {
+                [key:string]: {
+                        [key:string]: {
+                            teamName: string;
+                            teamId: string;
+                            matchesData: {
+                                [key: string]: {
+                                    matchDate: string;
+                                    matchTime: string;
+                                    home: boolean;
+                                    opposingTeamId: string;
+                                    opposingTeamLetter: string;
+                                },
+                                
+                            }
+                        }
+                    }
+                
+            }
+    }>({});
 
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(async (value: string) => {
@@ -69,6 +90,23 @@ export default function ScheduleContent() {
                         setGameDates(gameDatesData.dates);
                     }
                 }
+
+                // Populate matchData
+                const newMatchData: Record<string, Record<string, Record<string, { teamName: string; teamId: string; matchesData: Record<string, { matchDate: string; matchTime: string; home: boolean; opposingTeamId: string; opposingTeamLetter: string }> }>>> = {};
+                Object.keys(fetchedData).forEach(division => {
+                    newMatchData[division] = {};
+                    Object.keys(fetchedData[division].subdivisions).forEach(subdivision => {
+                        newMatchData[division][subdivision] = {};
+                        Object.keys(fetchedData[division].subdivisions[subdivision]).forEach(teamLetter => {
+                            newMatchData[division][subdivision][teamLetter] = {
+                                teamName: fetchedData[division].subdivisions[subdivision][teamLetter].teamName,
+                                teamId: fetchedData[division].subdivisions[subdivision][teamLetter].teamId,
+                                matchesData: {}
+                            };
+                        });
+                    });
+                });
+                setMatchData(newMatchData);
 			}
 		} else {
 			setDivisionsData({});
@@ -118,7 +156,7 @@ export default function ScheduleContent() {
                                                 <AccordionTrigger className="underline">{subdivision}</AccordionTrigger>
                                                 <AccordionContent>
                                                     {Object.keys(divisionsData[division].subdivisions[subdivision]).length > 0 && (
-                                                        <SubdivisionScheduler teams={divisionsData[division].subdivisions[subdivision]} gameDates={gameDates} />
+                                                        <SubdivisionScheduler teams={divisionsData[division].subdivisions[subdivision]} gameDates={gameDates} matchData={matchData}/>
                                                     )}
                                                 </AccordionContent>
                                             </AccordionItem>
