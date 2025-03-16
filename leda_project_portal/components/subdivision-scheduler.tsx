@@ -7,7 +7,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Plus, Pencil, X } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -15,7 +15,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import SchedulingAddMatchupForm from "./forms/activities/schedule-add-matchup-form";
+import SchedulingAddMatchupForm from "@/components/forms/activities/schedule-add-matchup-form";
 import { useState, useEffect } from "react";
 import {
 	AlertDialog,
@@ -27,6 +27,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import SchedulingEditMatchupForm from "@/components/forms/activities/schedule-edit-matchup-form";
 
 interface SubdivisionSchedulerProps {
 	teams: Record<
@@ -267,6 +268,94 @@ export function SubdivisionScheduler({
 		setDeletingMatchup(null);
 	};
 
+	// Add state for edit dialog
+	const [editDialogOpen, setEditDialogOpen] = useState(false);
+	const [editingMatchup, setEditingMatchup] = useState<{ 
+		teamLetter: string, 
+		gameTitle: string, 
+		matchData: {
+			matchDate: string;
+			matchTime: string;
+			home: boolean;
+			opposingTeamId: string;
+			opposingTeamLetter: string;
+		} 
+	} | null>(null);
+	
+	// Handle opening the edit dialog
+	const handleEditMatchupClick = (teamLetter: string, gameTitle: string, matchup: {
+		matchDate: string;
+		matchTime: string;
+		home: boolean;
+		opposingTeamId: string;
+		opposingTeamLetter: string;
+	}) => {
+		setEditingMatchup({
+			teamLetter,
+			gameTitle,
+			matchData: { ...matchup }
+		});
+		setEditDialogOpen(true);
+	};
+	
+	// Handle the actual editing of the matchup
+	const handleEditMatchup = (
+		selectedTeamLetter: string, 
+		teamId: string, 
+		gameTitle: string, 
+		date: string, 
+		matchTime: string, 
+		home: boolean, 
+		opposingTeamId: string, 
+		opposingTeamLetter: string
+	) => {
+		// Clone the current state to avoid direct mutation
+		const updatedMatchData = JSON.parse(JSON.stringify(MatchData));
+		
+		// Find both teams in the matchData structure
+		for (const division in updatedMatchData) {
+			for (const subdivision in updatedMatchData[division]) {
+				const selectedTeam = updatedMatchData[division][subdivision][selectedTeamLetter];
+				const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
+				
+				// Skip if either team is not found in this subdivision
+				if (!selectedTeam || !opposingTeam) continue;
+				
+				// Initialize matchesData if it doesn't exist (should be there but just in case)
+				if (!selectedTeam.matchesData) selectedTeam.matchesData = {};
+				if (!opposingTeam.matchesData) opposingTeam.matchesData = {};
+				
+				// Update the selected team's matchup data
+				selectedTeam.matchesData[gameTitle] = {
+					matchDate: date,
+					matchTime: matchTime,
+					home: home,
+					opposingTeamId: opposingTeamId,
+					opposingTeamLetter: opposingTeamLetter
+				};
+				
+				// Update the opposing team's matchup data with the inverse home/away status
+				opposingTeam.matchesData[gameTitle] = {
+					matchDate: date,
+					matchTime: matchTime,
+					home: !home,
+					opposingTeamId: teamId,
+					opposingTeamLetter: selectedTeamLetter
+				};
+				
+				// Update state and call parent handlers
+				setMatchData(updatedMatchData);
+				handleSaveData(updatedMatchData);
+				setEnabledSaveButton(true);
+				
+				console.log("Edited matchup for", selectedTeamLetter, "and", opposingTeamLetter, "on", gameTitle);
+				return;
+			}
+		}
+		
+		console.log("Failed to edit matchup - teams not found in the same subdivision");
+	};
+
 	return (
 		<div className="rounded-md border shadow-sm">
 			{/* Add Alert Dialog for deletion confirmation */}
@@ -284,6 +373,27 @@ export function SubdivisionScheduler({
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+			
+			{/* Add Edit Dialog */}
+			<Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+				<DialogContent className="bg-white">
+					<DialogHeader>
+						<DialogTitle>Edit Matchup</DialogTitle>
+					</DialogHeader>
+					{editingMatchup && (
+						<SchedulingEditMatchupForm 
+							teamEntries={teamEntries}
+							handleEditMatchup={handleEditMatchup}
+							setOpen={setEditDialogOpen}
+							teamId={teams[editingMatchup.teamLetter].teamId}
+							gameTitle={editingMatchup.gameTitle}
+							date={gameDateEntries.filter(([title]) => title === editingMatchup.gameTitle)[0][1]}
+							selectedTeamLetter={editingMatchup.teamLetter}
+							initialValues={editingMatchup.matchData}
+						/>
+					)}
+				</DialogContent>
+			</Dialog>
 			
 			<div className="overflow-auto">
 				<Table className="table-auto">
@@ -373,6 +483,7 @@ export function SubdivisionScheduler({
 																size="sm" 
 																className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
 																title="Edit matchup"
+																onClick={() => handleEditMatchupClick(key, gameTitle, matchup)}
 															>
 																<Pencil className="h-4 w-4 text-blue-600" />
 															</Button>
