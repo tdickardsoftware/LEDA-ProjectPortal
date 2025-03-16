@@ -6,7 +6,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, X } from "lucide-react";
 import { Button } from "./ui/button";
 import {
 	Dialog,
@@ -17,6 +17,16 @@ import {
 } from "@/components/ui/dialog";
 import SchedulingAddMatchupForm from "./forms/activities/schedule-add-matchup-form";
 import { useState, useEffect } from "react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SubdivisionSchedulerProps {
 	teams: Record<
@@ -203,8 +213,78 @@ export function SubdivisionScheduler({
 		console.log(matchData);
 	};
 
+	// Add state for delete confirmation dialog
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [deletingMatchup, setDeletingMatchup] = useState<{ teamLetter: string, gameTitle: string } | null>(null);
+	
+	// Find and delete matchup for both teams involved
+	const handleDeleteMatchup = (teamLetter: string, gameTitle: string) => {
+		// Open confirmation dialog and set the matchup to be deleted
+		setDeletingMatchup({ teamLetter, gameTitle });
+		setDeleteDialogOpen(true);
+	};
+	
+	// Perform actual deletion after confirmation
+	const confirmDeleteMatchup = () => {
+		if (!deletingMatchup) return;
+		
+		const { teamLetter, gameTitle } = deletingMatchup;
+		
+		// Clone current state to avoid direct mutation
+		const updatedMatchData = JSON.parse(JSON.stringify(MatchData));
+		
+		// Find the team and its matchup
+		for (const division in updatedMatchData) {
+			for (const subdivision in updatedMatchData[division]) {
+				const team = updatedMatchData[division][subdivision][teamLetter];
+				
+				if (team && team.matchesData && team.matchesData[gameTitle]) {
+					// Get the opposing team's information before deletion
+					const opposingTeamLetter = team.matchesData[gameTitle].opposingTeamLetter;
+					
+					// Delete matchup from current team
+					delete team.matchesData[gameTitle];
+					
+					// Also delete the matchup from the opposing team
+					const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
+					if (opposingTeam && opposingTeam.matchesData && opposingTeam.matchesData[gameTitle]) {
+						delete opposingTeam.matchesData[gameTitle];
+					}
+					
+					// Update state and save
+					setMatchData(updatedMatchData);
+					handleSaveData(updatedMatchData);
+					setEnabledSaveButton(true);
+					
+					console.log("Deleted matchup for", teamLetter, "and", opposingTeamLetter, "on", gameTitle);
+					break;
+				}
+			}
+		}
+		
+		// Reset deletion state
+		setDeleteDialogOpen(false);
+		setDeletingMatchup(null);
+	};
+
 	return (
 		<div className="rounded-md border shadow-sm">
+			{/* Add Alert Dialog for deletion confirmation */}
+			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+				<AlertDialogContent className="bg-white">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+						<AlertDialogDescription>
+							Are you sure you want to delete this matchup? This action will remove the scheduled match for both teams involved.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel onClick={() => setDeletingMatchup(null)}>Cancel</AlertDialogCancel>
+						<AlertDialogAction onClick={confirmDeleteMatchup} className="bg-red-600 hover:bg-red-700 text-white">Delete</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+			
 			<div className="overflow-auto">
 				<Table className="table-auto">
 					<TableHeader>
@@ -255,36 +335,57 @@ export function SubdivisionScheduler({
 										>
 											<div className="flex items-center justify-center">
 												{matchup ? (
-													<div className="text-sm">
-														{matchup.home ? (
-															<span className="font-medium text-center">
-																<div className="border border-gray-300 p-2 rounded-md">
-																	<div>
-																		{'VS'} 
+													<div className="text-sm relative group">
+														<div className="transition-all duration-200 group-hover:blur-sm">
+															{matchup.home ? (
+																<span className="font-medium text-center">
+																	<div className="border border-gray-300 p-2 rounded-md">
+																		<div>
+																			{'VS'} 
+																		</div>
+																		<div>
+																			{getTeamNameById(matchup.opposingTeamId)}
+																		</div>
+																		<div>
+																			{convertTo12HourFormat(matchup.matchTime)}
+																		</div>
 																	</div>
-																	<div>
-																		{getTeamNameById(matchup.opposingTeamId)}
+																</span>
+															) : (
+																<span className="font-medium text-center">
+																	<div className="border border-gray-300 p-2 rounded-md">
+																		<div>
+																			{'@'}
+																		</div>
+																		<div>
+																			{getTeamNameById(matchup.opposingTeamId)}
+																		</div>
+																		<div>
+																			{convertTo12HourFormat(matchup.matchTime)}
+																		</div> 
 																	</div>
-																	<div>
-																		{convertTo12HourFormat(matchup.matchTime)}
-																	</div>
-																</div>
-															</span>
-														) : (
-															<span className="font-medium text-center">
-																<div className="border border-gray-300 p-2 rounded-md">
-																	<div>
-																		{'@'}
-																	</div>
-																	<div>
-																		{getTeamNameById(matchup.opposingTeamId)}
-																	</div>
-																	<div>
-																		{convertTo12HourFormat(matchup.matchTime)}
-																	</div> 
-																</div>
-															</span>
-														)}
+																</span>
+															)}
+														</div>
+														<div className="absolute inset-0 hidden group-hover:flex items-center justify-center gap-4">
+															<Button 
+																variant="ghost" 
+																size="sm" 
+																className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																title="Edit matchup"
+															>
+																<Pencil className="h-4 w-4 text-blue-600" />
+															</Button>
+															<Button 
+																variant="ghost" 
+																size="sm" 
+																className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																title="Remove matchup"
+																onClick={() => handleDeleteMatchup(key, gameTitle)}
+															>
+																<X className="h-4 w-4 text-red-600" />
+															</Button>
+														</div>
 													</div>
 												) : (
 													<Dialog>
