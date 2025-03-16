@@ -36,6 +36,8 @@ export const trailsDateRoute = "/api/activities/trails/trailsDates";
 export const trailsRoute = "/api/activities/trails";
 // Define route for roster not on the serverside
 export const rosterRoute = "/api/activities/roster";
+// Define route for schedule not on the serverside
+export const  scheduleRoute = "/api/activities/schedule";
 
 //
 // Server Routes
@@ -69,3 +71,5 @@ export const trailsDateRouteServer = "http://" + process.env.VERCEL_URL + trails
 export const trailsRouteServer = "http://" + process.env.VERCEL_URL + trailsRoute;
 // Define route for roster api
 export const rosterRouteServer = "http://" + process.env.VERCEL_URL + rosterRoute;
+// Define route for schedule api
+export const scheduleRouteServer = "http://" + process.env.VERCEL_URL + scheduleRoute;

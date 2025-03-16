@@ -180,3 +180,10 @@ export type Roster = {
 	seasonCode: string;
 	teamInformation: JSON;
 }
+//
+// Define type to identify the shape of our data from postgres for a Schedule
+//
+export type Schedule = {
+	seasonCode: string;
+	scheduleData: JSON;
+}
