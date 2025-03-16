@@ -10,6 +10,8 @@ import {
 } from "../ui/accordion";
 import { rosterRoute } from "@/lib/apiRoutes";
 import { Spinner } from "../ui/skeleton";
+import { Label } from "../ui/label";
+import { Checkbox } from "../ui/checkbox";
 
 export default function ScheduleContent() {
 	// State variables
@@ -29,6 +31,7 @@ export default function ScheduleContent() {
 	}>({});
 	const [loading, setLoading] = useState(false);
     const [disabled, setDisabled] = useState<boolean>(true);
+    const [currentSeason, setCurrentSeason] = useState<boolean>(true);
 
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(async (value: string) => {
@@ -61,11 +64,19 @@ export default function ScheduleContent() {
 	return !loading ? (
         <div className="flex flex-col max-w-[65vw]">
             <div className="flex justify-between">
-                <SeasonCodeSelector
-                    disabled={disabled}
-                    handleSelect={handleSeasonCodeSelect}
-                    setDisabled={setDisabled}
-                />
+                <div className="flex gap-4">
+						<SeasonCodeSelector
+							disabled={currentSeason}
+							handleSelect={handleSeasonCodeSelect}
+							setDisabled={setDisabled}
+							useCurrentSeason={currentSeason}
+							seasonCode={seasonCode || ""}
+						/>
+						<div className="flex items-center gap-4">
+							<Label>Current Season?</Label>
+							<Checkbox checked={currentSeason} onCheckedChange={() => setCurrentSeason(!currentSeason)} />
+						</div>
+                    </div>
             </div>
             {Object.keys(divisionsData).length > 0 && (
                 <div className="w-full mt-4">
