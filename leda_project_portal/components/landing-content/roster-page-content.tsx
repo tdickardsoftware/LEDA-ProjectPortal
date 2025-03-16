@@ -32,6 +32,8 @@ import { Separator } from "../ui/separator";
 import { rosterRoute } from "@/lib/apiRoutes";
 import CopyRosterForm from "../forms/activities/copy-roster-form";
 import { Spinner } from "../ui/skeleton";
+import { Label } from "../ui/label";
+import { Checkbox } from "../ui/checkbox";
 
 export default function RostersContent() {
 	// State variables
@@ -88,6 +90,7 @@ export default function RostersContent() {
 	const [update, setUpdate] = useState(false);
 	const [deleteRosterAlertOpen, setDeleteRosterAlertOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [currentSeason, setCurrentSeason] = useState(true);
 
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(async (value: string) => {
@@ -110,6 +113,8 @@ export default function RostersContent() {
 				const fetchedData = JSON.parse(
 					JSON.stringify(roster.teamInfomation)
 				);
+				const divisions = Object.keys(fetchedData); // Get each division
+				setSelectedDivisions(divisions);
 				setDivisionsData(fetchedData);
 				setInitialData(fetchedData);
 				setUpdate(true);
@@ -517,15 +522,23 @@ export default function RostersContent() {
 			console.error("Failed to delete roster:", error);
 		}
 	}, [seasonCode]);
-
+	
 	return !loading ? (
 			<div className="flex flex-col max-w-[65vw]">
 				<div className="flex justify-between">
-					<SeasonCodeSelector
-						disabled={false}
-						handleSelect={handleSeasonCodeSelect}
-						setDisabled={setDisabled}
-					/>
+					<div className="flex gap-4">
+						<SeasonCodeSelector
+							disabled={currentSeason}
+							handleSelect={handleSeasonCodeSelect}
+							setDisabled={setDisabled}
+							useCurrentSeason={currentSeason}
+							seasonCode={seasonCode || ""}
+						/>
+						<div className="flex items-center gap-4">
+							<Label>Current Season?</Label>
+							<Checkbox checked={currentSeason} onCheckedChange={() => setCurrentSeason(!currentSeason)} />
+						</div>
+					</div>
 					<div className="flex gap-4">
 						{handleAddDivision()}
 						{update && (
@@ -570,14 +583,15 @@ export default function RostersContent() {
 					</AlertDialogContent>
 				</AlertDialog>
 				{Object.keys(divisionsData).length > 0 && (
-					<Accordion
-						type="single"
-						collapsible
-						className="w-full mt-4"
-						defaultValue="divisions"
-					>
-						{Object.keys(divisionsData).map((division, index) => (
-							<AccordionItem key={index} value={`divisions`}>
+					Object.keys(divisionsData).map((division, index) => (
+						<Accordion
+							key={index}
+							type="single"
+							collapsible
+							className="w-full mt-4"
+							defaultValue={`divisions-${index}`}
+						>
+							<AccordionItem value={`divisions`}>
 								<div className="flex justify-between items-center">
 									<AccordionTrigger>{division}</AccordionTrigger>
 									<AlertDialog
@@ -641,18 +655,18 @@ export default function RostersContent() {
 										orientation="horizontal"
 										className="my-2 bg-gray-300"
 									/>
-									<Accordion
-										type="single"
-										collapsible
-										className="w-full mt-2"
-										defaultValue="subdivisions"
-									>
-										{Object.keys(
-											divisionsData[division].subdivisions
-										).map((subdivision, subIndex) => (
+									{Object.keys(
+										divisionsData[division].subdivisions
+									).map((subdivision, subIndex) => (
+										<Accordion
+											key={subIndex}
+											type="single"
+											collapsible
+											className="w-full mt-2"
+											defaultValue={`subdivisions-${subIndex}`}
+										>
 											<AccordionItem
-												key={subIndex}
-												value={`subdivisions`}
+												value={`subdivisions-${subIndex}`}
 												className="border-b border-gray-200"
 											>
 												<div className="flex justify-between items-center">
@@ -828,12 +842,12 @@ export default function RostersContent() {
 													</ul>
 												</AccordionContent>
 											</AccordionItem>
-										))}
-									</Accordion>
+										</Accordion>
+									))}
 								</AccordionContent>
 							</AccordionItem>
-						))}
-					</Accordion>
+						</Accordion>
+					))
 				)}
 				{!update && (
 					<div className="flex justify-center">

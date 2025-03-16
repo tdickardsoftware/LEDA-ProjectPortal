@@ -23,13 +23,17 @@ interface SeasonCodeSelectorProps {
 	disabled?: boolean;
 	handleSelect: (value: string) => void;
 	setDisabled: (value: boolean) => void;
+	useCurrentSeason: boolean;
+	seasonCode: string;
 }
 
 // SeasonCodeSelector component definition
 const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 	disabled,
 	handleSelect,
-	setDisabled
+	setDisabled,
+	useCurrentSeason,
+	seasonCode
 }) => {
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
@@ -39,6 +43,12 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 	>([]);
 	// State to store the selected season code
 	const [selectedSeasonCode, setSelectedSeasonCode] = useState<string | null>(null);
+
+	const handleSelectSeasonCode = (value: string) => {
+		setSelectedSeasonCode(value);
+		handleSelect(value); // Update the parent component's state
+		setOpen(false);
+	}
 
 	// Fetch season codes from the API endpoint
 	useEffect(() => {
@@ -52,8 +62,10 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 						label: type.seasonCode + " - " + type.desc,
 					}))
 				);
-				setSelectedSeasonCode(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
-				handleSelect(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
+				if (useCurrentSeason) {
+					setSelectedSeasonCode(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
+					handleSelect(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
+				}
 				if (data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)) {
 					setDisabled(false);
 				}
@@ -62,7 +74,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 			}
 		}
 		loadSeasonCodes();
-	}, [setDisabled, handleSelect]);
+	}, [setDisabled, handleSelect, useCurrentSeason]);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -76,9 +88,9 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 							className="w-[200px] justify-between"
 							disabled={disabled} // Disable the button if the prop is true
 						>
-							{selectedSeasonCode
+								{seasonCode // Use the seasonCode prop to display the selected season code label
 								? seasonCodes.find(
-										(type) => type.value === selectedSeasonCode
+										(type) => type.value === seasonCode
 								  )?.label
 								: "Select a season code..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -98,9 +110,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 											key={type.value}
 											value={type.value}
 											onSelect={() => {
-												setSelectedSeasonCode(type.value);
-												handleSelect(type.value);
-												setOpen(false);
+												handleSelectSeasonCode(type.value);
 											}}
 											className="hover:bg-gray-200"
 										>
