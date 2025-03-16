@@ -205,14 +205,10 @@ export function SubdivisionScheduler({
 				handleSaveData(updatedMatchData);
 				setEnabledSaveButton(true); // Enable save button when data changes
 				
-				console.log("Updated match data:", updatedMatchData);
+				
 				return;
 			}
 		}
-		
-		console.log("Teams not found in the same subdivision");
-		console.log(selectedTeamLetter, teamId, gameTitle, date, matchTime, home, opposingTeamId, opposingTeamLetter);
-		console.log(matchData);
 	};
 
 	// Add state for delete confirmation dialog
@@ -257,8 +253,6 @@ export function SubdivisionScheduler({
 					setMatchData(updatedMatchData);
 					handleSaveData(updatedMatchData);
 					setEnabledSaveButton(true);
-					
-					console.log("Deleted matchup for", teamLetter, "and", opposingTeamLetter, "on", gameTitle);
 					break;
 				}
 			}
@@ -348,13 +342,10 @@ export function SubdivisionScheduler({
 				setMatchData(updatedMatchData);
 				handleSaveData(updatedMatchData);
 				setEnabledSaveButton(true);
-				
-				console.log("Edited matchup for", selectedTeamLetter, "and", opposingTeamLetter, "on", gameTitle);
 				return;
 			}
 		}
 		
-		console.log("Failed to edit matchup - teams not found in the same subdivision");
 	};
 
 	// Add state for place names
