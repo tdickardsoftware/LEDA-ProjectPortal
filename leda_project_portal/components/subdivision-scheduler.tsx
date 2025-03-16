@@ -513,7 +513,7 @@ export function SubdivisionScheduler({
 																			{convertTo12HourFormat(matchup.matchTime)}
 																		</div> 
 																		<div>
-																			{'@ '+ getPlaceNameById(teamData.placeId)}
+																			{'@ '+ getPlaceNameById(teams[matchup.opposingTeamLetter].placeId)}
 																		</div>
 																	</div>
 																</span>
