@@ -28,6 +28,7 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import SchedulingEditMatchupForm from "@/components/forms/activities/schedule-edit-matchup-form";
+import { placeRoute } from "@/lib/apiRoutes";
 
 interface SubdivisionSchedulerProps {
 	teams: Record<
@@ -356,6 +357,41 @@ export function SubdivisionScheduler({
 		console.log("Failed to edit matchup - teams not found in the same subdivision");
 	};
 
+	// Add state for place names
+	const [placeNames, setPlaceNames] = useState<Record<string, string>>({});
+	
+	// Fetch place names only once when component mounts
+	useEffect(() => {
+		const fetchPlaceNames = async () => {
+			const uniquePlaceIds = Object.values(teams).map(team => team.placeId);
+			// Remove duplicates
+			const uniqueIds = [...new Set(uniquePlaceIds)];
+			
+			const placeData: Record<string, string> = {};
+			
+			// Fetch each place name
+			for (const placeId of uniqueIds) {
+				try {
+					const response = await fetch(`${placeRoute}?ledaId=${placeId}`);
+					const data = await response.json();
+					placeData[placeId] = data.name || "Unknown Location";
+				} catch (error) {
+					console.error("Error fetching place:", error);
+					placeData[placeId] = "Error loading location";
+				}
+			}
+			
+			setPlaceNames(placeData);
+		};
+		
+		fetchPlaceNames();
+	}, [teams]); // Only re-run if teams change
+	
+	// Get place name from cache
+	const getPlaceNameById = (placeId: string) => {
+		return placeNames[placeId] || "Loading...";
+	};
+
 	return (
 		<div className="rounded-md border shadow-sm">
 			{/* Add Alert Dialog for deletion confirmation */}
@@ -459,6 +495,9 @@ export function SubdivisionScheduler({
 																		<div>
 																			{convertTo12HourFormat(matchup.matchTime)}
 																		</div>
+																		<div>
+																			{'@ '+ getPlaceNameById(teamData.placeId)}
+																		</div>
 																	</div>
 																</span>
 															) : (
@@ -473,6 +512,9 @@ export function SubdivisionScheduler({
 																		<div>
 																			{convertTo12HourFormat(matchup.matchTime)}
 																		</div> 
+																		<div>
+																			{'@ '+ getPlaceNameById(teamData.placeId)}
+																		</div>
 																	</div>
 																</span>
 															)}
