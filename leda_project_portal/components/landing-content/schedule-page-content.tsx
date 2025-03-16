@@ -8,10 +8,11 @@ import {
 	AccordionTrigger,
 	AccordionContent,
 } from "../ui/accordion";
-import { rosterRoute } from "@/lib/apiRoutes";
+import { rosterRoute, seasonRoute } from "@/lib/apiRoutes";
 import { Spinner } from "../ui/skeleton";
 import { Label } from "../ui/label";
 import { Checkbox } from "../ui/checkbox";
+import { SubdivisionScheduler } from "../subdivision-scheduler";
 
 export default function ScheduleContent() {
 	// State variables
@@ -32,6 +33,7 @@ export default function ScheduleContent() {
 	const [loading, setLoading] = useState(false);
     const [disabled, setDisabled] = useState<boolean>(true);
     const [currentSeason, setCurrentSeason] = useState<boolean>(true);
+    const [gameDates, setGameDates] = useState<Record<string, string>>({});
 
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(async (value: string) => {
@@ -54,6 +56,18 @@ export default function ScheduleContent() {
 					JSON.stringify(roster.teamInfomation)
 				);
 				setDivisionsData(fetchedData);
+                const gameDatesResult = await fetch(`${seasonRoute}?seasonCode=${value}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+                if (gameDatesResult.status === 200) {
+                    const gameDatesData = await gameDatesResult.json();
+                    if (gameDatesData) {
+                        setGameDates(gameDatesData.dates);
+                    }
+                }
 			}
 		} else {
 			setDivisionsData({});
@@ -102,13 +116,9 @@ export default function ScheduleContent() {
                                             <AccordionItem value={`subdivision-${subIndex}`} className="border-b-0">
                                                 <AccordionTrigger className="underline">{subdivision}</AccordionTrigger>
                                                 <AccordionContent>
-                                                    <ul>
-                                                        {Object.keys(divisionsData[division].subdivisions[subdivision]).map((team, teamIndex) => (
-                                                            <li key={teamIndex}>
-                                                                {team} - {divisionsData[division].subdivisions[subdivision][team].teamName}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
+                                                    {Object.keys(divisionsData[division].subdivisions[subdivision]).length > 0 && (
+                                                        <SubdivisionScheduler teams={divisionsData[division].subdivisions[subdivision]} gameDates={gameDates} />
+                                                    )}
                                                 </AccordionContent>
                                             </AccordionItem>
                                         </Accordion>
