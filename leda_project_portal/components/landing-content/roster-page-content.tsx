@@ -398,11 +398,6 @@ export default function RostersContent() {
 		} finally {
 			setLoading(false);
 		}
-
-		///// TODO - Get schedule data from the db where the season code is equal
-		// TODO - With the roster data perform a check to see if any of the data has changed, if so recreate the season data (preserving match data)
-		// TODO - Push to db with the updated data.
-
 		/////////////////////////////
 		// Schedule Updating Logic
 		/////////////////////////////
