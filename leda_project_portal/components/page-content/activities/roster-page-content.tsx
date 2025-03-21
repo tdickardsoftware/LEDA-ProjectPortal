@@ -2,22 +2,22 @@
 
 import { useState, useCallback, useEffect } from "react";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "../ui/dialog";
-import DivisionAddForm from "../forms/activities/division-add-form";
+} from "@/components/ui/dialog";
+import DivisionAddForm from "@/components/forms/activities/division-add-form";
 import {
 	Accordion,
 	AccordionItem,
 	AccordionTrigger,
 	AccordionContent,
-} from "../ui/accordion";
-import TeamAddForm from "../forms/activities/team-add-form";
+} from "@/components/ui/accordion";
+import TeamAddForm from "@/components/forms/activities/team-add-form";
 import { X } from "lucide-react";
 import {
 	AlertDialog,
@@ -27,13 +27,13 @@ import {
 	AlertDialogTitle,
 	AlertDialogDescription,
 	AlertDialogFooter,
-} from "../ui/alert-dialog";
-import { Separator } from "../ui/separator";
+} from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
 import { rosterRoute, scheduleRoute } from "@/lib/apiRoutes";
-import CopyRosterForm from "../forms/activities/copy-roster-form";
-import { Spinner } from "../ui/skeleton";
-import { Label } from "../ui/label";
-import { Checkbox } from "../ui/checkbox";
+import CopyRosterForm from "@/components/forms/activities/copy-roster-form";
+import { Spinner } from "@/components/ui/skeleton";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 // Define types for better code readability

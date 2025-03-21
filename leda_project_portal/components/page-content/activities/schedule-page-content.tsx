@@ -7,13 +7,13 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 	AccordionContent,
-} from "../ui/accordion";
+} from "@/components/ui/accordion";
 import { rosterRoute, scheduleRoute, seasonRoute } from "@/lib/apiRoutes";
-import { Spinner } from "../ui/skeleton";
-import { Label } from "../ui/label";
-import { Checkbox } from "../ui/checkbox";
-import { SubdivisionScheduler } from "../subdivision-scheduler";
-import { Button } from "../ui/button";
+import { Spinner } from "@/components/ui/skeleton";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SubdivisionScheduler } from "@/components/subdivision-scheduler";
+import { Button } from "@/components/ui/button";
 
 export default function ScheduleContent() {
 	// State variables

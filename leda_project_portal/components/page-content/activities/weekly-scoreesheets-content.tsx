@@ -9,6 +9,10 @@ import {
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import SeasonCodeSelector from "@/components/ui/season-code-selector";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 
 // Types for our data structure
 interface Game {
@@ -30,43 +34,106 @@ interface DiamondData {
 	[diamondName: string]: Diamond;
 }
 
+// Interface for the source data structure
+interface TeamMatchData {
+	matchDate: string;
+	matchTime: string;
+	home: boolean;
+	opposingTeamId: string;
+	opposingTeamLetter: string;
+}
+
+interface Team {
+	teamName: string;
+	teamId: string;
+	matchesData: {
+		[dateKey: string]: TeamMatchData;
+	};
+}
+
+interface SourceData {
+	[diamondName: string]: {
+		[subdivisionName: string]: {
+			[teamLetter: string]: Team;
+		};
+	};
+}
+
+// Function to convert source data to DiamondData format
+const convertToSampleDataFormat = (sourceData: SourceData): DiamondData => {
+	const result: DiamondData = {};
+
+	// Iterate through all diamonds
+	for (const diamondName in sourceData) {
+		result[diamondName] = {};
+
+		// Iterate through all subdivisions
+		for (const subdivisionName in sourceData[diamondName]) {
+			result[diamondName][subdivisionName] = {};
+			let gameCounter = 1;
+
+			// Iterate through all teams
+			for (const teamLetter in sourceData[diamondName][subdivisionName]) {
+				const team =
+					sourceData[diamondName][subdivisionName][teamLetter];
+
+				// Check each match for this team
+				for (const dateKey in team.matchesData) {
+					const match = team.matchesData[dateKey];
+
+					// Only create a game entry if this team is the home team (to avoid duplicates)
+					if (match.home) {
+						result[diamondName][subdivisionName][
+							gameCounter.toString()
+						] = {
+							homeTeamLetter: teamLetter,
+							homeTeamId: team.teamId,
+							awayTeamLetter: match.opposingTeamLetter,
+							awayTeamId: match.opposingTeamId,
+						};
+						gameCounter++;
+					}
+				}
+			}
+		}
+	}
+
+	return result;
+};
+
 // Sample data structure
-const sampleData: DiamondData = {
+const sampleData: DiamondData = convertToSampleDataFormat({
 	Diamond: {
 		"Subdivision 1": {
-			"1": {
-				homeTeamLetter: "A",
-				homeTeamId: "1",
-				awayTeamLetter: "C",
-				awayTeamId: "2",
+			A: {
+				teamName: "Test",
+				teamId: "1",
+				matchesData: {
+					Date1: {
+						matchDate: "1/3/2024",
+						matchTime: "22:09",
+						home: true,
+						opposingTeamId: "2",
+						opposingTeamLetter: "B",
+					},
+				},
 			},
-			"2": {
-				homeTeamLetter: "B",
-				homeTeamId: "3",
-				awayTeamLetter: "D",
-				awayTeamId: "4",
-			},
-		},
-		"Subdivision 2": {
-			"1": {
-				homeTeamLetter: "E",
-				homeTeamId: "5",
-				awayTeamLetter: "G",
-				awayTeamId: "6",
-			},
-		},
-	},
-	"Diamond 2": {
-		"Subdivision 3": {
-			"1": {
-				homeTeamLetter: "X",
-				homeTeamId: "7",
-				awayTeamLetter: "Y",
-				awayTeamId: "8",
+			B: {
+				teamName: "The Best Team",
+				teamId: "2",
+				matchesData: {
+					Date1: {
+						matchDate: "1/3/2024",
+						matchTime: "22:09",
+						home: false,
+						opposingTeamId: "1",
+						opposingTeamLetter: "A",
+					},
+				},
 			},
 		},
 	},
-};
+});
 
 const SideNav = ({ data }: { data: DiamondData }) => {
 	const [openDiamonds, setOpenDiamonds] = useState<Record<string, boolean>>(
@@ -189,15 +256,46 @@ const SideNav = ({ data }: { data: DiamondData }) => {
 };
 
 export default function WeeklyScoresheetsContent() {
-	return (
-		<div className="flex">
-			<SideNav data={sampleData} />
+    const [seasonCode, setSeasonCode] = useState<string>("");
+    const [currentSeason, setCurrentSeason] = useState<boolean>(true);
+    const [disabled, setDisabled] = useState<boolean>(false);
 
-			<div className="flex-1 p-4">
-				<div className="w-full border border-gray-300 rounded-lg p-4">
-					{/* Content goes here */}
+
+    const handleSeasonCodeSelect = (value: string) => {
+        setSeasonCode(value);
+    }
+	return (
+		<>
+			<div className="flex gap-4">
+                <SeasonCodeSelector
+                    disabled={currentSeason}
+                    handleSelect={handleSeasonCodeSelect}
+                    setDisabled={setDisabled}
+                    useCurrentSeason={currentSeason}
+                    seasonCode={seasonCode || ""}
+                />
+                <div className="flex items-center gap-4">
+                    <Label>Current Season?</Label>
+                    <Checkbox
+                        checked={currentSeason}
+                        onCheckedChange={() =>
+                            setCurrentSeason(!currentSeason)
+                        }
+                    />
+                </div>
+            </div>
+            <div className="mt-4">
+                <Separator orientation="horizontal" className="bg-gray-400 w-100"/>
+            </div>
+			<div className="flex">
+				<SideNav data={sampleData} />
+
+				<div className="flex-1 p-4">
+					<div className="w-full border border-gray-300 rounded-lg p-4">
+						{/* Content goes here */}
+					</div>
 				</div>
 			</div>
-		</div>
+		</>
 	);
 }
