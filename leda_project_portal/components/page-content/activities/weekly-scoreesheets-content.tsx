@@ -13,6 +13,8 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import WeekSelector from "@/components/ui/week-selector";
+import { scheduleRoute } from "@/lib/apiRoutes";
 
 // Types for our data structure
 interface Game {
@@ -60,7 +62,7 @@ interface SourceData {
 }
 
 // Function to convert source data to DiamondData format
-const convertToSampleDataFormat = (sourceData: SourceData): DiamondData => {
+const convertScheduleData = (sourceData: SourceData, dateToDisplay: string): DiamondData => {
 	const result: DiamondData = {};
 
 	// Iterate through all diamonds
@@ -79,6 +81,9 @@ const convertToSampleDataFormat = (sourceData: SourceData): DiamondData => {
 
 				// Check each match for this team
 				for (const dateKey in team.matchesData) {
+					// Skip if it doesn't match the dateToDisplay parameter
+					if (dateKey !== dateToDisplay) continue;
+					
 					const match = team.matchesData[dateKey];
 
 					// Only create a game entry if this team is the home team (to avoid duplicates)
@@ -100,40 +105,6 @@ const convertToSampleDataFormat = (sourceData: SourceData): DiamondData => {
 
 	return result;
 };
-
-// Sample data structure
-const sampleData: DiamondData = convertToSampleDataFormat({
-	Diamond: {
-		"Subdivision 1": {
-			A: {
-				teamName: "Test",
-				teamId: "1",
-				matchesData: {
-					Date1: {
-						matchDate: "1/3/2024",
-						matchTime: "22:09",
-						home: true,
-						opposingTeamId: "2",
-						opposingTeamLetter: "B",
-					},
-				},
-			},
-			B: {
-				teamName: "The Best Team",
-				teamId: "2",
-				matchesData: {
-					Date1: {
-						matchDate: "1/3/2024",
-						matchTime: "22:09",
-						home: false,
-						opposingTeamId: "1",
-						opposingTeamLetter: "A",
-					},
-				},
-			},
-		},
-	},
-});
 
 const SideNav = ({ data }: { data: DiamondData }) => {
 	const [openDiamonds, setOpenDiamonds] = useState<Record<string, boolean>>(
@@ -158,9 +129,18 @@ const SideNav = ({ data }: { data: DiamondData }) => {
 		}));
 	};
 
+	// Check if data is empty or null
+	if (!data || Object.keys(data).length === 0) {
+		return (
+			<div className="w-64 border-r max-h-[75vh] flex items-center justify-center p-4">
+				<p className="text-gray-500 text-center">Select a week to display weekly scoresheets...</p>
+			</div>
+		);
+	}
+
 	return (
-		<div className="w-64 border-r">
-			<ScrollArea className="h-[calc(100vh-64px)]">
+		<div className="w-64 border-r max-h-[75vh]">
+			<ScrollArea className="h-full">
 				<div className="p-4 space-y-2">
 					{Object.keys(data).map((diamondName) => (
 						<Collapsible
@@ -259,13 +239,27 @@ export default function WeeklyScoresheetsContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
     const [currentSeason, setCurrentSeason] = useState<boolean>(true);
     const [disabled, setDisabled] = useState<boolean>(false);
+    const [seasonSelected, setSeasonSelected] = useState<boolean>(true);
+    const [dateToDisplay, setDateToDisplay] = useState<string>("");
+    const [sidenavData, setSidenavData] = useState<DiamondData>({});
 
 
     const handleSeasonCodeSelect = (value: string) => {
         setSeasonCode(value);
+        setSeasonSelected(false);
+    }
+
+    const handleDateToDisplay = async (value: string) => {
+        setDateToDisplay(value);
+        console.log(value)
+
+        const results = await fetch(scheduleRoute + `?seasonCode=${seasonCode}`)
+
+        const data = await results.json();
+        setSidenavData(convertScheduleData(data.scheduleData, value));
     }
 	return (
-		<>
+		<div className="flex flex-col h-full">
 			<div className="flex gap-4">
                 <SeasonCodeSelector
                     disabled={currentSeason}
@@ -283,19 +277,22 @@ export default function WeeklyScoresheetsContent() {
                         }
                     />
                 </div>
+                <div className="flex gap-4">
+                    <WeekSelector seasonCode={seasonCode} disabled={seasonSelected} handleSelect={handleDateToDisplay} />
+                </div>
             </div>
             <div className="mt-4">
                 <Separator orientation="horizontal" className="bg-gray-400 w-100"/>
             </div>
-			<div className="flex">
-				<SideNav data={sampleData} />
+			<div className="flex flex-1 overflow-hidden">
+				<SideNav data={sidenavData} />
 
-				<div className="flex-1 p-4">
+				<div className="flex-1 p-4 overflow-auto">
 					<div className="w-full border border-gray-300 rounded-lg p-4">
 						{/* Content goes here */}
 					</div>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }
