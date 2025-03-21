@@ -1,4 +1,4 @@
-import RostersContent from "@/components/page-content/roster-page-content";
+import RostersContent from "@/components/page-content/activities/roster-page-content"
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 
