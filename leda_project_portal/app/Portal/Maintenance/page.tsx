@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import MaintenancePageContent from "@/components/landing-content/maintenance-page-content";
+import MaintenancePageContent from "@/components/page-content/landing-content/maintenance-page-content";
 import { Separator } from "@/components/ui/separator";
 
 export const metadata: Metadata = {

@@ -1,4 +1,4 @@
-import PlacePageContent from "@/components/landing-content/place-view-page-content";
+import PlacePageContent from "@/components/page-content/management-content/place-view-page-content";
 import { fetchPlace } from "@/lib/getData";
 import { notFound } from "next/navigation";
 

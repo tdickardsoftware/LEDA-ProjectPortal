@@ -1,4 +1,4 @@
-import TrailsPageContent from "@/components/landing-content/trails-page-content";
+import TrailsPageContent from "@/components/page-content/activities/trails-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 

@@ -1,4 +1,4 @@
-import { SeasonPageContent } from "@/components/landing-content/season-view-page-content";
+import { SeasonPageContent } from "@/components/page-content/maintenance-content/season-view-page-content";
 import { fetchSeason } from "@/lib/getData";
 import { notFound } from "next/navigation";
 

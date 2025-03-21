@@ -1,4 +1,4 @@
-import ManagementPageContent from "@/components/landing-content/management-page-content";
+import ManagementPageContent from "@/components/page-content/landing-content/management-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 

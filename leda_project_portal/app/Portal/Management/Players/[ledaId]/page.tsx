@@ -1,4 +1,4 @@
-import PlayerPageContent from "@/components/landing-content/player-view-page-content";
+import PlayerPageContent from "@/components/page-content/management-content/player-view-page-content";
 import { fetchPlayerMember } from "@/lib/getData";
 import { notFound } from "next/navigation";
 

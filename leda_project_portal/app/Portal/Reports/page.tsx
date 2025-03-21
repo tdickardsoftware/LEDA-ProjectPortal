@@ -1,4 +1,4 @@
-import ReportsPageContent from "@/components/landing-content/reports-page-content";
+import ReportsPageContent from "@/components/page-content/landing-content/reports-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 

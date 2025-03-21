@@ -1,4 +1,4 @@
-import TeamPageContent from "@/components/landing-content/team-view-page-content";
+import TeamPageContent from "@/components/page-content/management-content/team-view-page-content";
 import { fetchTeam, fetchPlayerMember } from "@/lib/getData";
 import { notFound } from "next/navigation";
 

@@ -1,4 +1,4 @@
-import ActivitiesPageContent from "@/components/landing-content/activities-page-content";
+import ActivitiesPageContent from "@/components/page-content/landing-content/activities-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 

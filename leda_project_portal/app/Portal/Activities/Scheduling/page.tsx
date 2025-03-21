@@ -1,4 +1,4 @@
-import ScheduleContent from "@/components/landing-content/schedule-page-content";
+import ScheduleContent from "@/components/page-content/schedule-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 
