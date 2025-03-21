@@ -57,8 +57,29 @@ type RosterData = {
 	[key: string]: DivisionData;
 };
 
-type ScheduleData = Record<string, Record<string, Record<string, { teamName: string; teamId: string; matchesData: Record<string, { matchDate: string; matchTime: string; home: boolean; opposingTeamId: string; opposingTeamLetter: string }> }>>>
-
+type ScheduleData = Record<
+	string,
+	Record<
+		string,
+		Record<
+			string,
+			{
+				teamName: string;
+				teamId: string;
+				matchesData: Record<
+					string,
+					{
+						matchDate: string;
+						matchTime: string;
+						home: boolean;
+						opposingTeamId: string;
+						opposingTeamLetter: string;
+					}
+				>;
+			}
+		>
+	>
+>;
 
 export default function RostersContent() {
 	// State variables
@@ -70,7 +91,9 @@ export default function RostersContent() {
 	const [teamOpen, setTeamOpen] = useState<{ [key: string]: boolean }>({});
 	const [open, setOpen] = useState(false);
 	const [copyOpen, setCopyOpen] = useState(false);
-	const [divisionToDelete, setDivisionToDelete] = useState<string | null>(null);
+	const [divisionToDelete, setDivisionToDelete] = useState<string | null>(
+		null
+	);
 	const [subdivisionToDelete, setSubdivisionToDelete] = useState<{
 		division: string;
 		subdivision: string;
@@ -94,15 +117,15 @@ export default function RostersContent() {
 	// Extract all team IDs from divisions data
 	const extractTeamIds = useCallback((data: RosterData): string[] => {
 		const teamIds: string[] = [];
-		
-		Object.values(data).forEach(division => {
-			Object.values(division.subdivisions).forEach(subdivision => {
-				Object.values(subdivision).forEach(team => {
+
+		Object.values(data).forEach((division) => {
+			Object.values(division.subdivisions).forEach((subdivision) => {
+				Object.values(subdivision).forEach((team) => {
 					teamIds.push(team.teamId);
 				});
 			});
 		});
-		
+
 		return teamIds;
 	}, []);
 
@@ -117,158 +140,238 @@ export default function RostersContent() {
 	}, [divisionsData, initialData, checkHasChanges]);
 
 	// Handle season code selection
-	const handleSeasonCodeSelect = useCallback(async (value: string) => {
-		if (value === seasonCode) return;
-		setSeasonCode(value);
-		
-		try {
-			setLoading(true);
-			const result = await fetch(`${rosterRoute}?seasonCode=${value}`, {
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			});
-			
-			if (result.status === 200) {
-				const data = await result.json();
-				if (data) {
-					const roster = data;
-					// Update state with the fetched data
-					const fetchedData = JSON.parse(
-						JSON.stringify(roster.teamInfomation)
-					);
-					
-					// Extract divisions and team IDs
-					const divisions = Object.keys(fetchedData);
-					const teamIds = extractTeamIds(fetchedData);
-					
-					setSelectedDivisions(divisions);
-					setSelectedTeams(teamIds); // Populate selectedTeams to prevent duplicates
-					setDivisionsData(fetchedData);
-					setInitialData(fetchedData);
-					setUpdate(true);
+	const handleSeasonCodeSelect = useCallback(
+		async (value: string) => {
+			if (value === seasonCode) return;
+			setSeasonCode(value);
+
+			try {
+				setLoading(true);
+				const result = await fetch(
+					`${rosterRoute}?seasonCode=${value}`,
+					{
+						method: "GET",
+						headers: {
+							"Content-Type": "application/json",
+						},
+					}
+				);
+
+				if (result.status === 200) {
+					const data = await result.json();
+					if (data) {
+						const roster = data;
+						// Update state with the fetched data
+						const fetchedData = JSON.parse(
+							JSON.stringify(roster.teamInfomation)
+						);
+
+						// Extract divisions and team IDs
+						const divisions = Object.keys(fetchedData);
+						const teamIds = extractTeamIds(fetchedData);
+
+						setSelectedDivisions(divisions);
+						setSelectedTeams(teamIds); // Populate selectedTeams to prevent duplicates
+						setDivisionsData(fetchedData);
+						setInitialData(fetchedData);
+						setUpdate(true);
+						setHasChanges(false);
+					}
+				} else {
+					setInitialData({});
+					setDivisionsData({});
+					setSelectedTeams([]);
+					setSelectedDivisions([]);
+					setUpdate(false);
 					setHasChanges(false);
 				}
-			} else {
-				setInitialData({});
-				setDivisionsData({});
-				setSelectedTeams([]);
-				setSelectedDivisions([]);
-				setUpdate(false);
-				setHasChanges(false);
+			} catch (error) {
+				console.error("Failed to fetch roster data:", error);
+				toast.error("Failed to load roster data");
+			} finally {
+				setLoading(false);
+				setDisabled(false);
 			}
-		} catch (error) {
-			console.error("Failed to fetch roster data:", error);
-			toast.error("Failed to load roster data");
-		} finally {
-			setLoading(false);
-			setDisabled(false);
-		}
-	}, [seasonCode, extractTeamIds]);
+		},
+		[seasonCode, extractTeamIds]
+	);
 
-  // Generate Schedule Data
-  const generateScheduleData = (scheduleData: ScheduleData, divisionsData: RosterData): ScheduleData => {
-    // First, extract all valid team IDs from the current roster
-    const validTeamIds: Set<string> = new Set();
-    
-    // Create a mapping of teamId to its current letter in each division/subdivision
-    const currentTeamLetterMap: Record<string, Record<string, Record<string, string>>> = {};
-    
-    // Create a mapping of teamId to its previous match data regardless of letter
-	  const teamIdToMatchesMap: Record<string, Record<string, { matchDate: string; matchTime: string; home: boolean; opposingTeamId: string; opposingTeamLetter: string }>> = {};
-    
-    // Build the current letter mapping and valid team IDs
-    Object.keys(divisionsData).forEach(division => {
-      currentTeamLetterMap[division] = {};
-      
-      Object.keys(divisionsData[division].subdivisions).forEach(subdivision => {
-        currentTeamLetterMap[division][subdivision] = {};
-        
-        Object.entries(divisionsData[division].subdivisions[subdivision]).forEach(([letter, team]) => {
-          validTeamIds.add(team.teamId);
-          currentTeamLetterMap[division][subdivision][team.teamId] = letter;
-        });
-      });
-    });
-    
-    // Extract all previous match data by team ID
-    Object.keys(scheduleData).forEach(division => {
-      Object.keys(scheduleData[division] || {}).forEach(subdivision => {
-		Object.entries(scheduleData[division][subdivision] || {}).forEach(([, teamData]) => {
-          // Store the match data indexed by team ID
-          teamIdToMatchesMap[teamData.teamId] = teamData.matchesData || {};
-        });
-      });
-    });
-    
-    // Generate new schedule data with current team letters
-    const newMatchData: ScheduleData = {};
-    Object.keys(divisionsData).forEach(division => {
-      newMatchData[division] = {};
-      Object.keys(divisionsData[division].subdivisions).forEach(subdivision => {
-        newMatchData[division][subdivision] = {};
-        Object.keys(divisionsData[division].subdivisions[subdivision]).forEach(teamLetter => {
-          const teamId = divisionsData[division].subdivisions[subdivision][teamLetter].teamId;
-          const oldMatchesData = teamIdToMatchesMap[teamId] || {};
-          
-          // Filter matches to only include those with valid opposing team IDs
-          // and update the opposing team letter to reflect current lettering
-          const validMatchesData: Record<string, { matchDate: string; matchTime: string; home: boolean; opposingTeamId: string; opposingTeamLetter: string }> = {};
-          
-          Object.entries(oldMatchesData).forEach(([matchId, matchData]) => {
-            const opposingTeamId = (matchData as { matchDate: string; matchTime: string; home: boolean; opposingTeamId: string; opposingTeamLetter: string }).opposingTeamId;
-            
-            // Skip if opposing team no longer exists
-            if (!validTeamIds.has(opposingTeamId)) {
-              return;
-            }
-            
-            // Find the current division and subdivision of the opposing team
-            let foundDivision = null;
-            let foundSubdivision = null;
-            
-            searchDivisions: for (const div of Object.keys(currentTeamLetterMap)) {
-              for (const subdiv of Object.keys(currentTeamLetterMap[div])) {
-                if (currentTeamLetterMap[div][subdiv][opposingTeamId]) {
-                  foundDivision = div;
-                  foundSubdivision = subdiv;
-                  break searchDivisions;
-                }
-              }
-            }
-            
-            if (!foundDivision || !foundSubdivision) {
-              return; // Opposing team not found in current structure
-            }
-            
-            // Get the current letter of the opposing team (after potential shifts)
-            const currentOpposingLetter = currentTeamLetterMap[foundDivision][foundSubdivision][opposingTeamId];
-            
-            // Always update to use the current letter of the opposing team
-            validMatchesData[matchId] = {
-              ...(matchData as { matchDate: string; matchTime: string; home: boolean; opposingTeamId: string; opposingTeamLetter: string }),
-              opposingTeamLetter: currentOpposingLetter  // Use the current letter (after shifts)
-            };
-          });
+	// Generate Schedule Data
+	const generateScheduleData = (
+		scheduleData: ScheduleData,
+		divisionsData: RosterData
+	): ScheduleData => {
+		// First, extract all valid team IDs from the current roster
+		const validTeamIds: Set<string> = new Set();
 
-          newMatchData[division][subdivision][teamLetter] = {
-            teamName: divisionsData[division].subdivisions[subdivision][teamLetter].teamName,
-            teamId: divisionsData[division].subdivisions[subdivision][teamLetter].teamId,
-            matchesData: validMatchesData
-          };
-        });
-      });
-    });
-    
-    return newMatchData;
-  }
+		// Create a mapping of teamId to its current letter in each division/subdivision
+		const currentTeamLetterMap: Record<
+			string,
+			Record<string, Record<string, string>>
+		> = {};
 
+		// Create a mapping of teamId to its previous match data regardless of letter
+		const teamIdToMatchesMap: Record<
+			string,
+			Record<
+				string,
+				{
+					matchDate: string;
+					matchTime: string;
+					home: boolean;
+					opposingTeamId: string;
+					opposingTeamLetter: string;
+				}
+			>
+		> = {};
+
+		// Build the current letter mapping and valid team IDs
+		Object.keys(divisionsData).forEach((division) => {
+			currentTeamLetterMap[division] = {};
+
+			Object.keys(divisionsData[division].subdivisions).forEach(
+				(subdivision) => {
+					currentTeamLetterMap[division][subdivision] = {};
+
+					Object.entries(
+						divisionsData[division].subdivisions[subdivision]
+					).forEach(([letter, team]) => {
+						validTeamIds.add(team.teamId);
+						currentTeamLetterMap[division][subdivision][
+							team.teamId
+						] = letter;
+					});
+				}
+			);
+		});
+
+		// Extract all previous match data by team ID
+		Object.keys(scheduleData).forEach((division) => {
+			Object.keys(scheduleData[division] || {}).forEach((subdivision) => {
+				Object.entries(
+					scheduleData[division][subdivision] || {}
+				).forEach(([, teamData]) => {
+					// Store the match data indexed by team ID
+					teamIdToMatchesMap[teamData.teamId] =
+						teamData.matchesData || {};
+				});
+			});
+		});
+
+		// Generate new schedule data with current team letters
+		const newMatchData: ScheduleData = {};
+		Object.keys(divisionsData).forEach((division) => {
+			newMatchData[division] = {};
+			Object.keys(divisionsData[division].subdivisions).forEach(
+				(subdivision) => {
+					newMatchData[division][subdivision] = {};
+					Object.keys(
+						divisionsData[division].subdivisions[subdivision]
+					).forEach((teamLetter) => {
+						const teamId =
+							divisionsData[division].subdivisions[subdivision][
+								teamLetter
+							].teamId;
+						const oldMatchesData = teamIdToMatchesMap[teamId] || {};
+
+						// Filter matches to only include those with valid opposing team IDs
+						// and update the opposing team letter to reflect current lettering
+						const validMatchesData: Record<
+							string,
+							{
+								matchDate: string;
+								matchTime: string;
+								home: boolean;
+								opposingTeamId: string;
+								opposingTeamLetter: string;
+							}
+						> = {};
+
+						Object.entries(oldMatchesData).forEach(
+							([matchId, matchData]) => {
+								const opposingTeamId = (
+									matchData as {
+										matchDate: string;
+										matchTime: string;
+										home: boolean;
+										opposingTeamId: string;
+										opposingTeamLetter: string;
+									}
+								).opposingTeamId;
+
+								// Skip if opposing team no longer exists
+								if (!validTeamIds.has(opposingTeamId)) {
+									return;
+								}
+
+								// Find the current division and subdivision of the opposing team
+								let foundDivision = null;
+								let foundSubdivision = null;
+
+								searchDivisions: for (const div of Object.keys(
+									currentTeamLetterMap
+								)) {
+									for (const subdiv of Object.keys(
+										currentTeamLetterMap[div]
+									)) {
+										if (
+											currentTeamLetterMap[div][subdiv][
+												opposingTeamId
+											]
+										) {
+											foundDivision = div;
+											foundSubdivision = subdiv;
+											break searchDivisions;
+										}
+									}
+								}
+
+								if (!foundDivision || !foundSubdivision) {
+									return; // Opposing team not found in current structure
+								}
+
+								// Get the current letter of the opposing team (after potential shifts)
+								const currentOpposingLetter =
+									currentTeamLetterMap[foundDivision][
+										foundSubdivision
+									][opposingTeamId];
+
+								// Always update to use the current letter of the opposing team
+								validMatchesData[matchId] = {
+									...(matchData as {
+										matchDate: string;
+										matchTime: string;
+										home: boolean;
+										opposingTeamId: string;
+										opposingTeamLetter: string;
+									}),
+									opposingTeamLetter: currentOpposingLetter, // Use the current letter (after shifts)
+								};
+							}
+						);
+
+						newMatchData[division][subdivision][teamLetter] = {
+							teamName:
+								divisionsData[division].subdivisions[
+									subdivision
+								][teamLetter].teamName,
+							teamId: divisionsData[division].subdivisions[
+								subdivision
+							][teamLetter].teamId,
+							matchesData: validMatchesData,
+						};
+					});
+				}
+			);
+		});
+
+		return newMatchData;
+	};
 
 	// Handle updating the roster to the database
 	const handleUpdateRoster = useCallback(async () => {
 		if (!seasonCode) return;
-		
+
 		try {
 			setLoading(true);
 			const response = await fetch(rosterRoute, {
@@ -296,45 +399,50 @@ export default function RostersContent() {
 			setLoading(false);
 		}
 
-    
-    ///// TODO - Get schedule data from the db where the season code is equal
-    // TODO - With the roster data perform a check to see if any of the data has changed, if so recreate the season data (preserving match data)
-    // TODO - Push to db with the updated data.
+		///// TODO - Get schedule data from the db where the season code is equal
+		// TODO - With the roster data perform a check to see if any of the data has changed, if so recreate the season data (preserving match data)
+		// TODO - Push to db with the updated data.
 
-    /////////////////////////////
-    // Schedule Updating Logic
-    /////////////////////////////
-    const scheduleDataResults = await fetch(`${scheduleRoute}?seasonCode=${seasonCode}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (scheduleDataResults.status === 200) {
-      const scheduleData = (await scheduleDataResults.json()).scheduleData;
-      if (scheduleData) {
-        // Update the schedule data
-        const potentialChanges = generateScheduleData(scheduleData, divisionsData);
-        
+		/////////////////////////////
+		// Schedule Updating Logic
+		/////////////////////////////
+		const scheduleDataResults = await fetch(
+			`${scheduleRoute}?seasonCode=${seasonCode}`,
+			{
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
+		if (scheduleDataResults.status === 200) {
+			const scheduleData = (await scheduleDataResults.json())
+				.scheduleData;
+			if (scheduleData) {
+				// Update the schedule data
+				const potentialChanges = generateScheduleData(
+					scheduleData,
+					divisionsData
+				);
 
-        await fetch(scheduleRoute, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            seasonCode: seasonCode,
-            scheduleData: potentialChanges,
-          }),
-        });
-      }
-    }
+				await fetch(scheduleRoute, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						seasonCode: seasonCode,
+						scheduleData: potentialChanges,
+					}),
+				});
+			}
+		}
 	}, [divisionsData, seasonCode]);
 
 	// Handle saving the roster to the database
 	const handleSaveRoster = useCallback(async () => {
 		if (!seasonCode) return;
-		
+
 		try {
 			setLoading(true);
 			const response = await fetch(rosterRoute, {
@@ -362,7 +470,7 @@ export default function RostersContent() {
 			toast.error("Failed to save roster");
 		} finally {
 			setLoading(false);
-    }
+		}
 	}, [seasonCode, divisionsData]);
 
 	// Handle division selection
@@ -370,9 +478,9 @@ export default function RostersContent() {
 		(value: string) => {
 			// Prevent duplicates
 			if (selectedDivisions.includes(value)) return;
-			
-			setSelectedDivisions(prev => [...prev, value]);
-			setDivisionsData(prev => ({
+
+			setSelectedDivisions((prev) => [...prev, value]);
+			setDivisionsData((prev) => ({
 				...prev,
 				[value]: { subdivisions: {} },
 			}));
@@ -385,10 +493,11 @@ export default function RostersContent() {
 	const handleAddSubdivision = useCallback(
 		(division: string) => {
 			const newSubdivision = `Subdivision ${
-				Object.keys(divisionsData[division]?.subdivisions || {}).length + 1
+				Object.keys(divisionsData[division]?.subdivisions || {})
+					.length + 1
 			}`;
-			
-			setDivisionsData(prev => ({
+
+			setDivisionsData((prev) => ({
 				...prev,
 				[division]: {
 					...prev[division],
@@ -417,14 +526,17 @@ export default function RostersContent() {
 				toast.error("This team has already been added to the roster");
 				return;
 			}
-			
-			setSelectedTeams(prev => [...prev, teamId]);
-			
+
+			setSelectedTeams((prev) => [...prev, teamId]);
+
 			const teamLetter = String.fromCharCode(
-				65 + Object.keys(divisionsData[division]?.subdivisions[subdivision] || {}).length
+				65 +
+					Object.keys(
+						divisionsData[division]?.subdivisions[subdivision] || {}
+					).length
 			);
-			
-			setDivisionsData(prev => ({
+
+			setDivisionsData((prev) => ({
 				...prev,
 				[division]: {
 					...prev[division],
@@ -448,7 +560,7 @@ export default function RostersContent() {
 			<Dialog
 				open={teamOpen[`${division}-${subdivision}`] || false}
 				onOpenChange={(isOpen) =>
-					setTeamOpen(prev => ({
+					setTeamOpen((prev) => ({
 						...prev,
 						[`${division}-${subdivision}`]: isOpen,
 					}))
@@ -467,7 +579,7 @@ export default function RostersContent() {
 						selectedTeams={selectedTeams}
 						handleSelectTeam={handleTeamSelect}
 						setOpen={(isOpen) =>
-							setTeamOpen(prev => ({
+							setTeamOpen((prev) => ({
 								...prev,
 								[`${division}-${subdivision}`]: isOpen,
 							}))
@@ -527,25 +639,25 @@ export default function RostersContent() {
 	const handleRemoveDivision = useCallback(
 		(division: string) => {
 			// Get teams to remove
-			const teamsToRemove = extractTeamIds({ 
-				[division]: divisionsData[division] 
+			const teamsToRemove = extractTeamIds({
+				[division]: divisionsData[division],
 			});
-			
+
 			// Update state
-			setDivisionsData(prev => {
+			setDivisionsData((prev) => {
 				const newData = { ...prev };
 				delete newData[division];
 				return newData;
 			});
-			
-			setSelectedDivisions(prev => 
-				prev.filter(div => div !== division)
+
+			setSelectedDivisions((prev) =>
+				prev.filter((div) => div !== division)
 			);
-			
-			setSelectedTeams(prev =>
-				prev.filter(teamId => !teamsToRemove.includes(teamId))
+
+			setSelectedTeams((prev) =>
+				prev.filter((teamId) => !teamsToRemove.includes(teamId))
 			);
-			
+
 			setHasChanges(true);
 		},
 		[divisionsData, extractTeamIds]
@@ -554,23 +666,28 @@ export default function RostersContent() {
 	// Update subdivision names after removal
 	const updateSubdivisionNames = useCallback(
 		(division: string) => {
-			const updatedSubdivisions = { ...divisionsData[division]?.subdivisions };
+			const updatedSubdivisions = {
+				...divisionsData[division]?.subdivisions,
+			};
 			const newSubdivisions: { [key: string]: SubdivisionData } = {};
-			
+
 			// Rename subdivisions sequentially
-			Object.keys(updatedSubdivisions).sort().forEach((_, index) => {
-				const oldKey = Object.keys(updatedSubdivisions)[index];
-				newSubdivisions[`Subdivision ${index + 1}`] = updatedSubdivisions[oldKey];
-			});
-			
-			setDivisionsData(prev => ({
+			Object.keys(updatedSubdivisions)
+				.sort()
+				.forEach((_, index) => {
+					const oldKey = Object.keys(updatedSubdivisions)[index];
+					newSubdivisions[`Subdivision ${index + 1}`] =
+						updatedSubdivisions[oldKey];
+				});
+
+			setDivisionsData((prev) => ({
 				...prev,
 				[division]: {
 					...prev[division],
 					subdivisions: newSubdivisions,
 				},
 			}));
-			
+
 			setHasChanges(true);
 		},
 		[divisionsData]
@@ -582,25 +699,25 @@ export default function RostersContent() {
 			// Get teams to remove
 			const teamsToRemove = Object.values(
 				divisionsData[division]?.subdivisions[subdivision] || {}
-			).map(team => team.teamId);
-			
+			).map((team) => team.teamId);
+
 			// Update divisions
-			setDivisionsData(prev => {
+			setDivisionsData((prev) => {
 				const newData = { ...prev };
 				if (newData[division]?.subdivisions) {
 					delete newData[division].subdivisions[subdivision];
 				}
 				return newData;
 			});
-			
+
 			// Update selected teams
-			setSelectedTeams(prev =>
-				prev.filter(teamId => !teamsToRemove.includes(teamId))
+			setSelectedTeams((prev) =>
+				prev.filter((teamId) => !teamsToRemove.includes(teamId))
 			);
-			
+
 			// Rename subdivisions
 			updateSubdivisionNames(division);
-			
+
 			// Force hasChanges update immediately after state change
 			setTimeout(() => {
 				setHasChanges(true);
@@ -617,34 +734,36 @@ export default function RostersContent() {
 			team: string,
 			teamId: string
 		) => {
-			setDivisionsData(prev => {
+			setDivisionsData((prev) => {
 				const newData = JSON.parse(JSON.stringify(prev)); // Deep clone to ensure new reference
-				
+
 				// First, remove the team
 				if (newData[division]?.subdivisions[subdivision]) {
 					delete newData[division].subdivisions[subdivision][team];
 				}
-				
+
 				// Then, reorganize the team letters
-				const teamData = newData[division]?.subdivisions[subdivision] || {};
-				const teamEntries = Object.entries(teamData)
-					.sort(([letterA], [letterB]) => letterA.localeCompare(letterB));
-				
+				const teamData =
+					newData[division]?.subdivisions[subdivision] || {};
+				const teamEntries = Object.entries(teamData).sort(
+					([letterA], [letterB]) => letterA.localeCompare(letterB)
+				);
+
 				// Create a new object with updated letters
 				const updatedTeams: SubdivisionData = {};
-				teamEntries.forEach(([/* unused */, teamInfo], index) => {
+				teamEntries.forEach(([, /* unused */ teamInfo], index) => {
 					const newLetter = String.fromCharCode(65 + index); // 'A' + index
 					updatedTeams[newLetter] = teamInfo as TeamInfo;
 				});
-				
+
 				// Update the subdivision with reorganized teams
 				newData[division].subdivisions[subdivision] = updatedTeams;
-				
+
 				return newData;
 			});
-			
-			setSelectedTeams(prev => prev.filter(t => t !== teamId));
-			
+
+			setSelectedTeams((prev) => prev.filter((t) => t !== teamId));
+
 			// Force hasChanges update immediately after state change
 			setTimeout(() => {
 				setHasChanges(true);
@@ -714,7 +833,7 @@ export default function RostersContent() {
 	// Handle deletion of a roster
 	const handleDeleteRoster = useCallback(async () => {
 		if (!seasonCode) return;
-		
+
 		try {
 			setLoading(true);
 			const response = await fetch(
@@ -745,7 +864,7 @@ export default function RostersContent() {
 			setLoading(false);
 		}
 	}, [seasonCode]);
-	
+
 	return (
 		<div className="flex flex-col max-w-[65vw]">
 			{loading ? (
@@ -763,9 +882,11 @@ export default function RostersContent() {
 							/>
 							<div className="flex items-center gap-4">
 								<Label>Current Season?</Label>
-								<Checkbox 
-									checked={currentSeason} 
-									onCheckedChange={() => setCurrentSeason(!currentSeason)} 
+								<Checkbox
+									checked={currentSeason}
+									onCheckedChange={() =>
+										setCurrentSeason(!currentSeason)
+									}
 								/>
 							</div>
 						</div>
@@ -774,7 +895,9 @@ export default function RostersContent() {
 							{update && (
 								<Button
 									variant="outline"
-									onClick={() => setDeleteRosterAlertOpen(true)}
+									onClick={() =>
+										setDeleteRosterAlertOpen(true)
+									}
 								>
 									Delete Roster
 								</Button>
@@ -782,7 +905,7 @@ export default function RostersContent() {
 							{handleCopyRoster()}
 						</div>
 					</div>
-					
+
 					{/* Delete Roster Alert Dialog */}
 					<AlertDialog
 						open={deleteRosterAlertOpen}
@@ -793,13 +916,19 @@ export default function RostersContent() {
 						</AlertDialogTrigger>
 						<AlertDialogContent className="bg-white text-black">
 							<AlertDialogHeader>
-								<AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+								<AlertDialogTitle>
+									Confirm Deletion
+								</AlertDialogTitle>
 								<AlertDialogDescription>
 									Are you sure you want to delete this roster?
 								</AlertDialogDescription>
 							</AlertDialogHeader>
 							<AlertDialogFooter>
-								<Button onClick={() => setDeleteRosterAlertOpen(false)}>
+								<Button
+									onClick={() =>
+										setDeleteRosterAlertOpen(false)
+									}
+								>
 									Cancel
 								</Button>
 								<Button
@@ -813,10 +942,10 @@ export default function RostersContent() {
 								</Button>
 							</AlertDialogFooter>
 						</AlertDialogContent>
-						</AlertDialog>
-					
+					</AlertDialog>
+
 					{/* Divisions Accordion */}
-					{Object.keys(divisionsData).length > 0 && (
+					{Object.keys(divisionsData).length > 0 &&
 						Object.keys(divisionsData).map((division, index) => (
 							<Accordion
 								key={index}
@@ -827,7 +956,9 @@ export default function RostersContent() {
 							>
 								<AccordionItem value={`divisions`}>
 									<div className="flex justify-between items-center">
-										<AccordionTrigger>{division}</AccordionTrigger>
+										<AccordionTrigger>
+											{division}
+										</AccordionTrigger>
 										<AlertDialog
 											open={divisionAlertOpen}
 											onOpenChange={setDivisionAlertOpen}
@@ -835,8 +966,12 @@ export default function RostersContent() {
 											<AlertDialogTrigger asChild>
 												<div
 													onClick={() => {
-														confirmRemoveDivision(division);
-														setDivisionAlertOpen(true);
+														confirmRemoveDivision(
+															division
+														);
+														setDivisionAlertOpen(
+															true
+														);
 													}}
 													className="cursor-pointer"
 												>
@@ -849,14 +984,16 @@ export default function RostersContent() {
 														Confirm Deletion
 													</AlertDialogTitle>
 													<AlertDialogDescription>
-														Are you sure you want to delete
-														this division?
+														Are you sure you want to
+														delete this division?
 													</AlertDialogDescription>
 												</AlertDialogHeader>
 												<AlertDialogFooter>
 													<Button
 														onClick={() =>
-															setDivisionAlertOpen(false)
+															setDivisionAlertOpen(
+																false
+															)
 														}
 													>
 														Cancel
@@ -864,7 +1001,9 @@ export default function RostersContent() {
 													<Button
 														onClick={() => {
 															handleConfirmRemoveDivision();
-															setDivisionAlertOpen(false);
+															setDivisionAlertOpen(
+																false
+															);
 														}}
 														variant="destructive"
 													>
@@ -878,7 +1017,9 @@ export default function RostersContent() {
 										<div className="flex justify-end">
 											<Button
 												onClick={() =>
-													handleAddSubdivision(division)
+													handleAddSubdivision(
+														division
+													)
 												}
 												variant={"outline"}
 											>
@@ -889,10 +1030,11 @@ export default function RostersContent() {
 											orientation="horizontal"
 											className="my-2 bg-gray-300"
 										/>
-										
+
 										{/* Subdivisions Accordion */}
 										{Object.keys(
-											divisionsData[division]?.subdivisions || {}
+											divisionsData[division]
+												?.subdivisions || {}
 										).map((subdivision, subIndex) => (
 											<Accordion
 												key={subIndex}
@@ -910,12 +1052,16 @@ export default function RostersContent() {
 															{subdivision}
 														</AccordionTrigger>
 														<AlertDialog
-															open={subdivisionAlertOpen}
+															open={
+																subdivisionAlertOpen
+															}
 															onOpenChange={
 																setSubdivisionAlertOpen
 															}
 														>
-															<AlertDialogTrigger asChild>
+															<AlertDialogTrigger
+																asChild
+															>
 																<div
 																	onClick={() => {
 																		confirmRemoveSubdivision(
@@ -934,11 +1080,14 @@ export default function RostersContent() {
 															<AlertDialogContent className="bg-white text-black">
 																<AlertDialogHeader>
 																	<AlertDialogTitle>
-																		Confirm Deletion
+																		Confirm
+																		Deletion
 																	</AlertDialogTitle>
 																	<AlertDialogDescription>
-																		Are you sure you
-																		want to delete
+																		Are you
+																		sure you
+																		want to
+																		delete
 																		this
 																		subdivision?
 																	</AlertDialogDescription>
@@ -975,91 +1124,123 @@ export default function RostersContent() {
 																subdivision
 															)}
 														</div>
-														
+
 														{/* Teams List */}
 														<ul>
 															{Object.keys(
-																divisionsData[division]?.subdivisions[subdivision] || {}
-															).map((team, teamIndex) => (
-																<li key={teamIndex}>
-																	<div className="flex justify-start items-center">
-																		{team} -{" "}
-																		{
-																			divisionsData[division]?.subdivisions[subdivision][team]?.teamName
+																divisionsData[
+																	division
+																]?.subdivisions[
+																	subdivision
+																] || {}
+															).map(
+																(
+																	team,
+																	teamIndex
+																) => (
+																	<li
+																		key={
+																			teamIndex
 																		}
-																		<AlertDialog
-																			open={
-																				teamAlertOpen
+																	>
+																		<div className="flex justify-start items-center">
+																			{
+																				team
+																			}{" "}
+																			-{" "}
+																			{
+																				divisionsData[
+																					division
+																				]
+																					?.subdivisions[
+																					subdivision
+																				][
+																					team
+																				]
+																					?.teamName
 																			}
-																			onOpenChange={
-																				setTeamAlertOpen
-																			}
-																		>
-																			<AlertDialogTrigger
-																				asChild
+																			<AlertDialog
+																				open={
+																					teamAlertOpen
+																				}
+																				onOpenChange={
+																					setTeamAlertOpen
+																				}
 																			>
-																				<div
-																					onClick={() => {
-																						confirmRemoveTeam(
-																							division,
-																							subdivision,
-																							team,
-																							divisionsData[division]?.subdivisions[subdivision][team]?.teamId
-																						);
-																						setTeamAlertOpen(
-																							true
-																						);
-																					}}
-																					className="cursor-pointer"
+																				<AlertDialogTrigger
+																					asChild
 																				>
-																					<X className="text-red-500" />
-																				</div>
-																			</AlertDialogTrigger>
-																			<AlertDialogContent className="bg-white text-black">
-																				<AlertDialogHeader>
-																					<AlertDialogTitle>
-																						Confirm
-																						Deletion
-																					</AlertDialogTitle>
-																					<AlertDialogDescription>
-																						Are
-																						you
-																						sure
-																						you
-																						want
-																						to
-																						delete
-																						this
-																						team?
-																					</AlertDialogDescription>
-																				</AlertDialogHeader>
-																				<AlertDialogFooter>
-																					<Button
-																						onClick={() =>
-																							setTeamAlertOpen(
-																								false
-																							)
-																						}
-																					>
-																						Cancel
-																					</Button>
-																					<Button
+																					<div
 																						onClick={() => {
-																							handleConfirmRemoveTeam();
+																							confirmRemoveTeam(
+																								division,
+																								subdivision,
+																								team,
+																								divisionsData[
+																									division
+																								]
+																									?.subdivisions[
+																									subdivision
+																								][
+																									team
+																								]
+																									?.teamId
+																							);
 																							setTeamAlertOpen(
-																								false
+																								true
 																							);
 																						}}
-																						variant="destructive"
+																						className="cursor-pointer"
 																					>
-																						Delete
-																					</Button>
-																				</AlertDialogFooter>
-																			</AlertDialogContent>
-																		</AlertDialog>
-																	</div>
-																</li>
-															))}
+																						<X className="text-red-500" />
+																					</div>
+																				</AlertDialogTrigger>
+																				<AlertDialogContent className="bg-white text-black">
+																					<AlertDialogHeader>
+																						<AlertDialogTitle>
+																							Confirm
+																							Deletion
+																						</AlertDialogTitle>
+																						<AlertDialogDescription>
+																							Are
+																							you
+																							sure
+																							you
+																							want
+																							to
+																							delete
+																							this
+																							team?
+																						</AlertDialogDescription>
+																					</AlertDialogHeader>
+																					<AlertDialogFooter>
+																						<Button
+																							onClick={() =>
+																								setTeamAlertOpen(
+																									false
+																								)
+																							}
+																						>
+																							Cancel
+																						</Button>
+																						<Button
+																							onClick={() => {
+																								handleConfirmRemoveTeam();
+																								setTeamAlertOpen(
+																									false
+																								);
+																							}}
+																							variant="destructive"
+																						>
+																							Delete
+																						</Button>
+																					</AlertDialogFooter>
+																				</AlertDialogContent>
+																			</AlertDialog>
+																		</div>
+																	</li>
+																)
+															)}
 														</ul>
 													</AccordionContent>
 												</AccordionItem>
@@ -1068,9 +1249,8 @@ export default function RostersContent() {
 									</AccordionContent>
 								</AccordionItem>
 							</Accordion>
-						))
-					)}
-					
+						))}
+
 					{/* Action Buttons */}
 					{!update && (
 						<div className="flex justify-center">

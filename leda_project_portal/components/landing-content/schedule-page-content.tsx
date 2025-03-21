@@ -32,259 +32,355 @@ export default function ScheduleContent() {
 		};
 	}>({});
 	const [loading, setLoading] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [disabled, setDisabled] = useState<boolean>(true);
-    const [currentSeason, setCurrentSeason] = useState<boolean>(true);
-    const [gameDates, setGameDates] = useState<Record<string, string>>({});
-    const [matchData, setMatchData] = useState<{
-        [key:string]: {
-                [key:string]: {
-                        [key:string]: {
-                            teamName: string;
-                            teamId: string;
-                            matchesData: {
-                                [key: string]: {
-                                    matchDate: string;
-                                    matchTime: string;
-                                    home: boolean;
-                                    opposingTeamId: string;
-                                    opposingTeamLetter: string;
-                                },
-                                
-                            }
-                        }
-                    }
-                
-            }
-    }>({});
-    const [updatedMatchData, setUpdatedMatchData] = useState<{
-        [key:string]: {
-        [key:string]: {
-                [key:string]: {
-                    teamName: string;
-                    teamId: string;
-                    matchesData: {
-                        [key: string]: {
-                            matchDate: string;
-                            matchTime: string;
-                            home: boolean;
-                            opposingTeamId: string;
-                            opposingTeamLetter: string;
-                        },
-                        
-                    }
-                }
-            }
-        
-        }
-    }>({})
-    const [enableSaveButton, setEnableSaveButton] = useState<boolean>(false);
-
-
-    const handleSetEnableSaveButton = useCallback((value: boolean) => {
-        setEnableSaveButton(value);
-    }, []);
-
-    const handleFetchUpdatedData = useCallback((updatedMatchData: Record<
-        string,
-        Record<
-            string,
-            Record<
-                string,
-                {
-                    teamName: string;
-                    teamId: string;
-                    matchesData: Record<
-                        string,
-                        {
-                            matchDate: string;
-                            matchTime: string;
-                            home: boolean;
-                            opposingTeamId: string;
-                            opposingTeamLetter: string;
-                        }
-                    >;
-                }
-            >
-        >
-    >) => {
-        setUpdatedMatchData(updatedMatchData);
-    }, [])
-
-    const handleSaveData = useCallback(async (updatedMatchData: Record<
-		string,
-		Record<
-			string,
-			Record<
-				string,
-				{
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const [disabled, setDisabled] = useState<boolean>(true);
+	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
+	const [gameDates, setGameDates] = useState<Record<string, string>>({});
+	const [matchData, setMatchData] = useState<{
+		[key: string]: {
+			[key: string]: {
+				[key: string]: {
 					teamName: string;
 					teamId: string;
-					matchesData: Record<
-						string,
-						{
+					matchesData: {
+						[key: string]: {
 							matchDate: string;
 							matchTime: string;
 							home: boolean;
 							opposingTeamId: string;
 							opposingTeamLetter: string;
-						}
-					>;
-				}
-			>
-		>
-	>)=> {
-        console.log(updatedMatchData);
-        setMatchData(updatedMatchData);
-        // Save data to the server
-        const result = await fetch(`${scheduleRoute}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                seasonCode: seasonCode,
-                scheduleData: updatedMatchData
-            }),
-        });
-        console.log(result)
-        setEnableSaveButton(false);
-    }, [seasonCode])
-	// Handle season code selection
-	const handleSeasonCodeSelect = useCallback(async (value: string) => {
-		if (value === seasonCode) return;
-		setSeasonCode(value);
-		
-		setLoading(true);
-		const result = await fetch(`${rosterRoute}?seasonCode=${value}`, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
-		if (result.status === 200) {
-			const data = await result.json();
-			if (data) {
-				const roster = data;
-				// Update state with the fetched data
-				const fetchedData = JSON.parse(
-					JSON.stringify(roster.teamInfomation)
-				);
-				setDivisionsData(fetchedData);
-                const gameDatesResult = await fetch(`${seasonRoute}?seasonCode=${value}`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
-                if (gameDatesResult.status === 200) {
-                    const gameDatesData = await gameDatesResult.json();
-                    if (gameDatesData) {
-                        setGameDates(gameDatesData.dates);
-                    }
-                }
+						};
+					};
+				};
+			};
+		};
+	}>({});
+	const [updatedMatchData, setUpdatedMatchData] = useState<{
+		[key: string]: {
+			[key: string]: {
+				[key: string]: {
+					teamName: string;
+					teamId: string;
+					matchesData: {
+						[key: string]: {
+							matchDate: string;
+							matchTime: string;
+							home: boolean;
+							opposingTeamId: string;
+							opposingTeamLetter: string;
+						};
+					};
+				};
+			};
+		};
+	}>({});
+	const [enableSaveButton, setEnableSaveButton] = useState<boolean>(false);
 
-                const matchDataResult = await fetch(`${scheduleRoute}?seasonCode=${value}`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
-                if (matchDataResult.status === 200) {
-                    const matchData = await matchDataResult.json();
-                    console.log(matchData);
-                    if (matchData) {
-                        setMatchData(JSON.parse(JSON.stringify(matchData.scheduleData)));
-                    }
-                } else {
-                    // Populate matchData
-                    const newMatchData: Record<string, Record<string, Record<string, { teamName: string; teamId: string; matchesData: Record<string, { matchDate: string; matchTime: string; home: boolean; opposingTeamId: string; opposingTeamLetter: string }> }>>> = {};
-                    Object.keys(fetchedData).forEach(division => {
-                        newMatchData[division] = {};
-                        Object.keys(fetchedData[division].subdivisions).forEach(subdivision => {
-                            newMatchData[division][subdivision] = {};
-                            Object.keys(fetchedData[division].subdivisions[subdivision]).forEach(teamLetter => {
-                                newMatchData[division][subdivision][teamLetter] = {
-                                    teamName: fetchedData[division].subdivisions[subdivision][teamLetter].teamName,
-                                    teamId: fetchedData[division].subdivisions[subdivision][teamLetter].teamId,
-                                    matchesData: {}
-                                };
-                            });
-                        });
-                    });
-                    setMatchData(newMatchData);
-                }
+	const handleSetEnableSaveButton = useCallback((value: boolean) => {
+		setEnableSaveButton(value);
+	}, []);
+
+	const handleFetchUpdatedData = useCallback(
+		(
+			updatedMatchData: Record<
+				string,
+				Record<
+					string,
+					Record<
+						string,
+						{
+							teamName: string;
+							teamId: string;
+							matchesData: Record<
+								string,
+								{
+									matchDate: string;
+									matchTime: string;
+									home: boolean;
+									opposingTeamId: string;
+									opposingTeamLetter: string;
+								}
+							>;
+						}
+					>
+				>
+			>
+		) => {
+			setUpdatedMatchData(updatedMatchData);
+		},
+		[]
+	);
+
+	const handleSaveData = useCallback(
+		async (
+			updatedMatchData: Record<
+				string,
+				Record<
+					string,
+					Record<
+						string,
+						{
+							teamName: string;
+							teamId: string;
+							matchesData: Record<
+								string,
+								{
+									matchDate: string;
+									matchTime: string;
+									home: boolean;
+									opposingTeamId: string;
+									opposingTeamLetter: string;
+								}
+							>;
+						}
+					>
+				>
+			>
+		) => {
+			console.log(updatedMatchData);
+			setMatchData(updatedMatchData);
+			// Save data to the server
+			const result = await fetch(`${scheduleRoute}`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					seasonCode: seasonCode,
+					scheduleData: updatedMatchData,
+				}),
+			});
+			console.log(result);
+			setEnableSaveButton(false);
+		},
+		[seasonCode]
+	);
+	// Handle season code selection
+	const handleSeasonCodeSelect = useCallback(
+		async (value: string) => {
+			if (value === seasonCode) return;
+			setSeasonCode(value);
+
+			setLoading(true);
+			const result = await fetch(`${rosterRoute}?seasonCode=${value}`, {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			});
+			if (result.status === 200) {
+				const data = await result.json();
+				if (data) {
+					const roster = data;
+					// Update state with the fetched data
+					const fetchedData = JSON.parse(
+						JSON.stringify(roster.teamInfomation)
+					);
+					setDivisionsData(fetchedData);
+					const gameDatesResult = await fetch(
+						`${seasonRoute}?seasonCode=${value}`,
+						{
+							method: "GET",
+							headers: {
+								"Content-Type": "application/json",
+							},
+						}
+					);
+					if (gameDatesResult.status === 200) {
+						const gameDatesData = await gameDatesResult.json();
+						if (gameDatesData) {
+							setGameDates(gameDatesData.dates);
+						}
+					}
+
+					const matchDataResult = await fetch(
+						`${scheduleRoute}?seasonCode=${value}`,
+						{
+							method: "GET",
+							headers: {
+								"Content-Type": "application/json",
+							},
+						}
+					);
+					if (matchDataResult.status === 200) {
+						const matchData = await matchDataResult.json();
+						console.log(matchData);
+						if (matchData) {
+							setMatchData(
+								JSON.parse(
+									JSON.stringify(matchData.scheduleData)
+								)
+							);
+						}
+					} else {
+						// Populate matchData
+						const newMatchData: Record<
+							string,
+							Record<
+								string,
+								Record<
+									string,
+									{
+										teamName: string;
+										teamId: string;
+										matchesData: Record<
+											string,
+											{
+												matchDate: string;
+												matchTime: string;
+												home: boolean;
+												opposingTeamId: string;
+												opposingTeamLetter: string;
+											}
+										>;
+									}
+								>
+							>
+						> = {};
+						Object.keys(fetchedData).forEach((division) => {
+							newMatchData[division] = {};
+							Object.keys(
+								fetchedData[division].subdivisions
+							).forEach((subdivision) => {
+								newMatchData[division][subdivision] = {};
+								Object.keys(
+									fetchedData[division].subdivisions[
+										subdivision
+									]
+								).forEach((teamLetter) => {
+									newMatchData[division][subdivision][
+										teamLetter
+									] = {
+										teamName:
+											fetchedData[division].subdivisions[
+												subdivision
+											][teamLetter].teamName,
+										teamId: fetchedData[division]
+											.subdivisions[subdivision][
+											teamLetter
+										].teamId,
+										matchesData: {},
+									};
+								});
+							});
+						});
+						setMatchData(newMatchData);
+					}
+				}
+			} else {
+				setDivisionsData({});
 			}
-		} else {
-			setDivisionsData({});
-		}
-		setLoading(false);
-	}, [seasonCode]);
+			setLoading(false);
+		},
+		[seasonCode]
+	);
 
 	return !loading ? (
-        <div className="flex flex-col max-w-[65vw]">
-            <div className="flex justify-between">
-                <div className="flex gap-4">
-                    <SeasonCodeSelector
-                        disabled={currentSeason}
-                        handleSelect={handleSeasonCodeSelect}
-                        setDisabled={setDisabled}
-                        useCurrentSeason={currentSeason}
-                        seasonCode={seasonCode || ""}
-                    />
-                    <div className="flex items-center gap-4">
-                        <Label>Current Season?</Label>
-                        <Checkbox checked={currentSeason} onCheckedChange={() => setCurrentSeason(!currentSeason)} />
-                    </div>
-                </div>
-                <div>
-                    {enableSaveButton && (
-                        <div className="p-4 flex justify-center">
-                            <Button onClick={() => handleSaveData(updatedMatchData)} variant="outline">
-                                Save Changes
-                            </Button>
-                        </div>
-                    )}
-                </div>
-            </div>
-            {Object.keys(divisionsData).length > 0 && (
-                <div className="w-full mt-4">
-                    {Object.keys(divisionsData).map((division, index) => (
-                        <Accordion
-                            key={index}
-                            type="single"
-                            collapsible
-                            className="w-full mb-4"
-                            defaultValue={`division-${index}`}
-                        >
-                            <AccordionItem value={`division-${index}`}>
-                                <AccordionTrigger className="underline">{division}</AccordionTrigger>
-                                <AccordionContent>
-                                    {Object.keys(divisionsData[division].subdivisions).map((subdivision, subIndex) => (
-                                        <Accordion
-                                            key={subIndex}
-                                            type="single"
-                                            collapsible
-                                            className="w-full mt-2"
-                                            defaultValue={`subdivision-${subIndex}`}
-                                        >
-                                            <AccordionItem value={`subdivision-${subIndex}`} className="border-b-0">
-                                                <AccordionTrigger className="underline">{subdivision}</AccordionTrigger>
-                                                <AccordionContent>
-                                                    {Object.keys(divisionsData[division].subdivisions[subdivision]).length > 0 && (
-                                                        <SubdivisionScheduler teams={divisionsData[division].subdivisions[subdivision]} gameDates={gameDates} matchData={matchData} setEnabledSaveButton={handleSetEnableSaveButton} handleSaveData={handleFetchUpdatedData}/>
-                                                    )}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        </Accordion>
-                                    ))}
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                    ))}
-                </div>
-            )}
-        </div>
+		<div className="flex flex-col max-w-[65vw]">
+			<div className="flex justify-between">
+				<div className="flex gap-4">
+					<SeasonCodeSelector
+						disabled={currentSeason}
+						handleSelect={handleSeasonCodeSelect}
+						setDisabled={setDisabled}
+						useCurrentSeason={currentSeason}
+						seasonCode={seasonCode || ""}
+					/>
+					<div className="flex items-center gap-4">
+						<Label>Current Season?</Label>
+						<Checkbox
+							checked={currentSeason}
+							onCheckedChange={() =>
+								setCurrentSeason(!currentSeason)
+							}
+						/>
+					</div>
+				</div>
+				<div>
+					{enableSaveButton && (
+						<div className="p-4 flex justify-center">
+							<Button
+								onClick={() => handleSaveData(updatedMatchData)}
+								variant="outline"
+							>
+								Save Changes
+							</Button>
+						</div>
+					)}
+				</div>
+			</div>
+			{Object.keys(divisionsData).length > 0 && (
+				<div className="w-full mt-4">
+					{Object.keys(divisionsData).map((division, index) => (
+						<Accordion
+							key={index}
+							type="single"
+							collapsible
+							className="w-full mb-4"
+							defaultValue={`division-${index}`}
+						>
+							<AccordionItem value={`division-${index}`}>
+								<AccordionTrigger className="underline">
+									{division}
+								</AccordionTrigger>
+								<AccordionContent>
+									{Object.keys(
+										divisionsData[division].subdivisions
+									).map((subdivision, subIndex) => (
+										<Accordion
+											key={subIndex}
+											type="single"
+											collapsible
+											className="w-full mt-2"
+											defaultValue={`subdivision-${subIndex}`}
+										>
+											<AccordionItem
+												value={`subdivision-${subIndex}`}
+												className="border-b-0"
+											>
+												<AccordionTrigger className="underline">
+													{subdivision}
+												</AccordionTrigger>
+												<AccordionContent>
+													{Object.keys(
+														divisionsData[division]
+															.subdivisions[
+															subdivision
+														]
+													).length > 0 && (
+														<SubdivisionScheduler
+															teams={
+																divisionsData[
+																	division
+																].subdivisions[
+																	subdivision
+																]
+															}
+															gameDates={
+																gameDates
+															}
+															matchData={
+																matchData
+															}
+															setEnabledSaveButton={
+																handleSetEnableSaveButton
+															}
+															handleSaveData={
+																handleFetchUpdatedData
+															}
+														/>
+													)}
+												</AccordionContent>
+											</AccordionItem>
+										</Accordion>
+									))}
+								</AccordionContent>
+							</AccordionItem>
+						</Accordion>
+					))}
+				</div>
+			)}
+		</div>
 	) : (
 		<Spinner />
 	);
