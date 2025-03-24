@@ -274,9 +274,71 @@ interface PlayerPoints {
   pointsByGame: Record<string, number>;
 }
 
+// Add new interface for the formatted JSON data
+interface FormattedScoreData {
+  [division: string]: {
+    [subdivision: string]: {
+      [matchup: string]: {
+        teamInformation: {
+          [teamId: string]: {
+            teamLetter: string;
+            teamName: string;
+            home: boolean;
+            teamMembers: {
+              [playerId: string]: {
+                name: string;
+                gameStats: Record<string, boolean>;
+                gamePoints: string;
+              };
+            };
+          };
+        };
+        gameInformation: {
+          [game: string]: {
+            homeWin: boolean;
+            homePoints: string;
+            awayPoints: string;
+          };
+        };
+        teamPoints: {
+          homePoints: string;
+          awayPoints: string;
+        };
+      };
+    };
+  };
+}
+
+// Add a utility function for deep merging objects
+const deepMerge = (target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> => {
+  const output = { ...target };
+  
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key])) {
+        if (!(key in target)) {
+          Object.assign(output, { [key]: source[key] });
+        } else {
+		  output[key] = deepMerge(target[key] as Record<string, unknown>, source[key] as Record<string, unknown>);
+        }
+      } else {
+        Object.assign(output, { [key]: source[key] });
+      }
+    });
+  }
+  
+  return output;
+};
+
+// Helper function to check if value is an object
+const isObject = (item: unknown): boolean => {
+  return !!item && typeof item === 'object' && !Array.isArray(item);
+};
+
 export default function WeeklyScoresheetsContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
     const [currentSeason, setCurrentSeason] = useState<boolean>(true);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [disabled, setDisabled] = useState<boolean>(false);
     const [seasonSelected, setSeasonSelected] = useState<boolean>(true);
     const [sidenavData, setSidenavData] = useState<DivisionData>({});
@@ -309,6 +371,9 @@ export default function WeeklyScoresheetsContent() {
       home: PlayerPoints[];
       away: PlayerPoints[];
     } | null>(null);
+    
+    // Add state for formatted JSON data
+    const [formattedScoreData, setFormattedScoreData] = useState<FormattedScoreData | null>(null);
     
     const [showPointsModal, setShowPointsModal] = useState<boolean>(false);
 
@@ -552,6 +617,101 @@ export default function WeeklyScoresheetsContent() {
         home: homePlayerPoints,
         away: awayPlayerPoints
       });
+      
+      // Format data in the requested JSON structure
+      const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+      
+      // Build gameInformation object
+	  const gameInformation: Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> = {};
+      for (let i = 1; i <= 11; i++) {
+        gameInformation[`Game ${i}`] = {
+          homeWin: homeWins[i-1],
+          homePoints: homePoints[i-1] || "0",
+          awayPoints: awayPoints[i-1] || "0"
+        };
+      }
+      
+      // Use the same calculation method as displayed in the UI
+      const teamPointsCalculation = calculatePoints();
+      
+      // Build home team members
+	  const homeTeamMembers: Record<string, { 
+		name: string; 
+		gameStats: Record<string, boolean>; 
+		gamePoints: string; 
+	  }> = {};
+      homeTeamPlayerInformation?.forEach((player, index) => {
+        const playerGameStats: Record<string, boolean> = {};
+        for (let i = 1; i <= 11; i++) {
+          const gameKey = `Game ${i}`;
+          playerGameStats[gameKey] = homeTeamGameData[player.ledaId]?.[gameKey] || false;
+        }
+        
+        homeTeamMembers[String(index + 1)] = {
+          name: player.fullName,
+          gameStats: playerGameStats,
+          gamePoints: String(homePlayerPoints.find(p => p.playerId === String(player.ledaId))?.totalPoints || 0)
+        };
+      });
+      
+      // Build away team members
+	  const awayTeamMembers: Record<string, { 
+		name: string; 
+		gameStats: Record<string, boolean>; 
+		gamePoints: string; 
+	  }> = {};
+      awayTeamPlayerInformation?.forEach((player, index) => {
+        const playerGameStats: Record<string, boolean> = {};
+        for (let i = 1; i <= 11; i++) {
+          const gameKey = `Game ${i}`;
+          playerGameStats[gameKey] = awayTeamGameData[player.ledaId]?.[gameKey] || false;
+        }
+        
+        awayTeamMembers[String(index + 1)] = {
+          name: player.fullName,
+          gameStats: playerGameStats,
+          gamePoints: String(awayPlayerPoints.find(p => p.playerId === String(player.ledaId))?.totalPoints || 0)
+        };
+      });
+      
+      // Create the new formatted data
+      const newData: FormattedScoreData = {
+        [selectedDivision]: {
+          [selectedSubdivision]: {
+            [matchupKey]: {
+              teamInformation: {
+                "1": {
+                  teamLetter: selectedHomeLetter,
+                  teamName: homeTeamInformation?.teamName || "",
+                  home: true,
+                  teamMembers: homeTeamMembers
+                },
+                "2": {
+                  teamLetter: selectedAwayLetter,
+                  teamName: awayTeamInformation?.teamName || "",
+                  home: false,
+                  teamMembers: awayTeamMembers
+                }
+              },
+              gameInformation: gameInformation,
+              teamPoints: {
+                homePoints: String(teamPointsCalculation.homePoints),
+                awayPoints: String(teamPointsCalculation.awayPoints)
+              }
+            }
+          }
+        }
+      };
+      
+      // Merge with existing data instead of overwriting
+      if (formattedScoreData) {
+        // Deep merge existing data with new data
+        const mergedData = deepMerge(formattedScoreData, newData);
+		setFormattedScoreData(mergedData as FormattedScoreData);
+      } else {
+        // First save, just use the new data
+        setFormattedScoreData(newData);
+      }
       
       setShowPointsModal(true);
     };
@@ -863,6 +1023,30 @@ export default function WeeklyScoresheetsContent() {
                                             </div>
                                         </div>
                                     </div>
+                                )}
+								
+								{/* Add JSON display section */}
+                                {formattedScoreData && (
+                                  <div className="mt-8 border rounded-md p-4 bg-gray-50">
+                                    <h3 className="text-lg font-bold mb-4">Formatted Scoresheet Data</h3>
+                                    <div className="bg-black text-green-400 p-4 rounded overflow-auto max-h-[400px]">
+                                      <pre className="text-xs whitespace-pre-wrap">
+                                        {JSON.stringify(formattedScoreData, null, 2)}
+                                      </pre>
+                                    </div>
+                                    
+                                    {/* Add button to copy JSON */}
+                                    <Button 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(JSON.stringify(formattedScoreData));
+                                        alert("JSON data copied to clipboard!");
+                                      }}
+                                      className="mt-2"
+                                      variant="outline"
+                                    >
+                                      Copy to Clipboard
+                                    </Button>
+                                  </div>
                                 )}
 								</div>
 							</div>
