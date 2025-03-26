@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS public.leda_weekly_team_scores
     "teamLedaId" bigint NOT NULL,
     "prevTotalPoints" bigint NOT NULL DEFAULT 0,
     "totalPoints" bigint NOT NULL,
-    CONSTRAINT leda_weekly_team_scores_pkey PRIMARY KEY (id)
+    CONSTRAINT leda_weekly_team_scores_pkey PRIMARY KEY (id),
+    CONSTRAINT "leda_weekly_team_scores_seasonCode_weekNum_teamLedaId_key" UNIQUE ("seasonCode", "weekNum", "teamLedaId")
 )
 
 TABLESPACE pg_default;
