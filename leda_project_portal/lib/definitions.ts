@@ -187,3 +187,11 @@ export type Schedule = {
 	seasonCode: string;
 	scheduleData: JSON;
 }
+//
+// Define type to identify the shape of our data from postgres for a Weekly Scoresheet
+//
+export type WeeklyScoresheet = {
+	seasonCode: string;
+	weekNumber: number;
+	scoresheetData: JSON;
+}
