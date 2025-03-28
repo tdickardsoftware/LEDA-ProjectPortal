@@ -210,7 +210,7 @@ export type TeamPoints = {
 //
 export type PlayerPoints = {
 	seasonCode: string;
-	weekNumber: number;
+	weekNum: number;
 	ledaId: number;
 	prevTotalPoints: number;
 	totalPoints: number;

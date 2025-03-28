@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { ChevronRight, ChevronDown, X, CheckCircle, AlertTriangle } from "lucide-react";
+import debounce from "lodash.debounce";
 
 import {
 	Collapsible,
@@ -398,21 +399,23 @@ export default function WeeklyScoresheetsContent() {
 	const [awayTeamGameData, setAwayTeamGameData] = useState<TeamGameData>({});
     const [isLoading, setIsLoading] = useState<boolean>(false);
 	
-	// Add new state for tracking game wins
-    const [homeWins, setHomeWins] = useState<boolean[]>(Array(11).fill(false));
-	
-	// Add new state for tracking points
-    const [homePoints, setHomePoints] = useState<string[]>(Array(11).fill(''));
-    const [awayPoints, setAwayPoints] = useState<string[]>(Array(11).fill(''));
-
+	// Consolidate related state
+	const [gameData, setGameData] = useState({
+		homePoints: Array(11).fill(''),
+		awayPoints: Array(11).fill(''),
+		homeWins: Array(11).fill(false),
+		isDataChanged: false,
+	});
 	
 	// Add new state variables for API operations
     const [selectedWeek, setSelectedWeek] = useState<string>("");
     const [isSaving, setIsSaving] = useState<boolean>(false);
-	const [isDataChanged, setIsDataChanged] = useState<boolean>(false);
 
 	const handleDataChange = () => {
-		setIsDataChanged(true);
+		setGameData(prev => ({
+			...prev,
+			isDataChanged: true,
+		}));
 	};
 
     const handleSeasonCodeSelect = (value: string) => {
@@ -435,11 +438,17 @@ export default function WeeklyScoresheetsContent() {
 		setAwayTeamGameData({});  // Reset the game data
 		
 		 // Reset game wins when selecting a new matchup
-        setHomeWins(Array(11).fill(false));
+        setGameData(prev => ({
+			...prev,
+			homeWins: Array(11).fill(false),
+		}));
 		
 		 // Reset points when selecting a new matchup
-        setHomePoints(Array(11).fill(''));
-        setAwayPoints(Array(11).fill(''));
+        setGameData(prev => ({
+			...prev,
+			homePoints: Array(11).fill(''),
+			awayPoints: Array(11).fill(''),
+		}));
 		
 		// Find team IDs from sidenavData based on the letters
 		if (sidenavData[divisionName] && sidenavData[divisionName][subdivisionName]) {
@@ -595,9 +604,12 @@ export default function WeeklyScoresheetsContent() {
 						awayPointsArray[index] = gameData.awayPoints;
 					});
 		
-					setHomeWins(homeWinsArray);
-					setHomePoints(homePointsArray);
-					setAwayPoints(awayPointsArray);
+					setGameData(prev => ({
+						...prev,
+						homeWins: homeWinsArray,
+						homePoints: homePointsArray,
+						awayPoints: awayPointsArray,
+					}));
 				}
 			}
 		}
@@ -661,39 +673,37 @@ export default function WeeklyScoresheetsContent() {
 	
 	// Add a handler for toggling home win status for each game
     const handleHomeWinToggle = (gameIndex: number) => {
-        setHomeWins(prev => {
-            const newWins = [...prev];
-            newWins[gameIndex] = !newWins[gameIndex];
-            return newWins;
-        });
+        setGameData(prev => ({
+			...prev,
+			homeWins: prev.homeWins.map((win, i) => i === gameIndex ? !win : win),
+		}));
 		handleDataChange();
     };
 
-    // Calculate points for home and away teams
-    const calculatePoints = () => {
-        const totalHomeWins = homeWins.filter(Boolean).length;
-        const homePoints = totalHomeWins;
-        const awayPoints = 11 - totalHomeWins;
-        return { homePoints, awayPoints };
-    };
+    // Memoize points calculation
+    const calculatePoints = useMemo(() => {
+        const totalHomeWins = gameData.homeWins.filter(Boolean).length;
+        return { 
+            homePoints: totalHomeWins, 
+            awayPoints: 11 - totalHomeWins 
+        };
+    }, [gameData.homeWins]);
 	
-	// Add handlers for updating points
+	// Batch state updates for points
     const handleHomePointsChange = (gameIndex: number, value: string) => {
-        setHomePoints(prev => {
-            const newPoints = [...prev];
-            newPoints[gameIndex] = value;
-            return newPoints;
-        });
-		handleDataChange();
+        setGameData(prev => ({
+            ...prev,
+            homePoints: prev.homePoints.map((p, i) => i === gameIndex ? value : p),
+            isDataChanged: true,
+        }));
     };
 
     const handleAwayPointsChange = (gameIndex: number, value: string) => {
-        setAwayPoints(prev => {
-            const newPoints = [...prev];
-            newPoints[gameIndex] = value;
-            return newPoints;
-        });
-		handleDataChange();
+        setGameData(prev => ({
+            ...prev,
+            awayPoints: prev.awayPoints.map((p, i) => i === gameIndex ? value : p),
+            isDataChanged: true,
+        }));
     };
 
     const calculatePlayerPoints = () => {
@@ -711,7 +721,7 @@ export default function WeeklyScoresheetsContent() {
             const gameKey = `Game ${i+1}`;
             // If player participated in the game, add the points
             if (playerGameData[gameKey]) {
-              const gamePoints = parseInt(homePoints[i]) || 0;
+              const gamePoints = parseInt(gameData.homePoints[i]) || 0;
               totalPoints += gamePoints;
               pointsByGame[gameKey] = gamePoints;
             } else {
@@ -742,7 +752,7 @@ export default function WeeklyScoresheetsContent() {
             const gameKey = `Game ${i+1}`;
             // If player participated in the game, add the points
             if (playerGameData[gameKey]) {
-              const gamePoints = parseInt(awayPoints[i]) || 0;
+              const gamePoints = parseInt(gameData.awayPoints[i]) || 0;
               totalPoints += gamePoints;
               pointsByGame[gameKey] = gamePoints;
             } else {
@@ -766,14 +776,14 @@ export default function WeeklyScoresheetsContent() {
 	  const gameInformation: Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> = {};
       for (let i = 1; i <= 11; i++) {
         gameInformation[`Game ${i}`] = {
-          homeWin: homeWins[i-1],
-          homePoints: homePoints[i-1] || "0",
-          awayPoints: awayPoints[i-1] || "0"
+          homeWin: gameData.homeWins[i-1],
+          homePoints: gameData.homePoints[i-1] || "0",
+          awayPoints: gameData.awayPoints[i-1] || "0"
         };
       }
       
       // Use the same calculation method as displayed in the UI
-      const teamPointsCalculation = calculatePoints();
+      const teamPointsCalculation = calculatePoints;
       
       // Build home team members
 	  const homeTeamMembers: Record<string, { 
@@ -941,7 +951,7 @@ export default function WeeklyScoresheetsContent() {
                     const player = homePlayers[playerId];
                     const playerPointsPayload = {
                         seasonCode,
-                        weekNumber: parseInt(selectedWeek),
+                        weekNum: parseInt(selectedWeek),
                         ledaId: playerId,
                         playerId,
                         totalPoints: parseInt(player.gamePoints),
@@ -964,7 +974,7 @@ export default function WeeklyScoresheetsContent() {
                     const player = awayPlayers[playerId];
                     const playerPointsPayload = {
                         seasonCode,
-                        weekNumber: parseInt(selectedWeek),
+                        weekNum: parseInt(selectedWeek),
                         ledaId: playerId, // Correctly set to the player's ID
                         playerId,
                         totalPoints: parseInt(player.gamePoints),
@@ -987,7 +997,10 @@ export default function WeeklyScoresheetsContent() {
             
             // Update the local state with the complete data to show accurate representation
             setFormattedScoreData(completeData);
-            setIsDataChanged(false); // Reset data change flag after successful save
+            setGameData(prev => ({
+				...prev,
+				isDataChanged: false,
+			}));
             
         } catch (error) {
             console.error('Error saving scoresheet:', error);
@@ -1003,11 +1016,17 @@ export default function WeeklyScoresheetsContent() {
 			setAwayTeamGameData({});
 
 			// Reset home win checkboxes
-			setHomeWins(Array(11).fill(false));
+			setGameData(prev => ({
+				...prev,
+				homeWins: Array(11).fill(false),
+			}));
 
 			// Reset points
-			setHomePoints(Array(11).fill(''));
-			setAwayPoints(Array(11).fill(''));
+			setGameData(prev => ({
+				...prev,
+				homePoints: Array(11).fill(''),
+				awayPoints: Array(11).fill(''),
+			}));
 
 			// Reset formattedScoreData for this matchup
 			if (formattedScoreData) {
@@ -1036,7 +1055,10 @@ export default function WeeklyScoresheetsContent() {
 			}
 
 			// Mark data as changed to enable the "Save Scoresheet" button
-			setIsDataChanged(true);
+			setGameData(prev => ({
+				...prev,
+				isDataChanged: true,
+			}));
 		}
 	};
 
@@ -1214,7 +1236,7 @@ export default function WeeklyScoresheetsContent() {
                                                                     <div className="flex items-center space-x-2">
                                                                         <Checkbox
                                                                             id={`home-win-${i}`}
-                                                                            checked={homeWins[i]}
+                                                                            checked={gameData.homeWins[i]}
                                                                             onCheckedChange={() => handleHomeWinToggle(i)}
                                                                         />
                                                                         <Label 
@@ -1238,7 +1260,7 @@ export default function WeeklyScoresheetsContent() {
                                                                     type="text"
                                                                     inputMode="numeric"
                                                                     pattern="[0-9]*"
-                                                                    value={homePoints[i]}
+                                                                    value={gameData.homePoints[i]}
                                                                     onChange={(e) => handleHomePointsChange(i, e.target.value)}
                                                                     className="w-12 text-center border border-gray-300 rounded p-1"
                                                                     placeholder="0"
@@ -1254,7 +1276,7 @@ export default function WeeklyScoresheetsContent() {
                                                                     type="text"
                                                                     inputMode="numeric"
                                                                     pattern="[0-9]*"
-                                                                    value={awayPoints[i]}
+                                                                    value={gameData.awayPoints[i]}
                                                                     onChange={(e) => handleAwayPointsChange(i, e.target.value)}
                                                                     className="w-12 text-center border border-gray-300 rounded p-1"
                                                                     placeholder="0"
@@ -1268,13 +1290,13 @@ export default function WeeklyScoresheetsContent() {
                                                             colSpan={5} 
                                                             className="text-center font-bold"
                                                         >
-                                                            Home: {calculatePoints().homePoints}
+                                                            Home: {calculatePoints.homePoints}
                                                         </TableCell>
                                                         <TableCell 
                                                             colSpan={6} 
                                                             className="text-center font-bold"
                                                         >
-                                                            Away: {calculatePoints().awayPoints}
+                                                            Away: {calculatePoints.awayPoints}
                                                         </TableCell>
                                                     </TableRow>
                                                 </TableBody>
@@ -1288,7 +1310,7 @@ export default function WeeklyScoresheetsContent() {
                                     <Button 
                                         onClick={calculatePlayerPoints}
                                         className="bg-blue-600 hover:bg-blue-700 text-white"
-                                        disabled={isSaving || !isDataChanged} // Disable button if no data has changed
+                                        disabled={isSaving || !gameData.isDataChanged} // Disable button if no data has changed
                                     >
                                         {isSaving ? 'Saving...' : 'Save Scoresheet'}
                                     </Button>
