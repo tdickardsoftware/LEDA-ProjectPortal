@@ -205,3 +205,13 @@ export type TeamPoints = {
 	prevTotalPoints: number;
 	totalPoints: number;
 }
+//
+// Define type to indentify the shape of our data from postgres for weekly player scores
+//
+export type PlayerPoints = {
+	seasonCode: string;
+	weekNumber: number;
+	ledaId: number;
+	prevTotalPoints: number;
+	totalPoints: number;
+}
