@@ -10,10 +10,10 @@ export default async function handler(
     if (req.method === "POST") {
         const data = req.body as PlayerPoints;
 
-        if (data.weekNumber != 1){
+        if (data.weekNumber != 1) {
             try {
-                const queryText = `SELECT "totalPoints" from public.leda_weekly_player_points where "seasonCode" = $1 and "weekNum" = $2 and "ledaId" = $3`;
-                const values = [data.seasonCode, data.weekNumber-1, data.ledaId];
+                const queryText = `SELECT "totalPoints" from public.leda_weekly_player_points where "seasonCode" = $1 and "weekNum" = $2 and "ledaId" = $3 and "teamLedaId" = $4`;
+                const values = [data.seasonCode, data.weekNumber - 1, data.ledaId, data.teamLedaId];
                 const result = await query<PlayerPoints>(queryText, values);
                 if (result.rows.length !== 0) {
                     data.prevTotalPoints = result.rows[0].totalPoints;
@@ -28,12 +28,12 @@ export default async function handler(
         }
         try {
             const query = `
-                INSERT INTO public.leda_weekly_player_points ("seasonCode", "weekNum", "ledaId", "prevTotalPoints", "totalPoints")
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT ("seasonCode", "weekNumber", "teamLedaId")
+                INSERT INTO public.leda_weekly_player_points ("seasonCode", "weekNum", "ledaId", "prevTotalPoints", "totalPoints", "teamLedaId")
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT ("seasonCode", "weekNum", "ledaId", "teamLedaId")
                 DO UPDATE SET "totalPoints" = $5;
             `;
-            const values = [data.seasonCode, data.weekNumber, data.ledaId, data.prevTotalPoints, data.prevTotalPoints + data.totalPoints];
+            const values = [data.seasonCode, data.weekNumber, data.ledaId, data.prevTotalPoints, data.prevTotalPoints + data.totalPoints, data.teamLedaId];
             const result = await queryPost(query, values);
             res.status(201).json(result);
         } catch (error) {
@@ -45,7 +45,11 @@ export default async function handler(
                 const seasonCode = req.query.seasonCode;
                 const weekNum = req.query.weekNum;
                 const ledaId = req.query.ledaId;
-                const result = await query<PlayerPoints>(`SELECT * FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "ledaId" = $3`, [seasonCode as string, weekNum as string, ledaId as string]);
+                const teamLedaId = req.query.teamLedaId;
+                const result = await query<PlayerPoints>(
+                    `SELECT * FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "ledaId" = $3 and "teamLedaId" = $4`,
+                    [seasonCode as string, weekNum as string, ledaId as string, teamLedaId as string]
+                );
                 if (result.rows.length !== 0) {
                     res.status(200).json(result.rows[0]);
                 } else {
@@ -56,7 +60,10 @@ export default async function handler(
             }
         } else if (req.query.seasonCode) {
             const seasonCode = req.query.seasonCode;
-            const result = await query<PlayerPoints>(`SELECT * FROM public.leda_weekly_player_points WHERE "seasonCode" = $1`, [seasonCode as string]);
+            const result = await query<PlayerPoints>(
+                `SELECT * FROM public.leda_weekly_player_points WHERE "seasonCode" = $1`,
+                [seasonCode as string]
+            );
             if (result.rows.length !== 0) {
                 res.status(200).json(result.rows);
             } else {
@@ -66,4 +73,4 @@ export default async function handler(
     } else {
         res.status(405).json({ message: "Method Not Allowed" });
     }
-} 
+}

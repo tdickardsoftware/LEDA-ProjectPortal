@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ChevronRight, ChevronDown, X } from "lucide-react";
+import { ChevronRight, ChevronDown, X, CheckCircle, AlertTriangle } from "lucide-react";
 
 import {
 	Collapsible,
@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import WeekSelector from "@/components/ui/week-selector";
-import { scheduleRoute, teamRoute, playerRoute } from "@/lib/apiRoutes";
+import { scheduleRoute, teamRoute, playerRoute, weeklyScoresheetsRoute } from "@/lib/apiRoutes";
 import FolderTab from "@/components/ui/folder-tab";
 import { Player } from "@/lib/definitions";
 import {
@@ -117,7 +117,7 @@ const convertScheduleData = (sourceData: SourceData, dateToDisplay: string): Div
 	return result;
 };
 
-const SideNav = ({ data, handleMatchupSelection }: { data: DivisionData, handleMatchupSelection: (homeLetter: string, awayLetter: string, divisionName: string, subdivisionName: string) => void }) => {
+const SideNav = ({ data, formattedScoreData, handleMatchupSelection }: { data: DivisionData, formattedScoreData: FormattedScoreData | null, handleMatchupSelection: (homeLetter: string, awayLetter: string, divisionName: string, subdivisionName: string) => void }) => {
 	const [openDivisions, setOpenDivisions] = useState<Record<string, boolean>>(
 		{}
 	);
@@ -139,6 +139,31 @@ const SideNav = ({ data, handleMatchupSelection }: { data: DivisionData, handleM
 			...prev,
 			[key]: !prev[key],
 		}));
+	};
+
+	const isMatchupBlank = (divisionName: string, subdivisionName: string, matchupKey: string): boolean => {
+		const matchupData = formattedScoreData?.[divisionName]?.[subdivisionName]?.[matchupKey];
+		if (!matchupData) {
+			// If no data exists for the matchup, consider it blank
+			return true;
+		}
+
+		// Check if all player game data is false
+		const isHomeGameDataBlank = Object.values(matchupData.teamInformation["1"].teamMembers).every(member =>
+			Object.values(member.gameStats).every(game => !game)
+		);
+		const isAwayGameDataBlank = Object.values(matchupData.teamInformation["2"].teamMembers).every(member =>
+			Object.values(member.gameStats).every(game => !game)
+		);
+
+		// Check if all home wins are false
+		const areHomeWinsBlank = Object.values(matchupData.gameInformation).every(game => !game.homeWin);
+
+		// Check if all points are 0 or empty
+		const areHomePointsBlank = Object.values(matchupData.gameInformation).every(game => game.homePoints === '' || game.homePoints === '0');
+		const areAwayPointsBlank = Object.values(matchupData.gameInformation).every(game => game.awayPoints === '' || game.awayPoints === '0');
+
+		return isHomeGameDataBlank && isAwayGameDataBlank && areHomeWinsBlank && areHomePointsBlank && areAwayPointsBlank;
 	};
 
 	// Check if data is empty or null
@@ -220,6 +245,11 @@ const SideNav = ({ data, handleMatchupSelection }: { data: DivisionData, handleM
 														const isSelected = 
 															selectedMatchup?.home === game.homeTeamLetter && 
 															selectedMatchup?.away === game.awayTeamLetter;
+
+														// Determine if scoresheet data exists for this matchup
+														const matchupKey = `${game.homeTeamLetter} - ${game.awayTeamLetter}`;
+														const showYellowFlag = isMatchupBlank(divisionName, subdivisionName, matchupKey);
+
 														return (
 															<Button
 																key={`${subdivKey}-${gameNumber}`}
@@ -233,13 +263,16 @@ const SideNav = ({ data, handleMatchupSelection }: { data: DivisionData, handleM
 																	handleMatchupSelection(game.homeTeamLetter, game.awayTeamLetter, divisionName, subdivisionName);
 																}}
 															>
-																{
-																	game.homeTeamLetter
-																}{" "}
-																-{" "}
-																{
-																	game.awayTeamLetter
-																}
+																<div className="flex items-center gap-2">
+																	<span>
+																		{game.homeTeamLetter} - {game.awayTeamLetter}
+																	</span>
+																	{showYellowFlag ? (
+																		<AlertTriangle className="h-4 w-4 text-yellow-500" />
+																	) : (
+																		<CheckCircle className="h-4 w-4 text-green-500" />
+																	)}
+																</div>
 															</Button>
 														);
 													})}
@@ -309,20 +342,25 @@ interface FormattedScoreData {
   };
 }
 
-// Add a utility function for deep merging objects
-const deepMerge = (target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> => {
-  const output = { ...target };
+// Improved deep merge utility function with proper type handling
+const deepMerge = <T extends Record<string, unknown>, U extends Record<string, unknown>>(
+  target: T, 
+  source: U
+): T & U => {
+  const output = { ...target } as T & U;
   
   if (isObject(target) && isObject(source)) {
     Object.keys(source).forEach(key => {
       if (isObject(source[key])) {
         if (!(key in target)) {
-          Object.assign(output, { [key]: source[key] });
+		  (output as Record<string, unknown>)[key] = source[key];
+        } else if (isObject(target[key])) {
+		  (output as Record<string, unknown>)[key] = deepMerge(target[key] as Record<string, unknown>, source[key] as Record<string, unknown>);
         } else {
-		  output[key] = deepMerge(target[key] as Record<string, unknown>, source[key] as Record<string, unknown>);
+		  (output as Record<string, unknown>)[key] = source[key];
         }
       } else {
-        Object.assign(output, { [key]: source[key] });
+		(output as Record<string, unknown>)[key] = source[key];
       }
     });
   }
@@ -330,9 +368,9 @@ const deepMerge = (target: Record<string, unknown>, source: Record<string, unkno
   return output;
 };
 
-// Helper function to check if value is an object
-const isObject = (item: unknown): boolean => {
-  return !!item && typeof item === 'object' && !Array.isArray(item);
+// Type-safe object check with type predicate
+const isObject = (item: unknown): item is Record<string, unknown> => {
+  return Boolean(item && typeof item === 'object' && !Array.isArray(item));
 };
 
 export default function WeeklyScoresheetsContent() {
@@ -342,6 +380,7 @@ export default function WeeklyScoresheetsContent() {
     const [disabled, setDisabled] = useState<boolean>(false);
     const [seasonSelected, setSeasonSelected] = useState<boolean>(true);
     const [sidenavData, setSidenavData] = useState<DivisionData>({});
+    const [formattedScoreData, setFormattedScoreData] = useState<FormattedScoreData | null>(null); // Initialize formattedScoreData
 	const [matchSelected, setMatchSelected] = useState<boolean>(false);
 	const [selectedHomeLetter, setSelectedHomeLetter] = useState<string>("");
 	const [selectedAwayLetter, setSelectedAwayLetter] = useState<string>("");
@@ -366,16 +405,15 @@ export default function WeeklyScoresheetsContent() {
     const [homePoints, setHomePoints] = useState<string[]>(Array(11).fill(''));
     const [awayPoints, setAwayPoints] = useState<string[]>(Array(11).fill(''));
 
-    // Add state for calculated player points
-    const [calculatedPoints, setCalculatedPoints] = useState<{
-      home: PlayerPoints[];
-      away: PlayerPoints[];
-    } | null>(null);
-    
-    // Add state for formatted JSON data
-    const [formattedScoreData, setFormattedScoreData] = useState<FormattedScoreData | null>(null);
-    
-    const [showPointsModal, setShowPointsModal] = useState<boolean>(false);
+	
+	// Add new state variables for API operations
+    const [selectedWeek, setSelectedWeek] = useState<string>("");
+    const [isSaving, setIsSaving] = useState<boolean>(false);
+	const [isDataChanged, setIsDataChanged] = useState<boolean>(false);
+
+	const handleDataChange = () => {
+		setIsDataChanged(true);
+	};
 
     const handleSeasonCodeSelect = (value: string) => {
         setSeasonCode(value);
@@ -476,6 +514,92 @@ export default function WeeklyScoresheetsContent() {
 					break;
 				}
 			}
+			if (formattedScoreData && formattedScoreData[divisionName] && formattedScoreData[divisionName][subdivisionName]) {
+				const matchupKey = `${homeLetter} - ${awayLetter}`;
+				const matchupData = formattedScoreData[divisionName][subdivisionName][matchupKey];
+		
+				if (matchupData) {
+					// Set home team data
+					setSelectedHomeTeamId(Object.keys(matchupData.teamInformation)[0]);
+					setHomeTeamInformation({
+						teamName: matchupData.teamInformation["1"].teamName,
+						teamId: matchupData.teamInformation["1"].teamLetter,
+						matchesData: {}, // Populate if necessary
+					});
+					setHomeTeamPlayerInformation(
+						Object.values(matchupData.teamInformation["1"].teamMembers).map((member, index) => ({
+							ledaId: index + 1, // Convert to number
+							firstName: member.name.split(" ")[0] || "",
+							lastName: member.name.split(" ")[1] || "",
+							middleInitial: "",
+							addressOne: "",
+							addressTwo: "",
+							city: "",
+							state: "",
+							zip: "",
+							phoneNumber: "",
+							email: "",
+							fullName: member.name,
+							gender: "Unknown", // Default or fetched value
+							dateOfBirth: new Date(), // Default or fetched value
+						}))
+					);
+		
+					// Set away team data
+					setSelectedAwayTeamId(Object.keys(matchupData.teamInformation)[1]);
+					setAwayTeamInformation({
+						teamName: matchupData.teamInformation["2"].teamName,
+						teamId: matchupData.teamInformation["2"].teamLetter,
+						matchesData: {}, // Populate if necessary
+					});
+					setAwayTeamPlayerInformation(
+						Object.values(matchupData.teamInformation["2"].teamMembers).map((member, index) => ({
+							ledaId: index + 1, // Convert to number
+							firstName: member.name.split(" ")[0] || "",
+							lastName: member.name.split(" ")[1] || "",
+							middleInitial: "",
+							addressOne: "",
+							addressTwo: "",
+							city: "",
+							state: "",
+							zip: "",
+							phoneNumber: "",
+							email: "",
+							fullName: member.name,
+							gender: "Unknown", // Default or fetched value
+							dateOfBirth: new Date(), // Default or fetched value
+						}))
+					);
+		
+					// Set game data
+					const homeGameData: TeamGameData = {};
+					const awayGameData: TeamGameData = {};
+					Object.entries(matchupData.teamInformation["1"].teamMembers).forEach(([playerId, member]) => {
+						homeGameData[playerId] = member.gameStats;
+					});
+					Object.entries(matchupData.teamInformation["2"].teamMembers).forEach(([playerId, member]) => {
+						awayGameData[playerId] = member.gameStats;
+					});
+					setHomeTeamGameData(homeGameData);
+					setAwayTeamGameData(awayGameData);
+		
+					// Set game points and wins
+					const gameInformation = matchupData.gameInformation;
+					const homeWinsArray = Array(11).fill(false);
+					const homePointsArray = Array(11).fill("");
+					const awayPointsArray = Array(11).fill("");
+		
+					Object.entries(gameInformation).forEach(([, gameData], index) => {
+						homeWinsArray[index] = gameData.homeWin;
+						homePointsArray[index] = gameData.homePoints;
+						awayPointsArray[index] = gameData.awayPoints;
+					});
+		
+					setHomeWins(homeWinsArray);
+					setHomePoints(homePointsArray);
+					setAwayPoints(awayPointsArray);
+				}
+			}
 		}
 		setIsLoading(false);
 	}
@@ -485,6 +609,24 @@ export default function WeeklyScoresheetsContent() {
         const data = await results.json();
 		setMatchSelected(false);
         setSidenavData(convertScheduleData(data.scheduleData, value));
+        
+        // Extract the week number from "DateX" format
+        const weekNumber = value.replace("Date", "");
+        setSelectedWeek(weekNumber);
+        console.log("Selected week:", weekNumber);
+
+        // Fetch existing scoresheet data for the selected week and season code
+        try {
+            const scoresheetResponse = await fetch(`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&weekNumber=${weekNumber}`);
+            if (scoresheetResponse.ok) {
+                const scoresheetData = await scoresheetResponse.json();
+                if (scoresheetData && scoresheetData.scoresheetData) {
+                    setFormattedScoreData(scoresheetData.scoresheetData); // Update formattedScoreData
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching scoresheet data:", error);
+        }
     }
 
 	// Update game toggle handler to work with the new structure
@@ -514,6 +656,7 @@ export default function WeeklyScoresheetsContent() {
 				};
 			});
 		}
+		handleDataChange();
 	};
 	
 	// Add a handler for toggling home win status for each game
@@ -523,6 +666,7 @@ export default function WeeklyScoresheetsContent() {
             newWins[gameIndex] = !newWins[gameIndex];
             return newWins;
         });
+		handleDataChange();
     };
 
     // Calculate points for home and away teams
@@ -540,6 +684,7 @@ export default function WeeklyScoresheetsContent() {
             newPoints[gameIndex] = value;
             return newPoints;
         });
+		handleDataChange();
     };
 
     const handleAwayPointsChange = (gameIndex: number, value: string) => {
@@ -548,6 +693,7 @@ export default function WeeklyScoresheetsContent() {
             newPoints[gameIndex] = value;
             return newPoints;
         });
+		handleDataChange();
     };
 
     const calculatePlayerPoints = () => {
@@ -612,11 +758,6 @@ export default function WeeklyScoresheetsContent() {
           });
         });
       }
-      
-      setCalculatedPoints({
-        home: homePlayerPoints,
-        away: awayPlayerPoints
-      });
       
       // Format data in the requested JSON structure
       const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
@@ -713,8 +854,191 @@ export default function WeeklyScoresheetsContent() {
         setFormattedScoreData(newData);
       }
       
-      setShowPointsModal(true);
+      // After calculating and formatting the data, save it to the database
+      saveScoresheet(newData);
     };
+	
+	// Add new function to save data to the database
+    const saveScoresheet = async (data: FormattedScoreData) => {
+        if (!seasonCode || !selectedWeek) {
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            // First, try to fetch existing scoresheet data for this season and week
+            const fetchResponse = await fetch(`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&weekNumber=${selectedWeek}`);
+            
+            let completeData: FormattedScoreData = data;
+            
+            // If there's existing data, merge it with our new data
+            if (fetchResponse.ok) {
+                const existingData = await fetchResponse.json();
+                if (existingData && existingData.scoresheetData) {
+                    // Merge existing scoresheet data with new data
+                    completeData = deepMerge(existingData.scoresheetData, data) as FormattedScoreData;
+                }
+            }
+            
+            // Now save the complete merged data
+            const saveResponse = await fetch(weeklyScoresheetsRoute, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    seasonCode: seasonCode,
+                    weekNumber: selectedWeek,
+                    scoresheetData: completeData
+                }),
+            });
+            
+            if (!saveResponse.ok) {
+                throw new Error(`Server responded with ${saveResponse.status}: ${saveResponse.statusText}`);
+            }
+
+            // Save team points for each team
+            const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+            const matchupData = data[selectedDivision]?.[selectedSubdivision]?.[matchupKey];
+
+            if (matchupData) {
+                const homeTeamPointsPayload = {
+                    seasonCode,
+                    weekNumber: parseInt(selectedWeek),
+                    ledaId: selectedHomeTeamId,
+                    totalPoints: parseInt(matchupData.teamPoints.homePoints),
+                };
+
+                const awayTeamPointsPayload = {
+                    seasonCode,
+                    weekNumber: parseInt(selectedWeek),
+                    ledaId: selectedAwayTeamId,
+                    totalPoints: parseInt(matchupData.teamPoints.awayPoints),
+                };
+
+                // Save home team points
+                await fetch(`${weeklyScoresheetsRoute}/teamPoints`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(homeTeamPointsPayload),
+                });
+
+                // Save away team points
+                await fetch(`${weeklyScoresheetsRoute}/teamPoints`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(awayTeamPointsPayload),
+                });
+
+                // Save player points for each player in the home team
+                const homePlayers = matchupData.teamInformation["1"].teamMembers;
+                for (const playerId in homePlayers) {
+                    const player = homePlayers[playerId];
+                    const playerPointsPayload = {
+                        seasonCode,
+                        weekNumber: parseInt(selectedWeek),
+                        ledaId: playerId,
+                        playerId,
+                        totalPoints: parseInt(player.gamePoints),
+                        pointsByGame: player.gameStats,
+						teamLedaId: selectedHomeTeamId,
+                    };
+
+                    await fetch(`${weeklyScoresheetsRoute}/playerPoints`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(playerPointsPayload),
+                    });
+                }
+
+                // Save player points for each player in the away team
+                const awayPlayers = matchupData.teamInformation["2"].teamMembers;
+                for (const playerId in awayPlayers) {
+                    const player = awayPlayers[playerId];
+                    const playerPointsPayload = {
+                        seasonCode,
+                        weekNumber: parseInt(selectedWeek),
+                        ledaId: playerId, // Correctly set to the player's ID
+                        playerId,
+                        totalPoints: parseInt(player.gamePoints),
+                        pointsByGame: player.gameStats,
+                        teamLedaId: selectedAwayTeamId, // Correctly set to the team's ID
+                    };
+
+                    await fetch(`${weeklyScoresheetsRoute}/playerPoints`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(playerPointsPayload),
+                    });
+                }
+            }
+
+            const result = await saveResponse.json();
+            console.log('Scoresheet saved successfully:', result);
+            
+            // Update the local state with the complete data to show accurate representation
+            setFormattedScoreData(completeData);
+            setIsDataChanged(false); // Reset data change flag after successful save
+            
+        } catch (error) {
+            console.error('Error saving scoresheet:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+	const resetScoresheet = () => {
+		if (window.confirm("Are you sure you want to reset this scoresheet? This action cannot be undone.")) {
+			// Reset home and away team game data
+			setHomeTeamGameData({});
+			setAwayTeamGameData({});
+
+			// Reset home win checkboxes
+			setHomeWins(Array(11).fill(false));
+
+			// Reset points
+			setHomePoints(Array(11).fill(''));
+			setAwayPoints(Array(11).fill(''));
+
+			// Reset formattedScoreData for this matchup
+			if (formattedScoreData) {
+				const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+				const updatedData = { ...formattedScoreData };
+
+				if (
+					updatedData[selectedDivision] &&
+					updatedData[selectedDivision][selectedSubdivision] &&
+					updatedData[selectedDivision][selectedSubdivision][matchupKey]
+				) {
+					delete updatedData[selectedDivision][selectedSubdivision][matchupKey];
+
+					// If no matchups remain in the subdivision, remove it
+					if (Object.keys(updatedData[selectedDivision][selectedSubdivision]).length === 0) {
+						delete updatedData[selectedDivision][selectedSubdivision];
+					}
+
+					// If no subdivisions remain in the division, remove it
+					if (Object.keys(updatedData[selectedDivision]).length === 0) {
+						delete updatedData[selectedDivision];
+					}
+				}
+
+				setFormattedScoreData(updatedData);
+			}
+
+			// Mark data as changed to enable the "Save Scoresheet" button
+			setIsDataChanged(true);
+		}
+	};
 
     const FolderTabSkeleton = () => (
 		<div className="w-full space-y-4">
@@ -755,7 +1079,11 @@ export default function WeeklyScoresheetsContent() {
                 <Separator orientation="horizontal" className="bg-gray-400 w-100"/>
             </div>
 			<div className="flex flex-1 overflow-hidden">
-				<SideNav data={sidenavData} handleMatchupSelection={handleMatchupSelection}/>
+				<SideNav 
+					data={sidenavData} 
+					formattedScoreData={formattedScoreData} 
+					handleMatchupSelection={handleMatchupSelection} 
+				/>
 
 				<div className="flex-1 p-4 overflow-auto">
 						{!matchSelected ? (
@@ -838,7 +1166,7 @@ export default function WeeklyScoresheetsContent() {
 															<TableRow>
 																<TableHead>Player Name</TableHead>
 																{Array.from({ length: 11 }).map((_, i) => (
-																	<TableHead key={i} className="text-center">Game {i+1}</TableHead>
+																	<TableHead key={i} className="text-center">Game {i + 1}</TableHead>
 																))}
 															</TableRow>
 														</TableHeader>
@@ -847,10 +1175,10 @@ export default function WeeklyScoresheetsContent() {
 																<TableRow key={player.ledaId}>
 																	<TableCell>{player.fullName}</TableCell>
 																	{Array.from({ length: 11 }).map((_, i) => {
-																		const gameKey = `Game ${i+1}`;
+																		const gameKey = `Game ${i + 1}`;
 																		return (
-																			<TableCell 
-																				key={i} 
+																			<TableCell
+																				key={i}
 																				className="text-center cursor-pointer"
 																				onClick={() => handleGameToggle('away', String(player.ledaId), i)}
 																			>
@@ -955,102 +1283,26 @@ export default function WeeklyScoresheetsContent() {
                                     )}
                                 </FolderTab>
 								
-								{/* Add Save Button */}
-                                <div className="flex justify-end mt-4">
+								{/* Add Save and Reset Buttons */}
+                                <div className="flex justify-center mt-4">
                                     <Button 
                                         onClick={calculatePlayerPoints}
                                         className="bg-blue-600 hover:bg-blue-700 text-white"
+                                        disabled={isSaving || !isDataChanged} // Disable button if no data has changed
                                     >
-                                        Save Scoresheets
+                                        {isSaving ? 'Saving...' : 'Save Scoresheet'}
+                                    </Button>
+                                    <Button
+                                        onClick={resetScoresheet}
+                                        className="bg-red-600 hover:bg-red-700 text-white ml-4"
+                                        disabled={isSaving} // Disable button while saving
+                                    >
+                                        Reset Scoresheet
                                     </Button>
                                 </div>
-                                
-                                {/* Display calculated points in a modal or section */}
-                                {showPointsModal && calculatedPoints && (
-                                    <div className="mt-6 border rounded-md p-4 bg-gray-50">
-                                        <div className="flex justify-between mb-4">
-                                            <h3 className="text-lg font-bold">Calculated Points</h3>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                onClick={() => setShowPointsModal(false)}
-                                            >
-                                                Close
-                                            </Button>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {/* Home Team Points */}
-                                            <div>
-                                                <h4 className="font-semibold text-lg mb-2">Home Team</h4>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead>Player</TableHead>
-                                                            <TableHead className="text-right">Total Points</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {calculatedPoints.home.map(player => (
-                                                            <TableRow key={player.playerId}>
-                                                                <TableCell>{player.playerName}</TableCell>
-                                                                <TableCell className="text-right">{player.totalPoints}</TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                            
-                                            {/* Away Team Points */}
-                                            <div>
-                                                <h4 className="font-semibold text-lg mb-2">Away Team</h4>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead>Player</TableHead>
-                                                            <TableHead className="text-right">Total Points</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {calculatedPoints.away.map(player => (
-                                                            <TableRow key={player.playerId}>
-                                                                <TableCell>{player.playerName}</TableCell>
-                                                                <TableCell className="text-right">{player.totalPoints}</TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-								
-								{/* Add JSON display section */}
-                                {formattedScoreData && (
-                                  <div className="mt-8 border rounded-md p-4 bg-gray-50">
-                                    <h3 className="text-lg font-bold mb-4">Formatted Scoresheet Data</h3>
-                                    <div className="bg-black text-green-400 p-4 rounded overflow-auto max-h-[400px]">
-                                      <pre className="text-xs whitespace-pre-wrap">
-                                        {JSON.stringify(formattedScoreData, null, 2)}
-                                      </pre>
-                                    </div>
-                                    
-                                    {/* Add button to copy JSON */}
-                                    <Button 
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(JSON.stringify(formattedScoreData));
-                                        alert("JSON data copied to clipboard!");
-                                      }}
-                                      className="mt-2"
-                                      variant="outline"
-                                    >
-                                      Copy to Clipboard
-                                    </Button>
-                                  </div>
-                                )}
-								</div>
 							</div>
-						)}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>

@@ -214,4 +214,5 @@ export type PlayerPoints = {
 	ledaId: number;
 	prevTotalPoints: number;
 	totalPoints: number;
+	teamLedaId: number;
 }

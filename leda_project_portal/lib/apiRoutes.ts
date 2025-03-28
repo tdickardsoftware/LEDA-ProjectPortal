@@ -39,7 +39,7 @@ export const rosterRoute = "/api/activities/roster";
 // Define route for schedule not on the serverside
 export const  scheduleRoute = "/api/activities/schedule";
 // Define route for weekly scoresheets not on serverside
-export const weeklyScoresheetsRoute = "/api/activities/scoresheet";
+export const weeklyScoresheetsRoute = "/api/activities/scoresheets";
 
 //
 // Server Routes

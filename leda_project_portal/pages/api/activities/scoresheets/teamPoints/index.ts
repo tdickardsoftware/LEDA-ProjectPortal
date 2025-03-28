@@ -30,10 +30,10 @@ export default async function handler(
             const query = `
                 INSERT INTO public.leda_weekly_team_scores ("seasonCode", "weekNum", "teamLedaId", "prevTotalPoints", "totalPoints")
                 VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT ("seasonCode", "weekNumber", "teamLedaId")
+                ON CONFLICT ("seasonCode", "weekNum", "teamLedaId")
                 DO UPDATE SET "totalPoints" = $5;
             `;
-            const values = [data.seasonCode, data.weekNumber, data.ledaId, data.prevTotalPoints, data.prevTotalPoints + data.totalPoints];
+            const values = [data.seasonCode, data.weekNumber, data.ledaId, data.prevTotalPoints, Number(data.prevTotalPoints) + Number(data.totalPoints)];
             const result = await queryPost(query, values);
             res.status(201).json(result);
         } catch (error) {

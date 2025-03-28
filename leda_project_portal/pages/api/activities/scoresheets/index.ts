@@ -11,9 +11,9 @@ export default async function handler(
         const data = req.body as WeeklyScoresheet;
         try {
             const query = `
-                INSERT INTO public.leda_weekly_scoresheets ("seasonCode", "weekNumber", "scoresheetData")
+                INSERT INTO public.leda_weekly_scoresheets ("seasonCode", "weekNum", "scoresheetData")
                 VALUES ($1, $2, $3)
-                ON CONFLICT ("seasonCode", "weekNumber")
+                ON CONFLICT ("seasonCode", "weekNum")
                 DO UPDATE SET "scoresheetData" = $3;
             `;
             const values = [data.seasonCode, data.weekNumber, data.scoresheetData];
@@ -27,7 +27,7 @@ export default async function handler(
             try {
                 const seasonCode = req.query.seasonCode;
                 const weekNumber = req.query.weekNumber;
-                const result = await query<WeeklyScoresheet>(`SELECT "seasonCode", "weekNumber", "scoresheetData" FROM public.leda_weekly_scoresheets WHERE "seasonCode" = $1 AND "weekNumber" = $2`, [seasonCode as string, weekNumber as string]);
+                const result = await query<WeeklyScoresheet>(`SELECT "seasonCode", "weekNum", "scoresheetData" FROM public.leda_weekly_scoresheets WHERE "seasonCode" = $1 AND "weekNum" = $2`, [seasonCode as string, weekNumber as string]);
                 if (result.rows.length !== 0) {
                     res.status(200).json(result.rows[0]);
                 } else {
@@ -40,7 +40,7 @@ export default async function handler(
         }else if (req.query.seasonCode) {
             try {
                 const seasonCode = req.query.seasonCode;
-                const result = await query<WeeklyScoresheet>(`SELECT "seasonCode", "weekNumber", "scoresheetData" FROM public.leda_weekly_scoresheets WHERE "seasonCode" = $1`, [seasonCode as string]);
+                const result = await query<WeeklyScoresheet>(`SELECT "seasonCode", "weekNum", "scoresheetData" FROM public.leda_weekly_scoresheets WHERE "seasonCode" = $1`, [seasonCode as string]);
                 if (result.rows.length !== 0) {
                     res.status(200).json(result.rows[0]);
                 } else {
