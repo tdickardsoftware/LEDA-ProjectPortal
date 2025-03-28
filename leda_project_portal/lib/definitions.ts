@@ -200,7 +200,7 @@ export type WeeklyScoresheet = {
 //
 export type TeamPoints = {
 	seasonCode: string;
-	weekNumber: number;
+	weekNum: number;
 	ledaId: number;
 	prevTotalPoints: number;
 	totalPoints: number;

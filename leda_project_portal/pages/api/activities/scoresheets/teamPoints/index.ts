@@ -10,10 +10,10 @@ export default async function handler(
     if (req.method === "POST") {
         const data = req.body as TeamPoints;
 
-        if (data.weekNumber != 1){
+        if (data.weekNum != 1){
             try {
                 const queryText = `SELECT "totalPoints" from public.leda_weekly_team_scores where "seasonCode" = $1 and "weekNum" = $2 and "teamLedaId" = $3`;
-                const values = [data.seasonCode, data.weekNumber-1, data.ledaId];
+                const values = [data.seasonCode, data.weekNum-1, data.ledaId];
                 const result = await query<TeamPoints>(queryText, values);
                 if (result.rows.length !== 0) {
                     data.prevTotalPoints = result.rows[0].totalPoints;
@@ -33,8 +33,17 @@ export default async function handler(
                 ON CONFLICT ("seasonCode", "weekNum", "teamLedaId")
                 DO UPDATE SET "totalPoints" = $5;
             `;
-            const values = [data.seasonCode, data.weekNumber, data.ledaId, data.prevTotalPoints, Number(data.prevTotalPoints) + Number(data.totalPoints)];
+            const values = [data.seasonCode, data.weekNum, data.ledaId, data.prevTotalPoints, Number(data.prevTotalPoints) + Number(data.totalPoints)];
             const result = await queryPost(query, values);
+            
+            // Update subsequent weeks
+            await updateSubsequentWeeks(
+                data.seasonCode, 
+                data.weekNum, 
+                data.ledaId.toString(), 
+                Number(data.prevTotalPoints) + Number(data.totalPoints)
+            );
+            
             res.status(201).json(result);
         } catch (error) {
             res.status(500).json({ message: "Failed to upsert weekly team scoresinformation", error });
@@ -65,5 +74,58 @@ export default async function handler(
         }
     } else {
         res.status(405).json({ message: "Method Not Allowed" });
+    }
+}
+
+/**
+ * Updates all subsequent weeks' scores when a previous week's score has been updated
+ */
+async function updateSubsequentWeeks(
+    seasonCode: string, 
+    currentWeekNum: number, 
+    teamLedaId: string, 
+    newTotalPoints: number
+): Promise<void> {
+    try {
+        // Fetch all subsequent weeks for this team
+        const subsequentWeeksQuery = `
+            SELECT * FROM public.leda_weekly_team_scores 
+            WHERE "seasonCode" = $1 
+            AND "weekNum" > $2 
+            AND "teamLedaId" = $3
+            ORDER BY "weekNum" ASC
+        `;
+        const values = [seasonCode, currentWeekNum, teamLedaId];
+        const result = await query<TeamPoints>(subsequentWeeksQuery, values);
+        
+        // No subsequent weeks found, nothing to update
+        if (result.rows.length === 0) return;
+        
+        // Process each subsequent week
+        for (const week of result.rows) {
+            // Calculate the points scored in this week (difference between total and prev)
+            const pointsScored = Number(week.totalPoints) - Number(week.prevTotalPoints);
+            
+            // Update this week with new prevTotalPoints (which is the newTotalPoints from previous week)
+            // and recalculate totalPoints
+            const updatedTotalPoints = Number(newTotalPoints) + Number(pointsScored);
+            
+            const updateQuery = `
+                UPDATE public.leda_weekly_team_scores 
+                SET "prevTotalPoints" = $1, "totalPoints" = $2
+                WHERE "seasonCode" = $3 AND "weekNum" = $4 AND "teamLedaId" = $5
+            `;
+            
+            await queryPost(
+                updateQuery, 
+                [newTotalPoints, updatedTotalPoints, seasonCode, week.weekNum, teamLedaId]
+            );
+            
+            // Update newTotalPoints for the next iteration
+            newTotalPoints = updatedTotalPoints;
+        }
+    } catch (error) {
+        console.error("Error updating subsequent weeks:", error);
+        // We don't throw here to prevent breaking the main flow
     }
 }
