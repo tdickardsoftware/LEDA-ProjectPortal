@@ -11,7 +11,7 @@ export default async function handler(
         const data = req.body as WeeklyScoresheet;
         try {
             const query = `
-                INSERT INTO public.leda_weekly_scoresheet ("seasonCode", "weekNumber", "scoresheetData")
+                INSERT INTO public.leda_weekly_scoresheets ("seasonCode", "weekNumber", "scoresheetData")
                 VALUES ($1, $2, $3)
                 ON CONFLICT ("seasonCode", "weekNumber")
                 DO UPDATE SET "scoresheetData" = $3;
@@ -23,10 +23,24 @@ export default async function handler(
             res.status(500).json({ message: "Failed to upsert weekly scoresheet information", error });
         }
     } else if (req.method === "GET") {
-        if (req.query.seasonCode) {
+        if (req.query.seasonCode && req.query.weekNumber) {
             try {
                 const seasonCode = req.query.seasonCode;
-                const result = await query<WeeklyScoresheet>(`SELECT "seasonCode", "weekNumber", "scoresheetData" FROM public.leda_weekly_scoresheet WHERE "seasonCode" = $1`, [seasonCode as string]);
+                const weekNumber = req.query.weekNumber;
+                const result = await query<WeeklyScoresheet>(`SELECT "seasonCode", "weekNumber", "scoresheetData" FROM public.leda_weekly_scoresheets WHERE "seasonCode" = $1 AND "weekNumber" = $2`, [seasonCode as string, weekNumber as string]);
+                if (result.rows.length !== 0) {
+                    res.status(200).json(result.rows[0]);
+                } else {
+                    res.status(404).json({ message: "No weekly scoresheet information found for the specified season code and week number" });
+                }
+            }
+            catch (error) {
+                res.status(500).json({ message: "Failed to fetch weekly scoresheet information", error });
+            }
+        }else if (req.query.seasonCode) {
+            try {
+                const seasonCode = req.query.seasonCode;
+                const result = await query<WeeklyScoresheet>(`SELECT "seasonCode", "weekNumber", "scoresheetData" FROM public.leda_weekly_scoresheets WHERE "seasonCode" = $1`, [seasonCode as string]);
                 if (result.rows.length !== 0) {
                     res.status(200).json(result.rows[0]);
                 } else {
