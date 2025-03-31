@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * Penalty Selector Component
+ *
+ * This component provides a searchable dropdown for selecting penalties:
+ * - Fetches penalty options from the API
+ * - Displays penalties with their codes and descriptions
+ * - Supports search functionality
+ * - Integrates with React Hook Form for form handling
+ *
+ * The component can be used in both controlled mode (with React Hook Form)
+ * or uncontrolled mode (with direct value/onChange props).
+ */
 import React, { useEffect, useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -33,24 +45,26 @@ interface FormValues {
 }
 
 interface PenaltySelectorProps {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>;
-	name: string;
-	label: string;
-    disabled?: boolean;
+	control: Control<any>; // Form control from React Hook Form
+	name: string; // Field name in the form
+	label: string; // Label text for the field
+	disabled?: boolean; // Optional disabled state
 }
 
 interface PenaltySelectorContentProps {
-	value?: string;
-	onChange?: (value: string) => void;
-    disabled?: boolean;
+	value?: string; // Current value (for uncontrolled mode)
+	onChange?: (value: string) => void; // Change handler (for uncontrolled mode)
+	disabled?: boolean; // Optional disabled state
 }
 
+/**
+ * Main penalty selector component that integrates with React Hook Form
+ */
 export default function PenaltySelector({
 	control,
 	name,
 	label,
-    disabled
+	disabled,
 }: PenaltySelectorProps) {
 	return (
 		<FormProvider {...useFormContext()}>
@@ -64,7 +78,7 @@ export default function PenaltySelector({
 							<PenaltySelectorContent
 								value={field.value}
 								onChange={field.onChange}
-                                disabled={disabled}
+								disabled={disabled}
 							/>
 						</FormControl>
 						<FormMessage />
@@ -75,10 +89,14 @@ export default function PenaltySelector({
 	);
 }
 
+/**
+ * Internal content component that handles the actual selector functionality
+ * Can work in both controlled (via form context) and uncontrolled modes
+ */
 const PenaltySelectorContent: React.FC<PenaltySelectorContentProps> = ({
 	value: propValue,
 	onChange,
-    disabled
+	disabled,
 }) => {
 	const formContext = useFormContext<FormValues>();
 	const [localValue, setLocalValue] = useState(propValue || "");
@@ -87,11 +105,12 @@ const PenaltySelectorContent: React.FC<PenaltySelectorContentProps> = ({
 		{ value: string; label: string }[]
 	>([]);
 
-	// Use form context if available, otherwise use props
+	// Determine value source (form context or props)
 	const currentValue = formContext
 		? formContext.watch("penaltyCode")
 		: localValue;
 
+	// Handle value changes in either mode
 	const handleValueChange = (newValue: string) => {
 		if (formContext) {
 			formContext.setValue("penaltyCode", newValue);
@@ -101,6 +120,7 @@ const PenaltySelectorContent: React.FC<PenaltySelectorContentProps> = ({
 		}
 	};
 
+	// Fetch penalties from API on component mount
 	useEffect(() => {
 		async function loadPenalties() {
 			try {
@@ -120,6 +140,7 @@ const PenaltySelectorContent: React.FC<PenaltySelectorContentProps> = ({
 	}, []);
 
 	return (
+		// Render the dropdown selector UI
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>

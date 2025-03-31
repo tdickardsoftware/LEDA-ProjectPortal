@@ -1,4 +1,17 @@
 "use client";
+/**
+ * Weekly Scoresheets Content Component
+ * 
+ * This component manages the weekly scoresheets for LEDA matches, allowing users to:
+ * - Select a season and week
+ * - View and select team matchups
+ * - Track player participation in games
+ * - Record game wins, points, and penalties
+ * - Calculate and save team and player points
+ * 
+ * The component handles complex state management for tracking game data,
+ * penalties, and point calculations across multiple teams and players.
+ */
 import { useState } from "react";
 import { X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,7 +56,7 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 
-// Improved deep merge utility function with proper type handling
+// Type-safe deep merge utility function used to combine existing and new scoresheet data
 const deepMerge = <T extends Record<string, unknown>, U extends Record<string, unknown>>(
   target: T, 
   source: U
@@ -69,13 +82,15 @@ const deepMerge = <T extends Record<string, unknown>, U extends Record<string, u
   return output;
 };
 
-// Type-safe object check with type predicate
+// Type-safe object check with type predicate for use with deepMerge
 const isObject = (item: unknown): item is Record<string, unknown> => {
   return Boolean(item && typeof item === 'object' && !Array.isArray(item));
 };
 
-// Function to convert source data to DivisionData format
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/**
+ * Converts raw schedule data into a structured DivisionData format for a specific date
+ * This transforms the API response into a format suitable for the sidebar navigation
+ */
 const convertScheduleData = (sourceData: Record<string, any>, dateToDisplay: string): DivisionData => {
 	const result: DivisionData = {};
 
@@ -118,50 +133,47 @@ const convertScheduleData = (sourceData: Record<string, any>, dateToDisplay: str
 };
 
 export default function WeeklyScoresheetsContent() {
+    // State for season selection and data loading
     const [seasonCode, setSeasonCode] = useState<string>("");
     const [currentSeason, setCurrentSeason] = useState<boolean>(true);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [disabled, setDisabled] = useState<boolean>(false);
     const [seasonSelected, setSeasonSelected] = useState<boolean>(true);
+
+    // State for team selection and data
     const [sidenavData, setSidenavData] = useState<DivisionData>({});
-    const [formattedScoreData, setFormattedScoreData] = useState<FormattedScoreData | null>(null); // Initialize formattedScoreData
-	const [matchSelected, setMatchSelected] = useState<boolean>(false);
-	const [selectedHomeLetter, setSelectedHomeLetter] = useState<string>("");
-	const [selectedAwayLetter, setSelectedAwayLetter] = useState<string>("");
-	const [selectedDivision, setSelectedDivision] = useState<string>("");
-	const [selectedSubdivision, setSelectedSubdivision] = useState<string>("");
-	const [selectedHomeTeamId, setSelectedHomeTeamId] = useState<string>("");
-	const [selectedAwayTeamId, setSelectedAwayTeamId] = useState<string>("");
-	const [homeTeamInformation, setHomeTeamInformation] = useState<Team>();
-	const [awayTeamInformation, setAwayTeamInformation] = useState<Team>();
-	const [homeTeamPlayerInformation, setHomeTeamPlayerInformation] = useState<Player[]>();
-	const [awayTeamPlayerInformation, setAwayTeamPlayerInformation] = useState<Player[]>();
+    const [formattedScoreData, setFormattedScoreData] = useState<FormattedScoreData | null>(null);
+    const [matchSelected, setMatchSelected] = useState<boolean>(false);
+    const [selectedHomeLetter, setSelectedHomeLetter] = useState<string>("");
+    const [selectedAwayLetter, setSelectedAwayLetter] = useState<string>("");
+    const [selectedDivision, setSelectedDivision] = useState<string>("");
+    const [selectedSubdivision, setSelectedSubdivision] = useState<string>("");
+    const [selectedHomeTeamId, setSelectedHomeTeamId] = useState<string>("");
+    const [selectedAwayTeamId, setSelectedAwayTeamId] = useState<string>("");
+    const [homeTeamInformation, setHomeTeamInformation] = useState<Team>();
+    const [awayTeamInformation, setAwayTeamInformation] = useState<Team>();
+    const [homeTeamPlayerInformation, setHomeTeamPlayerInformation] = useState<Player[]>();
+    const [awayTeamPlayerInformation, setAwayTeamPlayerInformation] = useState<Player[]>();
 	
-	// Replace old game status state with the new structured format
+	// State for tracking game data
 	const [homeTeamGameData, setHomeTeamGameData] = useState<TeamGameData>({});
 	const [awayTeamGameData, setAwayTeamGameData] = useState<TeamGameData>({});
     const [isLoading, setIsLoading] = useState<boolean>(false);
 	
-	// Add new state for tracking game wins
+	// State for tracking game wins and points
     const [homeWins, setHomeWins] = useState<boolean[]>(Array(11).fill(false));
-	
-	// Add new state for tracking points
     const [homePoints, setHomePoints] = useState<string[]>(Array(11).fill(''));
     const [awayPoints, setAwayPoints] = useState<string[]>(Array(11).fill(''));
 
-	
-	// Add new state variables for API operations
+	// State for API operations
     const [selectedWeek, setSelectedWeek] = useState<string>("");
     const [isSaving, setIsSaving] = useState<boolean>(false);
 	const [isDataChanged, setIsDataChanged] = useState<boolean>(false);
 
-	// Replace the single penalty dialog state with two separate states
+	// State for penalty management
 	const [homePenaltyDialogOpen, setHomePenaltyDialogOpen] = useState<boolean>(false);
 	const [awayPenaltyDialogOpen, setAwayPenaltyDialogOpen] = useState<boolean>(false);
 	const [selectedPenaltyTeamId, setSelectedPenaltyTeamId] = useState<string>("");
 	const [selectedPenaltyTeamName, setSelectedPenaltyTeamName] = useState<string>("");
-
-	// Add state to track editing mode and current penalty being edited
 	const [penaltyEditMode, setPenaltyEditMode] = useState<boolean>(false);
 	const [currentEditingPenalty, setCurrentEditingPenalty] = useState<{
 		id: string,
@@ -169,20 +181,27 @@ export default function WeeklyScoresheetsContent() {
 		points: number,
 		notes: string
 	} | null>(null);
-
-	// Add state to track next penalty counters for home and away teams
     const [homePenaltyCounter, setHomePenaltyCounter] = useState<number>(0);
     const [awayPenaltyCounter, setAwayPenaltyCounter] = useState<number>(0);
 
+    /**
+     * Marks data as changed, enabling the save button
+     */
 	const handleDataChange = () => {
 		setIsDataChanged(true);
 	};
 
+    /**
+     * Handles season code selection and resets related state
+     */
     const handleSeasonCodeSelect = (value: string) => {
         setSeasonCode(value);
         setSeasonSelected(false);
     }
 
+    /**
+     * Handles matchup selection and fetches related team and player data
+     */
 	const handleMatchupSelection = async (homeLetter: string, awayLetter: string, divisionName: string, subdivisionName:string) => {
 		setMatchSelected(true);
 		setIsLoading(true);
@@ -204,7 +223,7 @@ export default function WeeklyScoresheetsContent() {
         setHomePoints(Array(11).fill(''));
         setAwayPoints(Array(11).fill(''));
 		
-		// Find team IDs from sidenavData based on the letters
+		// Find team IDs and fetch team information
 		if (sidenavData[divisionName] && sidenavData[divisionName][subdivisionName]) {
 			// Iterate through all games in this subdivision to find the matching one
 			const games = sidenavData[divisionName][subdivisionName];
@@ -367,6 +386,9 @@ export default function WeeklyScoresheetsContent() {
 		setIsLoading(false);
 	}
 
+    /**
+     * Handles date selection, fetches schedule data and existing scoresheet data
+     */
     const handleDateToDisplay = async (value: string) => {
         const results = await fetch(scheduleRoute + `?seasonCode=${seasonCode}`)
         const data = await results.json();
@@ -392,7 +414,9 @@ export default function WeeklyScoresheetsContent() {
         }
     }
 
-	// Update game toggle handler to work with the new structure
+	/**
+     * Handles toggling player participation in a game
+     */
 	const handleGameToggle = (teamType: 'home' | 'away', playerId: string, gameIndex: number) => {
 		const gameKey = `Game ${gameIndex + 1}`; // Convert index to "Game X" format
 		
@@ -422,7 +446,9 @@ export default function WeeklyScoresheetsContent() {
 		handleDataChange();
 	};
 	
-	// Add a handler for toggling home win status for each game
+	/**
+     * Handles toggling home win status for each game
+     */
     const handleHomeWinToggle = (gameIndex: number) => {
         setHomeWins(prev => {
             const newWins = [...prev];
@@ -432,7 +458,10 @@ export default function WeeklyScoresheetsContent() {
 		handleDataChange();
     };
 
-    // Update calculatePoints to include penalties
+    /**
+     * Calculates points including adjustments for penalties
+     * Returns raw points, penalty points, and final points for both teams
+     */
     const calculatePoints = () => {
         const totalHomeWins = homeWins.filter(Boolean).length;
         const rawHomePoints = totalHomeWins;
@@ -475,7 +504,9 @@ export default function WeeklyScoresheetsContent() {
         };
     };
 
-    // Add handlers for updating points
+    /**
+     * Handles updating points for home team games
+     */
     const handleHomePointsChange = (gameIndex: number, value: string) => {
         setHomePoints(prev => {
             const newPoints = [...prev];
@@ -485,6 +516,9 @@ export default function WeeklyScoresheetsContent() {
 		handleDataChange();
     };
 
+    /**
+     * Handles updating points for away team games
+     */
     const handleAwayPointsChange = (gameIndex: number, value: string) => {
         setAwayPoints(prev => {
             const newPoints = [...prev];
@@ -494,6 +528,10 @@ export default function WeeklyScoresheetsContent() {
 		handleDataChange();
     };
 
+    /**
+     * Calculates player points based on game participation and scores
+     * Formats the data into the required structure and saves to the database
+     */
     const calculatePlayerPoints = () => {
       // Calculate home team player points
       const homePlayerPoints: PlayerPoints[] = [];
@@ -658,7 +696,10 @@ export default function WeeklyScoresheetsContent() {
       saveScoresheet(newData);
     };
 	
-	// Update the saveScoresheet function to properly handle penalty removals
+	/**
+     * Saves scoresheet data to the database
+     * Handles merging with existing data and saving team and player points
+     */
     const saveScoresheet = async (data: FormattedScoreData) => {
         if (!seasonCode || !selectedWeek) {
             return;
@@ -816,6 +857,10 @@ export default function WeeklyScoresheetsContent() {
         }
     };
 
+	/**
+     * Resets all scoresheet data for the current matchup
+     * Asks for confirmation before proceeding
+     */
 	const resetScoresheet = () => {
 		if (window.confirm("Are you sure you want to reset this scoresheet? This action cannot be undone.")) {
 			// Reset home and away team game data
@@ -860,6 +905,7 @@ export default function WeeklyScoresheetsContent() {
 		}
 	};
 
+    // UI skeleton for loading state
     const FolderTabSkeleton = () => (
 		<div className="w-full space-y-4">
 			<Skeleton className="h-8 w-2/3" />
@@ -872,7 +918,9 @@ export default function WeeklyScoresheetsContent() {
 		</div>
 	);
 
-	// Update the handler to specify which dialog to open
+	/**
+     * Handles opening the penalty dialog for a team
+     */
 	const handlePenaltyClick = (teamId: string, teamName: string | undefined, isHome: boolean) => {
 		// Set the selected team information for penalties
 		setSelectedPenaltyTeamId(teamId);
@@ -886,7 +934,10 @@ export default function WeeklyScoresheetsContent() {
 		}
 	};
 
-	// Update penalty submission to use counter-based IDs
+	/**
+     * Handles adding a new penalty to a team
+     * Uses counter-based IDs for penalties
+     */
     const handlePenaltySubmit = (teamId: string, penaltyCode: string, points: number, notes?: string) => {
         if (!formattedScoreData) return;
         
@@ -962,7 +1013,9 @@ export default function WeeklyScoresheetsContent() {
         handleDataChange();
     };
 
-	// Update penalty editing to work with the new structure
+	/**
+     * Sets up penalty editing mode with the selected penalty's data
+     */
     const handlePenaltyEditing = (teamId: string, penaltyId: string) => {
         if (!formattedScoreData) return;
         
@@ -1002,7 +1055,9 @@ export default function WeeklyScoresheetsContent() {
         }
     };
 
-	// Update penalty function to handle the new structure
+	/**
+     * Updates an existing penalty with new values
+     */
     const updatePenalty = (teamId: string, penaltyId: string, newCode: string, points: number, notes?: string) => {
         if (!formattedScoreData) return;
         
@@ -1043,7 +1098,10 @@ export default function WeeklyScoresheetsContent() {
         }
     };
 
-	// Update penalty removal function for the new structure
+	/**
+     * Handles removing a penalty from a team
+     * Shows a confirmation dialog before deletion
+     */
     const handlePenaltyRemoval = (teamId: string, penaltyId: string) => {
         if (!formattedScoreData) return;
 
