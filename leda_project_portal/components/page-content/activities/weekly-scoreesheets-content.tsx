@@ -1,14 +1,7 @@
 "use client";
 import { useState } from "react";
-import { ChevronRight, ChevronDown, X, CheckCircle, AlertTriangle } from "lucide-react";
-
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,321 +19,29 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Types for our data structure
-interface Game {
-	homeTeamLetter: string;
-	homeTeamId: string;
-	awayTeamLetter: string;
-	awayTeamId: string;
-}
-
-interface Subdivision {
-	[gameNumber: string]: Game;
-}
-
-interface Division {
-	[subdivisionName: string]: Subdivision;
-}
-
-interface DivisionData {
-	[divisionName: string]: Division;
-}
-
-// Interface for the source data structure
-interface TeamMatchData {
-	matchDate: string;
-	matchTime: string;
-	home: boolean;
-	opposingTeamId: string;
-	opposingTeamLetter: string;
-}
-
-interface Team {
-	teamName: string;
-	teamId: string;
-	matchesData: {
-		[dateKey: string]: TeamMatchData;
-	};
-}
-
-interface SourceData {
-	[diamondName: string]: {
-		[subdivisionName: string]: {
-			[teamLetter: string]: Team;
-		};
-	};
-}
-
-// Function to convert source data to DivisionData format
-const convertScheduleData = (sourceData: SourceData, dateToDisplay: string): DivisionData => {
-	const result: DivisionData = {};
-
-	// Iterate through all divisions
-	for (const divisionName in sourceData) {
-		result[divisionName] = {};
-
-		// Iterate through all subdivisions
-		for (const subdivisionName in sourceData[divisionName]) {
-			result[divisionName][subdivisionName] = {};
-			let gameCounter = 1;
-
-			// Iterate through all teams
-			for (const teamLetter in sourceData[divisionName][subdivisionName]) {
-				const team =
-					sourceData[divisionName][subdivisionName][teamLetter];
-
-				// Check each match for this team
-				for (const dateKey in team.matchesData) {
-					// Skip if it doesn't match the dateToDisplay parameter
-					if (dateKey !== dateToDisplay) continue;
-					
-					const match = team.matchesData[dateKey];
-
-					// Only create a game entry if this team is the home team (to avoid duplicates)
-					if (match.home) {
-						result[divisionName][subdivisionName][
-							gameCounter.toString()
-						] = {
-							homeTeamLetter: teamLetter,
-							homeTeamId: team.teamId,
-							awayTeamLetter: match.opposingTeamLetter,
-							awayTeamId: match.opposingTeamId,
-						};
-						gameCounter++;
-					}
-				}
-			}
-		}
-	}
-
-	return result;
-};
-
-const SideNav = ({ data, formattedScoreData, handleMatchupSelection }: { data: DivisionData, formattedScoreData: FormattedScoreData | null, handleMatchupSelection: (homeLetter: string, awayLetter: string, divisionName: string, subdivisionName: string) => void }) => {
-	const [openDivisions, setOpenDivisions] = useState<Record<string, boolean>>(
-		{}
-	);
-	const [openSubdivisions, setOpenSubdivisions] = useState<
-		Record<string, boolean>
-	>({});
-	const [selectedMatchup, setSelectedMatchup] = useState<{ home: string; away: string } | null>(null);
-
-	const toggleDivision = (division: string) => {
-		setOpenDivisions((prev) => ({
-			...prev,
-			[division]: !prev[division],
-		}));
-	};
-
-	const toggleSubdivision = (division: string, subdivision: string) => {
-		const key = `${division}-${subdivision}`;
-		setOpenSubdivisions((prev) => ({
-			...prev,
-			[key]: !prev[key],
-		}));
-	};
-
-	const isMatchupBlank = (divisionName: string, subdivisionName: string, matchupKey: string): boolean => {
-		const matchupData = formattedScoreData?.[divisionName]?.[subdivisionName]?.[matchupKey];
-		if (!matchupData) {
-			// If no data exists for the matchup, consider it blank
-			return true;
-		}
-
-		// Check if all player game data is false
-		const isHomeGameDataBlank = Object.values(matchupData.teamInformation["1"].teamMembers).every(member =>
-			Object.values(member.gameStats).every(game => !game)
-		);
-		const isAwayGameDataBlank = Object.values(matchupData.teamInformation["2"].teamMembers).every(member =>
-			Object.values(member.gameStats).every(game => !game)
-		);
-
-		// Check if all home wins are false
-		const areHomeWinsBlank = Object.values(matchupData.gameInformation).every(game => !game.homeWin);
-
-		// Check if all points are 0 or empty
-		const areHomePointsBlank = Object.values(matchupData.gameInformation).every(game => game.homePoints === '' || game.homePoints === '0');
-		const areAwayPointsBlank = Object.values(matchupData.gameInformation).every(game => game.awayPoints === '' || game.awayPoints === '0');
-
-		return isHomeGameDataBlank && isAwayGameDataBlank && areHomeWinsBlank && areHomePointsBlank && areAwayPointsBlank;
-	};
-
-	// Check if data is empty or null
-	if (!data || Object.keys(data).length === 0) {
-		return (
-			<div className="w-64 border-r max-h-[75vh] flex items-center justify-center p-4">
-				<p className="text-gray-500 text-center">Select a week to display weekly scoresheets...</p>
-			</div>
-		);
-	}
-
-	return (
-		<div className="w-64 border-r max-h-[75vh]">
-			<ScrollArea className="h-full">
-				<div className="p-4 space-y-2">
-					{Object.keys(data).map((divisionName) => (
-						<Collapsible
-							key={divisionName}
-							open={openDivisions[divisionName]}
-							onOpenChange={() => toggleDivision(divisionName)}
-							className="border-b border-gray-100 pb-2"
-						>
-							<CollapsibleTrigger asChild>
-								<Button
-									variant="ghost"
-									className="w-full justify-between font-medium text-lg p-2 h-auto"
-								>
-									{divisionName}
-									{openDivisions[divisionName] ? (
-										<ChevronDown className="h-4 w-4" />
-									) : (
-										<ChevronRight className="h-4 w-4" />
-									)}
-								</Button>
-							</CollapsibleTrigger>
-							<CollapsibleContent className="ml-4 mt-1 space-y-1">
-								{Object.keys(data[divisionName]).map(
-									(subdivisionName) => {
-										const subdivKey = `${divisionName}-${subdivisionName}`;
-										return (
-											<Collapsible
-												key={subdivKey}
-												open={
-													openSubdivisions[subdivKey]
-												}
-												onOpenChange={() =>
-													toggleSubdivision(
-														divisionName,
-														subdivisionName
-													)
-												}
-												className="pb-1"
-											>
-												<CollapsibleTrigger asChild>
-													<Button
-														variant="ghost"
-														className="w-full justify-between text-base p-1 h-auto"
-													>
-														{subdivisionName}
-														{openSubdivisions[
-															subdivKey
-														] ? (
-															<ChevronDown className="h-3 w-3" />
-														) : (
-															<ChevronRight className="h-3 w-3" />
-														)}
-													</Button>
-												</CollapsibleTrigger>
-												<CollapsibleContent className="ml-4 mt-1 space-y-1">
-													{Object.keys(
-														data[divisionName][
-															subdivisionName
-														]
-													).map((gameNumber) => {
-														const game =
-															data[divisionName][
-																subdivisionName
-															][gameNumber];
-														const isSelected = 
-															selectedMatchup?.home === game.homeTeamLetter && 
-															selectedMatchup?.away === game.awayTeamLetter;
-
-														// Determine if scoresheet data exists for this matchup
-														const matchupKey = `${game.homeTeamLetter} - ${game.awayTeamLetter}`;
-														const showYellowFlag = isMatchupBlank(divisionName, subdivisionName, matchupKey);
-
-														return (
-															<Button
-																key={`${subdivKey}-${gameNumber}`}
-																variant="ghost"
-																className={`w-full justify-start text-sm p-1 h-auto ${isSelected ? 'bg-gray-200' : ''} hover:bg-gray-400`}
-																onClick={() => {
-																	setSelectedMatchup({ 
-																		home: game.homeTeamLetter, 
-																		away: game.awayTeamLetter 
-																	});
-																	handleMatchupSelection(game.homeTeamLetter, game.awayTeamLetter, divisionName, subdivisionName);
-																}}
-															>
-																<div className="flex items-center gap-2">
-																	<span>
-																		{game.homeTeamLetter} - {game.awayTeamLetter}
-																	</span>
-																	{showYellowFlag ? (
-																		<AlertTriangle className="h-4 w-4 text-yellow-500" />
-																	) : (
-																		<CheckCircle className="h-4 w-4 text-green-500" />
-																	)}
-																</div>
-															</Button>
-														);
-													})}
-												</CollapsibleContent>
-											</Collapsible>
-										);
-									}
-								)}
-							</CollapsibleContent>
-						</Collapsible>
-					))}
-				</div>
-			</ScrollArea>
-		</div>
-	);
-};
-
-// Add these new interfaces for game data management
-interface PlayerGameData {
-  [gameKey: string]: boolean; // e.g., "Game 1": false, "Game 2": true, etc.
-}
-
-interface TeamGameData {
-  [playerId: string]: PlayerGameData;
-}
-
-// Add these new interfaces
-interface PlayerPoints {
-  playerId: string;
-  playerName: string;
-  totalPoints: number;
-  pointsByGame: Record<string, number>;
-}
-
-// Add new interface for the formatted JSON data
-interface FormattedScoreData {
-  [division: string]: {
-    [subdivision: string]: {
-      [matchup: string]: {
-        teamInformation: {
-          [teamId: string]: {
-            teamLetter: string;
-            teamName: string;
-            home: boolean;
-            teamMembers: {
-              [playerId: string]: {
-                name: string;
-                gameStats: Record<string, boolean>;
-                gamePoints: string;
-              };
-            };
-          };
-        };
-        gameInformation: {
-          [game: string]: {
-            homeWin: boolean;
-            homePoints: string;
-            awayPoints: string;
-          };
-        };
-        teamPoints: {
-          homePoints: string;
-          awayPoints: string;
-        };
-      };
-    };
-  };
-}
+import SideNav from "./weekly-scoresheet-sidenav";
+import {
+	Team,
+	DivisionData,
+	FormattedScoreData,
+	PlayerGameData,
+	TeamGameData,
+	PlayerPoints,
+} from "@/lib/weekly-scoresheet-definitions";
+import PenaltyAddForm from "@/components/forms/activities/weekly-scoresheet-add-penalty-form";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // Improved deep merge utility function with proper type handling
 const deepMerge = <T extends Record<string, unknown>, U extends Record<string, unknown>>(
@@ -371,6 +72,49 @@ const deepMerge = <T extends Record<string, unknown>, U extends Record<string, u
 // Type-safe object check with type predicate
 const isObject = (item: unknown): item is Record<string, unknown> => {
   return Boolean(item && typeof item === 'object' && !Array.isArray(item));
+};
+
+// Function to convert source data to DivisionData format
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const convertScheduleData = (sourceData: Record<string, any>, dateToDisplay: string): DivisionData => {
+	const result: DivisionData = {};
+
+	// Iterate through all divisions
+	for (const divisionName in sourceData) {
+		result[divisionName] = {};
+
+		// Iterate through all subdivisions
+		for (const subdivisionName in sourceData[divisionName]) {
+			result[divisionName][subdivisionName] = {};
+			let gameCounter = 1;
+
+			// Iterate through all teams
+			for (const teamLetter in sourceData[divisionName][subdivisionName]) {
+				const team = sourceData[divisionName][subdivisionName][teamLetter];
+
+				// Check each match for this team
+				for (const dateKey in team.matchesData) {
+					// Skip if it doesn't match the dateToDisplay parameter
+					if (dateKey !== dateToDisplay) continue;
+
+					const match = team.matchesData[dateKey];
+
+					// Only create a game entry if this team is the home team (to avoid duplicates)
+					if (match.home) {
+						result[divisionName][subdivisionName][gameCounter.toString()] = {
+							homeTeamLetter: teamLetter,
+							homeTeamId: team.teamId,
+							awayTeamLetter: match.opposingTeamLetter,
+							awayTeamId: match.opposingTeamId,
+						};
+						gameCounter++;
+					}
+				}
+			}
+		}
+	}
+
+	return result;
 };
 
 export default function WeeklyScoresheetsContent() {
@@ -410,6 +154,20 @@ export default function WeeklyScoresheetsContent() {
     const [selectedWeek, setSelectedWeek] = useState<string>("");
     const [isSaving, setIsSaving] = useState<boolean>(false);
 	const [isDataChanged, setIsDataChanged] = useState<boolean>(false);
+
+	// Replace the single penalty dialog state with two separate states
+	const [homePenaltyDialogOpen, setHomePenaltyDialogOpen] = useState<boolean>(false);
+	const [awayPenaltyDialogOpen, setAwayPenaltyDialogOpen] = useState<boolean>(false);
+	const [selectedPenaltyTeamId, setSelectedPenaltyTeamId] = useState<string>("");
+	const [selectedPenaltyTeamName, setSelectedPenaltyTeamName] = useState<string>("");
+
+	// Add state to track editing mode and current penalty being edited
+	const [penaltyEditMode, setPenaltyEditMode] = useState<boolean>(false);
+	const [currentEditingPenalty, setCurrentEditingPenalty] = useState<{
+		code: string,
+		points: number,
+		notes: string
+	} | null>(null);
 
 	const handleDataChange = () => {
 		setIsDataChanged(true);
@@ -669,15 +427,50 @@ export default function WeeklyScoresheetsContent() {
 		handleDataChange();
     };
 
-    // Calculate points for home and away teams
+    // Update calculatePoints to include penalties
     const calculatePoints = () => {
         const totalHomeWins = homeWins.filter(Boolean).length;
-        const homePoints = totalHomeWins;
-        const awayPoints = 11 - totalHomeWins;
-        return { homePoints, awayPoints };
+        const rawHomePoints = totalHomeWins;
+        const rawAwayPoints = 11 - totalHomeWins;
+        
+        // Calculate penalty totals for both teams
+        let homePenaltyPoints = 0;
+        let awayPenaltyPoints = 0;
+        
+        // Only calculate penalties if we have formatted score data
+        if (formattedScoreData) {
+            const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+            
+            // Check if the team exists in the formattedScoreData and has penalties
+            if (formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.teamInformation?.[selectedHomeTeamId]?.penalties) {
+                const homePenalties = formattedScoreData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[selectedHomeTeamId].penalties;
+                // Sum all penalty points
+                homePenaltyPoints = Object.values(homePenalties).reduce((sum, penalty) => sum + penalty.points, 0);
+            }
+            
+            // Same for away team
+            if (formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.teamInformation?.[selectedAwayTeamId]?.penalties) {
+                const awayPenalties = formattedScoreData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[selectedAwayTeamId].penalties;
+                // Sum all penalty points
+                awayPenaltyPoints = Object.values(awayPenalties).reduce((sum, penalty) => sum + penalty.points, 0);
+            }
+        }
+        
+        // Subtract penalty points from raw points
+        const finalHomePoints = Math.max(0, rawHomePoints - homePenaltyPoints);
+        const finalAwayPoints = Math.max(0, rawAwayPoints - awayPenaltyPoints);
+        
+        return { 
+            rawHomePoints, 
+            rawAwayPoints, 
+            homePenaltyPoints, 
+            awayPenaltyPoints,
+            finalHomePoints, 
+            finalAwayPoints 
+        };
     };
-	
-	// Add handlers for updating points
+
+    // Add handlers for updating points
     const handleHomePointsChange = (gameIndex: number, value: string) => {
         setHomePoints(prev => {
             const newPoints = [...prev];
@@ -821,23 +614,25 @@ export default function WeeklyScoresheetsContent() {
           [selectedSubdivision]: {
             [matchupKey]: {
               teamInformation: {
-                "1": {
+                [selectedHomeTeamId]: {
                   teamLetter: selectedHomeLetter,
                   teamName: homeTeamInformation?.teamName || "",
                   home: true,
-                  teamMembers: homeTeamMembers
+                  teamMembers: homeTeamMembers,
+                  penalties: formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.teamInformation?.[selectedHomeTeamId]?.penalties || {}
                 },
-                "2": {
+                [selectedAwayTeamId]: {
                   teamLetter: selectedAwayLetter,
                   teamName: awayTeamInformation?.teamName || "",
                   home: false,
-                  teamMembers: awayTeamMembers
+                  teamMembers: awayTeamMembers,
+                  penalties: formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.teamInformation?.[selectedAwayTeamId]?.penalties || {}
                 }
               },
               gameInformation: gameInformation,
               teamPoints: {
-                homePoints: String(teamPointsCalculation.homePoints),
-                awayPoints: String(teamPointsCalculation.awayPoints)
+                homePoints: String(teamPointsCalculation.finalHomePoints),
+                awayPoints: String(teamPointsCalculation.finalAwayPoints),
               }
             }
           }
@@ -858,7 +653,7 @@ export default function WeeklyScoresheetsContent() {
       saveScoresheet(newData);
     };
 	
-	// Add new function to save data to the database
+	// Update the saveScoresheet function to properly handle penalty removals
     const saveScoresheet = async (data: FormattedScoreData) => {
         if (!seasonCode || !selectedWeek) {
             return;
@@ -876,8 +671,28 @@ export default function WeeklyScoresheetsContent() {
             if (fetchResponse.ok) {
                 const existingData = await fetchResponse.json();
                 if (existingData && existingData.scoresheetData) {
-                    // Merge existing scoresheet data with new data
-                    completeData = deepMerge(existingData.scoresheetData, data) as FormattedScoreData;
+                    // For the current matchup, use our new data completely (including penalty removals)
+                    // but merge with other matchups that might exist
+                    const existingScoreData = existingData.scoresheetData as FormattedScoreData;
+                    
+                    // Start with a clean copy of existing data
+                    completeData = JSON.parse(JSON.stringify(existingScoreData));
+                    
+                    // Make sure our current division and subdivision exists
+                    if (!completeData[selectedDivision]) {
+                        completeData[selectedDivision] = {};
+                    }
+                    if (!completeData[selectedDivision][selectedSubdivision]) {
+                        completeData[selectedDivision][selectedSubdivision] = {};
+                    }
+                    
+                    // Replace the entire matchup data with our new version
+                    // This preserves penalty removals
+                    const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+                    if (data[selectedDivision]?.[selectedSubdivision]?.[matchupKey]) {
+                        completeData[selectedDivision][selectedSubdivision][matchupKey] = 
+                            data[selectedDivision][selectedSubdivision][matchupKey];
+                    }
                 }
             }
             
@@ -898,7 +713,7 @@ export default function WeeklyScoresheetsContent() {
                 throw new Error(`Server responded with ${saveResponse.status}: ${saveResponse.statusText}`);
             }
 
-            // Save team points for each team
+            // Save team points for each team with penalty adjustments
             const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
             const matchupData = data[selectedDivision]?.[selectedSubdivision]?.[matchupKey];
 
@@ -907,14 +722,14 @@ export default function WeeklyScoresheetsContent() {
                     seasonCode,
                     weekNum: parseInt(selectedWeek),
                     ledaId: selectedHomeTeamId,
-                    totalPoints: parseInt(matchupData.teamPoints.homePoints),
+                    totalPoints: parseInt(matchupData.teamPoints.homePoints), // Already includes penalty adjustment
                 };
 
                 const awayTeamPointsPayload = {
                     seasonCode,
                     weekNum: parseInt(selectedWeek),
                     ledaId: selectedAwayTeamId,
-                    totalPoints: parseInt(matchupData.teamPoints.awayPoints),
+                    totalPoints: parseInt(matchupData.teamPoints.awayPoints), // Already includes penalty adjustment
                 };
 
                 // Save home team points
@@ -1052,6 +867,205 @@ export default function WeeklyScoresheetsContent() {
 		</div>
 	);
 
+	// Update the handler to specify which dialog to open
+	const handlePenaltyClick = (teamId: string, teamName: string | undefined, isHome: boolean) => {
+		// Set the selected team information for penalties
+		setSelectedPenaltyTeamId(teamId);
+		setSelectedPenaltyTeamName(teamName || "");
+		
+		// Open the appropriate dialog
+		if (isHome) {
+			setHomePenaltyDialogOpen(true);
+		} else {
+			setAwayPenaltyDialogOpen(true);
+		}
+	};
+
+	const handlePenaltySubmit = (teamId: string, penaltyCode: string, points: number, notes?: string) => {
+		if (!formattedScoreData) return;
+		
+		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+		
+		// Create a copy of the current formatted score data
+		const updatedData = { ...formattedScoreData };
+		
+		// Ensure the necessary nested structure exists
+		if (!updatedData[selectedDivision]) {
+			updatedData[selectedDivision] = {};
+		}
+		
+		if (!updatedData[selectedDivision][selectedSubdivision]) {
+			updatedData[selectedDivision][selectedSubdivision] = {};
+		}
+		
+		if (!updatedData[selectedDivision][selectedSubdivision][matchupKey]) {
+			updatedData[selectedDivision][selectedSubdivision][matchupKey] = {
+				teamInformation: {},
+				gameInformation: {},
+				teamPoints: { homePoints: "0", awayPoints: "0" }
+			};
+		}
+		
+		// Find the right team (home or away) to add the penalty to
+		const teamKey = teamId === selectedHomeTeamId ? "1" : "2";
+		
+		if (!updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey]) {
+			updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey] = {
+				teamLetter: teamId === selectedHomeTeamId ? selectedHomeLetter : selectedAwayLetter,
+				teamName: teamId === selectedHomeTeamId ? homeTeamInformation?.teamName || "" : awayTeamInformation?.teamName || "",
+				home: teamId === selectedHomeTeamId,
+				teamMembers: {},
+				penalties: {}
+			};
+		}
+		
+		// Ensure penalties object exists
+		if (!updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties) {
+			updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties = {};
+		}
+		
+		// Add the new penalty using the penalty code as the key
+		updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties[penaltyCode] = {
+			points,
+			notes: notes || ""
+		};
+		
+		// Update state
+		setFormattedScoreData(updatedData);
+		
+		// Close the appropriate dialog
+		if (teamId === selectedHomeTeamId) {
+			setHomePenaltyDialogOpen(false);
+		} else {
+			setAwayPenaltyDialogOpen(false);
+		}
+		
+		// Mark data as changed
+		handleDataChange();
+	};
+
+	// Replace the penalty editing function with this implementation
+	const handlePenaltyEditing = (teamId: string, penaltyCode: string) => {
+		if (!formattedScoreData) return;
+		
+		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+		const teamKey = teamId === selectedHomeTeamId ? "1" : "2";
+		
+		// Check if the penalty exists
+		if (
+			formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+			teamInformation?.[teamKey]?.penalties?.[penaltyCode]
+		) {
+			// Get the penalty data
+			const penalty = formattedScoreData[selectedDivision][selectedSubdivision][matchupKey]
+				.teamInformation[teamKey].penalties[penaltyCode];
+			
+			// Set up the editing state
+			setPenaltyEditMode(true);
+			setCurrentEditingPenalty({
+				code: penaltyCode,
+				points: penalty.points,
+				notes: penalty.notes || ""
+			});
+			
+			// Set the selected team information for penalties
+			setSelectedPenaltyTeamId(teamId);
+			setSelectedPenaltyTeamName(teamId === selectedHomeTeamId ? 
+				homeTeamInformation?.teamName || "" : 
+				awayTeamInformation?.teamName || "");
+			
+			// Open the appropriate dialog
+			if (teamId === selectedHomeTeamId) {
+				setHomePenaltyDialogOpen(true);
+			} else {
+				setAwayPenaltyDialogOpen(true);
+			}
+		}
+	};
+
+	// Add function to update an existing penalty
+	const updatePenalty = (teamId: string, penaltyCode: string, newCode: string, points: number, notes?: string) => {
+		if (!formattedScoreData) return;
+		
+		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+		
+		// Create a copy of the current formatted score data
+		const updatedData = { ...formattedScoreData };
+		
+		// Find the right team (home or away) to update the penalty
+		const teamKey = teamId === selectedHomeTeamId ? "1" : "2";
+		
+		// Check if the penalty exists before attempting to update
+		if (
+			updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+			teamInformation?.[teamKey]?.penalties?.[penaltyCode]
+		) {
+			// If the penalty code changed, remove the old one and add a new one
+			if (penaltyCode !== newCode) {
+				// Remove the old penalty
+				delete updatedData[selectedDivision][selectedSubdivision][matchupKey]
+					.teamInformation[teamKey].penalties[penaltyCode];
+					
+				// Add the new penalty with the new code
+				updatedData[selectedDivision][selectedSubdivision][matchupKey]
+					.teamInformation[teamKey].penalties[newCode] = {
+						points,
+						notes: notes || ""
+					};
+			} else {
+				// Just update the existing penalty
+				updatedData[selectedDivision][selectedSubdivision][matchupKey]
+					.teamInformation[teamKey].penalties[penaltyCode] = {
+						points,
+						notes: notes || ""
+					};
+			}
+			
+			// Update state
+			setFormattedScoreData(updatedData);
+			
+			// Reset editing state
+			setPenaltyEditMode(false);
+			setCurrentEditingPenalty(null);
+			
+			// Close the dialogs
+			setHomePenaltyDialogOpen(false);
+			setAwayPenaltyDialogOpen(false);
+			
+			// Mark data as changed
+			handleDataChange();
+		}
+	};
+
+	// Add function to handle penalty removal
+	const handlePenaltyRemoval = (teamId: string, penaltyCode: string) => {
+		if (!formattedScoreData) return;
+
+		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+
+		// Create a copy of the current formatted score data
+		const updatedData = { ...formattedScoreData };
+
+		// Find the right team (home or away) to remove the penalty from
+		const teamKey = teamId === selectedHomeTeamId ? "1" : "2";
+
+		// Check if the penalty exists before attempting to remove
+		if (
+			updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+			teamInformation?.[teamKey]?.penalties?.[penaltyCode]
+		) {
+			// Remove the penalty
+			delete updatedData[selectedDivision][selectedSubdivision][matchupKey]
+				.teamInformation[teamKey].penalties[penaltyCode];
+
+			// Update state
+			setFormattedScoreData(updatedData);
+
+			// Mark data as changed
+			handleDataChange();
+		}
+	};
+
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex gap-4">
@@ -1084,7 +1098,6 @@ export default function WeeklyScoresheetsContent() {
 					formattedScoreData={formattedScoreData} 
 					handleMatchupSelection={handleMatchupSelection} 
 				/>
-
 				<div className="flex-1 p-4 overflow-auto">
 						{!matchSelected ? (
 							<div className="flex h-full items-center justify-center">
@@ -1092,7 +1105,7 @@ export default function WeeklyScoresheetsContent() {
 							</div>
 						) : (
 							<div className="flex h-full items-start justify-start gap-2 flex-col">
-								<div className="flex flex-col gap-2 w-full">
+								<div className="flex flex-col gap-4 w-full">
 									<div className="text-2xl font-semibold">
 										{selectedDivision}
 									</div>
@@ -1108,16 +1121,87 @@ export default function WeeklyScoresheetsContent() {
 										) : (
 											<>
 												<div className="text-lg font-bold text-gray-800">
+													Team Name: {homeTeamInformation?.teamName}
+												</div>
+												<div className="text-lg font-semibold text-gray-800">
 													Team ID: {selectedHomeTeamId}
 												</div>
 												<div className="text-md text-gray-600 mb-4">
 													Team Letter: {selectedHomeLetter}
+												</div>
+												<div>
+													<Dialog open={homePenaltyDialogOpen} onOpenChange={(open) => {
+														setHomePenaltyDialogOpen(open);
+														if (!open) {
+															setPenaltyEditMode(false);
+															setCurrentEditingPenalty(null);
+														}
+													}}>
+														<DialogTrigger asChild>
+															<Button variant="outline" className="text-sm px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100" 
+																onClick={() => handlePenaltyClick(selectedHomeTeamId, homeTeamInformation?.teamName, true)}>
+																<span>Penalties</span>
+															</Button>
+														</DialogTrigger>
+														<DialogContent className="w-fit bg-white">
+															<DialogHeader>
+																<DialogTitle className="flex justify-center">
+																	{penaltyEditMode ? "Edit" : "Add"} Penalty for Team: {selectedPenaltyTeamName}
+																</DialogTitle>
+															</DialogHeader>
+															<PenaltyAddForm 
+																setOpen={setHomePenaltyDialogOpen}
+																selectedTeamId={selectedPenaltyTeamId} 
+																handlePenaltySubmit={handlePenaltySubmit}
+																isEditMode={penaltyEditMode}
+																initialPenalty={currentEditingPenalty}
+																updatePenalty={updatePenalty}
+															/>
+														</DialogContent>
+													</Dialog>
+													{/* Penalties Accordion for Home Team - Only render if penalties exist */}
+													{formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[`${selectedHomeLetter} - ${selectedAwayLetter}`]?.teamInformation?.[selectedHomeTeamId]?.penalties && 
+														Object.keys(formattedScoreData[selectedDivision][selectedSubdivision][`${selectedHomeLetter} - ${selectedAwayLetter}`].teamInformation[selectedHomeTeamId].penalties).length > 0 && (
+														<Accordion type="single" collapsible className="w-full mt-2">
+															<AccordionItem value="penalties">
+																<AccordionTrigger className="text-sm font-medium text-red-600">
+																	View Team Penalties
+																</AccordionTrigger>
+																<AccordionContent>
+																	<div className="space-y-2 p-2 border rounded-md">
+																		{Object.entries(formattedScoreData[selectedDivision][selectedSubdivision][`${selectedHomeLetter} - ${selectedAwayLetter}`].teamInformation[selectedHomeTeamId].penalties).map(([code, penalty]) => (
+																			<div key={code} className="flex justify-between items-start border-b pb-2 group relative">
+																				<div>
+																					<span className="font-semibold">Code: {code}</span>
+																					<p className="text-sm text-gray-600">{penalty.notes}</p>
+																				</div>
+																				<div className="flex items-center">
+																					<span className="text-red-600 font-bold">{penalty.points} pts</span>
+																					<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+																						<Pencil 
+																							className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700" 
+																							onClick={() => handlePenaltyEditing(selectedHomeTeamId, code)}
+																						/>
+																						<X 
+																							className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700" 
+																							onClick={() => handlePenaltyRemoval(selectedHomeTeamId, code)}
+																						/>
+																					</div>
+																				</div>
+																			</div>
+																		))}
+																	</div>
+																</AccordionContent>
+															</AccordionItem>
+														</Accordion>
+													)}
 												</div>
 												<div className="overflow-x-auto">
 													<Table>
 														<TableHeader>
 															<TableRow>
 																<TableHead>Player Name</TableHead>
+																<TableHead />
 																{Array.from({ length: 11 }).map((_, i) => (
 																	<TableHead key={i} className="text-center">Game {i+1}</TableHead>
 																))}
@@ -1126,7 +1210,14 @@ export default function WeeklyScoresheetsContent() {
 														<TableBody>
 															{homeTeamPlayerInformation?.map((player) => (
 																<TableRow key={player.ledaId}>
-																	<TableCell>{player.fullName}</TableCell>
+																	<TableCell className="w-fit flex items-center gap-2">
+																		<span>{player.fullName}</span>
+																	</TableCell>
+																	<TableCell>
+																		<Button variant="outline" className="text-xs px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100" onClick={() => {}}>
+																			<span>Mentions</span>
+																		</Button>
+																	</TableCell>
 																	{Array.from({ length: 11 }).map((_, i) => {
 																		const gameKey = `Game ${i+1}`;
 																		return (
@@ -1155,16 +1246,87 @@ export default function WeeklyScoresheetsContent() {
 										) : (
 											<>
 												<div className="text-lg font-bold text-gray-800">
+													Team Name: {awayTeamInformation?.teamName}
+												</div>
+												<div className="text-lg font-semibold text-gray-800">
 													Team ID: {selectedAwayTeamId}
 												</div>
 												<div className="text-md text-gray-600 mb-4">
 													Team Letter: {selectedAwayLetter}
 												</div>
+
+													<Dialog open={awayPenaltyDialogOpen} onOpenChange={(open) => {
+														setAwayPenaltyDialogOpen(open);
+														if (!open) {
+															setPenaltyEditMode(false);
+															setCurrentEditingPenalty(null);
+														}
+													}}>
+														<DialogTrigger asChild >
+															<Button variant="outline" className="text-sm px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100" 
+																onClick={() => handlePenaltyClick(selectedAwayTeamId, awayTeamInformation?.teamName, false)}>
+																<span>Penalties</span>
+															</Button>
+														</DialogTrigger>
+														<DialogContent>
+															<DialogHeader>
+																<DialogTitle>
+																	{penaltyEditMode ? "Edit" : "Add"} Penalty - {selectedPenaltyTeamName}
+																</DialogTitle>
+															</DialogHeader>
+															<PenaltyAddForm 
+																setOpen={setAwayPenaltyDialogOpen}
+																selectedTeamId={selectedPenaltyTeamId}
+																handlePenaltySubmit={handlePenaltySubmit}
+																isEditMode={penaltyEditMode}
+																initialPenalty={currentEditingPenalty}
+																updatePenalty={updatePenalty}
+															/>
+														</DialogContent>
+													</Dialog>
+													
+													{/* Penalties Accordion for Away Team - Only render if penalties exist */}
+													{formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[`${selectedHomeLetter} - ${selectedAwayLetter}`]?.teamInformation?.[selectedAwayTeamId]?.penalties && 
+														Object.keys(formattedScoreData[selectedDivision][selectedSubdivision][`${selectedHomeLetter} - ${selectedAwayLetter}`].teamInformation[selectedAwayTeamId].penalties).length > 0 && (
+														<Accordion type="single" collapsible className="w-full mt-2">
+															<AccordionItem value="penalties">
+																<AccordionTrigger className="text-sm font-medium text-red-600">
+																	View Team Penalties
+																</AccordionTrigger>
+																<AccordionContent>
+																	<div className="space-y-2 p-2 border rounded-md">
+																		{Object.entries(formattedScoreData[selectedDivision][selectedSubdivision][`${selectedHomeLetter} - ${selectedAwayLetter}`].teamInformation[selectedAwayTeamId].penalties).map(([code, penalty]) => (
+																			<div key={code} className="flex justify-between items-start border-b pb-2 group relative">
+																				<div>
+																					<span className="font-semibold">Code: {code}</span>
+																					<p className="text-sm text-gray-600">{penalty.notes}</p>
+																				</div>
+																				<div className="flex items-center">
+																					<span className="text-red-600 font-bold">{penalty.points} pts</span>
+																					<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+																						<Pencil 
+																							className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700" 
+																							onClick={() => handlePenaltyEditing(selectedAwayTeamId, code)}
+																						/>
+																						<X 
+																							className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700" 
+																							onClick={() => handlePenaltyRemoval(selectedAwayTeamId, code)}
+																						/>
+																					</div>
+																				</div>
+																			</div>
+																		))}
+																	</div>
+																</AccordionContent>
+															</AccordionItem>
+														</Accordion>
+													)}
 												<div className="overflow-x-auto">
 													<Table>
 														<TableHeader>
 															<TableRow>
 																<TableHead>Player Name</TableHead>
+																<TableHead />
 																{Array.from({ length: 11 }).map((_, i) => (
 																	<TableHead key={i} className="text-center">Game {i + 1}</TableHead>
 																))}
@@ -1173,7 +1335,15 @@ export default function WeeklyScoresheetsContent() {
 														<TableBody>
 															{awayTeamPlayerInformation?.map((player) => (
 																<TableRow key={player.ledaId}>
-																	<TableCell>{player.fullName}</TableCell>
+																	{/* TODO Implement a mentions button next to the name */}
+																	<TableCell className="w-fit flex items-center gap-2">
+																		<span>{player.fullName}</span>
+																	</TableCell>
+																	<TableCell>
+																		<Button variant="outline" className="text-xs px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100" onClick={() => {}}>
+																			<span>Mentions</span>
+																		</Button>
+																	</TableCell>
 																	{Array.from({ length: 11 }).map((_, i) => {
 																		const gameKey = `Game ${i + 1}`;
 																		return (
@@ -1268,13 +1438,29 @@ export default function WeeklyScoresheetsContent() {
                                                             colSpan={5} 
                                                             className="text-center font-bold"
                                                         >
-                                                            Home: {calculatePoints().homePoints}
+                                                            Home: {calculatePoints().rawHomePoints}
+                                                            {calculatePoints().homePenaltyPoints > 0 && (
+                                                                <span className="text-red-600 ml-2">
+                                                                    (-{calculatePoints().homePenaltyPoints} penalties)
+                                                                </span>
+                                                            )}
+                                                            <div className="text-sm font-normal mt-1">
+                                                                Final: {calculatePoints().finalHomePoints}
+                                                            </div>
                                                         </TableCell>
                                                         <TableCell 
                                                             colSpan={6} 
                                                             className="text-center font-bold"
                                                         >
-                                                            Away: {calculatePoints().awayPoints}
+                                                            Away: {calculatePoints().rawAwayPoints}
+                                                            {calculatePoints().awayPenaltyPoints > 0 && (
+                                                                <span className="text-red-600 ml-2">
+                                                                    (-{calculatePoints().awayPenaltyPoints} penalties)
+                                                                </span>
+                                                            )}
+                                                            <div className="text-sm font-normal mt-1">
+                                                                Final: {calculatePoints().finalAwayPoints}
+                                                            </div>
                                                         </TableCell>
                                                     </TableRow>
                                                 </TableBody>
