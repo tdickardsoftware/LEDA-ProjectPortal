@@ -164,10 +164,15 @@ export default function WeeklyScoresheetsContent() {
 	// Add state to track editing mode and current penalty being edited
 	const [penaltyEditMode, setPenaltyEditMode] = useState<boolean>(false);
 	const [currentEditingPenalty, setCurrentEditingPenalty] = useState<{
+		id: string,
 		code: string,
 		points: number,
 		notes: string
 	} | null>(null);
+
+	// Add state to track next penalty counters for home and away teams
+    const [homePenaltyCounter, setHomePenaltyCounter] = useState<number>(0);
+    const [awayPenaltyCounter, setAwayPenaltyCounter] = useState<number>(0);
 
 	const handleDataChange = () => {
 		setIsDataChanged(true);
@@ -433,7 +438,7 @@ export default function WeeklyScoresheetsContent() {
         const rawHomePoints = totalHomeWins;
         const rawAwayPoints = 11 - totalHomeWins;
         
-        // Calculate penalty totals for both teams
+        // Calculate penalty totals for both teams - updated for new structure
         let homePenaltyPoints = 0;
         let awayPenaltyPoints = 0;
         
@@ -881,190 +886,196 @@ export default function WeeklyScoresheetsContent() {
 		}
 	};
 
-	const handlePenaltySubmit = (teamId: string, penaltyCode: string, points: number, notes?: string) => {
-		if (!formattedScoreData) return;
-		
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-		
-		// Create a copy of the current formatted score data
-		const updatedData = { ...formattedScoreData };
-		
-		// Ensure the necessary nested structure exists
-		if (!updatedData[selectedDivision]) {
-			updatedData[selectedDivision] = {};
-		}
-		
-		if (!updatedData[selectedDivision][selectedSubdivision]) {
-			updatedData[selectedDivision][selectedSubdivision] = {};
-		}
-		
-		if (!updatedData[selectedDivision][selectedSubdivision][matchupKey]) {
-			updatedData[selectedDivision][selectedSubdivision][matchupKey] = {
-				teamInformation: {},
-				gameInformation: {},
-				teamPoints: { homePoints: "0", awayPoints: "0" }
-			};
-		}
-		
-		// Find the right team (home or away) to add the penalty to
-		const teamKey = teamId === selectedHomeTeamId ? "1" : "2";
-		
-		if (!updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey]) {
-			updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey] = {
-				teamLetter: teamId === selectedHomeTeamId ? selectedHomeLetter : selectedAwayLetter,
-				teamName: teamId === selectedHomeTeamId ? homeTeamInformation?.teamName || "" : awayTeamInformation?.teamName || "",
-				home: teamId === selectedHomeTeamId,
-				teamMembers: {},
-				penalties: {}
-			};
-		}
-		
-		// Ensure penalties object exists
-		if (!updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties) {
-			updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties = {};
-		}
-		
-		// Add the new penalty using the penalty code as the key
-		updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties[penaltyCode] = {
-			points,
-			notes: notes || ""
-		};
-		
-		// Update state
-		setFormattedScoreData(updatedData);
-		
-		// Close the appropriate dialog
-		if (teamId === selectedHomeTeamId) {
-			setHomePenaltyDialogOpen(false);
-		} else {
-			setAwayPenaltyDialogOpen(false);
-		}
-		
-		// Mark data as changed
-		handleDataChange();
-	};
+	// Update penalty submission to use counter-based IDs
+    const handlePenaltySubmit = (teamId: string, penaltyCode: string, points: number, notes?: string) => {
+        if (!formattedScoreData) return;
+        
+        const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+        
+        // Create a copy of the current formatted score data
+        const updatedData = { ...formattedScoreData };
+        
+        // Ensure the necessary nested structure exists
+        if (!updatedData[selectedDivision]) {
+            updatedData[selectedDivision] = {};
+        }
+        
+        if (!updatedData[selectedDivision][selectedSubdivision]) {
+            updatedData[selectedDivision][selectedSubdivision] = {};
+        }
+        
+        if (!updatedData[selectedDivision][selectedSubdivision][matchupKey]) {
+            updatedData[selectedDivision][selectedSubdivision][matchupKey] = {
+                teamInformation: {},
+                gameInformation: {},
+                teamPoints: { homePoints: "0", awayPoints: "0" }
+            };
+        }
+        
+        // Find the right team (home or away) to add the penalty to
+        const teamKey = teamId === selectedHomeTeamId ? selectedHomeTeamId : selectedAwayTeamId;
+        const isHomeTeam = teamId === selectedHomeTeamId;
+        
+        if (!updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey]) {
+            updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey] = {
+                teamLetter: teamId === selectedHomeTeamId ? selectedHomeLetter : selectedAwayLetter,
+                teamName: teamId === selectedHomeTeamId ? homeTeamInformation?.teamName || "" : awayTeamInformation?.teamName || "",
+                home: teamId === selectedHomeTeamId,
+                teamMembers: {},
+                penalties: {}
+            };
+        }
+        
+        // Ensure penalties object exists
+        if (!updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties) {
+            updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties = {};
+        }
+        
+        // Get current counter and increment for next use
+        const nextCounter = isHomeTeam ? homePenaltyCounter + 1 : awayPenaltyCounter + 1;
+        
+        // Add the new penalty using the counter as the key
+        updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties[nextCounter.toString()] = {
+            penaltyCode,
+            points,
+            notes: notes || ""
+        };
+        
+        // Update the counter state
+        if (isHomeTeam) {
+            setHomePenaltyCounter(nextCounter);
+        } else {
+            setAwayPenaltyCounter(nextCounter);
+        }
+        
+        // Update state
+        setFormattedScoreData(updatedData);
+        
+        // Close the appropriate dialog
+        if (teamId === selectedHomeTeamId) {
+            setHomePenaltyDialogOpen(false);
+        } else {
+            setAwayPenaltyDialogOpen(false);
+        }
+        
+        // Mark data as changed
+        handleDataChange();
+    };
 
-	// Replace the penalty editing function with this implementation
-	const handlePenaltyEditing = (teamId: string, penaltyCode: string) => {
-		if (!formattedScoreData) return;
-		
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-		const teamKey = teamId === selectedHomeTeamId ? "1" : "2";
-		
-		// Check if the penalty exists
-		if (
-			formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
-			teamInformation?.[teamKey]?.penalties?.[penaltyCode]
-		) {
-			// Get the penalty data
-			const penalty = formattedScoreData[selectedDivision][selectedSubdivision][matchupKey]
-				.teamInformation[teamKey].penalties[penaltyCode];
-			
-			// Set up the editing state
-			setPenaltyEditMode(true);
-			setCurrentEditingPenalty({
-				code: penaltyCode,
-				points: penalty.points,
-				notes: penalty.notes || ""
-			});
-			
-			// Set the selected team information for penalties
-			setSelectedPenaltyTeamId(teamId);
-			setSelectedPenaltyTeamName(teamId === selectedHomeTeamId ? 
-				homeTeamInformation?.teamName || "" : 
-				awayTeamInformation?.teamName || "");
-			
-			// Open the appropriate dialog
-			if (teamId === selectedHomeTeamId) {
-				setHomePenaltyDialogOpen(true);
-			} else {
-				setAwayPenaltyDialogOpen(true);
-			}
-		}
-	};
+	// Update penalty editing to work with the new structure
+    const handlePenaltyEditing = (teamId: string, penaltyId: string) => {
+        if (!formattedScoreData) return;
+        
+        const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+        const teamKey = teamId === selectedHomeTeamId ? selectedHomeTeamId : selectedAwayTeamId;
+        
+        // Check if the penalty exists
+        if (
+            formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+            teamInformation?.[teamKey]?.penalties?.[penaltyId]
+        ) {
+            // Get the penalty data
+            const penalty = formattedScoreData[selectedDivision][selectedSubdivision][matchupKey]
+                .teamInformation[teamKey].penalties[penaltyId];
+            
+            // Set up the editing state
+            setPenaltyEditMode(true);
+            setCurrentEditingPenalty({
+                id: penaltyId,
+                code: penalty.penaltyCode,
+                points: penalty.points,
+                notes: penalty.notes || ""
+            });
+            
+            // Set the selected team information for penalties
+            setSelectedPenaltyTeamId(teamId);
+            setSelectedPenaltyTeamName(teamId === selectedHomeTeamId ? 
+                homeTeamInformation?.teamName || "" : 
+                awayTeamInformation?.teamName || "");
+            
+            // Open the appropriate dialog
+            if (teamId === selectedHomeTeamId) {
+                setHomePenaltyDialogOpen(true);
+            } else {
+                setAwayPenaltyDialogOpen(true);
+            }
+        }
+    };
 
-	// Add function to update an existing penalty
-	const updatePenalty = (teamId: string, penaltyCode: string, newCode: string, points: number, notes?: string) => {
-		if (!formattedScoreData) return;
-		
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-		
-		// Create a copy of the current formatted score data
-		const updatedData = { ...formattedScoreData };
-		
-		// Find the right team (home or away) to update the penalty
-		const teamKey = teamId === selectedHomeTeamId ? "1" : "2";
-		
-		// Check if the penalty exists before attempting to update
-		if (
-			updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
-			teamInformation?.[teamKey]?.penalties?.[penaltyCode]
-		) {
-			// If the penalty code changed, remove the old one and add a new one
-			if (penaltyCode !== newCode) {
-				// Remove the old penalty
-				delete updatedData[selectedDivision][selectedSubdivision][matchupKey]
-					.teamInformation[teamKey].penalties[penaltyCode];
-					
-				// Add the new penalty with the new code
-				updatedData[selectedDivision][selectedSubdivision][matchupKey]
-					.teamInformation[teamKey].penalties[newCode] = {
-						points,
-						notes: notes || ""
-					};
-			} else {
-				// Just update the existing penalty
-				updatedData[selectedDivision][selectedSubdivision][matchupKey]
-					.teamInformation[teamKey].penalties[penaltyCode] = {
-						points,
-						notes: notes || ""
-					};
-			}
-			
-			// Update state
-			setFormattedScoreData(updatedData);
-			
-			// Reset editing state
-			setPenaltyEditMode(false);
-			setCurrentEditingPenalty(null);
-			
-			// Close the dialogs
-			setHomePenaltyDialogOpen(false);
-			setAwayPenaltyDialogOpen(false);
-			
-			// Mark data as changed
-			handleDataChange();
-		}
-	};
+	// Update penalty function to handle the new structure
+    const updatePenalty = (teamId: string, penaltyId: string, newCode: string, points: number, notes?: string) => {
+        if (!formattedScoreData) return;
+        
+        const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+        
+        // Create a copy of the current formatted score data
+        const updatedData = { ...formattedScoreData };
+        
+        // Find the right team (home or away) to update the penalty
+        const teamKey = teamId === selectedHomeTeamId ? selectedHomeTeamId : selectedAwayTeamId;
+        
+        // Check if the penalty exists before attempting to update
+        if (
+            updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+            teamInformation?.[teamKey]?.penalties?.[penaltyId]
+        ) {
+            // Update the existing penalty with the new values
+            updatedData[selectedDivision][selectedSubdivision][matchupKey]
+                .teamInformation[teamKey].penalties[penaltyId] = {
+                    penaltyCode: newCode,
+                    points,
+                    notes: notes || ""
+                };
+            
+            // Update state
+            setFormattedScoreData(updatedData);
+            
+            // Reset editing state
+            setPenaltyEditMode(false);
+            setCurrentEditingPenalty(null);
+            
+            // Close the dialogs
+            setHomePenaltyDialogOpen(false);
+            setAwayPenaltyDialogOpen(false);
+            
+            // Mark data as changed
+            handleDataChange();
+        }
+    };
 
-	// Add function to handle penalty removal
-	const handlePenaltyRemoval = (teamId: string, penaltyCode: string) => {
-		if (!formattedScoreData) return;
+	// Update penalty removal function for the new structure
+    const handlePenaltyRemoval = (teamId: string, penaltyId: string) => {
+        if (!formattedScoreData) return;
 
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+        // Add confirmation dialog
+        if (!window.confirm(`Are you sure you want to delete this penalty? This action cannot be undone.`)) {
+            return; // Exit the function if user cancels
+        }
 
-		// Create a copy of the current formatted score data
-		const updatedData = { ...formattedScoreData };
+        const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
 
-		// Find the right team (home or away) to remove the penalty from
-		const teamKey = teamId === selectedHomeTeamId ? "1" : "2";
+        // Create a copy of the current formatted score data
+        const updatedData = { ...formattedScoreData };
 
-		// Check if the penalty exists before attempting to remove
-		if (
-			updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
-			teamInformation?.[teamKey]?.penalties?.[penaltyCode]
-		) {
-			// Remove the penalty
-			delete updatedData[selectedDivision][selectedSubdivision][matchupKey]
-				.teamInformation[teamKey].penalties[penaltyCode];
+        // Find the right team (home or away) to remove the penalty from
+        const teamKey = teamId === selectedHomeTeamId ? selectedHomeTeamId : selectedAwayTeamId;
 
-			// Update state
-			setFormattedScoreData(updatedData);
+        // Check if the penalty exists before attempting to remove
+        if (
+            updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+            teamInformation?.[teamKey]?.penalties?.[penaltyId]
+        ) {
+            // Remove the penalty
+            delete updatedData[selectedDivision][selectedSubdivision][matchupKey]
+                .teamInformation[teamKey].penalties[penaltyId];
 
-			// Mark data as changed
-			handleDataChange();
-		}
-	};
+            // Update state
+            setFormattedScoreData(updatedData);
+
+            // Mark data as changed
+            handleDataChange();
+        }
+    };
 
 	return (
 		<div className="flex flex-col h-full">
@@ -1169,10 +1180,10 @@ export default function WeeklyScoresheetsContent() {
 																</AccordionTrigger>
 																<AccordionContent>
 																	<div className="space-y-2 p-2 border rounded-md">
-																		{Object.entries(formattedScoreData[selectedDivision][selectedSubdivision][`${selectedHomeLetter} - ${selectedAwayLetter}`].teamInformation[selectedHomeTeamId].penalties).map(([code, penalty]) => (
-																			<div key={code} className="flex justify-between items-start border-b pb-2 group relative">
+																		{Object.entries(formattedScoreData[selectedDivision][selectedSubdivision][`${selectedHomeLetter} - ${selectedAwayLetter}`].teamInformation[selectedHomeTeamId].penalties).map(([id, penalty]) => (
+																			<div key={id} className="flex justify-between items-start border-b pb-2 group relative">
 																				<div>
-																					<span className="font-semibold">Code: {code}</span>
+																					<span className="font-semibold">Code: {penalty.penaltyCode}</span>
 																					<p className="text-sm text-gray-600">{penalty.notes}</p>
 																				</div>
 																				<div className="flex items-center">
@@ -1180,11 +1191,11 @@ export default function WeeklyScoresheetsContent() {
 																					<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
 																						<Pencil 
 																							className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700" 
-																							onClick={() => handlePenaltyEditing(selectedHomeTeamId, code)}
+																							onClick={() => handlePenaltyEditing(selectedHomeTeamId, id)}
 																						/>
 																						<X 
 																							className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700" 
-																							onClick={() => handlePenaltyRemoval(selectedHomeTeamId, code)}
+																							onClick={() => handlePenaltyRemoval(selectedHomeTeamId, id)}
 																						/>
 																					</div>
 																				</div>
@@ -1295,10 +1306,10 @@ export default function WeeklyScoresheetsContent() {
 																</AccordionTrigger>
 																<AccordionContent>
 																	<div className="space-y-2 p-2 border rounded-md">
-																		{Object.entries(formattedScoreData[selectedDivision][selectedSubdivision][`${selectedHomeLetter} - ${selectedAwayLetter}`].teamInformation[selectedAwayTeamId].penalties).map(([code, penalty]) => (
-																			<div key={code} className="flex justify-between items-start border-b pb-2 group relative">
+																		{Object.entries(formattedScoreData[selectedDivision][selectedSubdivision][`${selectedHomeLetter} - ${selectedAwayLetter}`].teamInformation[selectedAwayTeamId].penalties).map(([id, penalty]) => (
+																			<div key={id} className="flex justify-between items-start border-b pb-2 group relative">
 																				<div>
-																					<span className="font-semibold">Code: {code}</span>
+																					<span className="font-semibold">Code: {penalty.penaltyCode}</span>
 																					<p className="text-sm text-gray-600">{penalty.notes}</p>
 																				</div>
 																				<div className="flex items-center">
@@ -1306,11 +1317,11 @@ export default function WeeklyScoresheetsContent() {
 																					<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
 																						<Pencil 
 																							className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700" 
-																							onClick={() => handlePenaltyEditing(selectedAwayTeamId, code)}
+																							onClick={() => handlePenaltyEditing(selectedAwayTeamId, id)}
 																						/>
 																						<X 
 																							className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700" 
-																							onClick={() => handlePenaltyRemoval(selectedAwayTeamId, code)}
+																							onClick={() => handlePenaltyRemoval(selectedAwayTeamId, id)}
 																						/>
 																					</div>
 																				</div>

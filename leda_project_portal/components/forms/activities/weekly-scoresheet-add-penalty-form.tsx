@@ -22,7 +22,7 @@ const divisionFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
 
-// Define the PenaltyAddForm component with updated props
+// Define the PenaltyAddForm component with updated props for ID-based penalties
 export default function PenaltyAddForm({
     setOpen,
     handlePenaltySubmit,
@@ -36,11 +36,12 @@ export default function PenaltyAddForm({
     selectedTeamId: string;
     isEditMode?: boolean;
     initialPenalty?: {
+        id: string;
         code: string;
         points: number;
         notes: string;
     } | null;
-    updatePenalty?: (teamId: string, oldCode: string, newCode: string, points: number, notes?: string) => void;
+    updatePenalty?: (teamId: string, penaltyId: string, newCode: string, points: number, notes?: string) => void;
 }) {
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
@@ -70,10 +71,10 @@ export default function PenaltyAddForm({
         }
 
         if (isEditMode && initialPenalty && updatePenalty) {
-            // Call updatePenalty with the original code and the new values
+            // Call updatePenalty with the penalty ID and the new values
             updatePenalty(
                 selectedTeamId, 
-                initialPenalty.code, 
+                initialPenalty.id, // Use ID instead of code for identifying the penalty
                 values.penaltyCode, 
                 values.points, 
                 values.notes
@@ -104,7 +105,8 @@ export default function PenaltyAddForm({
                             name="penaltyCode" 
                             label="Penalty *" 
                             control={form.control} 
-                            disabled={isEditMode && initialPenalty?.code !== undefined} 
+                            // Allow editing the penalty code even in edit mode
+                            disabled={false} 
                         />
                         <FormField
                             control={form.control}

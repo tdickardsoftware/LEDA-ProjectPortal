@@ -49,7 +49,8 @@ export interface FormattedScoreData {
 							};
 						};
                         penalties: {
-                            [penaltyCode: string]: {
+                            [penaltyId: string]: {
+                                penaltyCode: string;
                                 points: number;
                                 notes?: string;
                             }
