@@ -22,7 +22,7 @@ import { seasonCodeRoute } from "@/lib/apiRoutes";
 interface SeasonCodeSelectorProps {
 	disabled?: boolean;
 	handleSelect: (value: string) => void;
-	setDisabled: (value: boolean) => void;
+	setDisabled?: (value: boolean) => void;
 	useCurrentSeason: boolean;
 	seasonCode: string;
 }
@@ -67,7 +67,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 					handleSelect(data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)?.seasonCode);
 				}
 				if (data.find((type: { isCurrentSeason: boolean }) => type.isCurrentSeason)) {
-					setDisabled(false);
+					setDisabled?.(false);
 				}
 			} catch (error) {
 				console.error("Failed to fetch season codes", error);
