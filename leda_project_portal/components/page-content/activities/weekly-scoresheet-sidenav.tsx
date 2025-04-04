@@ -29,6 +29,7 @@ import {
 	DivisionData,
 	FormattedScoreData,
 } from "@/lib/weekly-scoresheet-definitions";
+import { isMatchupValid } from "@/utils/matchupValidation";
 
 interface SideNavProps {
 	data: DivisionData; // Hierarchical data of divisions and matchups
@@ -89,40 +90,10 @@ const SideNav = ({
 		subdivisionName: string,
 		matchupKey: string
 	): boolean => {
-		const matchupData =
-			formattedScoreData?.[divisionName]?.[subdivisionName]?.[matchupKey];
-		if (!matchupData) {
-			return true;
-		}
-
-		const isHomeGameDataBlank = Object.values(
-			matchupData.teamInformation["1"].teamMembers
-		).every((member) =>
-			Object.values(member.gameStats).every((game) => !game)
-		);
-		const isAwayGameDataBlank = Object.values(
-			matchupData.teamInformation["2"].teamMembers
-		).every((member) =>
-			Object.values(member.gameStats).every((game) => !game)
-		);
-
-		const areHomeWinsBlank = Object.values(
-			matchupData.gameInformation
-		).every((game) => !game.homeWin);
-		const areHomePointsBlank = Object.values(
-			matchupData.gameInformation
-		).every((game) => game.homePoints === "" || game.homePoints === "0");
-		const areAwayPointsBlank = Object.values(
-			matchupData.gameInformation
-		).every((game) => game.awayPoints === "" || game.awayPoints === "0");
-
-		return (
-			isHomeGameDataBlank &&
-			isAwayGameDataBlank &&
-			areHomeWinsBlank &&
-			areHomePointsBlank &&
-			areAwayPointsBlank
-		);
+		// Use the shared utility function
+		return formattedScoreData 
+			? !isMatchupValid(formattedScoreData, divisionName, subdivisionName, matchupKey)
+			: true;
 	};
 
 	// Show a placeholder when no data is available
