@@ -66,6 +66,16 @@ export interface PlayerPoints {
 }
 
 /**
+ * Represents a player mention (special notation or achievement)
+ */
+export interface PlayerMention {
+  mentionCode: string;
+  desc: string;
+  points: number;
+  notes?: string;
+}
+
+/**
  * Comprehensive structure for all scoresheet data
  * Hierarchically organized by division, subdivision, and matchup
  */
@@ -84,6 +94,9 @@ export interface FormattedScoreData {
 							[playerId: string]: {
 								name: string;
 								gameStats: Record<string, boolean>;
+                mentions?: {
+                  [mentionId: string]: PlayerMention;
+                };
 								gamePoints: string;
 							};
 						};

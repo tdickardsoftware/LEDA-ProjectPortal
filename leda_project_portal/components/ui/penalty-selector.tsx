@@ -45,6 +45,7 @@ interface FormValues {
 }
 
 interface PenaltySelectorProps {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	control: Control<any>; // Form control from React Hook Form
 	name: string; // Field name in the form
 	label: string; // Label text for the field

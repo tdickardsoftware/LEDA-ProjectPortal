@@ -55,6 +55,8 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
+import MentionForm from "@/components/forms/activities/mentions-form";
+import { DialogDescription } from "@radix-ui/react-dialog";
 
 // Type-safe deep merge utility function used to combine existing and new scoresheet data
 const deepMerge = <T extends Record<string, unknown>, U extends Record<string, unknown>>(
@@ -91,6 +93,7 @@ const isObject = (item: unknown): item is Record<string, unknown> => {
  * Converts raw schedule data into a structured DivisionData format for a specific date
  * This transforms the API response into a format suitable for the sidebar navigation
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const convertScheduleData = (sourceData: Record<string, any>, dateToDisplay: string): DivisionData => {
 	const result: DivisionData = {};
 
@@ -136,6 +139,7 @@ export default function WeeklyScoresheetsContent() {
     // State for season selection and data loading
     const [seasonCode, setSeasonCode] = useState<string>("");
     const [currentSeason, setCurrentSeason] = useState<boolean>(true);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [disabled, setDisabled] = useState<boolean>(false);
     const [seasonSelected, setSeasonSelected] = useState<boolean>(true);
 
@@ -183,6 +187,17 @@ export default function WeeklyScoresheetsContent() {
 	} | null>(null);
     const [homePenaltyCounter, setHomePenaltyCounter] = useState<number>(0);
     const [awayPenaltyCounter, setAwayPenaltyCounter] = useState<number>(0);
+    // Add a state to track mention counters per player
+    const [mentionCounters, setMentionCounters] = useState<Record<string, number>>({});
+
+	// State for mentions management
+    const [mentionDialogOpen, setMentionDialogOpen] = useState<boolean>(false);
+    const [selectedPlayerForMention, setSelectedPlayerForMention] = useState<{
+        id: string,
+        name: string,
+        teamId: string,
+        teamName: string
+    } | null>(null);
 
     /**
      * Marks data as changed, enabling the save button
@@ -222,6 +237,9 @@ export default function WeeklyScoresheetsContent() {
 		 // Reset points when selecting a new matchup
         setHomePoints(Array(11).fill(''));
         setAwayPoints(Array(11).fill(''));
+		
+		// Reset mention counters when loading a new matchup
+		setMentionCounters({});
 		
 		// Find team IDs and fetch team information
 		if (sidenavData[divisionName] && sidenavData[divisionName][subdivisionName]) {
@@ -296,9 +314,9 @@ export default function WeeklyScoresheetsContent() {
 					break;
 				}
 			}
-			if (formattedScoreData && formattedScoreData[divisionName] && formattedScoreData[divisionName][subdivisionName]) {
+			if (formattedScoreData && formattedScoreData[selectedDivision] && formattedScoreData[selectedDivision][selectedSubdivision]) {
 				const matchupKey = `${homeLetter} - ${awayLetter}`;
-				const matchupData = formattedScoreData[divisionName][subdivisionName][matchupKey];
+				const matchupData = formattedScoreData[selectedDivision][selectedSubdivision][matchupKey];
 		
 				if (matchupData) {
 					// Set home team data
@@ -356,14 +374,41 @@ export default function WeeklyScoresheetsContent() {
 					// Set game data
 					const homeGameData: TeamGameData = {};
 					const awayGameData: TeamGameData = {};
+					
+					// Initialize mention counters to track existing mentions
+					const newMentionCounters: Record<string, number> = {...mentionCounters};
+					
 					Object.entries(matchupData.teamInformation["1"].teamMembers).forEach(([playerId, member]) => {
 						homeGameData[playerId] = member.gameStats;
+						
+						// Check for existing mentions and update counters
+						if (member.mentions) {
+							const mentionIds = Object.keys(member.mentions);
+							if (mentionIds.length > 0) {
+								const maxId = Math.max(...mentionIds.map(id => parseInt(id)));
+								const playerMentionKey = `${selectedHomeTeamId}-${playerId}`;
+								newMentionCounters[playerMentionKey] = maxId;
+							}
+						}
 					});
+					
 					Object.entries(matchupData.teamInformation["2"].teamMembers).forEach(([playerId, member]) => {
 						awayGameData[playerId] = member.gameStats;
+						
+						// Check for existing mentions and update counters
+						if (member.mentions) {
+							const mentionIds = Object.keys(member.mentions);
+							if (mentionIds.length > 0) {
+								const maxId = Math.max(...mentionIds.map(id => parseInt(id)));
+								const playerMentionKey = `${selectedAwayTeamId}-${playerId}`;
+								newMentionCounters[playerMentionKey] = maxId;
+							}
+						}
 					});
+					
 					setHomeTeamGameData(homeGameData);
 					setAwayTeamGameData(awayGameData);
+					setMentionCounters(newMentionCounters);
 		
 					// Set game points and wins
 					const gameInformation = matchupData.gameInformation;
@@ -555,6 +600,16 @@ export default function WeeklyScoresheetsContent() {
             }
           }
           
+          // Add mention points to total
+          const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+          const playerMentions = formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+            teamInformation?.[selectedHomeTeamId]?.teamMembers?.[String(player.ledaId)]?.mentions;
+          
+          if (playerMentions && Object.keys(playerMentions).length > 0) {
+            const mentionPoints = Object.values(playerMentions).reduce((sum, mention) => sum + mention.points, 0);
+            totalPoints += mentionPoints;
+          }
+          
           homePlayerPoints.push({
             playerId: String(player.ledaId),
             playerName: player.fullName,
@@ -586,6 +641,16 @@ export default function WeeklyScoresheetsContent() {
             }
           }
           
+          // Add mention points to total
+          const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+          const playerMentions = formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+            teamInformation?.[selectedAwayTeamId]?.teamMembers?.[String(player.ledaId)]?.mentions;
+          
+          if (playerMentions && Object.keys(playerMentions).length > 0) {
+            const mentionPoints = Object.values(playerMentions).reduce((sum, mention) => sum + mention.points, 0);
+            totalPoints += mentionPoints;
+          }
+          
           awayPlayerPoints.push({
             playerId: String(player.ledaId),
             playerName: player.fullName,
@@ -611,44 +676,88 @@ export default function WeeklyScoresheetsContent() {
       // Use the same calculation method as displayed in the UI
       const teamPointsCalculation = calculatePoints();
       
-      // Build home team members
+      // Build home team members with mentions preserved
 	  const homeTeamMembers: Record<string, { 
 		name: string; 
 		gameStats: Record<string, boolean>; 
-		gamePoints: string; 
+		gamePoints: string;
+		mentions?: Record<string, { mentionCode: string; desc: string; points: number; notes: string }>;
 	  }> = {};
-      homeTeamPlayerInformation?.forEach((player, index) => {
+      homeTeamPlayerInformation?.forEach((player, ) => {
         const playerGameStats: Record<string, boolean> = {};
         for (let i = 1; i <= 11; i++) {
           const gameKey = `Game ${i}`;
           playerGameStats[gameKey] = homeTeamGameData[player.ledaId]?.[gameKey] || false;
         }
         
-        homeTeamMembers[String(index + 1)] = {
+        // Preserve existing mentions data
+        const existingMentions = formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+          teamInformation?.[selectedHomeTeamId]?.teamMembers?.[String(player.ledaId)]?.mentions;
+        
+        homeTeamMembers[String(player.ledaId)] = {
           name: player.fullName,
           gameStats: playerGameStats,
           gamePoints: String(homePlayerPoints.find(p => p.playerId === String(player.ledaId))?.totalPoints || 0)
         };
+        
+        // Only add mentions if they exist
+        if (existingMentions && Object.keys(existingMentions).length > 0) {
+          // Convert the mentions to ensure notes is always a string
+          const formattedMentions: Record<string, { mentionCode: string; desc: string; points: number; notes: string }> = {};
+          
+          Object.entries(existingMentions).forEach(([id, mention]) => {
+            formattedMentions[id] = {
+              mentionCode: mention.mentionCode,
+              desc: mention.desc,
+              points: mention.points,
+              notes: mention.notes || "" // Ensure notes is always a string, never undefined
+            };
+          });
+          
+          homeTeamMembers[String(player.ledaId)].mentions = formattedMentions;
+        }
       });
       
-      // Build away team members
+      // Build away team members with mentions preserved
 	  const awayTeamMembers: Record<string, { 
 		name: string; 
 		gameStats: Record<string, boolean>; 
-		gamePoints: string; 
+		gamePoints: string;
+		mentions?: Record<string, { mentionCode: string; desc: string; points: number; notes: string }>;
 	  }> = {};
-      awayTeamPlayerInformation?.forEach((player, index) => {
+      awayTeamPlayerInformation?.forEach((player, ) => {
         const playerGameStats: Record<string, boolean> = {};
         for (let i = 1; i <= 11; i++) {
           const gameKey = `Game ${i}`;
           playerGameStats[gameKey] = awayTeamGameData[player.ledaId]?.[gameKey] || false;
         }
         
-        awayTeamMembers[String(index + 1)] = {
+        // Preserve existing mentions data
+        const existingMentions = formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+          teamInformation?.[selectedAwayTeamId]?.teamMembers?.[String(player.ledaId)]?.mentions;
+        
+        awayTeamMembers[String(player.ledaId)] = {
           name: player.fullName,
           gameStats: playerGameStats,
           gamePoints: String(awayPlayerPoints.find(p => p.playerId === String(player.ledaId))?.totalPoints || 0)
         };
+        
+        // Only add mentions if they exist
+        if (existingMentions && Object.keys(existingMentions).length > 0) {
+          // Convert the mentions to ensure notes is always a string
+          const formattedMentions: Record<string, { mentionCode: string; desc: string; points: number; notes: string }> = {};
+          
+          Object.entries(existingMentions).forEach(([id, mention]) => {
+            formattedMentions[id] = {
+              mentionCode: mention.mentionCode,
+              desc: mention.desc,
+              points: mention.points,
+              notes: mention.notes || "" // Ensure notes is always a string, never undefined
+            };
+          });
+          
+          awayTeamMembers[String(player.ledaId)].mentions = formattedMentions;
+        }
       });
       
       // Create the new formatted data
@@ -797,7 +906,7 @@ export default function WeeklyScoresheetsContent() {
                 });
 
                 // Save player points for each player in the home team
-                const homePlayers = matchupData.teamInformation["1"].teamMembers;
+                const homePlayers = matchupData.teamInformation[selectedHomeTeamId].teamMembers;
                 for (const playerId in homePlayers) {
                     const player = homePlayers[playerId];
                     const playerPointsPayload = {
@@ -808,6 +917,8 @@ export default function WeeklyScoresheetsContent() {
                         totalPoints: parseInt(player.gamePoints),
                         pointsByGame: player.gameStats,
 						teamLedaId: selectedHomeTeamId,
+						// Include mentions data for each player if it exists
+						mentions: player.mentions || {}
                     };
 
                     await fetch(`${weeklyScoresheetsRoute}/playerPoints`, {
@@ -820,7 +931,7 @@ export default function WeeklyScoresheetsContent() {
                 }
 
                 // Save player points for each player in the away team
-                const awayPlayers = matchupData.teamInformation["2"].teamMembers;
+                const awayPlayers = matchupData.teamInformation[selectedAwayTeamId].teamMembers;
                 for (const playerId in awayPlayers) {
                     const player = awayPlayers[playerId];
                     const playerPointsPayload = {
@@ -831,6 +942,8 @@ export default function WeeklyScoresheetsContent() {
                         totalPoints: parseInt(player.gamePoints),
                         pointsByGame: player.gameStats,
                         teamLedaId: selectedAwayTeamId, // Correctly set to the team's ID
+						// Include mentions data for each player if it exists
+						mentions: player.mentions || {}
                     };
 
                     await fetch(`${weeklyScoresheetsRoute}/playerPoints`, {
@@ -1135,6 +1248,127 @@ export default function WeeklyScoresheetsContent() {
         }
     };
 
+    const handleMentionClick = (playerId: string, teamId: string) => {
+        // Find the player name based on the ID
+        let playerName = "";
+        let teamName = "";
+        
+        if (teamId === selectedHomeTeamId) {
+            const player = homeTeamPlayerInformation?.find(p => String(p.ledaId) === playerId);
+            playerName = player?.fullName || "";
+            teamName = homeTeamInformation?.teamName || "";
+        } else {
+            const player = awayTeamPlayerInformation?.find(p => String(p.ledaId) === playerId);
+            playerName = player?.fullName || "";
+            teamName = awayTeamInformation?.teamName || "";
+        }
+        
+        // Set the selected player for mention
+        setSelectedPlayerForMention({
+            id: playerId,
+            name: playerName,
+            teamId: teamId,
+            teamName: teamName
+        });
+        
+        // Open the mention dialog
+        setMentionDialogOpen(true);
+    }
+
+    const handleMentionSubmit = (mentionCode: string, desc: string, points: number, notes?: string) => {
+        if (!formattedScoreData || !selectedPlayerForMention) return;
+        
+        const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+        const playerId = selectedPlayerForMention.id;
+        const teamId = selectedPlayerForMention.teamId;
+        
+        // Create a copy of the current formatted score data
+        const updatedData = { ...formattedScoreData };
+        
+        // Ensure the necessary nested structure exists
+        if (!updatedData[selectedDivision]) {
+            updatedData[selectedDivision] = {};
+        }
+        
+        if (!updatedData[selectedDivision][selectedSubdivision]) {
+            updatedData[selectedDivision][selectedSubdivision] = {};
+        }
+        
+        if (!updatedData[selectedDivision][selectedSubdivision][matchupKey]) {
+            updatedData[selectedDivision][selectedSubdivision][matchupKey] = {
+                teamInformation: {},
+                gameInformation: {},
+                teamPoints: { homePoints: "0", awayPoints: "0" }
+            };
+        }
+        
+        // Find the right team to add the mention to
+        const teamKey = teamId;
+        const isHomeTeam = teamId === selectedHomeTeamId;
+        
+        if (!updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey]) {
+            updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey] = {
+                teamLetter: isHomeTeam ? selectedHomeLetter : selectedAwayLetter,
+                teamName: isHomeTeam ? homeTeamInformation?.teamName || "" : awayTeamInformation?.teamName || "",
+                home: isHomeTeam,
+                teamMembers: {},
+                penalties: {}
+            };
+        }
+        
+        // Ensure the team members object exists
+        if (!updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].teamMembers[playerId]) {
+            const playerName = selectedPlayerForMention.name;
+            const gameStats: Record<string, boolean> = {};
+            
+            // Initialize game stats if needed
+            for (let i = 1; i <= 11; i++) {
+                const gameKey = `Game ${i}`;
+                gameStats[gameKey] = isHomeTeam ? 
+                    (homeTeamGameData[playerId]?.[gameKey] || false) : 
+                    (awayTeamGameData[playerId]?.[gameKey] || false);
+            }
+            
+            updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].teamMembers[playerId] = {
+                name: playerName,
+                gameStats: gameStats,
+                gamePoints: "0"
+            };
+        }
+        
+        // Ensure the mentions object exists
+        if (!updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].teamMembers[playerId].mentions) {
+            updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].teamMembers[playerId].mentions = {};
+        }
+        
+        // Get or initialize mention counter for this player
+        const playerMentionKey = `${teamId}-${playerId}`;
+        const currentCounter = mentionCounters[playerMentionKey] || 0;
+        const newCounter = currentCounter + 1;
+        
+        // Add the new mention using the counter as the key
+        updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].teamMembers[playerId].mentions![newCounter.toString()] = {
+            mentionCode,
+            desc,
+            points,
+            notes: notes || ""
+        };
+        
+        // Update the mention counter state
+        setMentionCounters({
+            ...mentionCounters,
+            [playerMentionKey]: newCounter
+        });
+        
+        // Update state
+        setFormattedScoreData(updatedData);
+        
+        console.log(updatedData)
+        
+        // Mark data as changed to enable save button
+        handleDataChange();
+    }
+
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex gap-4">
@@ -1283,7 +1517,7 @@ export default function WeeklyScoresheetsContent() {
 																		<span>{player.fullName}</span>
 																	</TableCell>
 																	<TableCell>
-																		<Button variant="outline" className="text-xs px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100" onClick={() => {}}>
+																		<Button variant="outline" className="text-xs px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100" onClick={() => handleMentionClick(String(player.ledaId), selectedHomeTeamId)}>
 																			<span>Mentions</span>
 																		</Button>
 																	</TableCell>
@@ -1409,7 +1643,7 @@ export default function WeeklyScoresheetsContent() {
 																		<span>{player.fullName}</span>
 																	</TableCell>
 																	<TableCell>
-																		<Button variant="outline" className="text-xs px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100" onClick={() => {}}>
+																		<Button variant="outline" className="text-xs px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100" onClick={() => handleMentionClick(String(player.ledaId), selectedAwayTeamId)}>
 																			<span>Mentions</span>
 																		</Button>
 																	</TableCell>
@@ -1560,6 +1794,53 @@ export default function WeeklyScoresheetsContent() {
 					)}
 				</div>
 			</div>
+			
+			{/* Add Mention Dialog */}
+            <Dialog open={mentionDialogOpen} onOpenChange={setMentionDialogOpen}>
+                <DialogContent className="sm:max-w-[500px] bg-white overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Add Mention for Player: {selectedPlayerForMention?.name}</DialogTitle>
+                        <DialogDescription>On Team: {selectedPlayerForMention?.teamName}</DialogDescription>
+                    </DialogHeader>
+                    <MentionForm handleMentionSubmit={handleMentionSubmit} />
+                    
+                    {/* Render existing mentions */}
+                    {selectedPlayerForMention && formattedScoreData && (
+                        <>
+                            <div className="space-y-2">
+                                <h3 className="font-semibold">Existing Mentions</h3>
+                                {(() => {
+                                    const mentions = formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[`${selectedHomeLetter} - ${selectedAwayLetter}`]
+                                        ?.teamInformation?.[selectedPlayerForMention.teamId]
+                                        ?.teamMembers?.[selectedPlayerForMention.id]
+                                        ?.mentions;
+                                        
+                                    if (mentions && Object.keys(mentions).length > 0) {
+                                        return (
+                                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                                                {Object.entries(mentions).map(([id, mention]) => (
+                                                    <div key={id} className="p-3 border rounded-md bg-gray-50 shadow-sm">
+                                                        <div className="flex justify-between items-start">
+                                                            <span className="font-semibold text-blue-600">{mention.mentionCode}</span>
+                                                            <span className="text-green-600 font-bold">{mention.points} pts</span>
+                                                        </div>
+                                                        <p className="text-sm mt-1">{mention.desc}</p>
+                                                        {mention.notes && (
+                                                            <p className="text-sm text-gray-600 mt-1 italic">Notes: {mention.notes}</p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    } else {
+                                        return <p className="text-gray-500 text-sm italic">No mentions have been added yet</p>;
+                                    }
+                                })()}
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
 		</div>
 	);
 }
