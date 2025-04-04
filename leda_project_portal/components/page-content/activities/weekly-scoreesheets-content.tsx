@@ -323,9 +323,9 @@ export default function WeeklyScoresheetsContent() {
 					break;
 				}
 			}
-			if (formattedScoreData && formattedScoreData[selectedDivision] && formattedScoreData[selectedDivision][selectedSubdivision]) {
+			if (formattedScoreData && formattedScoreData[divisionName] && formattedScoreData[divisionName][subdivisionName]) {
 				const matchupKey = `${homeLetter} - ${awayLetter}`;
-				const matchupData = formattedScoreData[selectedDivision][selectedSubdivision][matchupKey];
+				const matchupData = formattedScoreData[divisionName][subdivisionName][matchupKey];
 		
 				if (matchupData) {
 					// Set home team data

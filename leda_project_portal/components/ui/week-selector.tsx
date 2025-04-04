@@ -38,16 +38,19 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 		{ value: string; label: string }[]
 	>([]);
 	// State to store the selected season code
-	const [selectedSeasonCode, setSelectedSeasonCode] = useState<string | null>(null);
+	const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+	const [selectedWeekLabel, setSelectedWeekLabel] = useState<string>("Select a Week...");
 
-	const handleSelectSeasonCode = (value: string) => {
-		setSelectedSeasonCode(value);
+	const handleSelectWeek = (value: string, label: string) => {
+		setSelectedWeek(value);
+		setSelectedWeekLabel(label); // Update the button's label
 		handleSelect(value); // Update the parent component's state
 		setOpen(false);
 	}
 
 	useEffect(() => {
 		async function loadSeasonCodes() {
+			if (!seasonCode) return; // Skip if no seasonCode is provided
 			try {
 				const response = await fetch(seasonRoute+`?seasonCode=${seasonCode}`);
 				const data = await response.json();
@@ -70,11 +73,6 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 		loadSeasonCodes();
 	}, [seasonCode]);
 
-	// Update selectedSeasonCode when seasonCode prop changes
-	useEffect(() => {
-		setSelectedSeasonCode(seasonCode);
-	}, [seasonCode]);
-
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
@@ -87,11 +85,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 							className="w-[200px] justify-between"
 							>
 							<span className="truncate">
-								{selectedSeasonCode 
-									? seasonCodes.find(
-											(type) => type.value === selectedSeasonCode
-									)?.label
-									: "Select a Week..."}
+								{selectedWeekLabel}
 							</span>
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
@@ -110,14 +104,14 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 											key={type.value}
 											value={type.value}
 											onSelect={() => {
-												handleSelectSeasonCode(type.value);
+												handleSelectWeek(type.value, type.label);
 											}}
 											className="hover:bg-gray-200"
 										>
 											<Check
 												className={cn(
 													"mr-2 h-4 w-4",
-													type.value === selectedSeasonCode
+													type.value === selectedWeek
 														? "opacity-100"
 														: "opacity-0"
 												)}
