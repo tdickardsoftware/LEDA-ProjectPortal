@@ -135,6 +135,27 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 		loadMentions();
 	}, []);
 
+	// Find the selected mention in the dropdown options
+	const getSelectedMention = () => {
+		// If currentValue exists, try to find an exact match first
+		if (currentValue) {
+			// Try exact match
+			const exactMatch = memberTypes.find(
+				(type) => JSON.stringify(type.value) === JSON.stringify(currentValue)
+			);
+			if (exactMatch) return exactMatch.label;
+
+			// If no exact match, try to match by mentionCode
+			if (currentValue && typeof currentValue === 'object' && 'mentionCode' in currentValue) {
+				const codeMatch = memberTypes.find(
+					(type) => type.value.mentionCode === currentValue.mentionCode
+				);
+				if (codeMatch) return codeMatch.label;
+			}
+		}
+		return "Select a mention...";
+	};
+
 	return (
 		// Render the dropdown selector UI
 		<div className="flex flex-col gap-4">
@@ -147,17 +168,13 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 							aria-expanded={open}
 							className="w-fit justify-between"
 						>
-							{currentValue
-								? memberTypes.find(
-										(type) => JSON.stringify(type.value) === JSON.stringify(currentValue)
-								  )?.label || "Select a mention..."
-								: "Select a mention..."}
+							{getSelectedMention()}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent className="w-fit p-0 bg-white">
 						<Command>
-							<CommandInput placeholder="Search place type..." />
+							<CommandInput placeholder="Search mention..." />
 							<CommandEmpty>No mention found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
@@ -176,7 +193,11 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 											<Check
 												className={cn(
 													"mr-2 h-4 w-4",
-													JSON.stringify(type.value) === JSON.stringify(currentValue)
+													// Check if current value matches this option
+													currentValue && 
+													(JSON.stringify(type.value) === JSON.stringify(currentValue) ||
+													(typeof currentValue === 'object' && 'mentionCode' in currentValue && 
+													 type.value.mentionCode === currentValue.mentionCode))
 														? "opacity-100"
 														: "opacity-0"
 												)}

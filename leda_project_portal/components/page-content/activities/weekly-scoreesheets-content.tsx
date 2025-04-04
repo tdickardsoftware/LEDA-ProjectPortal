@@ -198,6 +198,15 @@ export default function WeeklyScoresheetsContent() {
         teamId: string,
         teamName: string
     } | null>(null);
+    // Add state for mention editing
+    const [mentionEditMode, setMentionEditMode] = useState<boolean>(false);
+    const [currentEditingMention, setCurrentEditingMention] = useState<{
+        id: string,
+        code: string,
+        desc: string, 
+        points: number,
+        notes: string
+    } | null>(null);
 
     /**
      * Marks data as changed, enabling the save button
@@ -1275,6 +1284,93 @@ export default function WeeklyScoresheetsContent() {
         setMentionDialogOpen(true);
     }
 
+    const handleMentionEditing = (playerId: string, teamId: string, mentionId: string) => {
+        if (!formattedScoreData) return;
+        
+        const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+        
+        // Check if the mention exists
+        if (
+            formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+            teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions?.[mentionId]
+        ) {
+            // Get the mention data
+            const mention = formattedScoreData[selectedDivision][selectedSubdivision][matchupKey]
+                .teamInformation[teamId].teamMembers[playerId].mentions![mentionId];
+            
+            // Set up the editing state
+            setMentionEditMode(true);
+            setCurrentEditingMention({
+                id: mentionId,
+                code: mention.mentionCode,
+                desc: mention.desc,
+                points: mention.points,
+                notes: mention.notes || ""
+            });
+            
+            // Find the player name based on the ID
+            let playerName = "";
+            let teamName = "";
+            
+            if (teamId === selectedHomeTeamId) {
+                const player = homeTeamPlayerInformation?.find(p => String(p.ledaId) === playerId);
+                playerName = player?.fullName || "";
+                teamName = homeTeamInformation?.teamName || "";
+            } else {
+                const player = awayTeamPlayerInformation?.find(p => String(p.ledaId) === playerId);
+                playerName = player?.fullName || "";
+                teamName = awayTeamInformation?.teamName || "";
+            }
+            
+            // Set the selected player for mention
+            setSelectedPlayerForMention({
+                id: playerId,
+                name: playerName,
+                teamId: teamId,
+                teamName: teamName
+            });
+            
+            // Open the mention dialog
+            setMentionDialogOpen(true);
+        }
+    };
+
+    const updateMention = (mentionId: string, mentionCode: string, desc: string, points: number, notes?: string) => {
+        if (!formattedScoreData || !selectedPlayerForMention) return;
+        
+        const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+        const playerId = selectedPlayerForMention.id;
+        const teamId = selectedPlayerForMention.teamId;
+        
+        // Create a copy of the current formatted score data
+        const updatedData = { ...formattedScoreData };
+        
+        // Check if the mention exists before attempting to update
+        if (
+            updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+            teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions?.[mentionId]
+        ) {
+            // Update the existing mention with the new values
+            updatedData[selectedDivision][selectedSubdivision][matchupKey]
+                .teamInformation[teamId].teamMembers[playerId].mentions![mentionId] = {
+                    mentionCode: mentionCode,
+                    desc: desc,
+                    points: points,
+                    notes: notes || ""
+                };
+            
+            // Update state
+            setFormattedScoreData(updatedData);
+            
+            // Reset editing state
+            setMentionEditMode(false);
+            setCurrentEditingMention(null);
+            
+            // Mark data as changed
+            handleDataChange();
+        }
+    };
+
     const handleMentionSubmit = (mentionCode: string, desc: string, points: number, notes?: string) => {
         if (!formattedScoreData || !selectedPlayerForMention) return;
         
@@ -1368,6 +1464,39 @@ export default function WeeklyScoresheetsContent() {
         // Mark data as changed to enable save button
         handleDataChange();
     }
+
+    /**
+     * Handles deleting a mention from a player
+     */
+    const handleMentionDelete = (playerId: string, teamId: string, mentionId: string) => {
+        if (!formattedScoreData) return;
+        
+        // Add confirmation dialog
+        if (!window.confirm(`Are you sure you want to delete this mention? This action cannot be undone.`)) {
+            return; // Exit if user cancels
+        }
+        
+        const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+        
+        // Create a copy of the current formatted score data
+        const updatedData = { ...formattedScoreData };
+        
+        // Check if the mention exists before attempting to remove
+        if (
+            updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.
+            teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions?.[mentionId]
+        ) {
+            // Remove the mention
+            delete updatedData[selectedDivision][selectedSubdivision][matchupKey]
+                .teamInformation[teamId].teamMembers[playerId].mentions![mentionId];
+            
+            // Update state
+            setFormattedScoreData(updatedData);
+            
+            // Mark data as changed
+            handleDataChange();
+        }
+    };
 
 	return (
 		<div className="flex flex-col h-full">
@@ -1796,13 +1925,28 @@ export default function WeeklyScoresheetsContent() {
 			</div>
 			
 			{/* Add Mention Dialog */}
-            <Dialog open={mentionDialogOpen} onOpenChange={setMentionDialogOpen}>
+            <Dialog open={mentionDialogOpen} onOpenChange={(open) => {
+                setMentionDialogOpen(open);
+                if (!open) {
+                    setMentionEditMode(false);
+                    setCurrentEditingMention(null);
+                }
+            }}>
                 <DialogContent className="sm:max-w-[500px] bg-white overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Add Mention for Player: {selectedPlayerForMention?.name}</DialogTitle>
+                        <DialogTitle>
+                            {mentionEditMode ? "Edit" : "Add"} Mention for Player: {selectedPlayerForMention?.name}
+                        </DialogTitle>
                         <DialogDescription>On Team: {selectedPlayerForMention?.teamName}</DialogDescription>
                     </DialogHeader>
-                    <MentionForm handleMentionSubmit={handleMentionSubmit} />
+                    <MentionForm 
+                        handleMentionSubmit={handleMentionSubmit}
+                        isEditMode={mentionEditMode}
+                        initialMention={currentEditingMention}
+                        updateMention={(mentionId, mentionCode, desc, points, notes) => 
+                            updateMention(mentionId, mentionCode, desc, points, notes)
+                        }
+                    />
                     
                     {/* Render existing mentions */}
                     {selectedPlayerForMention && formattedScoreData && (
@@ -1819,10 +1963,30 @@ export default function WeeklyScoresheetsContent() {
                                         return (
                                             <div className="space-y-2 max-h-60 overflow-y-auto">
                                                 {Object.entries(mentions).map(([id, mention]) => (
-                                                    <div key={id} className="p-3 border rounded-md bg-gray-50 shadow-sm">
+                                                    <div key={id} className="p-3 border rounded-md bg-gray-50 shadow-sm group relative">
                                                         <div className="flex justify-between items-start">
                                                             <span className="font-semibold text-blue-600">{mention.mentionCode}</span>
-                                                            <span className="text-green-600 font-bold">{mention.points} pts</span>
+                                                            <div className="flex items-center">
+                                                                <span className="text-green-600 font-bold">{mention.points} pts</span>
+                                                                <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+                                                                    <Pencil 
+                                                                        className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700" 
+                                                                        onClick={() => handleMentionEditing(
+                                                                            selectedPlayerForMention.id,
+                                                                            selectedPlayerForMention.teamId,
+                                                                            id
+                                                                        )}
+                                                                    />
+                                                                    <X 
+                                                                        className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700" 
+                                                                        onClick={() => handleMentionDelete(
+                                                                            selectedPlayerForMention.id,
+                                                                            selectedPlayerForMention.teamId,
+                                                                            id
+                                                                        )}
+                                                                    />
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                         <p className="text-sm mt-1">{mention.desc}</p>
                                                         {mention.notes && (

@@ -16,7 +16,7 @@ import { useEffect } from "react";
 import MentionSelector from "@/components/ui/mentions-selector";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-// Validation schema for the penalty form
+// Validation schema for the mention form
 const divisionFormSchema = z.object({
 	mentionData: z.object({
 		mentionCode: z.string(),
@@ -35,14 +35,12 @@ const formContainerStyle =
 	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
 
 /**
- * Penalty Add/Edit Form component
+ * Mention Add/Edit Form component
  *
- * @param setOpen - Function to close the dialog
- * @param handlePenaltySubmit - Callback for adding new penalties
- * @param selectedTeamId - ID of the team receiving the penalty
+ * @param handleMentionSubmit - Callback for adding new mentions
  * @param isEditMode - Whether the form is in edit mode
- * @param initialPenalty - Penalty data for editing (only in edit mode)
- * @param updatePenalty - Callback for updating existing penalties
+ * @param initialMention - Mention data for editing (only in edit mode)
+ * @param updateMention - Callback for updating existing mentions
  */
 export default function MentionForm({
 	handleMentionSubmit,
@@ -60,13 +58,14 @@ export default function MentionForm({
 	initialMention?: {
 		id: string;
 		code: string;
+		desc: string;
 		points: number;
 		notes: string;
 	} | null;
 	updateMention?: (
-		teamId: string,
-		penaltyId: string,
-		newCode: string,
+		mentionId: string,
+		mentionCode: string,
+		desc: string,
 		points: number,
 		notes?: string
 	) => void;
@@ -88,11 +87,39 @@ export default function MentionForm({
 		},
 	});
 
+	// Set initial values when in edit mode and when initialMention changes
+	useEffect(() => {
+		if (isEditMode && initialMention) {
+			// Instead of just setting form values, also set the mentionData for the selector
+			form.setValue("mentionData", {
+				mentionCode: initialMention.code,
+				desc: initialMention.desc,
+				points: initialMention.points.toString(),
+				mentionBasis: "" // We may not have this value when editing
+			});
+			form.setValue("mentionCode", initialMention.code);
+			form.setValue("mentionDesc", initialMention.desc);
+			form.setValue("points", initialMention.points);
+			form.setValue("notes", initialMention.notes || "");
+		}
+	}, [form, isEditMode, initialMention]);
+
 	/**
 	 * Form submission handler
-	 * Delegates to either updatePenalty or handlePenaltySubmit based on mode
+	 * Delegates to either updateMention or handleMentionSubmit based on mode
 	 */
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
+		if (isEditMode && initialMention && updateMention) {
+			// Update existing mention
+			updateMention(
+				initialMention.id,
+				values.mentionCode || "",
+				values.mentionDesc || "",
+				values.points ?? 0,
+				values.notes
+			);
+		} else {
+			// Add new mention
 			handleMentionSubmit(
 				values.mentionCode || "",
 				values.mentionDesc || "",
@@ -100,19 +127,20 @@ export default function MentionForm({
 				values.notes
 			);
 
-		// Reset the form instead of closing the dialog
-		form.reset({
-			mentionData: {
+			// Reset the form instead of closing the dialog
+			form.reset({
+				mentionData: {
+					mentionCode: "",
+					desc: "",
+					points: "",
+					mentionBasis: "",
+				},
+				points: undefined,
 				mentionCode: "",
-				desc: "",
-				points: "",
-				mentionBasis: "",
-			},
-			points: undefined,
-			mentionCode: "",
-			mentionDesc: "",
-			notes: "",
-		});
+				mentionDesc: "",
+				notes: "",
+			});
+		}
 	}
 
 	const handleMentionChange = (value: { mentionCode: string; desc: string; points: string; mentionBasis: string }) => {
@@ -127,7 +155,7 @@ export default function MentionForm({
 	};
 
 	return (
-		// Form UI rendering with fields for penalty code, points, and notes
+		// Form UI rendering with fields for mention code, points, and notes
 		<Form {...form}>
 			<form
 				onSubmit={form.handleSubmit(onSubmit)}
@@ -135,14 +163,15 @@ export default function MentionForm({
 			>
 				<div className="flex space-x-4">
 					<div className={formContainerStyle}>
+						{/* Use MentionSelector for both add and edit modes */}
 						<MentionSelector
 							name="mentionData"
 							label="Mention *"
 							control={form.control}
-							// Allow editing the penalty code even in edit mode
 							disabled={false}
 							handleMentionChange={handleMentionChange}
 						/>
+						
 						<FormField
 							control={form.control}
 							name="points"
