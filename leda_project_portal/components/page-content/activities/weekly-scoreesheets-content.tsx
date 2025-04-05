@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/accordion";
 import MentionForm from "@/components/forms/activities/mentions-form";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import { isMatchupValid } from "@/utils/matchupValidation";
 
 // Utility function: Deep merge two objects
 const deepMerge = <T extends Record<string, unknown>, U extends Record<string, unknown>>(
@@ -137,6 +138,22 @@ const convertScheduleData = (
 	}
 
 	return result;
+};
+
+// Utility function to check if all matchups are filled out and valid
+const areAllMatchupsValid = (data: FormattedScoreData): boolean => {
+	for (const division in data) {
+		for (const subdivision in data[division]) {
+			for (const matchupKey in data[division][subdivision]) {
+				// Use the shared utility function
+				if (!isMatchupValid(data, division, subdivision, matchupKey)) {
+					console.log(`Invalid matchup: ${division} > ${subdivision} > ${matchupKey}`);
+					return false;
+				}
+			}
+		}
+	}
+	return true;
 };
 
 export default function WeeklyScoresheetsContent() {
@@ -854,6 +871,10 @@ export default function WeeklyScoresheetsContent() {
 		setIsSaving(true);
 
 		try {
+				// Determine if all matchups are valid
+				const finishedScoresheet = areAllMatchupsValid(data);
+                console.log("Finished scoresheet:", finishedScoresheet);
+
 			// First, try to fetch existing scoresheet data for this season and week
 			const fetchResponse = await fetch(
 				`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&weekNumber=${selectedWeek}`
@@ -900,6 +921,7 @@ export default function WeeklyScoresheetsContent() {
 					seasonCode: seasonCode,
 					weekNumber: selectedWeek,
 					scoresheetData: completeData,
+					finishedScoresheet, // Include the finishedScoresheet status
 				}),
 			});
 

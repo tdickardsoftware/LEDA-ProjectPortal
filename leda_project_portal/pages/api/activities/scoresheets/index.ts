@@ -10,16 +10,29 @@ export default async function handler(
     if (req.method === "POST") {
         const data = req.body as WeeklyScoresheet;
         try {
+            // Log the incoming data for debugging
+            console.log("Incoming Data:", JSON.stringify(data, null, 2));
+
             const query = `
-                INSERT INTO public.leda_weekly_scoresheets ("seasonCode", "weekNum", "scoresheetData")
-                VALUES ($1, $2, $3)
+                INSERT INTO public.leda_weekly_scoresheets ("seasonCode", "weekNum", "scoresheetData", "finishedScoresheet")
+                VALUES ($1, $2, $3, $4)
                 ON CONFLICT ("seasonCode", "weekNum")
-                DO UPDATE SET "scoresheetData" = $3;
+                DO UPDATE SET "scoresheetData" = $3, "finishedScoresheet" = $4;
             `;
-            const values = [data.seasonCode, data.weekNumber, data.scoresheetData];
+            const values = [
+                data.seasonCode,
+                data.weekNumber,
+                data.scoresheetData,
+                data.finishedScoresheet, // Save the finishedScoresheet status
+            ];
+
+            // Log the query values for debugging
+            console.log("Query Values:", values);
+
             const result = await queryPost(query, values);
             res.status(201).json(result);
         } catch (error) {
+            console.error("Error in POST handler:", error);
             res.status(500).json({ message: "Failed to upsert weekly scoresheet information", error });
         }
     } else if (req.method === "GET") {

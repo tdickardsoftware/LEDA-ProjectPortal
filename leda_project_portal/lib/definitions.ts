@@ -194,6 +194,7 @@ export type WeeklyScoresheet = {
 	seasonCode: string;
 	weekNumber: number;
 	scoresheetData: JSON;
+	finishedScoresheet: boolean;
 }
 //
 // Define type to identify the shape of our data from postgres for weekly team scores
