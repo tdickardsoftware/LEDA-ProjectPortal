@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FolderTabMed } from "@/components/ui/folder-tab";
 
 // Define types for roster data structure
 type TeamInfo = {
@@ -39,6 +40,7 @@ type RosterData = {
 
 // Define types for payouts data structure
 type AdjustmentItem = {
+    global: boolean;
     adjustmentAmount: number;
     credit: boolean;
     notes: string;
@@ -70,7 +72,7 @@ export default function PayoutsContent() {
     const [payoutsData, setPayoutsData] = useState<PayoutsData>({});
     const [loading, setLoading] = useState(false);
     const [weekCount , setWeekCount] = useState<number>(0);
-    const [completedScoresheetCount, setCompletedScoresheetCount] = useState<number>(0);
+    const [completedScoresheetCount, setCompletedScoresheetCount] = useState<number>(14);
     
     // State for accordion open/closed status
     const [openDivisions, setOpenDivisions] = useState<string[]>([]);
@@ -184,7 +186,7 @@ export default function PayoutsContent() {
                         if (completedScoresheetCountResult.status === 200) {
                             const completedScoresheetData = await completedScoresheetCountResult.json();
                             if (completedScoresheetData){
-                                setCompletedScoresheetCount(completedScoresheetData.count)
+                                //setCompletedScoresheetCount(completedScoresheetData.count)
                             }
                         }
                         
@@ -211,68 +213,83 @@ export default function PayoutsContent() {
             ) : (
                 <>
                     <div className="flex flex-col mb-4 gap-2">
-                        <div className="flex justify-end flex-col items-end gap-2">
-                            {weekCount > 0 && (
-                                <>
-                                    <div className="text-sm font-medium">
-                                        Scoresheets Progress: {completedScoresheetCount}/{weekCount} weeks
-                                    </div>
-                                    <div className="w-64 h-3 bg-gray-200 rounded-full overflow-hidden">
-                                        <div 
-                                            className="h-full bg-green-500 rounded-full"
-                                            style={{ 
-                                                width: `${(completedScoresheetCount / weekCount) * 100}%`,
-                                                minWidth: completedScoresheetCount > 0 ? '5%' : '0%'
-                                            }}
-                                        ></div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <div className="flex gap-4 items-center">
-                                <SeasonCodeSelector
-                                    disabled={currentSeason}
-                                    handleSelect={handleSeasonCodeSelect}
-                                    useCurrentSeason={currentSeason}
-                                    seasonCode={seasonCode || ""}
-                                />
-                                <div className="flex items-center gap-4">
-                                    <Label>Current Season?</Label>
-                                    <Checkbox
-                                        checked={currentSeason}
-                                        onCheckedChange={() =>
-                                            setCurrentSeason(!currentSeason)
-                                        }
-                                    />
-                                </div>
-                            </div>
-                            <TooltipProvider>
-                                <Tooltip delayDuration={300}>
-                                    <TooltipTrigger asChild>
-                                        <div className="inline-block">
-                                            <Button 
-                                                variant="outline" 
-                                                className="hover:bg-gray-100 border-gray-300 text-gray-700"
-                                                onClick={() => {}}
-                                                disabled={completedScoresheetCount !== weekCount}
-                                            >
-                                                <span className="font-semibold">Calculate Payouts</span>
-                                            </Button>
+                        <div className="flex justify-between items-start">
+                            <div className="flex justify-start items-end gap-4">
+                                <FolderTabMed title="Season Code" className="w-fit self-end">
+                                    <div className="flex gap-4 items-center">
+                                        <SeasonCodeSelector
+                                            disabled={currentSeason}
+                                            handleSelect={handleSeasonCodeSelect}
+                                            useCurrentSeason={currentSeason}
+                                            seasonCode={seasonCode || ""}
+                                        />
+                                        <div className="flex items-center gap-4">
+                                            <Label>Current Season?</Label>
+                                            <Checkbox
+                                                checked={currentSeason}
+                                                onCheckedChange={() =>
+                                                    setCurrentSeason(!currentSeason)
+                                                }
+                                            />
                                         </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent 
-                                        side="top" 
-                                        className="bg-white text-black px-4 py-3 rounded-lg shadow-lg border-0"
-                                    >
-                                        <p className="text-sm font-medium">
-                                            {completedScoresheetCount !== weekCount
-                                                ? "Scoresheets are not yet complete"
-                                                : "All scoresheets are complete, calculate placements"}
-                                        </p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+                                    </div>
+                                </FolderTabMed>
+                                <FolderTabMed title="Global Adjustments" className="w-fit self-end">
+                                    <div className="flex gap-4 items-center">
+                                        <Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => {}}>Add Global Adjustment</Button>
+                                        <Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => {}}>Manage Global Adjustments</Button>
+                                    </div>
+                                </FolderTabMed>
+                                <FolderTabMed title="Payouts" className="w-fit self-start">
+                                    <div className="flex flex-col gap-2">
+                                        {weekCount > 0 && (
+                                            <TooltipProvider>
+                                                <Tooltip delayDuration={300}>
+                                                    <TooltipTrigger asChild>
+                                                        <div>
+                                                            <Button
+                                                                variant="outline"
+                                                                className="relative w-full h-10 bg-gray-200 border-gray-300 text-gray-700 overflow-hidden rounded-full"
+                                                                onClick={() => {}}
+                                                                disabled={completedScoresheetCount !== weekCount}
+                                                            >
+                                                                {completedScoresheetCount === weekCount ? (
+                                                                    <span className="relative z-10 font-semibold">
+                                                                        Calculate Payouts
+                                                                    </span>
+                                                                ) : (
+                                                                    <>
+                                                                        <div
+                                                                            className="absolute top-0 left-0 h-full bg-green-500"
+                                                                            style={{
+                                                                                width: `${(completedScoresheetCount / weekCount) * 100}%`,
+                                                                                minWidth: completedScoresheetCount > 0 ? '5%' : '0%',
+                                                                            }}
+                                                                        ></div>
+                                                                        <span className="relative z-10 font-semibold">
+                                                                            {completedScoresheetCount}/{weekCount} Weeks Completed
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent
+                                                        side="top"
+                                                        className="bg-white text-black px-4 py-3 rounded-lg shadow-lg border-0"
+                                                    >
+                                                        <p className="text-sm font-medium">
+                                                            {completedScoresheetCount !== weekCount
+                                                                ? "Scoresheets are not yet complete"
+                                                                : "All scoresheets are complete, calculate placements"}
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        )}
+                                    </div>
+                                </FolderTabMed>
+                            </div>
                         </div>
                     </div>
 
