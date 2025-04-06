@@ -102,7 +102,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
                         }))
                 );
 			} catch (error) {
-				console.error("Failed to fetch member types", error);
+				console.error("Failed to fetch teams", error);
 			}
 		}
 		loadTeams();
@@ -130,7 +130,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 					<PopoverContent className="w-[200px] p-0 bg-white">
 						<Command>
 							<CommandInput placeholder="Search member type..." />
-							<CommandEmpty>No division found.</CommandEmpty>
+							<CommandEmpty>No teams found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
 									{teams.map((type) => (

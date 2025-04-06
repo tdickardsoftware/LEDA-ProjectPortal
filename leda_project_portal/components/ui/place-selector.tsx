@@ -94,7 +94,7 @@ const DivisionSelectorContent = () => {
                         }))
                 );
 			} catch (error) {
-				console.error("Failed to fetch member types", error);
+				console.error("Failed to fetch places", error);
 			}
 		}
 		loadPlaces();
@@ -121,8 +121,8 @@ const DivisionSelectorContent = () => {
 					</PopoverTrigger>
 					<PopoverContent className="w-[200px] p-0 bg-white">
 						<Command>
-							<CommandInput placeholder="Search member type..." />
-							<CommandEmpty>No division found.</CommandEmpty>
+							<CommandInput placeholder="Search places..." />
+							<CommandEmpty>No place found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
 									{teams.map((type) => (

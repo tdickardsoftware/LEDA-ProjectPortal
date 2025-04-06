@@ -50,7 +50,19 @@ export default async function handler(
             catch (error) {
                 res.status(500).json({ message: "Failed to fetch weekly scoresheet information", error });
             }
-        }else if (req.query.seasonCode) {
+        } else if ( req.query.seasonCode && req.query.countOfFinishedWeeks) {
+            try {
+                const seasonCode = req.query.seasonCode;
+                const result = await query(`SELECT COUNT(*) FROM public.leda_weekly_scoresheets WHERE "seasonCode" = $1 AND "finishedScoresheet" = true`, [seasonCode as string]);
+                if (result.rows.length !== 0) {
+                    res.status(200).json(result.rows[0]);
+                } else {
+                    res.status(404).json({ message: "No weekly scoresheet information found for the specified season code" });
+                }
+            } catch (error) {
+                res.status(500).json({ message: "Failed to fetch weekly scoresheet information", error });
+            }
+        } else if (req.query.seasonCode) {
             try {
                 const seasonCode = req.query.seasonCode;
                 const result = await query<WeeklyScoresheet>(`SELECT "seasonCode", "weekNum", "scoresheetData" FROM public.leda_weekly_scoresheets WHERE "seasonCode" = $1`, [seasonCode as string]);
