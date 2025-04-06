@@ -37,10 +37,37 @@ type RosterData = {
     [key: string]: DivisionData;
 };
 
+// Define types for payouts data structure
+type AdjustmentItem = {
+    adjustmentAmount: number;
+    credit: boolean;
+    notes: string;
+};
+
+type PayoutTeamData = {
+    place: number | null;
+    amount: number;
+    adjustmentAmount: number;
+    adjustments: Record<string, AdjustmentItem> | null;
+};
+
+type PayoutSubdivisionData = {
+    [teamId: string]: PayoutTeamData;
+};
+
+type PayoutDivisionData = {
+    [subdivision: string]: PayoutSubdivisionData;
+};
+
+type PayoutsData = {
+    [division: string]: PayoutDivisionData;
+};
+
 export default function PayoutsContent() {
     const [seasonCode, setSeasonCode] = useState<string | null>(null);
     const [currentSeason, setCurrentSeason] = useState(true);
     const [divisionsData, setDivisionsData] = useState<RosterData>({});
+    const [payoutsData, setPayoutsData] = useState<PayoutsData>({});
     const [loading, setLoading] = useState(false);
     const [weekCount , setWeekCount] = useState<number>(0);
     const [completedScoresheetCount, setCompletedScoresheetCount] = useState<number>(0);
@@ -49,6 +76,37 @@ export default function PayoutsContent() {
     const [openDivisions, setOpenDivisions] = useState<string[]>([]);
     const [openSubdivisions, setOpenSubdivisions] = useState<string[]>([]);
     const [openTeams, setOpenTeams] = useState<string[]>([]);
+
+    // Create payouts data when divisions data changes
+    useEffect(() => {
+        if (Object.keys(divisionsData).length > 0) {
+            const newPayoutsData: PayoutsData = {};
+            
+            Object.keys(divisionsData).forEach(division => {
+                newPayoutsData[division] = {};
+                
+                Object.keys(divisionsData[division]?.subdivisions || {}).forEach(subdivision => {
+                    newPayoutsData[division][subdivision] = {};
+                    
+                    // Use Object.entries to get both key and TeamInfo object
+                    Object.entries(divisionsData[division]?.subdivisions[subdivision] || {}).forEach(([, teamInfo]) => {
+                        // Use the teamId property from the TeamInfo object
+                        const teamId = teamInfo.teamId;
+                        
+                        newPayoutsData[division][subdivision][teamId] = {
+                            place: null,
+                            amount: 0,
+                            adjustmentAmount: 0,
+                            adjustments: {}
+                        };
+                    });
+                });
+            });
+            
+            setPayoutsData(newPayoutsData);
+            console.log("Payouts data created:", newPayoutsData);
+        }
+    }, [divisionsData]);
 
     // Initialize all accordions as open when data changes
     useEffect(() => {
