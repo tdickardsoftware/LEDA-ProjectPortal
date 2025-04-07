@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useEffect, useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
@@ -38,14 +38,24 @@ interface MentionSelectorProps {
 	name: string; // Field name in the form
 	label: string; // Label text for the field
 	disabled?: boolean; // Optional disabled state
-    handleMentionChange?: (value: { mentionCode: string; desc: string; points: string; mentionBasis: string }) => void; // Optional change handler
+	handleMentionChange?: (value: {
+		mentionCode: string;
+		desc: string;
+		points: string;
+		mentionBasis: string;
+	}) => void; // Optional change handler
 }
 
 interface MentionSelectorContentProps {
 	value?: JSON; // Current value (for uncontrolled mode)
 	onChange?: (value: JSON) => void; // Change handler (for uncontrolled mode)
 	disabled?: boolean; // Optional disabled state
-    handleMentionChange?: (value: { mentionCode: string; desc: string; points: string; mentionBasis: string }) => void; // Optional change handler
+	handleMentionChange?: (value: {
+		mentionCode: string;
+		desc: string;
+		points: string;
+		mentionBasis: string;
+	}) => void; // Optional change handler
 }
 
 /**
@@ -56,7 +66,7 @@ export default function MentionSelector({
 	name,
 	label,
 	disabled,
-    handleMentionChange,
+	handleMentionChange,
 }: MentionSelectorProps) {
 	return (
 		<FormProvider {...useFormContext()}>
@@ -71,7 +81,7 @@ export default function MentionSelector({
 								value={field.value}
 								onChange={field.onChange}
 								disabled={disabled}
-                                handleMentionChange={handleMentionChange} // Pass the change handler to the content component
+								handleMentionChange={handleMentionChange} // Pass the change handler to the content component
 							/>
 						</FormControl>
 						<FormMessage />
@@ -90,7 +100,7 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 	value: propValue,
 	onChange,
 	disabled,
-    handleMentionChange
+	handleMentionChange,
 }) => {
 	const formContext = useFormContext<FormValues>();
 	const [localValue, setLocalValue] = useState(propValue || "");
@@ -123,10 +133,23 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 				const response = await fetch(mentionRoute);
 				const data = await response.json();
 				setMemberTypes(
-					data.map((item: { mentionCode: string; desc: string, points: string, mentionBasis: string }) => ({
-						value: item, // Store the raw object as value
-						label: item.mentionCode + " - " + item.desc + " - " + item.points +"pts",
-					}))
+					data.map(
+						(item: {
+							mentionCode: string;
+							desc: string;
+							points: string;
+							mentionBasis: string;
+						}) => ({
+							value: item, // Store the raw object as value
+							label:
+								item.mentionCode +
+								" - " +
+								item.desc +
+								" - " +
+								item.points +
+								"pts",
+						})
+					)
 				);
 			} catch (error) {
 				console.error("Failed to fetch mentions", error);
@@ -141,14 +164,20 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 		if (currentValue) {
 			// Try exact match
 			const exactMatch = memberTypes.find(
-				(type) => JSON.stringify(type.value) === JSON.stringify(currentValue)
+				(type) =>
+					JSON.stringify(type.value) === JSON.stringify(currentValue)
 			);
 			if (exactMatch) return exactMatch.label;
 
 			// If no exact match, try to match by mentionCode
-			if (currentValue && typeof currentValue === 'object' && 'mentionCode' in currentValue) {
+			if (
+				currentValue &&
+				typeof currentValue === "object" &&
+				"mentionCode" in currentValue
+			) {
 				const codeMatch = memberTypes.find(
-					(type) => type.value.mentionCode === currentValue.mentionCode
+					(type) =>
+						type.value.mentionCode === currentValue.mentionCode
 				);
 				if (codeMatch) return codeMatch.label;
 			}
@@ -184,8 +213,13 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 											value={type.label}
 											onSelect={() => {
 												handleValueChange(type.value); // Pass the object directly
-												console.log("Selected:", type.value);
-                                                handleMentionChange?.(type.value); // Call the optional change handler
+												console.log(
+													"Selected:",
+													type.value
+												);
+												handleMentionChange?.(
+													type.value
+												); // Call the optional change handler
 												setOpen(false);
 											}}
 											className="hover:bg-gray-200"
@@ -194,10 +228,20 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 												className={cn(
 													"mr-2 h-4 w-4",
 													// Check if current value matches this option
-													currentValue && 
-													(JSON.stringify(type.value) === JSON.stringify(currentValue) ||
-													(typeof currentValue === 'object' && 'mentionCode' in currentValue && 
-													 type.value.mentionCode === currentValue.mentionCode))
+													currentValue &&
+														(JSON.stringify(
+															type.value
+														) ===
+															JSON.stringify(
+																currentValue
+															) ||
+															(typeof currentValue ===
+																"object" &&
+																"mentionCode" in
+																	currentValue &&
+																type.value
+																	.mentionCode ===
+																	currentValue.mentionCode))
 														? "opacity-100"
 														: "opacity-0"
 												)}
@@ -214,4 +258,3 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 		</div>
 	);
 };
-

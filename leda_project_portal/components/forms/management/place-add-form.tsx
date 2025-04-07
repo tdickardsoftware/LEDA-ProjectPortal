@@ -29,7 +29,7 @@ import { InputDefault } from "../../ui/form-input-default";
 import { placeRoute } from "@/lib/apiRoutes";
 import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
-import { Tab } from '@headlessui/react';
+import { Tab } from "@headlessui/react";
 
 const placeFormSchema = z.object({
 	ledaId: z
@@ -99,9 +99,35 @@ export default function PlaceAddForm({
 	// Define the steps
 	const steps = [
 		{ name: "Basic Info", fields: ["name", "website", "numberOfBoards"] },
-		{ name: "Contact Info", fields: ["addressOne", "addressTwo", "city", "state", "zip", "email", "phoneNumber", "otherNumber"] },
-		{ name: "Membership Info", fields: ["ledaId", "contactId", "placeType", "establishDate"] },
-		{ name: "Additional Info", fields: ["lastBarFeePayment", "lastSanctioningDate", "sendMailings", "regularSponsor", "currentSponsor", "issues", "memo"] },
+		{
+			name: "Contact Info",
+			fields: [
+				"addressOne",
+				"addressTwo",
+				"city",
+				"state",
+				"zip",
+				"email",
+				"phoneNumber",
+				"otherNumber",
+			],
+		},
+		{
+			name: "Membership Info",
+			fields: ["ledaId", "contactId", "placeType", "establishDate"],
+		},
+		{
+			name: "Additional Info",
+			fields: [
+				"lastBarFeePayment",
+				"lastSanctioningDate",
+				"sendMailings",
+				"regularSponsor",
+				"currentSponsor",
+				"issues",
+				"memo",
+			],
+		},
 	];
 
 	const form = useForm<z.infer<typeof placeFormSchema>>({
@@ -136,10 +162,12 @@ export default function PlaceAddForm({
 	// Handle step navigation
 	const nextStep = async () => {
 		const currentStepFields = steps[currentStep].fields;
-		
+
 		// Validate only the fields in the current step
-		const result = await form.trigger(currentStepFields as (keyof z.infer<typeof placeFormSchema>)[]);
-		
+		const result = await form.trigger(
+			currentStepFields as (keyof z.infer<typeof placeFormSchema>)[]
+		);
+
 		if (result) {
 			if (currentStep < steps.length - 1) {
 				setCurrentStep(currentStep + 1);
@@ -209,7 +237,10 @@ export default function PlaceAddForm({
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4 mx-auto"
 			>
-				<Tab.Group selectedIndex={currentStep} onChange={setCurrentStep}>
+				<Tab.Group
+					selectedIndex={currentStep}
+					onChange={setCurrentStep}
+				>
 					<div className="mb-6">
 						<div className="flex border-b border-gray-200">
 							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
@@ -218,15 +249,22 @@ export default function PlaceAddForm({
 										key={index}
 										className={({ selected }) =>
 											`w-full py-2.5 text-sm font-medium leading-5 
-											${selected 
-												? 'border-b-2 border-blue-500 text-blue-600' 
-												: 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-											} ${index < currentStep ? 'text-green-500' : ''}`
+											${
+												selected
+													? "border-b-2 border-blue-500 text-blue-600"
+													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+											} ${
+												index < currentStep
+													? "text-green-500"
+													: ""
+											}`
 										}
 									>
 										<span className="flex items-center justify-center">
 											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
-												{index < currentStep ? '✓' : index + 1}
+												{index < currentStep
+													? "✓"
+													: index + 1}
 											</span>
 											{step.name}
 										</span>
@@ -257,7 +295,9 @@ export default function PlaceAddForm({
 									name="numberOfBoards"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel>Number of Boards *</FormLabel>
+											<FormLabel>
+												Number of Boards *
+											</FormLabel>
 											<FormControl>
 												<Input
 													placeholder="Number of Boards..."
@@ -267,7 +307,10 @@ export default function PlaceAddForm({
 													onChange={(e) => {
 														field.onChange(
 															e.target.value
-																? Number(e.target.value)
+																? Number(
+																		e.target
+																			.value
+																  )
 																: undefined
 														);
 													}}
@@ -279,7 +322,7 @@ export default function PlaceAddForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 2: Contact Info */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
@@ -301,7 +344,10 @@ export default function PlaceAddForm({
 										name="city"
 										label="City *"
 									/>
-									<StatePicker control={form.control} name="state" />
+									<StatePicker
+										control={form.control}
+										name="state"
+									/>
 									<InputDefault
 										control={form.control}
 										name="zip"
@@ -326,7 +372,7 @@ export default function PlaceAddForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 3: Membership Info */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
@@ -365,7 +411,10 @@ export default function PlaceAddForm({
 													onChange={(e) => {
 														field.onChange(
 															e.target.value
-																? Number(e.target.value)
+																? Number(
+																		e.target
+																			.value
+																  )
 																: undefined
 														);
 													}}
@@ -374,7 +423,8 @@ export default function PlaceAddForm({
 											<FormMessage />
 											{ledaIdExists && (
 												<p className="text-red-500 text-sm mt-1">
-													This LEDA ID is already in use
+													This LEDA ID is already in
+													use
 												</p>
 											)}
 										</FormItem>
@@ -398,7 +448,7 @@ export default function PlaceAddForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 4: Additional Info */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
@@ -462,10 +512,10 @@ export default function PlaceAddForm({
 
 				<div className="flex justify-between">
 					<Button type="button" onClick={prevStep}>
-						{currentStep === 0 ? 'Cancel' : 'Back'}
+						{currentStep === 0 ? "Cancel" : "Back"}
 					</Button>
 					<Button type="button" onClick={nextStep}>
-						{currentStep === steps.length - 1 ? 'Submit' : 'Next'}
+						{currentStep === steps.length - 1 ? "Submit" : "Next"}
 					</Button>
 				</div>
 			</form>

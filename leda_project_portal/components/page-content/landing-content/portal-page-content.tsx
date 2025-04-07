@@ -11,7 +11,6 @@ import {
 	CardFooter,
 } from "@/components/ui/card";
 
-
 export default function PortalPageContent() {
 	return (
 		<div className="flex flex-wrap gap-4">
@@ -21,12 +20,20 @@ export default function PortalPageContent() {
 						<CardTitle>Management</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-gray-700">Manage Player, Place, or Team data</p>
+						<p className="text-gray-700">
+							Manage Player, Place, or Team data
+						</p>
 					</CardContent>
-					<Link href="/Portal/Management" className="text-gray-700 hover:text-gray-500" prefetch>
+					<Link
+						href="/Portal/Management"
+						className="text-gray-700 hover:text-gray-500"
+						prefetch
+					>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
-								<span className="font-medium">Go To Management Page</span>
-								<ArrowRight className="w-5 h-5" />
+							<span className="font-medium">
+								Go To Management Page
+							</span>
+							<ArrowRight className="w-5 h-5" />
 						</CardFooter>
 					</Link>
 				</Card>
@@ -37,12 +44,20 @@ export default function PortalPageContent() {
 						<CardTitle>Maintenance</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-gray-700">Handle any typically static data used for Activies</p>
+						<p className="text-gray-700">
+							Handle any typically static data used for Activies
+						</p>
 					</CardContent>
-					<Link href="/Portal/Maintenance" className="text-gray-700 hover:text-gray-500" prefetch>
+					<Link
+						href="/Portal/Maintenance"
+						className="text-gray-700 hover:text-gray-500"
+						prefetch
+					>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
-								<span className="font-medium">Go To Maintenance Page</span>
-								<ArrowRight className="w-5 h-5" />
+							<span className="font-medium">
+								Go To Maintenance Page
+							</span>
+							<ArrowRight className="w-5 h-5" />
 						</CardFooter>
 					</Link>
 				</Card>
@@ -53,12 +68,20 @@ export default function PortalPageContent() {
 						<CardTitle>Reports</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-gray-700">Generate Reports using data from activities</p>
+						<p className="text-gray-700">
+							Generate Reports using data from activities
+						</p>
 					</CardContent>
-					<Link href="/Portal/Reports" className="text-gray-700 hover:text-gray-500" prefetch>
+					<Link
+						href="/Portal/Reports"
+						className="text-gray-700 hover:text-gray-500"
+						prefetch
+					>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
-								<span className="font-medium">Go To Reports Page</span>
-								<ArrowRight className="w-5 h-5" />
+							<span className="font-medium">
+								Go To Reports Page
+							</span>
+							<ArrowRight className="w-5 h-5" />
 						</CardFooter>
 					</Link>
 				</Card>
@@ -69,12 +92,20 @@ export default function PortalPageContent() {
 						<CardTitle>Activities</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-gray-700">Input data for processing/use for reports</p>
+						<p className="text-gray-700">
+							Input data for processing/use for reports
+						</p>
 					</CardContent>
-					<Link href="/Portal/Activities" className="text-gray-700 hover:text-gray-500" prefetch>
+					<Link
+						href="/Portal/Activities"
+						className="text-gray-700 hover:text-gray-500"
+						prefetch
+					>
 						<CardFooter className="flex justify-between items-center w-full mt-4">
-								<span className="font-medium">Go To Activities Page</span>
-								<ArrowRight className="w-5 h-5" />
+							<span className="font-medium">
+								Go To Activities Page
+							</span>
+							<ArrowRight className="w-5 h-5" />
 						</CardFooter>
 					</Link>
 				</Card>

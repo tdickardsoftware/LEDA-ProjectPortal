@@ -26,7 +26,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 
-
 // List of U.S. States
 const states = [
 	{ value: "Alabama", label: "Alabama" },

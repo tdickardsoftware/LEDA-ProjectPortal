@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-	Control,
-	useFormContext,
-	FormProvider,
-} from "react-hook-form";
+import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,7 +30,7 @@ import {
 // Define the form values interface
 interface FormValues {
 	teamLedaId: string;
-    teamName: string;
+	teamName: string;
 }
 
 interface DivisionSelectorProps {
@@ -42,14 +38,14 @@ interface DivisionSelectorProps {
 	control: Control<any>;
 	name: string;
 	label: string;
-    selectedTeams: string[];
+	selectedTeams: string[];
 }
 
 export default function TeamSelector({
 	control,
 	name,
 	label,
-    selectedTeams
+	selectedTeams,
 }: DivisionSelectorProps) {
 	return (
 		<FormProvider {...useFormContext()}>
@@ -60,7 +56,9 @@ export default function TeamSelector({
 					<FormItem>
 						<FormLabel>{label}</FormLabel>
 						<FormControl>
-							<DivisionSelectorContent selectedTeams={selectedTeams} />
+							<DivisionSelectorContent
+								selectedTeams={selectedTeams}
+							/>
 						</FormControl>
 						<FormMessage />
 					</FormItem>
@@ -74,7 +72,9 @@ interface DivisionSelectorContentProps {
 	selectedTeams: string[];
 }
 
-const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selectedTeams }) => {
+const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
+	selectedTeams,
+}) => {
 	// Use form context to get watch and setValue functions
 	const { watch, setValue } = useFormContext<FormValues>();
 	// Watch the memberType field value
@@ -92,15 +92,18 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 			try {
 				const response = await fetch(teamRoute);
 				const data = await response.json();
-                setTeams(
-                    data
-                        .filter((type: { ledaId: string }) => !selectedTeams.includes(type.ledaId))
-                        .map((type: { ledaId: string, teamName: string }) => ({
-                            value: type.ledaId,
-                            label: type.ledaId + " - " + type.teamName,
-                            name: type.teamName,
-                        }))
-                );
+				setTeams(
+					data
+						.filter(
+							(type: { ledaId: string }) =>
+								!selectedTeams.includes(type.ledaId)
+						)
+						.map((type: { ledaId: string; teamName: string }) => ({
+							value: type.ledaId,
+							label: type.ledaId + " - " + type.teamName,
+							name: type.teamName,
+						}))
+				);
 			} catch (error) {
 				console.error("Failed to fetch teams", error);
 			}
@@ -138,8 +141,11 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 											key={type.value}
 											value={type.value}
 											onSelect={() => {
-												setValue("teamLedaId", type.value);
-                                                setValue("teamName", type.name);
+												setValue(
+													"teamLedaId",
+													type.value
+												);
+												setValue("teamName", type.name);
 												setOpen(false);
 											}}
 											className="hover:bg-gray-200"

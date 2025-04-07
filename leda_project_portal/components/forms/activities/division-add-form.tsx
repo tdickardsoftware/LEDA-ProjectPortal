@@ -20,13 +20,13 @@ const formContainerStyle =
 
 // Define the DivisionAddForm component
 export default function DivisionAddForm({
-    selectedDivisions,
-    handleSelectDivision,
-    setOpen
+	selectedDivisions,
+	handleSelectDivision,
+	setOpen,
 }: {
-    selectedDivisions: string[];
-    handleSelectDivision: (value: string) => void;
-    setOpen: (value: boolean) => void;
+	selectedDivisions: string[];
+	handleSelectDivision: (value: string) => void;
+	setOpen: (value: boolean) => void;
 }) {
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
@@ -36,11 +36,10 @@ export default function DivisionAddForm({
 		},
 	});
 
-
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
 		handleSelectDivision(values.divisionName);
-        setOpen(false)
+		setOpen(false);
 	}
 
 	// Render the form
@@ -52,8 +51,13 @@ export default function DivisionAddForm({
 			>
 				<div className="flex space-x-4">
 					<div className={formContainerStyle}>
-						<DivisionSelector name="divisionName" label="Division Name" control={form.control} selectedDivisions={selectedDivisions} />
-                    </div>
+						<DivisionSelector
+							name="divisionName"
+							label="Division Name"
+							control={form.control}
+							selectedDivisions={selectedDivisions}
+						/>
+					</div>
 				</div>
 				<div className="flex justify-center">
 					<Button type="submit">Add Division</Button>

@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-	Control,
-	useFormContext,
-	FormProvider,
-} from "react-hook-form";
+import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -41,14 +37,14 @@ interface DivisionSelectorProps {
 	control: Control<any>;
 	name: string;
 	label: string;
-    selectedDivisions: string[];
+	selectedDivisions: string[];
 }
 
 export default function DivisionSelector({
 	control,
 	name,
 	label,
-    selectedDivisions
+	selectedDivisions,
 }: DivisionSelectorProps) {
 	return (
 		<FormProvider {...useFormContext()}>
@@ -59,7 +55,9 @@ export default function DivisionSelector({
 					<FormItem>
 						<FormLabel>{label}</FormLabel>
 						<FormControl>
-							<DivisionSelectorContent selectedDivisions={selectedDivisions} />
+							<DivisionSelectorContent
+								selectedDivisions={selectedDivisions}
+							/>
 						</FormControl>
 						<FormMessage />
 					</FormItem>
@@ -73,7 +71,9 @@ interface DivisionSelectorContentProps {
 	selectedDivisions: string[];
 }
 
-const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selectedDivisions }) => {
+const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
+	selectedDivisions,
+}) => {
 	// Use form context to get watch and setValue functions
 	const { watch, setValue } = useFormContext<FormValues>();
 	// Watch the memberType field value
@@ -81,9 +81,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
 	// State to store the fetched member types
-	const [divisions, setDivisions] = useState<
-		{ value: string; }[]
-	>([]);
+	const [divisions, setDivisions] = useState<{ value: string }[]>([]);
 
 	// Fetch member types from the API endpoint
 	useEffect(() => {
@@ -91,13 +89,16 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 			try {
 				const response = await fetch(divisionRoute);
 				const data = await response.json();
-                setDivisions(
-                    data
-                        .filter((type: { divisionName: string }) => !selectedDivisions.includes(type.divisionName))
-                        .map((type: { divisionName: string }) => ({
-                            value: type.divisionName,
-                        }))
-                );
+				setDivisions(
+					data
+						.filter(
+							(type: { divisionName: string }) =>
+								!selectedDivisions.includes(type.divisionName)
+						)
+						.map((type: { divisionName: string }) => ({
+							value: type.divisionName,
+						}))
+				);
 			} catch (error) {
 				console.error("Failed to fetch member types", error);
 			}

@@ -18,13 +18,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 // Validation schema for the mention form
 const divisionFormSchema = z.object({
-	mentionData: z.object({
-		mentionCode: z.string(),
-		desc: z.string(),
-		points: z.string(),
-		mentionBasis: z.string(),
-	}).refine((data) => Object.keys(data).length > 0, { message: "Mention data is required." }),
-	points: z.number().min(0, { message: "Points must be a positive number." }).optional(),
+	mentionData: z
+		.object({
+			mentionCode: z.string(),
+			desc: z.string(),
+			points: z.string(),
+			mentionBasis: z.string(),
+		})
+		.refine((data) => Object.keys(data).length > 0, {
+			message: "Mention data is required.",
+		}),
+	points: z
+		.number()
+		.min(0, { message: "Points must be a positive number." })
+		.optional(),
 	mentionCode: z.string().optional(),
 	mentionDesc: z.string().optional(),
 	notes: z.string().optional(),
@@ -50,8 +57,8 @@ export default function MentionForm({
 }: {
 	handleMentionSubmit: (
 		mentionCode: string,
-        desc: string,
-        points: number,
+		desc: string,
+		points: number,
 		notes?: string
 	) => void;
 	isEditMode?: boolean;
@@ -95,7 +102,7 @@ export default function MentionForm({
 				mentionCode: initialMention.code,
 				desc: initialMention.desc,
 				points: initialMention.points.toString(),
-				mentionBasis: "" // We may not have this value when editing
+				mentionBasis: "", // We may not have this value when editing
 			});
 			form.setValue("mentionCode", initialMention.code);
 			form.setValue("mentionDesc", initialMention.desc);
@@ -143,7 +150,12 @@ export default function MentionForm({
 		}
 	}
 
-	const handleMentionChange = (value: { mentionCode: string; desc: string; points: string; mentionBasis: string }) => {
+	const handleMentionChange = (value: {
+		mentionCode: string;
+		desc: string;
+		points: string;
+		mentionBasis: string;
+	}) => {
 		// Parse points as integer and handle NaN case
 		const pointsValue = parseInt(value.points);
 		form.setValue("points", isNaN(pointsValue) ? undefined : pointsValue);
@@ -171,7 +183,7 @@ export default function MentionForm({
 							disabled={false}
 							handleMentionChange={handleMentionChange}
 						/>
-						
+
 						<FormField
 							control={form.control}
 							name="points"
@@ -183,14 +195,21 @@ export default function MentionForm({
 											placeholder="Points"
 											type="number"
 											{...field}
-											value={field.value === undefined ? "" : field.value}
+											value={
+												field.value === undefined
+													? ""
+													: field.value
+											}
 											onChange={(e) => {
 												const value = e.target.value;
 												if (/^\d*$/.test(value)) {
 													field.onChange(
 														value === ""
 															? undefined
-															: parseInt(value, 10)
+															: parseInt(
+																	value,
+																	10
+															  )
 													);
 												}
 											}}

@@ -2,17 +2,17 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { queryPost } from "@/lib/query";
 
 type RosterUpserter = {
-    sourceSeasonCode: string;
-    targetSeasonCode: string;
-}
+	sourceSeasonCode: string;
+	targetSeasonCode: string;
+};
 export default async function handler(
-    req: NextApiRequest,
-    res: NextApiResponse
+	req: NextApiRequest,
+	res: NextApiResponse
 ) {
-    if (req.method === "POST") {
-        const data = req.body as RosterUpserter;
-        try {
-            const query = `
+	if (req.method === "POST") {
+		const data = req.body as RosterUpserter;
+		try {
+			const query = `
                 INSERT INTO public.leda_roster_info ("seasonCode", "teamInfomation")
                 SELECT $2, "teamInfomation"
                 FROM public.leda_roster_info
@@ -20,13 +20,16 @@ export default async function handler(
                 ON CONFLICT ("seasonCode")
                 DO UPDATE SET "teamInfomation" = EXCLUDED."teamInfomation";
             `;
-            const values = [data.sourceSeasonCode, data.targetSeasonCode];
-            const result = await queryPost(query, values);
-            res.status(201).json(result);
-        } catch (error) {
-            res.status(500).json({ message: "Failed to upsert roster information", error });
-        }
-    } else {
-        res.status(405).json({ message: "Method Not Allowed" });
-    }
+			const values = [data.sourceSeasonCode, data.targetSeasonCode];
+			const result = await queryPost(query, values);
+			res.status(201).json(result);
+		} catch (error) {
+			res.status(500).json({
+				message: "Failed to upsert roster information",
+				error,
+			});
+		}
+	} else {
+		res.status(405).json({ message: "Method Not Allowed" });
+	}
 }

@@ -28,7 +28,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { PlayerMemberInfo } from "@/lib/definitions";
-import { Tab } from '@headlessui/react';
+import { Tab } from "@headlessui/react";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -103,15 +103,61 @@ export default function PlayerEditInformationForm({
 }) {
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
-	const [formData, setFormData] = useState<PlayerMemberInfo>({} as PlayerMemberInfo);
+	const [formData, setFormData] = useState<PlayerMemberInfo>(
+		{} as PlayerMemberInfo
+	);
 	const [currentStep, setCurrentStep] = useState(0);
 
 	// Define the steps
 	const steps = [
-		{ name: "Personal Info", fields: ["firstName", "middleInitial", "lastName", "gender", "dateOfBirth"] },
-		{ name: "Contact Info", fields: ["addressOne", "addressTwo", "city", "state", "zip", "email", "phoneNumber", "otherNumber"] },
-		{ name: "Membership Info", fields: ["ledaId", "memberType", "establishedDate", "badStanding", "badStandingReason"] },
-		{ name: "Additional Info", fields: ["lifetimeMember", "lifetimeMemberReason", "takeOffMailing", "mailStandings", "formOnFile", "needsMemberCard", "inactiveDate", "lastMembershipFeePayment", "lastTrailsDate", "cannotBeCaptain"] },
+		{
+			name: "Personal Info",
+			fields: [
+				"firstName",
+				"middleInitial",
+				"lastName",
+				"gender",
+				"dateOfBirth",
+			],
+		},
+		{
+			name: "Contact Info",
+			fields: [
+				"addressOne",
+				"addressTwo",
+				"city",
+				"state",
+				"zip",
+				"email",
+				"phoneNumber",
+				"otherNumber",
+			],
+		},
+		{
+			name: "Membership Info",
+			fields: [
+				"ledaId",
+				"memberType",
+				"establishedDate",
+				"badStanding",
+				"badStandingReason",
+			],
+		},
+		{
+			name: "Additional Info",
+			fields: [
+				"lifetimeMember",
+				"lifetimeMemberReason",
+				"takeOffMailing",
+				"mailStandings",
+				"formOnFile",
+				"needsMemberCard",
+				"inactiveDate",
+				"lastMembershipFeePayment",
+				"lastTrailsDate",
+				"cannotBeCaptain",
+			],
+		},
 	];
 
 	const formRef = React.useRef<HTMLFormElement>(null);
@@ -161,10 +207,12 @@ export default function PlayerEditInformationForm({
 	// Handle step navigation
 	const nextStep = async () => {
 		const currentStepFields = steps[currentStep].fields;
-		
+
 		// Validate only the fields in the current step
-		const result = await form.trigger(currentStepFields as (keyof z.infer<typeof playerInfoSchema>)[]);
-		
+		const result = await form.trigger(
+			currentStepFields as (keyof z.infer<typeof playerInfoSchema>)[]
+		);
+
 		if (result) {
 			if (currentStep < steps.length - 1) {
 				setCurrentStep(currentStep + 1);
@@ -221,7 +269,7 @@ export default function PlayerEditInformationForm({
 					? new Date(data.lastTrailsDate).toISOString().split("T")[0]
 					: undefined,
 			}); // Set form values to the retrieved data
-			
+
 			setBadStandingStatus(data.badStanding || false);
 			setLifetimeMemberStatus(data.lifetimeMember || false);
 		};
@@ -280,7 +328,10 @@ export default function PlayerEditInformationForm({
 				// Prevent form from reloading the page
 				onSubmitCapture={(e) => e.preventDefault()}
 			>
-				<Tab.Group selectedIndex={currentStep} onChange={setCurrentStep}>
+				<Tab.Group
+					selectedIndex={currentStep}
+					onChange={setCurrentStep}
+				>
 					<div className="mb-6">
 						<div className="flex border-b border-gray-200">
 							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
@@ -289,15 +340,22 @@ export default function PlayerEditInformationForm({
 										key={index}
 										className={({ selected }) =>
 											`w-full py-2.5 text-sm font-medium leading-5 
-											${selected 
-												? 'border-b-2 border-blue-500 text-blue-600' 
-												: 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-											} ${index < currentStep ? 'text-green-500' : ''}`
+											${
+												selected
+													? "border-b-2 border-blue-500 text-blue-600"
+													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+											} ${
+												index < currentStep
+													? "text-green-500"
+													: ""
+											}`
 										}
 									>
 										<span className="flex items-center justify-center">
 											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
-												{index < currentStep ? '✓' : index + 1}
+												{index < currentStep
+													? "✓"
+													: index + 1}
 											</span>
 											{step.name}
 										</span>
@@ -311,7 +369,10 @@ export default function PlayerEditInformationForm({
 						{/* Step 1: Personal Info */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
-								<h1>Personal Information for LEDA ID #{rowData.ledaId}</h1>
+								<h1>
+									Personal Information for LEDA ID #
+									{rowData.ledaId}
+								</h1>
 								<div className="flex space-x-4">
 									<InputDefault
 										control={form.control}
@@ -330,7 +391,10 @@ export default function PlayerEditInformationForm({
 										label="Last Name *"
 									/>
 								</div>
-								<GenderSelector control={form.control} name="gender" />
+								<GenderSelector
+									control={form.control}
+									name="gender"
+								/>
 								<InputDefault
 									control={form.control}
 									name="dateOfBirth"
@@ -339,7 +403,7 @@ export default function PlayerEditInformationForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 2: Contact Info */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
@@ -360,7 +424,10 @@ export default function PlayerEditInformationForm({
 										name="city"
 										label="City *"
 									/>
-									<StatePicker name="state" control={form.control} />
+									<StatePicker
+										name="state"
+										control={form.control}
+									/>
 									<InputDefault
 										control={form.control}
 										name="zip"
@@ -385,7 +452,7 @@ export default function PlayerEditInformationForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 3: Membership Info */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
@@ -405,7 +472,10 @@ export default function PlayerEditInformationForm({
 													onChange={(e) => {
 														field.onChange(
 															e.target.value
-																? Number(e.target.value)
+																? Number(
+																		e.target
+																			.value
+																  )
 																: undefined
 														);
 													}}
@@ -446,7 +516,9 @@ export default function PlayerEditInformationForm({
 														checked: boolean
 													) => {
 														field.onChange(checked);
-														setBadStandingStatus(checked);
+														setBadStandingStatus(
+															checked
+														);
 													}}
 													className={checkboxWidth}
 												/>
@@ -463,7 +535,9 @@ export default function PlayerEditInformationForm({
 												<Input
 													placeholder="Reasoning..."
 													{...field}
-													disabled={!badStandingStatus}
+													disabled={
+														!badStandingStatus
+													}
 													className="w-fit"
 													type="text"
 												/>
@@ -474,7 +548,7 @@ export default function PlayerEditInformationForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 4: Additional Info */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
@@ -518,7 +592,9 @@ export default function PlayerEditInformationForm({
 												<Input
 													placeholder="Reasoning..."
 													{...field}
-													disabled={!lifetimeMemberStatus}
+													disabled={
+														!lifetimeMemberStatus
+													}
 													className="w-fit"
 													type="text"
 												/>
@@ -591,10 +667,14 @@ export default function PlayerEditInformationForm({
 
 				<div className="flex justify-between">
 					<Button type="button" onClick={prevStep}>
-						{currentStep === 0 ? (handleEdit ? 'Edit' : 'Back') : 'Back'}
+						{currentStep === 0
+							? handleEdit
+								? "Edit"
+								: "Back"
+							: "Back"}
 					</Button>
 					<Button type="button" onClick={nextStep}>
-						{currentStep === steps.length - 1 ? 'Update' : 'Next'}
+						{currentStep === steps.length - 1 ? "Update" : "Next"}
 					</Button>
 				</div>
 			</form>

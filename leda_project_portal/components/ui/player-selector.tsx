@@ -18,7 +18,11 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { playerRoute } from "@/lib/apiRoutes";
-import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+	Tooltip,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { TooltipContent } from "@radix-ui/react-tooltip";
 
 // Define the player interface
@@ -26,7 +30,7 @@ interface Player {
 	ledaId: string;
 	fullName: string;
 	isCaptain: boolean;
-    cannotBeCaptain: boolean;
+	cannotBeCaptain: boolean;
 }
 
 interface PlayerSelectorProps {
@@ -34,7 +38,10 @@ interface PlayerSelectorProps {
 	existingJsonList?: string;
 }
 
-export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}" }: PlayerSelectorProps) {
+export default function PlayerSelector({
+	setMemberIdList,
+	existingJsonList = "{}",
+}: PlayerSelectorProps) {
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
 	// State to store the fetched players
@@ -48,38 +55,49 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 			try {
 				const response = await fetch(playerRoute);
 				const data = await response.json();
-				setPlayers(data.map((player: { ledaId: string; fullName: string; cannotBeCaptain: boolean }) => ({
-					ledaId: player.ledaId,
-					fullName: player.fullName,
-                    cannotBeCaptain: player.cannotBeCaptain,
-					isCaptain: false,
-				})));
+				setPlayers(
+					data.map(
+						(player: {
+							ledaId: string;
+							fullName: string;
+							cannotBeCaptain: boolean;
+						}) => ({
+							ledaId: player.ledaId,
+							fullName: player.fullName,
+							cannotBeCaptain: player.cannotBeCaptain,
+							isCaptain: false,
+						})
+					)
+				);
 			} catch (error) {
 				console.error("Failed to fetch players", error);
 			}
 		}
 		loadPlayers();
-        
 	}, []);
-    
+
 	// Load existing selected players from JSON list
 	useEffect(() => {
-        if (existingJsonList) {
-            try {
-                const parsedList = JSON.parse(existingJsonList);
-                const existingPlayers = Object.keys(parsedList).map((key) => ({
-                    ledaId: parsedList[key].ledaId,
-                    fullName: players.find((p) => p.ledaId === parsedList[key].ledaId)?.fullName || "",
-                    isCaptain: parsedList[key].isCaptain,
-                    cannotBeCaptain: players.find((p) => p.ledaId === parsedList[key].ledaId)?.cannotBeCaptain || false,
-                }));
-                setSelectedPlayers(existingPlayers);
-            } catch (error) {
-                console.error("Failed to parse existing JSON list", error);
-            }
-        }
+		if (existingJsonList) {
+			try {
+				const parsedList = JSON.parse(existingJsonList);
+				const existingPlayers = Object.keys(parsedList).map((key) => ({
+					ledaId: parsedList[key].ledaId,
+					fullName:
+						players.find((p) => p.ledaId === parsedList[key].ledaId)
+							?.fullName || "",
+					isCaptain: parsedList[key].isCaptain,
+					cannotBeCaptain:
+						players.find((p) => p.ledaId === parsedList[key].ledaId)
+							?.cannotBeCaptain || false,
+				}));
+				setSelectedPlayers(existingPlayers);
+			} catch (error) {
+				console.error("Failed to parse existing JSON list", error);
+			}
+		}
 	}, [existingJsonList, players]);
-    
+
 	// Filter out selected players from the list
 	const availablePlayers = players.filter(
 		(player) => !selectedPlayers.some((p) => p.ledaId === player.ledaId)
@@ -98,7 +116,10 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 	};
 
 	// Handle captain selection
-	const handleCaptainSelection = (playerId: string, event: React.MouseEvent) => {
+	const handleCaptainSelection = (
+		playerId: string,
+		event: React.MouseEvent
+	) => {
 		event.preventDefault();
 		const updatedPlayers = selectedPlayers.map((player) =>
 			player.ledaId === playerId && !player.cannotBeCaptain
@@ -119,7 +140,9 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 
 	// Handle player removal
 	const handlePlayerRemoval = (playerId: string) => {
-		const updatedPlayers = selectedPlayers.filter((p) => p.ledaId !== playerId);
+		const updatedPlayers = selectedPlayers.filter(
+			(p) => p.ledaId !== playerId
+		);
 		setSelectedPlayers(updatedPlayers);
 		setMemberIdList(generateJsonList(updatedPlayers));
 	};
@@ -151,13 +174,19 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 										<CommandItem
 											key={player.ledaId}
 											value={player.ledaId}
-											onSelect={() => handlePlayerSelection(player)}
+											onSelect={() =>
+												handlePlayerSelection(player)
+											}
 											className="hover:bg-gray-200"
 										>
 											<Check
 												className={cn(
 													"mr-2 h-4 w-4",
-													selectedPlayers.some((p) => p.ledaId === player.ledaId)
+													selectedPlayers.some(
+														(p) =>
+															p.ledaId ===
+															player.ledaId
+													)
 														? "opacity-100"
 														: "opacity-0"
 												)}
@@ -180,30 +209,40 @@ export default function PlayerSelector({ setMemberIdList, existingJsonList = "{}
 					>
 						<div className="flex items-center gap-2">
 							<span>{player.fullName}</span>
-                            <TooltipProvider>
-                                <Tooltip >
-                                    <TooltipTrigger>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            type="button"
-                                            onClick={(event) => handleCaptainSelection(player.ledaId, event)}
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger>
+										<Button
+											variant="ghost"
+											size="sm"
+											type="button"
+											onClick={(event) =>
+												handleCaptainSelection(
+													player.ledaId,
+													event
+												)
+											}
 											disabled={player.cannotBeCaptain}
-                                        >
-                                            <Star
-                                                className={cn(
-                                                    "h-4 w-4",
-                                                    player.isCaptain ? "text-yellow-500" : "text-gray-400"
-                                                )}
-                                            />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-white p-2 rounded shadow-lg">
-                                        <p>{player.cannotBeCaptain ? "Cannot be Captain" : "Set as Captain"}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-							
+										>
+											<Star
+												className={cn(
+													"h-4 w-4",
+													player.isCaptain
+														? "text-yellow-500"
+														: "text-gray-400"
+												)}
+											/>
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent className="bg-white p-2 rounded shadow-lg">
+										<p>
+											{player.cannotBeCaptain
+												? "Cannot be Captain"
+												: "Set as Captain"}
+										</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
 						</div>
 						<Button
 							variant="ghost"

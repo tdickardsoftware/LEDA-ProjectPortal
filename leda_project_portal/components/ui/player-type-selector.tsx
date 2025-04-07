@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-	Control,
-	useFormContext,
-	FormProvider,
-} from "react-hook-form";
+import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -86,10 +82,12 @@ const PlayerTypeSelectorContent: React.FC = () => {
 				const response = await fetch(peopleTypeRoute);
 				const data = await response.json();
 				setMemberTypes(
-					data.map((type: { peopleTypeCode: string; desc: string }) => ({
-						value: type.peopleTypeCode,
-						label: type.peopleTypeCode + " - " + type.desc,
-					}))
+					data.map(
+						(type: { peopleTypeCode: string; desc: string }) => ({
+							value: type.peopleTypeCode,
+							label: type.peopleTypeCode + " - " + type.desc,
+						})
+					)
 				);
 			} catch (error) {
 				console.error("Failed to fetch player types", error);

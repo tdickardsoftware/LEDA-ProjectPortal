@@ -91,8 +91,13 @@ const SideNav = ({
 		matchupKey: string
 	): boolean => {
 		// Use the shared utility function
-		return formattedScoreData 
-			? !isMatchupValid(formattedScoreData, divisionName, subdivisionName, matchupKey)
+		return formattedScoreData
+			? !isMatchupValid(
+					formattedScoreData,
+					divisionName,
+					subdivisionName,
+					matchupKey
+			  )
 			: true;
 	};
 

@@ -43,7 +43,7 @@ export default async function Page() {
 						/>
 					}
 					viewLink={
-						<CustomLink linkName="View Place" parentPage="Places"/>
+						<CustomLink linkName="View Place" parentPage="Places" />
 					}
 					defaultSort="ledaId"
 					apiEndpoint={placeRoute}
