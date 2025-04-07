@@ -143,8 +143,8 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 					</PopoverTrigger>
 					<PopoverContent className="w-[200px] p-0 bg-white">
 						<Command>
-							<CommandInput placeholder="Search member type..." />
-							<CommandEmpty>No division found.</CommandEmpty>
+							<CommandInput placeholder="Search teams..." />
+							<CommandEmpty>No team found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
 									{teams.map((type) => (

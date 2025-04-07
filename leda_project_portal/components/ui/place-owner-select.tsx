@@ -114,7 +114,7 @@ const PlaceOwnerSelectContent: React.FC = () => {
 					</PopoverTrigger>
 					<PopoverContent className="w-[200px] p-0 bg-white">
 						<Command>
-							<CommandInput placeholder="Search place type..." />
+							<CommandInput placeholder="Search place owner..." />
 							<CommandEmpty>No place owner found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>

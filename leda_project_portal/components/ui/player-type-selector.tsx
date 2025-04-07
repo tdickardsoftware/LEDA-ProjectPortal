@@ -92,7 +92,7 @@ const PlayerTypeSelectorContent: React.FC = () => {
 					}))
 				);
 			} catch (error) {
-				console.error("Failed to fetch member types", error);
+				console.error("Failed to fetch player types", error);
 			}
 		}
 		loadMemberTypes();
@@ -119,8 +119,8 @@ const PlayerTypeSelectorContent: React.FC = () => {
 					</PopoverTrigger>
 					<PopoverContent className="w-[200px] p-0 bg-white">
 						<Command>
-							<CommandInput placeholder="Search member type..." />
-							<CommandEmpty>No member type found.</CommandEmpty>
+							<CommandInput placeholder="Search player type..." />
+							<CommandEmpty>No player type found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
 									{memberTypes.map((type) => (

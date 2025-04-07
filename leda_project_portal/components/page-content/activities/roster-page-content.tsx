@@ -551,41 +551,53 @@ export default function RostersContent() {
 
 	// Render add team dialog
 	const handleAddTeam = useCallback(
-		(division: string, subdivision: string) => (
-			<Dialog
-				open={teamOpen[`${division}-${subdivision}`] || false}
-				onOpenChange={(isOpen) =>
-					setTeamOpen((prev) => ({
-						...prev,
-						[`${division}-${subdivision}`]: isOpen,
-					}))
-				}
-			>
-				<DialogTrigger asChild>
-					<Button variant="outline" disabled={disabled}>
-						Add Team
-					</Button>
-				</DialogTrigger>
-				<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
-					<DialogHeader>
-						<DialogTitle>Add Team</DialogTitle>
-					</DialogHeader>
-					<TeamAddForm
-						selectedTeams={selectedTeams}
-						handleSelectTeam={handleTeamSelect}
-						setOpen={(isOpen) =>
-							setTeamOpen((prev) => ({
-								...prev,
-								[`${division}-${subdivision}`]: isOpen,
-							}))
-						}
-						division={division}
-						subdivision={subdivision}
-					/>
-				</DialogContent>
-			</Dialog>
-		),
-		[teamOpen, disabled, selectedTeams, handleTeamSelect]
+		(division: string, subdivision: string) => {
+			// Check if subdivision already has 8 teams
+			const teamCount = Object.keys(
+				divisionsData[division]?.subdivisions[subdivision] || {}
+			).length;
+			const maxTeamsReached = teamCount >= 8;
+			
+			return (
+				<Dialog
+					open={teamOpen[`${division}-${subdivision}`] || false}
+					onOpenChange={(isOpen) =>
+						setTeamOpen((prev) => ({
+							...prev,
+							[`${division}-${subdivision}`]: isOpen,
+						}))
+					}
+				>
+					<DialogTrigger asChild>
+						<Button 
+							variant="outline" 
+							disabled={disabled || maxTeamsReached}
+							title={maxTeamsReached ? "Maximum of 8 teams per subdivision" : ""}
+						>
+							{maxTeamsReached ? "Max Teams (8)" : "Add Team"}
+						</Button>
+					</DialogTrigger>
+					<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
+						<DialogHeader>
+							<DialogTitle>Add Team</DialogTitle>
+						</DialogHeader>
+						<TeamAddForm
+							selectedTeams={selectedTeams}
+							handleSelectTeam={handleTeamSelect}
+							setOpen={(isOpen) =>
+								setTeamOpen((prev) => ({
+									...prev,
+									[`${division}-${subdivision}`]: isOpen,
+								}))
+							}
+							division={division}
+							subdivision={subdivision}
+						/>
+					</DialogContent>
+				</Dialog>
+			);
+		},
+		[teamOpen, disabled, selectedTeams, handleTeamSelect, divisionsData]
 	);
 
 	// Render add division dialog

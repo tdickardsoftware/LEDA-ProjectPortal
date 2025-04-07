@@ -1,51 +1,83 @@
 import { FormattedScoreData } from "@/lib/weekly-scoresheet-definitions";
 
 /**
- * Determines if a matchup is valid (not blank).
- * Checks game participation, win records, and points.
+ * Check if a specific matchup has valid data
+ * 
+ * This function validates that a matchup has all required data populated:
+ * - Team information exists for both teams
+ * - Team members exist
+ * - Game stats are recorded
+ * - Game information exists
+ * - Team points are calculated
  */
 export const isMatchupValid = (
-	data: FormattedScoreData,
-	divisionName: string,
-	subdivisionName: string,
-	matchupKey: string
+  data: FormattedScoreData,
+  division: string,
+  subdivision: string,
+  matchupKey: string
 ): boolean => {
-	const matchupData = data?.[divisionName]?.[subdivisionName]?.[matchupKey];
-	if (!matchupData) {
-		return false; // No data for this matchup
-	}
+  try {
+    // Check if division, subdivision, and matchup exist
+    if (!data[division] || !data[division][subdivision] || !data[division][subdivision][matchupKey]) {
+      return false;
+    }
 
-	// Check if all home team game stats are blank
-	const isHomeGameDataBlank = Object.values(
-		matchupData.teamInformation["1"].teamMembers
-	).every((member) =>
-		Object.values(member.gameStats).every((game) => !game)
-	);
+    const matchupData = data[division][subdivision][matchupKey];
 
-	// Check if all away team game stats are blank
-	const isAwayGameDataBlank = Object.values(
-		matchupData.teamInformation["2"].teamMembers
-	).every((member) =>
-		Object.values(member.gameStats).every((game) => !game)
-	);
+    // Check if teamInformation exists
+    if (!matchupData.teamInformation) {
+      return false;
+    }
 
-	// Check if all game wins and points are blank
-	const areHomeWinsBlank = Object.values(matchupData.gameInformation).every(
-		(game) => !game.homeWin
-	);
-	const areHomePointsBlank = Object.values(
-		matchupData.gameInformation
-	).every((game) => game.homePoints === "" || game.homePoints === "0");
-	const areAwayPointsBlank = Object.values(
-		matchupData.gameInformation
-	).every((game) => game.awayPoints === "" || game.awayPoints === "0");
+    // Get team IDs
+    const teamIds = Object.keys(matchupData.teamInformation);
+    if (teamIds.length !== 2) {
+      return false;
+    }
 
-	// Return true if any data is present
-	return !(
-		isHomeGameDataBlank &&
-		isAwayGameDataBlank &&
-		areHomeWinsBlank &&
-		areHomePointsBlank &&
-		areAwayPointsBlank
-	);
+    // Check both teams have necessary data
+    for (const teamId of teamIds) {
+      const team = matchupData.teamInformation[teamId];
+      
+      // Check if team exists and has required properties
+      if (!team || !team.teamMembers) {
+        return false;
+      }
+
+      // Check if team has at least one member
+      const teamMemberIds = Object.keys(team.teamMembers);
+      if (teamMemberIds.length === 0) {
+        return false;
+      }
+
+      // Check if game stats are recorded for each member
+      for (const memberId of teamMemberIds) {
+        const member = team.teamMembers[memberId];
+        if (!member || !member.gameStats) {
+          return false;
+        }
+        
+        // Check if at least one game is recorded
+        const gameStatsValues = Object.values(member.gameStats);
+        if (gameStatsValues.length === 0) {
+          return false;
+        }
+      }
+    }
+
+    // Check if game information exists
+    if (!matchupData.gameInformation || Object.keys(matchupData.gameInformation).length === 0) {
+      return false;
+    }
+
+    // Check if team points are calculated
+    if (!matchupData.teamPoints || !matchupData.teamPoints.homePoints || !matchupData.teamPoints.awayPoints) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error validating matchup:", error);
+    return false;
+  }
 };

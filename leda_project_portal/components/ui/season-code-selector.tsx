@@ -80,7 +80,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild>
+					<PopoverTrigger asChild className="bg-white">
 						<Button
 							variant="outline"
 							role="combobox"

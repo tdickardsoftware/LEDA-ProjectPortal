@@ -346,15 +346,31 @@ export default function WeeklyScoresheetsContent() {
 				const matchupData = formattedScoreData[divisionName][subdivisionName][matchupKey];
 
 				if (matchupData) {
-					// Set home team data
-					setSelectedHomeTeamId(Object.keys(matchupData.teamInformation)[0]);
-					setHomeTeamInformation({
-						teamName: matchupData.teamInformation["1"].teamName,
-						teamId: matchupData.teamInformation["1"].teamLetter,
-						matchesData: {}, // Populate if necessary
-					});
-					setHomeTeamPlayerInformation(
-						Object.values(matchupData.teamInformation["1"].teamMembers).map((member, index) => ({
+						// Get the actual team IDs from the match information
+						const teamIds = Object.keys(matchupData.teamInformation);
+						let homeTeamId = '';
+						let awayTeamId = '';
+						
+						for (const teamId of teamIds) {
+						  if (matchupData.teamInformation[teamId].home) {
+							homeTeamId = teamId;
+						  } else {
+							awayTeamId = teamId;
+						  }
+						}
+						
+						// Now use these verified team IDs that exist in the matchup data
+						
+						// Set home team data using actual home team ID
+						setHomeTeamInformation({
+						  teamName: matchupData.teamInformation[homeTeamId]?.teamName || "",
+						  teamId: matchupData.teamInformation[homeTeamId]?.teamLetter || "",
+						  matchesData: {}, // Populate if necessary
+						});
+						
+						// Set home team player information using actual home team ID
+						setHomeTeamPlayerInformation(
+						  Object.values(matchupData.teamInformation[homeTeamId]?.teamMembers || {}).map((member, index) => ({
 							ledaId: index + 1, // Convert to number
 							firstName: member.name.split(" ")[0] || "",
 							lastName: member.name.split(" ")[1] || "",
@@ -369,18 +385,19 @@ export default function WeeklyScoresheetsContent() {
 							fullName: member.name,
 							gender: "Unknown", // Default or fetched value
 							dateOfBirth: new Date(), // Default or fetched value
-						}))
-					);
-
-					// Set away team data
-					setSelectedAwayTeamId(Object.keys(matchupData.teamInformation)[1]);
-					setAwayTeamInformation({
-						teamName: matchupData.teamInformation["2"].teamName,
-						teamId: matchupData.teamInformation["2"].teamLetter,
-						matchesData: {}, // Populate if necessary
-					});
-					setAwayTeamPlayerInformation(
-						Object.values(matchupData.teamInformation["2"].teamMembers).map((member, index) => ({
+						  }))
+						);
+						
+						// Set away team data using actual away team ID
+						setAwayTeamInformation({
+						  teamName: matchupData.teamInformation[awayTeamId]?.teamName || "",
+						  teamId: matchupData.teamInformation[awayTeamId]?.teamLetter || "",
+						  matchesData: {}, // Populate if necessary
+						});
+						
+						// Set away team player information using actual away team ID
+						setAwayTeamPlayerInformation(
+						  Object.values(matchupData.teamInformation[awayTeamId]?.teamMembers || {}).map((member, index) => ({
 							ledaId: index + 1, // Convert to number
 							firstName: member.name.split(" ")[0] || "",
 							lastName: member.name.split(" ")[1] || "",
@@ -395,47 +412,48 @@ export default function WeeklyScoresheetsContent() {
 							fullName: member.name,
 							gender: "Unknown", // Default or fetched value
 							dateOfBirth: new Date(), // Default or fetched value
-						}))
-					);
-
-					// Set game data
-					const homeGameData: TeamGameData = {};
-					const awayGameData: TeamGameData = {};
-
-					// Initialize mention counters to track existing mentions
-					const newMentionCounters: Record<string, number> = { ...mentionCounters };
-
-					Object.entries(matchupData.teamInformation["1"].teamMembers).forEach(([playerId, member]) => {
-						homeGameData[playerId] = member.gameStats;
-
-						// Check for existing mentions and update counters
-						if (member.mentions) {
+						  }))
+						);
+						
+						// Set game data with safety checks
+						const homeGameData: TeamGameData = {};
+						const awayGameData: TeamGameData = {};
+						
+						// Initialize mention counters to track existing mentions
+						const newMentionCounters: Record<string, number> = { ...mentionCounters };
+						
+						// Use optional chaining to avoid errors when accessing properties
+						Object.entries(matchupData.teamInformation[homeTeamId]?.teamMembers || {}).forEach(([playerId, member]) => {
+						  homeGameData[playerId] = member.gameStats;
+						
+						  // Check for existing mentions and update counters
+						  if (member.mentions) {
 							const mentionIds = Object.keys(member.mentions);
 							if (mentionIds.length > 0) {
-								const maxId = Math.max(...mentionIds.map((id) => parseInt(id)));
-								const playerMentionKey = `${selectedHomeTeamId}-${playerId}`;
-								newMentionCounters[playerMentionKey] = maxId;
+							  const maxId = Math.max(...mentionIds.map((id) => parseInt(id)));
+							  const playerMentionKey = `${selectedHomeTeamId}-${playerId}`;
+							  newMentionCounters[playerMentionKey] = maxId;
 							}
-						}
-					});
-
-					Object.entries(matchupData.teamInformation["2"].teamMembers).forEach(([playerId, member]) => {
-						awayGameData[playerId] = member.gameStats;
-
-						// Check for existing mentions and update counters
-						if (member.mentions) {
+						  }
+						});
+						
+						Object.entries(matchupData.teamInformation[awayTeamId]?.teamMembers || {}).forEach(([playerId, member]) => {
+						  awayGameData[playerId] = member.gameStats;
+						
+						  // Check for existing mentions and update counters
+						  if (member.mentions) {
 							const mentionIds = Object.keys(member.mentions);
 							if (mentionIds.length > 0) {
-								const maxId = Math.max(...mentionIds.map((id) => parseInt(id)));
-								const playerMentionKey = `${selectedAwayTeamId}-${playerId}`;
-								newMentionCounters[playerMentionKey] = maxId;
+							  const maxId = Math.max(...mentionIds.map((id) => parseInt(id)));
+							  const playerMentionKey = `${selectedAwayTeamId}-${playerId}`;
+							  newMentionCounters[playerMentionKey] = maxId;
 							}
-						}
-					});
-
-					setHomeTeamGameData(homeGameData);
-					setAwayTeamGameData(awayGameData);
-					setMentionCounters(newMentionCounters);
+						  }
+						});
+						
+						setHomeTeamGameData(homeGameData);
+						setAwayTeamGameData(awayGameData);
+						setMentionCounters(newMentionCounters);
 
 					// Set game points and wins
 					const gameInformation = matchupData.gameInformation;
@@ -824,9 +842,7 @@ export default function WeeklyScoresheetsContent() {
 								home: true,
 								teamMembers: homeTeamMembers,
 								penalties:
-									formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.teamInformation?.[
-										selectedHomeTeamId
-									]?.penalties || {},
+									formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.teamInformation?.[selectedHomeTeamId]?.penalties || {},
 							},
 							[selectedAwayTeamId]: {
 								teamLetter: selectedAwayLetter,
@@ -834,9 +850,7 @@ export default function WeeklyScoresheetsContent() {
 								home: false,
 								teamMembers: awayTeamMembers,
 								penalties:
-									formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.teamInformation?.[
-										selectedAwayTeamId
-									]?.penalties || {},
+									formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]?.teamInformation?.[selectedAwayTeamId]?.penalties || {},
 							},
 						},
 						gameInformation: gameInformation,
