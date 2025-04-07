@@ -35,6 +35,7 @@ import { Spinner } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { FolderTabMed } from "@/components/ui/folder-tab";
 
 // Define types for better code readability
 type TeamInfo = {
@@ -605,7 +606,7 @@ export default function RostersContent() {
 		() => (
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogTrigger asChild>
-					<Button variant="outline" disabled={disabled}>
+					<Button variant="outline" disabled={disabled} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						Add Division
 					</Button>
 				</DialogTrigger>
@@ -629,7 +630,7 @@ export default function RostersContent() {
 		() => (
 			<Dialog open={copyOpen} onOpenChange={setCopyOpen}>
 				<DialogTrigger asChild>
-					<Button variant="outline">Copy Roster</Button>
+					<Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700">Copy Roster</Button>
 				</DialogTrigger>
 				<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
 					<DialogHeader>
@@ -879,38 +880,43 @@ export default function RostersContent() {
 			) : (
 				<>
 					<div className="flex justify-between">
-						<div className="flex gap-4">
-							<SeasonCodeSelector
-								disabled={currentSeason}
-								handleSelect={handleSeasonCodeSelect}
-								setDisabled={setDisabled}
-								useCurrentSeason={currentSeason}
-								seasonCode={seasonCode || ""}
-							/>
-							<div className="flex items-center gap-4">
-								<Label>Current Season?</Label>
-								<Checkbox
-									checked={currentSeason}
-									onCheckedChange={() =>
-										setCurrentSeason(!currentSeason)
-									}
+						<FolderTabMed title="Season Code">
+							<div className="flex gap-4">
+								<SeasonCodeSelector
+									disabled={currentSeason}
+									handleSelect={handleSeasonCodeSelect}
+									setDisabled={setDisabled}
+									useCurrentSeason={currentSeason}
+									seasonCode={seasonCode || ""}
 								/>
+								<div className="flex items-center gap-4">
+									<Label>Current Season?</Label>
+									<Checkbox
+										checked={currentSeason}
+										onCheckedChange={() =>
+											setCurrentSeason(!currentSeason)
+										}
+									/>
+								</div>
 							</div>
-						</div>
-						<div className="flex gap-4">
-							{handleAddDivision()}
-							{update && (
-								<Button
-									variant="outline"
-									onClick={() =>
-										setDeleteRosterAlertOpen(true)
-									}
-								>
-									Delete Roster
-								</Button>
-							)}
-							{handleCopyRoster()}
-						</div>
+						</FolderTabMed>
+						<FolderTabMed title="Roster Actions">
+							<div className="flex gap-4">
+								{handleAddDivision()}
+								{update && (
+									<Button
+										variant="outline"
+										className="hover:bg-gray-100 border-gray-300 text-gray-700"
+										onClick={() =>
+											setDeleteRosterAlertOpen(true)
+										}
+									>
+										Delete Roster
+									</Button>
+								)}
+								{handleCopyRoster()}
+							</div>
+						</FolderTabMed>
 					</div>
 
 					{/* Delete Roster Alert Dialog */}
@@ -1274,7 +1280,7 @@ export default function RostersContent() {
 					{update && (
 						<div className="flex justify-center gap-4">
 							<Button
-								className="mt-4"
+								className="hover:bg-gray-100 border-gray-300 text-gray-700 mt-4"
 								variant="outline"
 								disabled={!hasChanges || loading}
 								onClick={handleUpdateRoster}
@@ -1282,7 +1288,7 @@ export default function RostersContent() {
 								Update Roster
 							</Button>
 							<Button
-								className="mt-4"
+								className="hover:bg-gray-100 border-gray-300 text-gray-700 mt-4"
 								variant="outline"
 								disabled={!hasChanges || loading}
 								onClick={() => {

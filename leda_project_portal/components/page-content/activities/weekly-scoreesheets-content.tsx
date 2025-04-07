@@ -23,7 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import WeekSelector from "@/components/ui/week-selector";
 import { scheduleRoute, teamRoute, playerRoute, weeklyScoresheetsRoute } from "@/lib/apiRoutes";
-import FolderTab from "@/components/ui/folder-tab";
+import FolderTab, { FolderTabMed } from "@/components/ui/folder-tab";
 import { Player } from "@/lib/definitions";
 import {
 	Table,
@@ -1608,28 +1608,30 @@ export default function WeeklyScoresheetsContent() {
 
 	return (
 		<div className="flex flex-col h-full">
-			<div className="flex gap-4">
-				<SeasonCodeSelector
-					disabled={currentSeason}
-					handleSelect={handleSeasonCodeSelect}
-					useCurrentSeason={currentSeason}
-					seasonCode={seasonCode || ""}
-				/>
-				<div className="flex items-center gap-4">
-					<Label>Current Season?</Label>
-					<Checkbox
-						checked={currentSeason}
-						onCheckedChange={() => setCurrentSeason(!currentSeason)}
-					/>
-				</div>
+			<FolderTabMed title="Season Information" className="w-fit">
 				<div className="flex gap-4">
-					<WeekSelector
-						seasonCode={seasonCode}
-						disabled={seasonSelected}
-						handleSelect={handleDateToDisplay}
+					<SeasonCodeSelector
+						disabled={currentSeason}
+						handleSelect={handleSeasonCodeSelect}
+						useCurrentSeason={currentSeason}
+						seasonCode={seasonCode || ""}
 					/>
+					<div className="flex items-center gap-4">
+						<Label>Current Season?</Label>
+						<Checkbox
+							checked={currentSeason}
+							onCheckedChange={() => setCurrentSeason(!currentSeason)}
+						/>
+					</div>
+					<div className="flex gap-4">
+						<WeekSelector
+							seasonCode={seasonCode}
+							disabled={seasonSelected}
+							handleSelect={handleDateToDisplay}
+						/>
+					</div>
 				</div>
-			</div>
+			</FolderTabMed>
 			<div className="mt-4">
 				<Separator orientation="horizontal" className="bg-gray-400 w-100" />
 			</div>

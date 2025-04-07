@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SubdivisionScheduler } from "@/components/subdivision-scheduler";
 import { Button } from "@/components/ui/button";
+import { FolderTabMed } from "@/components/ui/folder-tab";
 
 export default function ScheduleContent() {
 	// State variables
@@ -137,10 +138,9 @@ export default function ScheduleContent() {
 				>
 			>
 		) => {
-			console.log(updatedMatchData);
 			setMatchData(updatedMatchData);
 			// Save data to the server
-			const result = await fetch(`${scheduleRoute}`, {
+			await fetch(`${scheduleRoute}`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -150,7 +150,6 @@ export default function ScheduleContent() {
 					scheduleData: updatedMatchData,
 				}),
 			});
-			console.log(result);
 			setEnableSaveButton(false);
 		},
 		[seasonCode]
@@ -204,7 +203,6 @@ export default function ScheduleContent() {
 					);
 					if (matchDataResult.status === 200) {
 						const matchData = await matchDataResult.json();
-						console.log(matchData);
 						if (matchData) {
 							setMatchData(
 								JSON.parse(
@@ -278,6 +276,7 @@ export default function ScheduleContent() {
 	return !loading ? (
 		<div className="flex flex-col max-w-[65vw]">
 			<div className="flex justify-between">
+				<FolderTabMed title="Season Code">
 				<div className="flex gap-4">
 					<SeasonCodeSelector
 						disabled={currentSeason}
@@ -296,18 +295,21 @@ export default function ScheduleContent() {
 						/>
 					</div>
 				</div>
-				<div>
-					{enableSaveButton && (
+				</FolderTabMed>
+				<FolderTabMed title="Manage Schedule">
+					<div>
 						<div className="p-4 flex justify-center">
 							<Button
 								onClick={() => handleSaveData(updatedMatchData)}
 								variant="outline"
+								className="hover:bg-gray-100 border-gray-300 text-gray-700"
+								disabled={!enableSaveButton}
 							>
 								Save Changes
 							</Button>
 						</div>
-					)}
-				</div>
+					</div>
+				</FolderTabMed>
 			</div>
 			{Object.keys(divisionsData).length > 0 && (
 				<div className="w-full mt-4">

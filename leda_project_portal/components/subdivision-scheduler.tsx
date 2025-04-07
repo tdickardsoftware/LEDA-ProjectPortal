@@ -140,6 +140,24 @@ export function SubdivisionScheduler({
 		return null;
 	};
 
+	// Get teams that already have matchups for a specific game date
+	const getTeamsWithMatchups = (gameTitle: string) => {
+		const teamsWithMatchups: string[] = [];
+		
+		for (const division in MatchData) {
+			for (const subdivision in MatchData[division]) {
+				for (const teamLetter in MatchData[division][subdivision]) {
+					const team = MatchData[division][subdivision][teamLetter];
+					if (team && team.matchesData && team.matchesData[gameTitle]) {
+						teamsWithMatchups.push(team.teamId);
+					}
+				}
+			}
+		}
+		
+		return teamsWithMatchups;
+	};
+
 	// Get team name by team ID
 	const getTeamNameById = (teamId: string) => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -665,6 +683,9 @@ export function SubdivisionScheduler({
 																}
 																selectedTeamLetter={
 																	key
+																	}
+																teamsWithMatchups={
+																	getTeamsWithMatchups(gameTitle)
 																}
 															/>
 														</DialogContent>

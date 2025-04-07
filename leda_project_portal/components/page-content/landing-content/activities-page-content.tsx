@@ -18,7 +18,7 @@ export default function ActivitiesPageContent() {
 			<div>
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
-						<CardTitle className="text-lg font-semibold">Payouts *WIP*</CardTitle>
+						<CardTitle className="text-lg font-semibold">Payouts</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<p className="text-gray-700">Calculate Payouts</p>
