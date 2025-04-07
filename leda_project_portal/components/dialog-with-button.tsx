@@ -116,6 +116,7 @@ export function DialogWithButton({
 					variant="outline"
 					onClick={() => setActiveForm(form)}
 					disabled={disabled}
+					className="hover:bg-gray-100 border-gray-300 text-gray-700"
 				>
 					{buttonName}
 				</Button>

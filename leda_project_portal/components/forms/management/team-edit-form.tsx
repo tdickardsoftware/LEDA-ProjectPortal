@@ -22,6 +22,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import { Team } from "@/lib/definitions";
 import PlayerSelector from "@/components/ui/player-selector";
+import { Tab } from '@headlessui/react';
 
 const teamInfoSchema = z.object({
 	ledaId: z
@@ -51,10 +52,19 @@ export default function TeamEditForm({
 }) {
 	const [formData, setFormData] = useState<Team>({} as Team);
 	const [memberIdList, setMemberIdList] = useState<string>("");
+	const [currentStep, setCurrentStep] = useState(0);
+	
+	// Define the steps
+	const steps = [
+		{ name: "Basic Info", fields: ["ledaId", "teamName"] },
+		{ name: "Team Details", fields: ["establishedDate", "lastTeamFeePayment", "memo"] },
+		{ name: "Team Members", fields: [] },
+	];
 
 	const formRef = React.useRef<HTMLFormElement>(null);
 	const form = useForm<z.infer<typeof teamInfoSchema>>({
 		resolver: zodResolver(teamInfoSchema),
+		mode: "onChange",
 		defaultValues: {
 			ledaId: formData.ledaId ?? undefined,
 			teamName: formData.teamName || "",
@@ -65,9 +75,50 @@ export default function TeamEditForm({
 			lastTeamFeePayment: formData.lastTeamFeePayment || "",
 		},
 	});
+	
 	function handleSetMemberIdList(memberIdList: string) {
 		setMemberIdList(memberIdList);
 	}
+	
+	// Handle step navigation
+	const nextStep = async () => {
+		const currentStepFields = steps[currentStep].fields;
+		
+		// Special case for team members step which doesn't need validation
+		if (currentStep === 2) {
+			if (currentStep < steps.length - 1) {
+				setCurrentStep(currentStep + 1);
+			} else {
+				form.handleSubmit(onSubmit)();
+			}
+			return;
+		}
+		
+		// Validate only the fields in the current step
+		const result = await form.trigger(currentStepFields as (keyof z.infer<typeof teamInfoSchema>)[]);
+		
+		if (result) {
+			if (currentStep < steps.length - 1) {
+				setCurrentStep(currentStep + 1);
+			} else {
+				// If we're on the last step, submit the form
+				form.handleSubmit(onSubmit)();
+			}
+		}
+	};
+
+	const prevStep = () => {
+		if (currentStep > 0) {
+			setCurrentStep(currentStep - 1);
+		} else {
+			if (handleRefresh) {
+				handleRefresh();
+			} else {
+				onClose();
+			}
+		}
+	};
+	
 	useEffect(() => {
 		if (!rowData || !rowData.ledaId) {
 			return;
@@ -149,90 +200,129 @@ export default function TeamEditForm({
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4 mx-auto"
 				ref={formRef}
-				// Prevent form from reloading the page
 				onSubmitCapture={(e) => e.preventDefault()}
 			>
-				<div className="flex space-x-4">
-					{/* Team Information Section */}
-					<div className={formContainerStyle}>
-						<h1>Team Information for LEDA ID #{rowData.ledaId}</h1>
-						<FormField
-							control={form.control}
-							name="ledaId"
-							render={({ field }) => (
-								<FormItem>
-									<FormControl>
-										<Input
-											placeholder="LEDA ID #"
-											{...field}
-											disabled
-											className={inputWidth}
-											type="number"
-											onChange={(e) => {
-												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
-												);
-											}}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<InputDefault
-							control={form.control}
-							name="teamName"
-							label="Team Name *"
-						/>
-						<InputDefault
-							control={form.control}
-							name="establishedDate"
-							label="Established Date *"
-							type="date"
-						/>
-						<SeasonCodeSelector
-							control={form.control}
-							name="lastTeamFeePayment"
-							label="Last Team Fee Payment *"
-						/>
-						<FormField
-							control={form.control}
-							name="memo"
-							render={({ field }) => (
-								<FormItem>
-									<Label>Memo</Label>
-									<FormControl>
-										<Textarea
-											placeholder="Additional Data Here..."
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+				<Tab.Group selectedIndex={currentStep} onChange={setCurrentStep}>
+					<div className="mb-6">
+						<div className="flex border-b border-gray-200">
+							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
+								{steps.map((step, index) => (
+									<Tab
+										key={index}
+										className={({ selected }) =>
+											`w-full py-2.5 text-sm font-medium leading-5 
+											${selected 
+												? 'border-b-2 border-blue-500 text-blue-600' 
+												: 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+											} ${index < currentStep ? 'text-green-500' : ''}`
+										}
+									>
+										<span className="flex items-center justify-center">
+											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
+												{index < currentStep ? '✓' : index + 1}
+											</span>
+											{step.name}
+										</span>
+									</Tab>
+								))}
+							</Tab.List>
+						</div>
 					</div>
-					<div className={formContainerStyle}>
-						<h1>Team Member Information</h1>
-						<hr className="bg-gray-300"></hr>
-						<PlayerSelector setMemberIdList={handleSetMemberIdList} existingJsonList={memberIdList}/>
-					</div>
-				</div>
-				
+
+					<Tab.Panels>
+						{/* Step 1: Basic Info */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>Team Basic Information for LEDA ID #{rowData.ledaId}</h1>
+								<hr className="bg-gray-300 mb-4"></hr>
+								<FormField
+									control={form.control}
+									name="ledaId"
+									render={({ field }) => (
+										<FormItem>
+											<FormControl>
+												<Input
+													placeholder="LEDA ID #"
+													{...field}
+													disabled
+													className={inputWidth}
+													type="number"
+													onChange={(e) => {
+														field.onChange(
+															e.target.value
+																? Number(e.target.value)
+																: undefined
+														);
+													}}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<InputDefault
+									control={form.control}
+									name="teamName"
+									label="Team Name *"
+								/>
+							</div>
+						</Tab.Panel>
+						
+						{/* Step 2: Team Details */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>Team Details</h1>
+								<hr className="bg-gray-300 mb-4"></hr>
+								<InputDefault
+									control={form.control}
+									name="establishedDate"
+									label="Established Date *"
+									type="date"
+								/>
+								<SeasonCodeSelector
+									control={form.control}
+									name="lastTeamFeePayment"
+									label="Last Team Fee Payment *"
+								/>
+								<FormField
+									control={form.control}
+									name="memo"
+									render={({ field }) => (
+										<FormItem>
+											<Label>Memo</Label>
+											<FormControl>
+												<Textarea
+													placeholder="Additional Data Here..."
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</div>
+						</Tab.Panel>
+						
+						{/* Step 3: Team Members */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>Team Members</h1>
+								<hr className="bg-gray-300 mb-4"></hr>
+								<div className="player-selector-container">
+									<PlayerSelector setMemberIdList={handleSetMemberIdList} existingJsonList={memberIdList}/>
+								</div>
+							</div>
+						</Tab.Panel>
+					</Tab.Panels>
+				</Tab.Group>
+
 				<div className="flex justify-between">
-					{!handleRefresh && (
-						<Button type="button" onClick={onClose}>
-							Back
-						</Button>
-					)}
-					{handleRefresh && (
-						<Button type="button" onClick={handleRefresh}>
-							Back
-						</Button>
-					)}
-					<Button type="submit">Update</Button>
+					<Button type="button" onClick={prevStep}>
+						{currentStep === 0 ? (handleRefresh ? 'Back' : 'Cancel') : 'Back'}
+					</Button>
+					<Button type="button" onClick={nextStep}>
+						{currentStep === steps.length - 1 ? 'Update' : 'Next'}
+					</Button>
 				</div>
 			</form>
 		</Form>

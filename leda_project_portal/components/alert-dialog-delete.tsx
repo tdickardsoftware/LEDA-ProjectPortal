@@ -60,7 +60,7 @@ export default function AlertDialogDelete({
 	return (
 		<AlertDialog>
 			<AlertDialogTrigger type="button" asChild>
-				<Button variant={"outline"} disabled={disabled}>
+				<Button variant={"outline"} disabled={disabled} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 					{buttonName}
 				</Button>
 			</AlertDialogTrigger>
