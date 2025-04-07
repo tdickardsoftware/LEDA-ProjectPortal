@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SubdivisionScheduler } from "@/components/subdivision-scheduler";
 import { Button } from "@/components/ui/button";
+import { FolderTabMed } from "@/components/ui/folder-tab";
 
 export default function ScheduleContent() {
 	// State variables
@@ -278,6 +279,7 @@ export default function ScheduleContent() {
 	return !loading ? (
 		<div className="flex flex-col max-w-[65vw]">
 			<div className="flex justify-between">
+				<FolderTabMed title="Season Code">
 				<div className="flex gap-4">
 					<SeasonCodeSelector
 						disabled={currentSeason}
@@ -296,18 +298,20 @@ export default function ScheduleContent() {
 						/>
 					</div>
 				</div>
-				<div>
-					{enableSaveButton && (
+				</FolderTabMed>
+				<FolderTabMed title="Manage Schedule">
+					<div>
 						<div className="p-4 flex justify-center">
 							<Button
 								onClick={() => handleSaveData(updatedMatchData)}
 								variant="outline"
+								disabled={enableSaveButton}
 							>
 								Save Changes
 							</Button>
 						</div>
-					)}
-				</div>
+					</div>
+				</FolderTabMed>
 			</div>
 			{Object.keys(divisionsData).length > 0 && (
 				<div className="w-full mt-4">
