@@ -41,17 +41,17 @@ export default function AlertDialogDelete({
 	}, [selectedRowCount]);
 
 	async function onClickDelete() {
-			for (let j = 0; j < rowData.length; j++) {
-				await fetch(apiEndpoint, {
-					method: "DELETE",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(
-						rowData[j], // Ensure targetValue is correctly passed
-					),
-				});
-			}
+		for (let j = 0; j < rowData.length; j++) {
+			await fetch(apiEndpoint, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(
+					rowData[j] // Ensure targetValue is correctly passed
+				),
+			});
+		}
 		if (onRefresh) {
 			onRefresh();
 		}
@@ -60,7 +60,11 @@ export default function AlertDialogDelete({
 	return (
 		<AlertDialog>
 			<AlertDialogTrigger type="button" asChild>
-				<Button variant={"outline"} disabled={disabled}>
+				<Button
+					variant={"outline"}
+					disabled={disabled}
+					className="hover:bg-gray-100 border-gray-300 text-gray-700"
+				>
 					{buttonName}
 				</Button>
 			</AlertDialogTrigger>

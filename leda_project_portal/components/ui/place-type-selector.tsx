@@ -102,10 +102,12 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 				const response = await fetch(placeTypeRoute);
 				const data = await response.json();
 				setMemberTypes(
-					data.map((type: { placeTypeCode: string; desc: string }) => ({
-						value: type.placeTypeCode,
-						label: type.placeTypeCode + " - " + type.desc,
-					}))
+					data.map(
+						(type: { placeTypeCode: string; desc: string }) => ({
+							value: type.placeTypeCode,
+							label: type.placeTypeCode + " - " + type.desc,
+						})
+					)
 				);
 			} catch (error) {
 				console.error("Failed to fetch place types", error);

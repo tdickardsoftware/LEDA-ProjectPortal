@@ -4,10 +4,11 @@
 
 CREATE TABLE IF NOT EXISTS public.leda_schedule
 (
-    id bigint NOT NULL,
+    id bigint NOT NULL DEFAULT nextval('leda_schedule_seq'::regclass),
     "seasonCode" text COLLATE pg_catalog."default" NOT NULL,
-    "rosterId" bigint NOT NULL,
-    CONSTRAINT leda_schedule_pkey PRIMARY KEY (id)
+    "scheduleData" json NOT NULL,
+    CONSTRAINT leda_schedule_pkey PRIMARY KEY (id),
+    CONSTRAINT "leda_schedule_seasonCode_key" UNIQUE ("seasonCode")
 )
 
 TABLESPACE pg_default;

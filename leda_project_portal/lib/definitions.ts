@@ -155,3 +155,72 @@ export type PlayerMemberInfo = {
 	lifetimeMember: boolean;
 	lifetimeMemberReason?: string;
 };
+//
+// Define type to identify the shape of our data from postgres for Trails Dates
+//
+export type TrailsDate = {
+	trailsDate: string;
+};
+//
+// Define type to identify the shape of our data from postgres for a Trails Date Data
+//
+export type TrailsDateData = {
+	ledaId: number;
+	trailsDate: string;
+	notes?: string;
+	singlesPlace: number;
+	doublesPlace: number;
+	trailsPoints: number;
+	fullName: string;
+};
+//
+// define type to identify te shape of our data from postgres for a Roster
+//
+export type Roster = {
+	seasonCode: string;
+	teamInformation: JSON;
+};
+//
+// Define type to identify the shape of our data from postgres for a Schedule
+//
+export type Schedule = {
+	seasonCode: string;
+	scheduleData: JSON;
+};
+//
+// Define type to identify the shape of our data from postgres for a Weekly Scoresheet
+//
+export type WeeklyScoresheet = {
+	seasonCode: string;
+	weekNumber: number;
+	scoresheetData: JSON;
+	finishedScoresheet: boolean;
+};
+//
+// Define type to identify the shape of our data from postgres for weekly team scores
+//
+export type TeamPoints = {
+	seasonCode: string;
+	weekNum: number;
+	ledaId: number;
+	prevTotalPoints: number;
+	totalPoints: number;
+};
+//
+// Define type to indentify the shape of our data from postgres for weekly player scores
+//
+export type PlayerPoints = {
+	seasonCode: string;
+	weekNum: number;
+	ledaId: number;
+	prevTotalPoints: number;
+	totalPoints: number;
+	teamLedaId: number;
+};
+//
+// Define type to identify the shape of our data from postgres for a Payout
+//
+export type Payout = {
+	seasonCode: string;
+	payoutsData: JSON;
+};

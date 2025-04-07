@@ -73,7 +73,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
 									</SidebarMenuAction>
 								</CollapsibleTrigger>
 								<CollapsibleContent>
-									<SidebarMenuSub>
+									<SidebarMenuSub className="text-nowrap w-fit">
 										{renderMenuItems(item.items)}
 									</SidebarMenuSub>
 								</CollapsibleContent>

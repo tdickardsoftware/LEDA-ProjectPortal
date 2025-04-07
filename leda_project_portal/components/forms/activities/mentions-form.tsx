@@ -1,0 +1,248 @@
+"use client";
+
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { useEffect } from "react";
+import MentionSelector from "@/components/ui/mentions-selector";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+// Validation schema for the mention form
+const divisionFormSchema = z.object({
+	mentionData: z
+		.object({
+			mentionCode: z.string(),
+			desc: z.string(),
+			points: z.string(),
+			mentionBasis: z.string(),
+		})
+		.refine((data) => Object.keys(data).length > 0, {
+			message: "Mention data is required.",
+		}),
+	points: z
+		.number()
+		.min(0, { message: "Points must be a positive number." })
+		.optional(),
+	mentionCode: z.string().optional(),
+	mentionDesc: z.string().optional(),
+	notes: z.string().optional(),
+});
+
+// Define styles for the form container
+const formContainerStyle =
+	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+
+/**
+ * Mention Add/Edit Form component
+ *
+ * @param handleMentionSubmit - Callback for adding new mentions
+ * @param isEditMode - Whether the form is in edit mode
+ * @param initialMention - Mention data for editing (only in edit mode)
+ * @param updateMention - Callback for updating existing mentions
+ */
+export default function MentionForm({
+	handleMentionSubmit,
+	isEditMode = false,
+	initialMention = null,
+	updateMention,
+}: {
+	handleMentionSubmit: (
+		mentionCode: string,
+		desc: string,
+		points: number,
+		notes?: string
+	) => void;
+	isEditMode?: boolean;
+	initialMention?: {
+		id: string;
+		code: string;
+		desc: string;
+		points: number;
+		notes: string;
+	} | null;
+	updateMention?: (
+		mentionId: string,
+		mentionCode: string,
+		desc: string,
+		points: number,
+		notes?: string
+	) => void;
+}) {
+	// Initialize form with React Hook Form and Zod validation
+	const form = useForm<z.infer<typeof divisionFormSchema>>({
+		resolver: zodResolver(divisionFormSchema),
+		defaultValues: {
+			mentionData: {
+				mentionCode: "",
+				desc: "",
+				points: "",
+				mentionBasis: "",
+			},
+			points: undefined,
+			mentionCode: "",
+			mentionDesc: "",
+			notes: "",
+		},
+	});
+
+	// Set initial values when in edit mode and when initialMention changes
+	useEffect(() => {
+		if (isEditMode && initialMention) {
+			// Instead of just setting form values, also set the mentionData for the selector
+			form.setValue("mentionData", {
+				mentionCode: initialMention.code,
+				desc: initialMention.desc,
+				points: initialMention.points.toString(),
+				mentionBasis: "", // We may not have this value when editing
+			});
+			form.setValue("mentionCode", initialMention.code);
+			form.setValue("mentionDesc", initialMention.desc);
+			form.setValue("points", initialMention.points);
+			form.setValue("notes", initialMention.notes || "");
+		}
+	}, [form, isEditMode, initialMention]);
+
+	/**
+	 * Form submission handler
+	 * Delegates to either updateMention or handleMentionSubmit based on mode
+	 */
+	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
+		if (isEditMode && initialMention && updateMention) {
+			// Update existing mention
+			updateMention(
+				initialMention.id,
+				values.mentionCode || "",
+				values.mentionDesc || "",
+				values.points ?? 0,
+				values.notes
+			);
+		} else {
+			// Add new mention
+			handleMentionSubmit(
+				values.mentionCode || "",
+				values.mentionDesc || "",
+				values.points ?? 0,
+				values.notes
+			);
+
+			// Reset the form instead of closing the dialog
+			form.reset({
+				mentionData: {
+					mentionCode: "",
+					desc: "",
+					points: "",
+					mentionBasis: "",
+				},
+				points: undefined,
+				mentionCode: "",
+				mentionDesc: "",
+				notes: "",
+			});
+		}
+	}
+
+	const handleMentionChange = (value: {
+		mentionCode: string;
+		desc: string;
+		points: string;
+		mentionBasis: string;
+	}) => {
+		// Parse points as integer and handle NaN case
+		const pointsValue = parseInt(value.points);
+		form.setValue("points", isNaN(pointsValue) ? undefined : pointsValue);
+		form.setValue("mentionCode", value.mentionCode);
+		form.setValue("mentionDesc", value.desc);
+
+		// Force the form to update immediately
+		form.trigger("points");
+	};
+
+	return (
+		// Form UI rendering with fields for mention code, points, and notes
+		<Form {...form}>
+			<form
+				onSubmit={form.handleSubmit(onSubmit)}
+				className="space-y-4 mx-auto w-fit"
+			>
+				<div className="flex space-x-4">
+					<div className={formContainerStyle}>
+						{/* Use MentionSelector for both add and edit modes */}
+						<MentionSelector
+							name="mentionData"
+							label="Mention *"
+							control={form.control}
+							disabled={false}
+							handleMentionChange={handleMentionChange}
+						/>
+
+						<FormField
+							control={form.control}
+							name="points"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Points</FormLabel>
+									<FormControl>
+										<Input
+											placeholder="Points"
+											type="number"
+											{...field}
+											value={
+												field.value === undefined
+													? ""
+													: field.value
+											}
+											onChange={(e) => {
+												const value = e.target.value;
+												if (/^\d*$/.test(value)) {
+													field.onChange(
+														value === ""
+															? undefined
+															: parseInt(
+																	value,
+																	10
+															  )
+													);
+												}
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="notes"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Notes</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder="Notes"
+											{...field}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				</div>
+				<div className="flex justify-center">
+					<Button type="submit">
+						{isEditMode ? "Update Mention" : "Add Mention"}
+					</Button>
+				</div>
+			</form>
+		</Form>
+	);
+}

@@ -17,12 +17,13 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import React from "react";
-import SeasonCodeSelector from "@/components/ui/season-code-selector";
+import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import PlayerSelector from "@/components/ui/player-selector";
+import { Tab } from "@headlessui/react";
 
 export const teamFormSchema = z.object({
 	ledaId: z
@@ -51,9 +52,21 @@ export default function PlaceAddForm({
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [ledaIdExists, setLedaIdExists] = useState(false);
 	const [memberIdList, setMemberIdList] = useState<string>("");
+	const [currentStep, setCurrentStep] = useState(0);
+
+	// Define the steps
+	const steps = [
+		{ name: "Basic Info", fields: ["ledaId", "teamName"] },
+		{
+			name: "Team Details",
+			fields: ["establishedDate", "lastTeamFeePayment", "memo"],
+		},
+		{ name: "Team Members", fields: ["memberIdList"] },
+	];
 
 	const form = useForm<z.infer<typeof teamFormSchema>>({
 		resolver: zodResolver(teamFormSchema),
+		mode: "onChange",
 		defaultValues: {
 			ledaId: undefined,
 			teamName: "",
@@ -63,17 +76,59 @@ export default function PlaceAddForm({
 			memberIdList: "",
 		},
 	});
+
 	function handleSetMemberIdList(memberIdList: string) {
 		setMemberIdList(memberIdList);
 	}
+
+	// Handle step navigation
+	const nextStep = async () => {
+		const currentStepFields = steps[currentStep].fields;
+
+		// Special case for team members step which doesn't need validation
+		if (currentStep === 2) {
+			if (currentStep < steps.length - 1) {
+				setCurrentStep(currentStep + 1);
+			} else {
+				form.handleSubmit(onSubmit)();
+			}
+			return;
+		}
+
+		// Validate only the fields in the current step
+		const result = await form.trigger(
+			currentStepFields as (keyof z.infer<typeof teamFormSchema>)[]
+		);
+
+		if (result) {
+			if (currentStep < steps.length - 1) {
+				setCurrentStep(currentStep + 1);
+			} else {
+				// If we're on the last step, submit the form
+				form.handleSubmit(onSubmit)();
+			}
+		}
+	};
+
+	const prevStep = () => {
+		if (currentStep > 0) {
+			setCurrentStep(currentStep - 1);
+		} else {
+			onClose();
+		}
+	};
+
 	async function onSubmit(values: z.infer<typeof teamFormSchema>) {
-		console.log(memberIdList)
 		try {
 			// If generateIDStatus is true, set ledaId to 0
 			const submissionValues = generateIDStatus
 				? { ...values, ledaId: 0 }
 				: values;
-			const submissionValues2 = { ...submissionValues, memberIdList: memberIdList }
+			const submissionValues2 = {
+				...submissionValues,
+				memberIdList: memberIdList,
+			};
+
 			const response = await fetch(teamRoute, {
 				method: "POST",
 				headers: {
@@ -99,6 +154,7 @@ export default function PlaceAddForm({
 			// Reset form and state
 			form.reset();
 			setGenerateIDStatus(true);
+			setCurrentStep(0);
 
 			console.log("Form submitted successfully!", results);
 			onClose(); // Close the form
@@ -119,98 +175,162 @@ export default function PlaceAddForm({
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4 mx-auto"
 			>
-				<div className="flex space-x-4">
-					<div className={formContainerStyle}>
-						<h1>Place Information</h1>
-						<hr className="bg-gray-300"></hr>
-						<div className="flex items-start space-x-2">
-							<Label
-								className="whitespace-nowrap"
-								htmlFor="generateID"
-							>
-								Generate LEDA ID
-							</Label>
-							<Checkbox
-								checked={generateIDStatus}
-								onCheckedChange={(checked: boolean) =>
-									setGenerateIDStatus(checked)
-								}
-								className={checkboxWidth}
-								id="generateID"
-							/>
+				<Tab.Group
+					selectedIndex={currentStep}
+					onChange={setCurrentStep}
+				>
+					<div className="mb-6">
+						<div className="flex border-b border-gray-200">
+							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
+								{steps.map((step, index) => (
+									<Tab
+										key={index}
+										className={({ selected }) =>
+											`w-full py-2.5 text-sm font-medium leading-5 
+											${
+												selected
+													? "border-b-2 border-blue-500 text-blue-600"
+													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+											} ${
+												index < currentStep
+													? "text-green-500"
+													: ""
+											}`
+										}
+									>
+										<span className="flex items-center justify-center">
+											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
+												{index < currentStep
+													? "✓"
+													: index + 1}
+											</span>
+											{step.name}
+										</span>
+									</Tab>
+								))}
+							</Tab.List>
 						</div>
-						<FormField
-							control={form.control}
-							name="ledaId"
-							render={({ field }) => (
-								<FormItem>
-									<FormControl>
-										<Input
-											placeholder="LEDA ID #"
-											{...field}
-											disabled={generateIDStatus}
-											className={inputWidth}
-											type="number"
-											onChange={(e) => {
-												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
-												);
-											}}
-										/>
-									</FormControl>
-									<FormMessage />
-									{ledaIdExists && (
-										<p className="text-red-500 text-sm mt-1">
-											This LEDA ID is already in use
-										</p>
+					</div>
+
+					<Tab.Panels>
+						{/* Step 1: Basic Info */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>Team Basic Information</h1>
+								<hr className="bg-gray-300 mb-4"></hr>
+								<div className="flex items-start space-x-2">
+									<Label
+										className="whitespace-nowrap"
+										htmlFor="generateID"
+									>
+										Generate LEDA ID
+									</Label>
+									<Checkbox
+										checked={generateIDStatus}
+										onCheckedChange={(checked: boolean) =>
+											setGenerateIDStatus(checked)
+										}
+										className={checkboxWidth}
+										id="generateID"
+									/>
+								</div>
+								<FormField
+									control={form.control}
+									name="ledaId"
+									render={({ field }) => (
+										<FormItem>
+											<FormControl>
+												<Input
+													placeholder="LEDA ID #"
+													{...field}
+													disabled={generateIDStatus}
+													className={inputWidth}
+													type="number"
+													onChange={(e) => {
+														field.onChange(
+															e.target.value
+																? Number(
+																		e.target
+																			.value
+																  )
+																: undefined
+														);
+													}}
+												/>
+											</FormControl>
+											<FormMessage />
+											{ledaIdExists && (
+												<p className="text-red-500 text-sm mt-1">
+													This LEDA ID is already in
+													use
+												</p>
+											)}
+										</FormItem>
 									)}
-								</FormItem>
-							)}
-						/>
-						<InputDefault
-							control={form.control}
-							name="teamName"
-							label="Team Name *"
-						/>
-						<InputDefault
-							control={form.control}
-							name="establishedDate"
-							label="Established Date *"
-							type="date"
-						/>
-						<SeasonCodeSelector
-							control={form.control}
-							name="lastTeamFeePayment"
-							label="Last Team Fee Payment *"
-						/>
-						<FormField
-							control={form.control}
-							name="memo"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Memo</FormLabel>
-									<FormControl>
-										<Textarea
-											placeholder="Additional Data Here..."
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-					</div>
-					<div className={formContainerStyle}>
-						<h1>Team Member Information</h1>
-						<hr className="bg-gray-300"></hr>
-						<PlayerSelector setMemberIdList={handleSetMemberIdList}/>
-					</div>
-				</div>
+								/>
+								<InputDefault
+									control={form.control}
+									name="teamName"
+									label="Team Name *"
+								/>
+							</div>
+						</Tab.Panel>
+
+						{/* Step 2: Team Details */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>Team Details</h1>
+								<hr className="bg-gray-300 mb-4"></hr>
+								<InputDefault
+									control={form.control}
+									name="establishedDate"
+									label="Established Date *"
+									type="date"
+								/>
+								<SeasonCodeSelector
+									control={form.control}
+									name="lastTeamFeePayment"
+									label="Last Team Fee Payment *"
+								/>
+								<FormField
+									control={form.control}
+									name="memo"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Memo</FormLabel>
+											<FormControl>
+												<Textarea
+													placeholder="Additional Data Here..."
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</div>
+						</Tab.Panel>
+
+						{/* Step 3: Team Members */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>Team Members</h1>
+								<hr className="bg-gray-300 mb-4"></hr>
+								<PlayerSelector
+									setMemberIdList={handleSetMemberIdList}
+								/>
+							</div>
+						</Tab.Panel>
+					</Tab.Panels>
+				</Tab.Group>
+
 				<div className="flex justify-between">
-					<Button type="button">Back</Button>
-					<Button type="submit">Next</Button>
+					<Button type="button" onClick={prevStep}>
+						{currentStep === 0 ? "Cancel" : "Back"}
+					</Button>
+					<Button type="button" onClick={nextStep}>
+						{currentStep === steps.length - 1 ? "Submit" : "Next"}
+					</Button>
 				</div>
 			</form>
 		</Form>

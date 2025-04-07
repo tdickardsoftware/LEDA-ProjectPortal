@@ -1,0 +1,217 @@
+"use client";
+
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { toast } from "sonner";
+import React from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { trailsRoute } from "@/lib/apiRoutes";
+import { TrailsDateData } from "@/lib/definitions";
+import { Input } from "@/components/ui/input";
+
+const TrailsDateDataFormSchema = z.object({
+	singlesPlace: z.number().positive().optional(),
+	doublesPlace: z.number().positive().optional(),
+	notes: z.string().optional(),
+	trailsPoints: z.number().positive().optional(),
+	ledaId: z.number().positive().optional(),
+	trailsDate: z.string().optional(),
+});
+
+const formContainerStyle =
+	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+
+export default function TrailsDateEditForm({
+	rowData,
+	handleRefresh,
+	index,
+}: {
+	rowData: TrailsDateData;
+	handleRefresh: (index: string) => void;
+	index: string;
+}) {
+	const formRef = React.useRef<HTMLFormElement>(null);
+	const form = useForm<z.infer<typeof TrailsDateDataFormSchema>>({
+		resolver: zodResolver(TrailsDateDataFormSchema),
+		defaultValues: {
+			singlesPlace: rowData.singlesPlace || undefined,
+			doublesPlace: rowData.doublesPlace || undefined,
+			trailsPoints: rowData.trailsPoints || undefined,
+			notes: rowData.notes || "",
+		},
+	});
+
+	if (!rowData) {
+		return <div>No place type data available.</div>;
+	}
+
+	async function onSubmit(values: z.infer<typeof TrailsDateDataFormSchema>) {
+		values.ledaId = rowData.ledaId;
+		values.trailsDate = rowData.trailsDate;
+		values.singlesPlace = values.singlesPlace
+			? Number(values.singlesPlace)
+			: undefined;
+		values.doublesPlace = values.doublesPlace
+			? Number(values.doublesPlace)
+			: undefined;
+		try {
+			const response = await fetch(trailsRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+
+			const results = await response.json();
+			toast.success("Successfully updated the form!");
+
+			// Reset form and state
+			form.reset();
+			handleRefresh(index);
+			console.log("Form updated successfully!", results);
+		} catch (error) {
+			console.error("Form update error", error);
+			toast.error(
+				`Failed to update the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		}
+	}
+
+	return (
+		<Form {...form}>
+			<form
+				onSubmit={form.handleSubmit(onSubmit)}
+				className="space-y-4 mx-auto"
+				ref={formRef}
+				// Prevent form from reloading the page
+				onSubmitCapture={(e) => e.preventDefault()}
+			>
+				<div className="flex space-x-4">
+					{/* Place Type Information Section */}
+					<div className={formContainerStyle}>
+						<FormField
+							control={form.control}
+							name="trailsPoints"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Trails Points *</FormLabel>
+									<FormControl>
+										<Input
+											{...field}
+											type="number"
+											value={field.value ?? ""}
+											onChange={(e) => {
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="singlesPlace"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Singles Place *</FormLabel>
+									<FormControl>
+										<Input
+											{...field}
+											type="number"
+											value={field.value ?? ""}
+											onChange={(e) => {
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="doublesPlace"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Doubles Place *</FormLabel>
+									<FormControl>
+										<Input
+											{...field}
+											type="number"
+											value={field.value ?? ""}
+											onChange={(e) => {
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="notes"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Notes</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder="Any Notes Here..."
+											{...field}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				</div>
+				<div className="flex items-center justify-center">
+					<Button type="submit" variant={"outline"}>
+						Update
+					</Button>
+				</div>
+			</form>
+		</Form>
+	);
+}

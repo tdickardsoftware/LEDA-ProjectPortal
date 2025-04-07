@@ -23,11 +23,12 @@ import PhoneNumberInput from "@/components/ui/phone-number-input";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
-import SeasonCodeSelector from "@/components/ui/season-code-selector";
+import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
-import { Player, PlayerMemberInfo } from "@/lib/definitions";
+import { PlayerMemberInfo } from "@/lib/definitions";
+import { Tab } from "@headlessui/react";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -92,21 +93,77 @@ export default function PlayerEditInformationForm({
 	onClose,
 	onRefresh,
 	rowData,
+	handleEdit,
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	rowData: Player;
+	rowData: PlayerMemberInfo;
+	handleEdit?: () => void;
 }) {
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
 	const [formData, setFormData] = useState<PlayerMemberInfo>(
 		{} as PlayerMemberInfo
 	);
+	const [currentStep, setCurrentStep] = useState(0);
+
+	// Define the steps
+	const steps = [
+		{
+			name: "Personal Info",
+			fields: [
+				"firstName",
+				"middleInitial",
+				"lastName",
+				"gender",
+				"dateOfBirth",
+			],
+		},
+		{
+			name: "Contact Info",
+			fields: [
+				"addressOne",
+				"addressTwo",
+				"city",
+				"state",
+				"zip",
+				"email",
+				"phoneNumber",
+				"otherNumber",
+			],
+		},
+		{
+			name: "Membership Info",
+			fields: [
+				"ledaId",
+				"memberType",
+				"establishedDate",
+				"badStanding",
+				"badStandingReason",
+			],
+		},
+		{
+			name: "Additional Info",
+			fields: [
+				"lifetimeMember",
+				"lifetimeMemberReason",
+				"takeOffMailing",
+				"mailStandings",
+				"formOnFile",
+				"needsMemberCard",
+				"inactiveDate",
+				"lastMembershipFeePayment",
+				"lastTrailsDate",
+				"cannotBeCaptain",
+			],
+		},
+	];
 
 	const formRef = React.useRef<HTMLFormElement>(null);
 	const form = useForm<z.infer<typeof playerInfoSchema>>({
 		resolver: zodResolver(playerInfoSchema),
+		mode: "onChange",
 		defaultValues: {
 			firstName: formData.firstName || "",
 			middleInitial: formData.middleInitial || "",
@@ -147,6 +204,33 @@ export default function PlayerEditInformationForm({
 		},
 	});
 
+	// Handle step navigation
+	const nextStep = async () => {
+		const currentStepFields = steps[currentStep].fields;
+
+		// Validate only the fields in the current step
+		const result = await form.trigger(
+			currentStepFields as (keyof z.infer<typeof playerInfoSchema>)[]
+		);
+
+		if (result) {
+			if (currentStep < steps.length - 1) {
+				setCurrentStep(currentStep + 1);
+			} else {
+				// If we're on the last step, submit the form
+				form.handleSubmit(onSubmit)();
+			}
+		}
+	};
+
+	const prevStep = () => {
+		if (currentStep > 0) {
+			setCurrentStep(currentStep - 1);
+		} else {
+			onClose();
+		}
+	};
+
 	useEffect(() => {
 		if (!rowData) {
 			return;
@@ -185,6 +269,9 @@ export default function PlayerEditInformationForm({
 					? new Date(data.lastTrailsDate).toISOString().split("T")[0]
 					: undefined,
 			}); // Set form values to the retrieved data
+
+			setBadStandingStatus(data.badStanding || false);
+			setLifetimeMemberStatus(data.lifetimeMember || false);
 		};
 		fetchData();
 	}, [rowData, form]);
@@ -241,280 +328,354 @@ export default function PlayerEditInformationForm({
 				// Prevent form from reloading the page
 				onSubmitCapture={(e) => e.preventDefault()}
 			>
-				<div className="flex space-x-4">
-					{/* Player Information Section */}
-					<div className={formContainerStyle}>
-						<h1>
-							Player Information for LEDA ID #{rowData.ledaId}
-						</h1>
-						<div className="flex space-x-4">
-							<InputDefault
-								control={form.control}
-								name="firstName"
-								label="First Name *"
-							/>
-							<InputDefault
-								control={form.control}
-								name="middleInitial"
-								label="Middle Initial"
-								customClass="w-10"
-							/>
-							<InputDefault
-								control={form.control}
-								name="lastName"
-								label="Last Name *"
-							/>
-						</div>
-						<GenderSelector control={form.control} name="gender" />
-						<InputDefault
-							control={form.control}
-							name="dateOfBirth"
-							label="Date of Birth"
-							type="date"
-						/>
-						<InputDefault
-							control={form.control}
-							name="addressOne"
-							label="Address One *"
-						/>
-						<InputDefault
-							control={form.control}
-							name="addressTwo"
-							label="Address Two"
-						/>
-						<div className="flex space-x-4">
-							<InputDefault
-								control={form.control}
-								name="city"
-								label="City *"
-							/>
-							<StatePicker name="state" control={form.control} />
-							<InputDefault
-								control={form.control}
-								name="zip"
-								label="Zip Code *"
-							/>
-						</div>
-						<InputDefault
-							control={form.control}
-							name="email"
-							label="Email *"
-							type="email"
-						/>
-						<PhoneNumberInput
-							control={form.control}
-							name="phoneNumber"
-							label="Phone Number *"
-						/>
-						<PhoneNumberInput
-							control={form.control}
-							name="otherNumber"
-							label="Other Number"
-						/>
-					</div>
-
-					<div>
-						<hr className="w-px h-full my-0 bg-gray-300 border-0 dark:bg-gray-700" />
-					</div>
-
-					{/* Membership Info Section */}
-					<div className={formContainerStyle}>
-						<h1>Membership Info</h1>
-						<FormField
-							control={form.control}
-							name="ledaId"
-							render={({ field }) => (
-								<FormItem>
-									<FormControl>
-										<Input
-											placeholder="LEDA ID #"
-											{...field}
-											disabled
-											className={inputWidth}
-											type="number"
-											onChange={(e) => {
-												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
-												);
-											}}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<PlayerTypeSelector
-							control={form.control}
-							name="memberType"
-							label="Member Type"
-						/>
-						<InputDefault
-							control={form.control}
-							name="establishedDate"
-							label="Established Date *"
-							type="date"
-						/>
-						{/* Bad Standing Checkbox */}
-						<FormField
-							control={form.control}
-							name="badStanding"
-							render={({ field }) => (
-								<FormItem>
-									<Label
-										className="whitespace-nowrap pr-2"
-										htmlFor="badStandingCheckbox"
+				<Tab.Group
+					selectedIndex={currentStep}
+					onChange={setCurrentStep}
+				>
+					<div className="mb-6">
+						<div className="flex border-b border-gray-200">
+							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
+								{steps.map((step, index) => (
+									<Tab
+										key={index}
+										className={({ selected }) =>
+											`w-full py-2.5 text-sm font-medium leading-5 
+											${
+												selected
+													? "border-b-2 border-blue-500 text-blue-600"
+													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+											} ${
+												index < currentStep
+													? "text-green-500"
+													: ""
+											}`
+										}
 									>
-										Bad Standing
-									</Label>
-									<FormControl>
-										<Checkbox
-											id="badStandingCheckbox"
-											checked={field.value}
-											onCheckedChange={(
-												checked: boolean
-											) => {
-												field.onChange(checked);
-												setBadStandingStatus(checked);
-											}}
-											className={checkboxWidth}
-										/>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="badStandingReason"
-							render={({ field }) => (
-								<FormItem>
-									<FormControl>
-										<Input
-											placeholder="Reasoning..."
-											{...field}
-											disabled={!badStandingStatus}
-											className="w-fit"
-											type="text"
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						{/* Lifetime Member Checkbox */}
-						<FormField
-							control={form.control}
-							name="lifetimeMember"
-							render={({ field }) => (
-								<FormItem>
-									<Label
-										className="whitespace-nowrap pr-2"
-										htmlFor="lifetimeMemberCheckbox"
-									>
-										Lifetime Member
-									</Label>
-									<FormControl>
-										<Checkbox
-											id="lifetimeMemberCheckbox"
-											checked={field.value}
-											onCheckedChange={(
-												checked: boolean
-											) => {
-												field.onChange(checked);
-												setLifetimeMemberStatus(
-													checked
-												);
-											}}
-											className={checkboxWidth}
-										/>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="lifetimeMemberReason"
-							render={({ field }) => (
-								<FormItem>
-									<FormControl>
-										<Input
-											placeholder="Reasoning..."
-											{...field}
-											disabled={!lifetimeMemberStatus}
-											className="w-fit"
-											type="text"
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						{/* Take Off Mailing Checkbox */}
-						<CheckboxDefault
-							control={form.control}
-							name="takeOffMailing"
-							label="Take Off Mailing"
-							className={checkboxWidth}
-						/>
-
-						{/* Mail Standings Checkbox */}
-						<CheckboxDefault
-							control={form.control}
-							name="mailStandings"
-							label="Mail Standings"
-							className={checkboxWidth}
-						/>
-
-						{/* Form on File Checkbox */}
-						<CheckboxDefault
-							control={form.control}
-							name="formOnFile"
-							label="Form on File"
-							className={checkboxWidth}
-						/>
-
-						{/* Needs Member Card Checkbox */}
-						<CheckboxDefault
-							control={form.control}
-							name="needsMemberCard"
-							label="Needs Member Card"
-							className={checkboxWidth}
-						/>
-
-						{/* Cannot be Captain Checkbox */}
-						<CheckboxDefault
-							control={form.control}
-							name="cannotBeCaptain"
-							label="Cannot be Captain"
-							className={checkboxWidth}
-						/>
-						<InputDefault
-							control={form.control}
-							name="inactiveDate"
-							label="Inactive Date"
-							type="date"
-						/>
-						<SeasonCodeSelector
-							control={form.control}
-							name="lastMembershipFeePayment"
-							label="Last Membership Fee Payment *"
-						/>
-						<InputDefault
-							control={form.control}
-							name="lastTrailsDate"
-							label="Last Trails Date"
-							type="date"
-						/>
+										<span className="flex items-center justify-center">
+											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
+												{index < currentStep
+													? "✓"
+													: index + 1}
+											</span>
+											{step.name}
+										</span>
+									</Tab>
+								))}
+							</Tab.List>
+						</div>
 					</div>
-				</div>
+
+					<Tab.Panels>
+						{/* Step 1: Personal Info */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>
+									Personal Information for LEDA ID #
+									{rowData.ledaId}
+								</h1>
+								<div className="flex space-x-4">
+									<InputDefault
+										control={form.control}
+										name="firstName"
+										label="First Name *"
+									/>
+									<InputDefault
+										control={form.control}
+										name="middleInitial"
+										label="Middle Initial"
+										customClass="w-10"
+									/>
+									<InputDefault
+										control={form.control}
+										name="lastName"
+										label="Last Name *"
+									/>
+								</div>
+								<GenderSelector
+									control={form.control}
+									name="gender"
+								/>
+								<InputDefault
+									control={form.control}
+									name="dateOfBirth"
+									label="Date of Birth"
+									type="date"
+								/>
+							</div>
+						</Tab.Panel>
+
+						{/* Step 2: Contact Info */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>Contact Information</h1>
+								<InputDefault
+									control={form.control}
+									name="addressOne"
+									label="Address One *"
+								/>
+								<InputDefault
+									control={form.control}
+									name="addressTwo"
+									label="Address Two"
+								/>
+								<div className="flex space-x-4">
+									<InputDefault
+										control={form.control}
+										name="city"
+										label="City *"
+									/>
+									<StatePicker
+										name="state"
+										control={form.control}
+									/>
+									<InputDefault
+										control={form.control}
+										name="zip"
+										label="Zip Code *"
+									/>
+								</div>
+								<InputDefault
+									control={form.control}
+									name="email"
+									label="Email *"
+									type="email"
+								/>
+								<PhoneNumberInput
+									control={form.control}
+									name="phoneNumber"
+									label="Phone Number *"
+								/>
+								<PhoneNumberInput
+									control={form.control}
+									name="otherNumber"
+									label="Other Number"
+								/>
+							</div>
+						</Tab.Panel>
+
+						{/* Step 3: Membership Info */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>Membership Information</h1>
+								<FormField
+									control={form.control}
+									name="ledaId"
+									render={({ field }) => (
+										<FormItem>
+											<FormControl>
+												<Input
+													placeholder="LEDA ID #"
+													{...field}
+													disabled
+													className={inputWidth}
+													type="number"
+													onChange={(e) => {
+														field.onChange(
+															e.target.value
+																? Number(
+																		e.target
+																			.value
+																  )
+																: undefined
+														);
+													}}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<PlayerTypeSelector
+									control={form.control}
+									name="memberType"
+									label="Member Type"
+								/>
+								<InputDefault
+									control={form.control}
+									name="establishedDate"
+									label="Established Date *"
+									type="date"
+								/>
+								{/* Bad Standing Checkbox */}
+								<FormField
+									control={form.control}
+									name="badStanding"
+									render={({ field }) => (
+										<FormItem>
+											<Label
+												className="whitespace-nowrap pr-2"
+												htmlFor="badStandingCheckbox"
+											>
+												Bad Standing
+											</Label>
+											<FormControl>
+												<Checkbox
+													id="badStandingCheckbox"
+													checked={field.value}
+													onCheckedChange={(
+														checked: boolean
+													) => {
+														field.onChange(checked);
+														setBadStandingStatus(
+															checked
+														);
+													}}
+													className={checkboxWidth}
+												/>
+											</FormControl>
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name="badStandingReason"
+									render={({ field }) => (
+										<FormItem>
+											<FormControl>
+												<Input
+													placeholder="Reasoning..."
+													{...field}
+													disabled={
+														!badStandingStatus
+													}
+													className="w-fit"
+													type="text"
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</div>
+						</Tab.Panel>
+
+						{/* Step 4: Additional Info */}
+						<Tab.Panel>
+							<div className={formContainerStyle}>
+								<h1>Additional Information</h1>
+								{/* Lifetime Member Checkbox */}
+								<FormField
+									control={form.control}
+									name="lifetimeMember"
+									render={({ field }) => (
+										<FormItem>
+											<Label
+												className="whitespace-nowrap pr-2"
+												htmlFor="lifetimeMemberCheckbox"
+											>
+												Lifetime Member
+											</Label>
+											<FormControl>
+												<Checkbox
+													id="lifetimeMemberCheckbox"
+													checked={field.value}
+													onCheckedChange={(
+														checked: boolean
+													) => {
+														field.onChange(checked);
+														setLifetimeMemberStatus(
+															checked
+														);
+													}}
+													className={checkboxWidth}
+												/>
+											</FormControl>
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name="lifetimeMemberReason"
+									render={({ field }) => (
+										<FormItem>
+											<FormControl>
+												<Input
+													placeholder="Reasoning..."
+													{...field}
+													disabled={
+														!lifetimeMemberStatus
+													}
+													className="w-fit"
+													type="text"
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								{/* Take Off Mailing Checkbox */}
+								<CheckboxDefault
+									control={form.control}
+									name="takeOffMailing"
+									label="Take Off Mailing"
+									className={checkboxWidth}
+								/>
+
+								{/* Mail Standings Checkbox */}
+								<CheckboxDefault
+									control={form.control}
+									name="mailStandings"
+									label="Mail Standings"
+									className={checkboxWidth}
+								/>
+
+								{/* Form on File Checkbox */}
+								<CheckboxDefault
+									control={form.control}
+									name="formOnFile"
+									label="Form on File"
+									className={checkboxWidth}
+								/>
+
+								{/* Needs Member Card Checkbox */}
+								<CheckboxDefault
+									control={form.control}
+									name="needsMemberCard"
+									label="Needs Member Card"
+									className={checkboxWidth}
+								/>
+
+								{/* Cannot be Captain Checkbox */}
+								<CheckboxDefault
+									control={form.control}
+									name="cannotBeCaptain"
+									label="Cannot be Captain"
+									className={checkboxWidth}
+								/>
+								<InputDefault
+									control={form.control}
+									name="inactiveDate"
+									label="Inactive Date"
+									type="date"
+								/>
+								<SeasonCodeSelector
+									control={form.control}
+									name="lastMembershipFeePayment"
+									label="Last Membership Fee Payment *"
+								/>
+								<InputDefault
+									control={form.control}
+									name="lastTrailsDate"
+									label="Last Trails Date"
+									type="date"
+								/>
+							</div>
+						</Tab.Panel>
+					</Tab.Panels>
+				</Tab.Group>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
-						Back
+					<Button type="button" onClick={prevStep}>
+						{currentStep === 0
+							? handleEdit
+								? "Edit"
+								: "Back"
+							: "Back"}
 					</Button>
-					<Button type="submit">Update</Button>
+					<Button type="button" onClick={nextStep}>
+						{currentStep === steps.length - 1 ? "Update" : "Next"}
+					</Button>
 				</div>
 			</form>
 		</Form>

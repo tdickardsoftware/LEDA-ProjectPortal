@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.leda_membership_info
 (
     id bigint NOT NULL DEFAULT nextval('leda_membership_info_seq'::regclass),
     "ledaId" bigint,
-    "establishDate" date NOT NULL,
+    "establishedDate" date NOT NULL,
     "badStanding" boolean NOT NULL,
     "badStandingReason" text COLLATE pg_catalog."default",
     "takeOffMailing" boolean NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.leda_membership_info
     "lastMembershipFeePayment" text COLLATE pg_catalog."default" NOT NULL,
     "lastTrailsDate" date,
     "memberType" text COLLATE pg_catalog."default" NOT NULL,
-    "cannotBeCaptainin" boolean NOT NULL,
+    "cannotBeCaptain" boolean NOT NULL,
     "lifetimeMember" boolean NOT NULL,
     "lifetimeMemberReason" text COLLATE pg_catalog."default",
     CONSTRAINT leda_membership_info_pkey PRIMARY KEY (id),
