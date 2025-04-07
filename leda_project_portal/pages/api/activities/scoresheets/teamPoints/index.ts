@@ -12,14 +12,7 @@ export default async function handler(
 
         if (data.weekNum != 1){
             try {
-                const queryText = `SELECT "totalPoints" from public.leda_weekly_team_scores where "seasonCode" = $1 and "weekNum" = $2 and "teamLedaId" = $3`;
-                const values = [data.seasonCode, data.weekNum-1, data.ledaId];
-                const result = await query<TeamPoints>(queryText, values);
-                if (result.rows.length !== 0) {
-                    data.prevTotalPoints = result.rows[0].totalPoints;
-                } else {
-                    data.prevTotalPoints = 0;
-                }
+                data.prevTotalPoints = await findPrevTotalPoints(data.seasonCode, data.weekNum, data.ledaId);
             } catch (error) {
                 res.status(500).json({ message: "Failed to fetch previous weekly teams scores information", error });
             }
@@ -63,6 +56,46 @@ export default async function handler(
             } catch (error) {
                 res.status(500).json({ message: "Failed to fetch weekly team scores information", error });
             }
+        } else if (req.query.seasonCode && req.query.totalWeeks && req.query.teamLedaIds) {
+            const seasonCode = req.query.seasonCode;
+            const totalWeeks = req.query.totalWeeks;
+            
+            // Fix for the teamLedaIds type issue
+            let teamLedaIds: string[] = [];
+            if (Array.isArray(req.query.teamLedaIds)) {
+                teamLedaIds = req.query.teamLedaIds;
+            } else if (typeof req.query.teamLedaIds === 'string') {
+                // If it's a comma-separated string, split it
+                teamLedaIds = req.query.teamLedaIds.includes(',') 
+                    ? req.query.teamLedaIds.split(',') 
+                    : [req.query.teamLedaIds];
+            }
+            
+            const result = await query<TeamPoints>(`
+                SELECT 
+                    ranked_scores."teamLedaId", 
+                    ranked_scores."totalPoints", 
+                    tiers."place", 
+                    tiers."amount"
+                FROM (
+                    SELECT 
+                        scores."teamLedaId", 
+                        scores."totalPoints",
+                        ROW_NUMBER() OVER (ORDER BY scores."totalPoints" DESC) as "rank"
+                    FROM public.leda_weekly_team_scores AS scores
+                    WHERE scores."seasonCode" = $1 
+                    AND scores."weekNum" = $2 
+                    AND scores."teamLedaId" IN (${teamLedaIds.map((id) => `'${id}'`).join(",")})
+                ) as ranked_scores
+                LEFT JOIN maint.leda_maint_payout_tiers AS tiers
+                ON ranked_scores."rank" = tiers."place"
+                ORDER BY ranked_scores."totalPoints" DESC
+            `, [seasonCode as string, totalWeeks as string]);
+            if (result.rows.length !== 0) {
+                res.status(200).json(result.rows);
+            } else {
+                res.status(404).json({ message: "No weekly team scores information found for the specified season code and team IDs" });
+            }
         } else if (req.query.seasonCode) {
             const seasonCode = req.query.seasonCode;
             const result = await query<TeamPoints>(`SELECT * FROM public.leda_weekly_team_scores WHERE "seasonCode" = $1`, [seasonCode as string]);
@@ -75,6 +108,30 @@ export default async function handler(
     } else {
         res.status(405).json({ message: "Method Not Allowed" });
     }
+}
+
+/**
+ * Recursively searches for the most recent previous week's points
+ * Handles cases where teams might have bye weeks with no records
+ */
+async function findPrevTotalPoints(seasonCode: string, currentWeek: number, teamLedaId: number): Promise<number> {
+    // Base case: if we've checked all the way to week 1 and found nothing
+    if (currentWeek <= 1) {
+        return 0;
+    }
+    
+    // Try to fetch the previous week
+    const queryText = `SELECT "totalPoints" from public.leda_weekly_team_scores where "seasonCode" = $1 and "weekNum" = $2 and "teamLedaId" = $3`;
+    const values = [seasonCode, currentWeek - 1, teamLedaId];
+    const result = await query<TeamPoints>(queryText, values);
+    
+    // If we found data for the previous week, return those points
+    if (result.rows.length !== 0) {
+        return result.rows[0].totalPoints;
+    }
+    
+    // Otherwise, recursively check the week before
+    return findPrevTotalPoints(seasonCode, currentWeek - 1, teamLedaId);
 }
 
 /**

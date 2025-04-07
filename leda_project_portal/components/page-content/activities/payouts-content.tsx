@@ -16,6 +16,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FolderTabMed } from "@/components/ui/folder-tab";
+import AdjustmentForm from "@/components/forms/activities/adjustment-form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ManageGlobalAdjustments from "@/components/forms/activities/manage-global-adjustments";
+import { Pencil, X } from "lucide-react";
 
 // Define types for roster data structure
 type TeamInfo = {
@@ -50,7 +54,7 @@ type PayoutTeamData = {
     place: number | null;
     amount: number;
     adjustmentAmount: number;
-    adjustments: Record<string, AdjustmentItem> | null;
+    adjustments: { [adjustmentId: string]: AdjustmentItem; } | undefined;
 };
 
 type PayoutSubdivisionData = {
@@ -72,12 +76,43 @@ export default function PayoutsContent() {
     const [payoutsData, setPayoutsData] = useState<PayoutsData>({});
     const [loading, setLoading] = useState(false);
     const [weekCount , setWeekCount] = useState<number>(0);
-    const [completedScoresheetCount, setCompletedScoresheetCount] = useState<number>(14);
+    const [completedScoresheetCount, setCompletedScoresheetCount] = useState<number>(0);
     
     // State for accordion open/closed status
     const [openDivisions, setOpenDivisions] = useState<string[]>([]);
     const [openSubdivisions, setOpenSubdivisions] = useState<string[]>([]);
     const [openTeams, setOpenTeams] = useState<string[]>([]);
+    
+    // Dialog state for local adjustments
+    const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false);
+    const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+    const [selectedTeamName, setSelectedTeamName] = useState<string>("");
+    
+    // Dialog state for global adjustments
+    const [globalAdjustmentDialogOpen, setGlobalAdjustmentDialogOpen] = useState(false);
+    const [manageGlobalAdjustmentsDialogOpen, setManageGlobalAdjustmentsDialogOpen] = useState(false);
+
+    const [hoveredAdjustmentId, setHoveredAdjustmentId] = useState<string | null>(null);
+    const [highlightedAdjustmentId, setHighlightedAdjustmentId] = useState<string | null>(null);
+    
+    // Add state for team adjustment editing
+    const [editTeamAdjustmentDialogOpen, setEditTeamAdjustmentDialogOpen] = useState(false);
+    const [editingTeamAdjustmentId, setEditingTeamAdjustmentId] = useState<string | null>(null);
+    const [editingTeamAdjustmentData, setEditingTeamAdjustmentData] = useState<{
+        teamId: string;
+        division: string;
+        subdivision: string;
+        adjustment: AdjustmentItem;
+    } | null>(null);
+
+    // Add state for team adjustment deletion confirmation
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [deletingTeamAdjustmentData, setDeletingTeamAdjustmentData] = useState<{
+        teamId: string;
+        division: string;
+        subdivision: string;
+        adjustmentId: string;
+    } | null>(null);
 
     // Create payouts data when divisions data changes
     useEffect(() => {
@@ -186,7 +221,7 @@ export default function PayoutsContent() {
                         if (completedScoresheetCountResult.status === 200) {
                             const completedScoresheetData = await completedScoresheetCountResult.json();
                             if (completedScoresheetData){
-                                //setCompletedScoresheetCount(completedScoresheetData.count)
+                                setCompletedScoresheetCount(completedScoresheetData.count)
                             }
                         }
                         
@@ -206,17 +241,253 @@ export default function PayoutsContent() {
         [seasonCode]
     );
 
+
+    const handleAdjustment = (teamId: string, amount: number, type: boolean, notes: string | undefined, global: boolean) => {
+        // Update payouts data with the new adjustment
+        const newPayoutsData = { ...payoutsData };
+        
+        // Ensure amount is formatted with 2 decimal places
+        const formattedAmount = Number(amount.toFixed(2));
+        
+        if (global) {
+            // Apply to all teams across all divisions and subdivisions
+            Object.keys(newPayoutsData).forEach(division => {
+                Object.keys(newPayoutsData[division]).forEach(subdivision => {
+                    Object.keys(newPayoutsData[division][subdivision]).forEach(teamId => {
+                        // Create adjustments object if it doesn't exist
+                        if (!newPayoutsData[division][subdivision][teamId].adjustments) {
+                            newPayoutsData[division][subdivision][teamId].adjustments = {};
+                        }
+                        
+                        // Add the adjustment with a unique ID but ensure it's the same ID across all teams
+                        const adjustmentId = `global_adj_${Date.now()}`;
+                        newPayoutsData[division][subdivision][teamId].adjustments![adjustmentId] = {
+                            global,
+                            adjustmentAmount: formattedAmount * (type ? 1 : -1), // Positive for credit, negative for debit
+                            credit: type,
+                            notes: notes || "Global adjustment made by user"
+                        };
+                        
+                        // Update total adjustment amount
+                        const newAdjustmentAmount = formattedAmount * (type ? 1 : -1);
+                        newPayoutsData[division][subdivision][teamId].adjustmentAmount += newAdjustmentAmount;
+                        
+                        // Also ensure the total adjustment amount is formatted
+                        newPayoutsData[division][subdivision][teamId].adjustmentAmount = 
+                            Number(newPayoutsData[division][subdivision][teamId].adjustmentAmount.toFixed(2));
+                    });
+                });
+            });
+            
+            toast.success(`Global ${type ? 'credit' : 'debit'} adjustment applied to all teams`);
+        } else {
+            // Find the division and subdivision for this specific team
+            Object.keys(newPayoutsData).forEach(division => {
+                Object.keys(newPayoutsData[division]).forEach(subdivision => {
+                    if (newPayoutsData[division][subdivision][teamId]) {
+                        // Create adjustments object if it doesn't exist
+                        if (!newPayoutsData[division][subdivision][teamId].adjustments) {
+                            newPayoutsData[division][subdivision][teamId].adjustments = {};
+                        }
+                        
+                        // Add the adjustment with a unique ID
+                        const adjustmentId = `team_adj_${Date.now()}`;
+                        newPayoutsData[division][subdivision][teamId].adjustments![adjustmentId] = {
+                            global,
+                            adjustmentAmount: formattedAmount * (type ? 1 : -1), // Positive for credit, negative for debit
+                            credit: type,
+                            notes: notes || "Adjustment made by user"
+                        };
+                        
+                        // Update total adjustment amount
+                        const newAdjustmentAmount = formattedAmount * (type ? 1 : -1);
+                        newPayoutsData[division][subdivision][teamId].adjustmentAmount += newAdjustmentAmount;
+                        
+                        // Also ensure the total adjustment amount is formatted
+                        newPayoutsData[division][subdivision][teamId].adjustmentAmount = 
+                            Number(newPayoutsData[division][subdivision][teamId].adjustmentAmount.toFixed(2));
+                    }
+                });
+            });
+            
+            toast.success(`${type ? 'Credit' : 'Debit'} adjustment added to team successfully`);
+        }
+        
+        setPayoutsData(newPayoutsData);
+    };
+
+    // Handle removing a global adjustment
+    const handleRemoveGlobalAdjustment = (adjustmentId: string) => {
+        const newPayoutsData = { ...payoutsData };
+        
+        // Remove the adjustment from all teams
+        Object.keys(newPayoutsData).forEach(division => {
+            Object.keys(newPayoutsData[division]).forEach(subdivision => {
+                Object.keys(newPayoutsData[division][subdivision]).forEach(teamId => {
+                    const team = newPayoutsData[division][subdivision][teamId];
+                    
+                    if (team.adjustments && team.adjustments[adjustmentId]) {
+                        // Get the adjustment amount to subtract from the total
+                        const adjustmentAmount = team.adjustments[adjustmentId].adjustmentAmount;
+                        
+                        // Subtract the adjustment amount from the team's total adjustment
+                        team.adjustmentAmount -= adjustmentAmount;
+                        
+                        // Remove the adjustment from the team
+                        delete team.adjustments[adjustmentId];
+                    }
+                });
+            });
+        });
+        
+        setPayoutsData(newPayoutsData);
+    };
+
+    // Handle editing a team-specific adjustment
+    const handleEditTeamAdjustment = (
+        teamId: string, 
+        division: string, 
+        subdivision: string, 
+        adjustmentId: string
+    ) => {
+        const adjustment = payoutsData[division]?.[subdivision]?.[teamId]?.adjustments?.[adjustmentId];
+        
+        if (adjustment && !adjustment.global) {
+            setEditingTeamAdjustmentId(adjustmentId);
+            setEditingTeamAdjustmentData({
+                teamId,
+                division,
+                subdivision,
+                adjustment
+            });
+            setEditTeamAdjustmentDialogOpen(true);
+        }
+    };
+    
+    // Show confirmation dialog before removing team adjustment
+    const confirmRemoveTeamAdjustment = (
+        teamId: string, 
+        division: string, 
+        subdivision: string, 
+        adjustmentId: string
+    ) => {
+        if (window.confirm("This will remove the adjustment from this team. This action cannot be undone.")) {
+            // Don't set state and then immediately use it - directly execute with the values we already have
+            executeRemoveTeamAdjustment(teamId, division, subdivision, adjustmentId);
+        }
+    };
+    
+    // Execute team adjustment deletion after confirmation
+    const executeRemoveTeamAdjustment = (
+        teamId?: string, 
+        division?: string, 
+        subdivision?: string, 
+        adjustmentId?: string
+    ) => {
+        // Use either the provided parameters or the state, but not both
+        const tid = teamId || deletingTeamAdjustmentData?.teamId;
+        const div = division || deletingTeamAdjustmentData?.division;
+        const sub = subdivision || deletingTeamAdjustmentData?.subdivision;
+        const adjId = adjustmentId || deletingTeamAdjustmentData?.adjustmentId;
+        
+        if (!tid || !div || !sub || !adjId) return;
+        
+        const newPayoutsData = { ...payoutsData };
+        
+        if (newPayoutsData[div]?.[sub]?.[tid]?.adjustments?.[adjId]) {
+            // Get the adjustment amount to subtract from the total
+            const adjustmentAmount = newPayoutsData[div][sub][tid].adjustments![adjId].adjustmentAmount;
+            
+            // Subtract the adjustment amount from the team's total adjustment
+            newPayoutsData[div][sub][tid].adjustmentAmount -= adjustmentAmount;
+            
+            // Remove the adjustment from the team
+            delete newPayoutsData[div][sub][tid].adjustments![adjId];
+            
+            setPayoutsData(newPayoutsData);
+            toast.success("Team adjustment removed successfully");
+        }
+    };
+
+    const handleLocalAdjustmentClick = (teamId: string, teamName: string) => {
+        setSelectedTeamId(teamId);
+        setSelectedTeamName(teamName);
+        setAdjustmentDialogOpen(true);
+    };
+
+    const handleGlobalAdjustmentClick = () => {
+        setGlobalAdjustmentDialogOpen(true);
+    };
+
+    const handleManageGlobalAdjustmentsClick = () => {
+        setManageGlobalAdjustmentsDialogOpen(true);
+    };
+
+    const handleManageGlobalAdjustmentClick = (adjustmentId: string) => {
+        setHighlightedAdjustmentId(adjustmentId);
+        setManageGlobalAdjustmentsDialogOpen(true);
+    };
+
+    const handleCalculatePayoutsClick = async () => {
+        const teamIdsBySubdivision: { [subdivision: string]: string[] } = {};
+        const newPayoutsData = { ...payoutsData };
+
+        Object.keys(divisionsData).forEach((division) => {
+            Object.keys(divisionsData[division]?.subdivisions || {}).forEach((subdivision) => {
+                teamIdsBySubdivision[subdivision] = Object.keys(
+                    divisionsData[division]?.subdivisions[subdivision] || {}
+                ).map((team) => divisionsData[division]?.subdivisions[subdivision][team]?.teamId);
+            });
+        });
+
+        for (const subdivision of Object.keys(teamIdsBySubdivision)) {
+            try {
+                const response = await fetch(`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${weekCount}&teamLedaIds=${teamIdsBySubdivision[subdivision]}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+                if (!response.ok) {
+                    throw new Error("Failed to fetch team points data");
+                }
+
+                const data = await response.json();
+                console.log("Team points data:", data);
+                if (data && Array.isArray(data)) {
+                    // Correctly map fetched data to payoutsData
+                    data.forEach((teamData: { teamLedaId: string; place: string; amount: string }) => {
+                        Object.keys(divisionsData).forEach((division) => {
+                            Object.keys(divisionsData[division]?.subdivisions || {}).forEach((subdivisionKey) => {
+                                if (newPayoutsData[division]?.[subdivisionKey]?.[teamData.teamLedaId]) {
+                                    newPayoutsData[division][subdivisionKey][teamData.teamLedaId].place = parseInt(teamData.place, 10) || null;
+                                    newPayoutsData[division][subdivisionKey][teamData.teamLedaId].amount = parseFloat(teamData.amount) || 0;
+                                }
+                            });
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching team points:", error);
+                toast.error("Failed to retrieve team standings");
+            }
+        }
+        console.log(newPayoutsData)
+        setPayoutsData(newPayoutsData);
+        toast.success("Payouts calculated successfully");
+    };
+
     return (
-        <div className="flex flex-col max-w-[65vw]">
+        <div className="flex flex-col max-w-[65vw] overflow-x-auto"> {/* Added overflow-x-auto for horizontal scrolling */}
             {loading ? (
                 <Spinner />
             ) : (
                 <>
                     <div className="flex flex-col mb-4 gap-2">
-                        <div className="flex justify-between items-start">
-                            <div className="flex justify-start items-end gap-4">
+                        <div className="flex flex-wrap justify-between items-start gap-4">
+                            <div className="flex flex-wrap justify-start items-end gap-4 pt-4"> {/* Added flex-wrap */}
                                 <FolderTabMed title="Season Code" className="w-fit self-end">
-                                    <div className="flex gap-4 items-center">
+                                    <div className="flex flex-wrap gap-4 items-center"> {/* Added flex-wrap */}
                                         <SeasonCodeSelector
                                             disabled={currentSeason}
                                             handleSelect={handleSeasonCodeSelect}
@@ -235,9 +506,9 @@ export default function PayoutsContent() {
                                     </div>
                                 </FolderTabMed>
                                 <FolderTabMed title="Global Adjustments" className="w-fit self-end">
-                                    <div className="flex gap-4 items-center">
-                                        <Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => {}}>Add Global Adjustment</Button>
-                                        <Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => {}}>Manage Global Adjustments</Button>
+                                    <div className="flex flex-wrap gap-4 items-center"> {/* Added flex-wrap */}
+                                        <Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => {handleGlobalAdjustmentClick()}}>Add Global Adjustment</Button>
+                                        <Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => {handleManageGlobalAdjustmentsClick()}}>Manage Global Adjustments</Button>
                                     </div>
                                 </FolderTabMed>
                                 <FolderTabMed title="Payouts" className="w-fit self-start">
@@ -249,8 +520,8 @@ export default function PayoutsContent() {
                                                         <div>
                                                             <Button
                                                                 variant="outline"
-                                                                className="relative w-full h-10 bg-gray-200 border-gray-300 text-gray-700 overflow-hidden rounded-full"
-                                                                onClick={() => {}}
+                                                                className="relative w-full h-10 bg-gray-200 border-gray-300 text-gray-700 overflow-hidden"
+                                                                onClick={() => {handleCalculatePayoutsClick()}}
                                                                 disabled={completedScoresheetCount !== weekCount}
                                                             >
                                                                 {completedScoresheetCount === weekCount ? (
@@ -301,7 +572,7 @@ export default function PayoutsContent() {
                                 type="multiple"
                                 value={openDivisions}
                                 onValueChange={setOpenDivisions}
-                                className="w-full mt-4"
+                                className="w-[65vw] mt-4"
                             >
                                 <AccordionItem value={`div-${division}`}>
                                     <AccordionTrigger>
@@ -313,7 +584,7 @@ export default function PayoutsContent() {
                                             type="multiple"
                                             value={openSubdivisions}
                                             onValueChange={setOpenSubdivisions}
-                                            className="w-full mt-2"
+                                            className="w-full mt-2 ml-6"
                                         >
                                             {Object.keys(
                                                 divisionsData[division]
@@ -333,35 +604,166 @@ export default function PayoutsContent() {
                                                             type="multiple"
                                                             value={openTeams}
                                                             onValueChange={setOpenTeams}
-                                                            className="w-full"
+                                                            className="w-full ml-6"
                                                         >
                                                             {Object.keys(
                                                                 divisionsData[division]
                                                                     ?.subdivisions[subdivision] || {}
-                                                            ).map((team, teamIndex) => (
-                                                                <AccordionItem 
-                                                                    key={teamIndex}
-                                                                    value={`team-${division}-${subdivision}-${team}`}
-                                                                    className="border-b border-gray-200"
-                                                                >
-                                                                    <AccordionTrigger>
-                                                                        <div className="flex justify-start items-center">
-                                                                            {team}{" "}
-                                                                            -{" "}
-                                                                            {
-                                                                                divisionsData[division]
-                                                                                    ?.subdivisions[subdivision][team]
-                                                                                    ?.teamName
-                                                                            }
-                                                                        </div>
-                                                                    </AccordionTrigger>
-                                                                    <AccordionContent>
-                                                                        <p className="text-gray-500 italic">
-                                                                            No adjustments found...
-                                                                        </p>
-                                                                    </AccordionContent>
-                                                                </AccordionItem>
-                                                            ))}
+                                                            )
+                                                            .map(team => {
+                                                                const teamInfo = divisionsData[division]?.subdivisions[subdivision][team];
+                                                                const teamId = teamInfo?.teamId;
+                                                                const place = payoutsData[division]?.[subdivision]?.[teamId]?.place;
+                                                                return { team, teamInfo, teamId, place: place || Number.MAX_SAFE_INTEGER }; // Use MAX_SAFE_INTEGER for teams without place
+                                                            })
+                                                            .sort((a, b) => a.place - b.place) // Sort by place (ascending)
+                                                            .map(({ team, teamInfo, teamId }, teamIndex) => {
+                                                                return (
+                                                                    <AccordionItem 
+                                                                        key={teamIndex}
+                                                                        value={`team-${division}-${subdivision}-${team}`}
+                                                                        className="border-b border-gray-200 group relative"
+                                                                    >
+                                                                        <AccordionTrigger className="flex justify-between items-center">
+                                                                            <div className="flex items-center gap-6">
+                                                                                <span className="text-left">
+                                                                                    {payoutsData[division]?.[subdivision]?.[teamId]?.place !== null ? (
+                                                                                        <span>
+                                                                                            <span className="font-semibold">{payoutsData[division][subdivision][teamId].place}</span>
+                                                                                            {" - "}
+                                                                                            <span>{team}</span>
+                                                                                            {" - "}
+                                                                                            <span>{teamInfo?.teamName}</span>
+                                                                                            {" - "}
+                                                                                            <span>Base Winnings: ${payoutsData[division][subdivision][teamId].amount.toFixed(2)}</span>
+                                                                                            {payoutsData[division][subdivision][teamId].adjustmentAmount !== 0 && (
+                                                                                                <>
+                                                                                                    {" - "}
+                                                                                                    <span>Winnings After Adjustments: ${(payoutsData[division][subdivision][teamId].amount + payoutsData[division][subdivision][teamId].adjustmentAmount).toFixed(2)}</span>
+                                                                                                </>
+                                                                                            )}
+                                                                                        </span>
+                                                                                    ) : (
+                                                                                        <span>{team} - {teamInfo?.teamName}</span>
+                                                                                    )}
+                                                                                </span>
+                                                                                <Button 
+                                                                                    variant="outline" 
+                                                                                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 border-gray-300 text-gray-700 text-xs"
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        handleLocalAdjustmentClick(teamId, teamInfo?.teamName);
+                                                                                    }}
+                                                                                >
+                                                                                    Add Adjustment
+                                                                                </Button>
+                                                                            </div>
+                                                                        </AccordionTrigger>
+                                                                        <AccordionContent>
+                                                                            {payoutsData[division]?.[subdivision]?.[teamId]?.adjustments &&
+                                                                             Object.keys(payoutsData[division][subdivision][teamId].adjustments || {}).length > 0 ? (
+                                                                                <div className="space-y-4">
+                                                                                    {/* Global Adjustments */}
+                                                                                    <div>
+                                                                                        <h4 className="font-semibold text-gray-700">Global Adjustments</h4>
+                                                                                        <div className="flex flex-wrap gap-2">
+                                                                                            {Object.entries(payoutsData[division][subdivision][teamId].adjustments || {})
+                                                                                                .filter(([, adjustment]) => adjustment.global)
+                                                                                                .map(([adjId, adjustment]) => (
+                                                                                                    <div
+                                                                                                        key={adjId}
+                                                                                                        className="p-2 border rounded-md w-fit relative group"
+                                                                                                        onMouseEnter={() => setHoveredAdjustmentId(adjId)}
+                                                                                                        onMouseLeave={() => setHoveredAdjustmentId(null)}
+                                                                                                    >
+                                                                                                        <div className={`transition-all duration-200 ${hoveredAdjustmentId === adjId ? 'blur-sm' : ''}`}>
+                                                                                                            <p className="font-medium">
+                                                                                                                {adjustment.credit ? 'Credit' : 'Debit'}: {adjustment.credit ? '' : '-'}${Math.abs(adjustment.adjustmentAmount).toFixed(2)}
+                                                                                                            </p>
+                                                                                                            <p className="text-gray-500">{adjustment.notes}</p>
+                                                                                                        </div>
+                                                                                                        {hoveredAdjustmentId === adjId && (
+                                                                                                            <div className="absolute inset-0 flex items-center justify-center gap-4">
+                                                                                                                <Button
+                                                                                                                    variant="ghost"
+                                                                                                                    size="sm"
+                                                                                                                    className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+                                                                                                                    title="Edit adjustment"
+                                                                                                                    onClick={() => handleManageGlobalAdjustmentClick(adjId)}
+                                                                                                                >
+                                                                                                                    <Pencil className="h-4 w-4 text-blue-600" />
+                                                                                                                </Button>
+                                                                                                                <Button
+                                                                                                                    variant="ghost"
+                                                                                                                    size="sm"
+                                                                                                                    className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+                                                                                                                    title="Remove adjustment"
+                                                                                                                    onClick={() => handleManageGlobalAdjustmentClick(adjId)}
+                                                                                                                >
+                                                                                                                    <X className="h-4 w-4 text-red-600" />
+                                                                                                                </Button>
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    {/* Team-Specific Adjustments */}
+                                                                                    <div>
+                                                                                        <h4 className="font-semibold text-gray-700">Team-Specific Adjustments</h4>
+                                                                                        <div className="flex flex-wrap gap-2">
+                                                                                            {Object.entries(payoutsData[division][subdivision][teamId].adjustments || {})
+                                                                                                .filter(([, adjustment]) => !adjustment.global)
+                                                                                                .map(([adjId, adjustment]) => (
+                                                                                                    <div
+                                                                                                        key={adjId}
+                                                                                                        className="p-2 border rounded-md w-fit relative group"
+                                                                                                        onMouseEnter={() => setHoveredAdjustmentId(adjId)}
+                                                                                                        onMouseLeave={() => setHoveredAdjustmentId(null)}
+                                                                                                    >
+                                                                                                        <div className={`transition-all duration-200 ${hoveredAdjustmentId === adjId ? 'blur-sm' : ''}`}>
+                                                                                                            <p className="font-medium">
+                                                                                                                {adjustment.credit ? 'Credit' : 'Debit'}: {adjustment.credit ? '' : '-'}${Math.abs(adjustment.adjustmentAmount).toFixed(2)}
+                                                                                                            </p>
+                                                                                                            <p className="text-gray-500">{adjustment.notes}</p>
+                                                                                                        </div>
+                                                                                                        {hoveredAdjustmentId === adjId && (
+                                                                                                            <div className="absolute inset-0 flex items-center justify-center gap-4">
+                                                                                                                <Button
+                                                                                                                    variant="ghost"
+                                                                                                                    size="sm"
+                                                                                                                    className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+                                                                                                                    title="Edit adjustment"
+                                                                                                                    onClick={() => handleEditTeamAdjustment(teamId, division, subdivision, adjId)}
+                                                                                                                >
+                                                                                                                    <Pencil className="h-4 w-4 text-blue-600" />
+                                                                                                                </Button>
+                                                                                                                <Button
+                                                                                                                    variant="ghost"
+                                                                                                                    size="sm"
+                                                                                                                    className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+                                                                                                                    title="Remove adjustment"
+                                                                                                                    onClick={() => confirmRemoveTeamAdjustment(teamId, division, subdivision, adjId)}
+                                                                                                                >
+                                                                                                                    <X className="h-4 w-4 text-red-600" />
+                                                                                                                </Button>
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <p className="text-gray-500 italic">
+                                                                                    No adjustments found...
+                                                                                </p>
+                                                                            )}
+                                                                        </AccordionContent>
+                                                                    </AccordionItem>
+                                                                );
+                                                            })}
                                                         </Accordion>
                                                     </AccordionContent>
                                                 </AccordionItem>
@@ -371,6 +773,112 @@ export default function PayoutsContent() {
                                 </AccordionItem>
                             </Accordion>
                         ))}
+                    
+                    {/* Local Adjustment Dialog */}
+                    <Dialog open={adjustmentDialogOpen} onOpenChange={setAdjustmentDialogOpen}>
+                        <DialogContent className="sm:max-w-[425px] bg-white">
+                            <DialogHeader>
+                                <DialogTitle>Add Adjustment for {selectedTeamName}</DialogTitle>
+                            </DialogHeader>
+                            <AdjustmentForm
+                                global={false}
+                                teamId={selectedTeamId}
+                                handleAdjustment={handleAdjustment}
+                                setOpen={setAdjustmentDialogOpen}
+                            />
+                        </DialogContent>
+                    </Dialog>
+                    
+                    {/* Global Adjustment Dialog */}
+                    <Dialog open={globalAdjustmentDialogOpen} onOpenChange={setGlobalAdjustmentDialogOpen}>
+                        <DialogContent className="sm:max-w-[425px] bg-white">
+                            <DialogHeader>
+                                <DialogTitle>Add Global Adjustment</DialogTitle>
+                            </DialogHeader>
+                            <AdjustmentForm
+                                global={true}
+                                teamId="global" // Using a placeholder value since it will be applied to all teams
+                                handleAdjustment={handleAdjustment}
+                                setOpen={setGlobalAdjustmentDialogOpen}
+                            />
+                        </DialogContent>
+                    </Dialog>
+                    
+                    {/* Manage Global Adjustments Dialog */}
+                    <Dialog 
+                        open={manageGlobalAdjustmentsDialogOpen} 
+                        onOpenChange={setManageGlobalAdjustmentsDialogOpen}
+                    >
+                        <DialogContent className="sm:max-w-[700px] bg-white">
+                            <DialogHeader>
+                                <DialogTitle>Manage Global Adjustments</DialogTitle>
+                            </DialogHeader>
+                            <ManageGlobalAdjustments
+                                payoutsData={payoutsData}
+                                onRemoveGlobalAdjustment={handleRemoveGlobalAdjustment}
+                                highlightedAdjustmentId={highlightedAdjustmentId}
+                            />
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Team Adjustment Edit Dialog */}
+                    {editingTeamAdjustmentData && (
+                        <Dialog open={editTeamAdjustmentDialogOpen} onOpenChange={setEditTeamAdjustmentDialogOpen}>
+                            <DialogContent className="sm:max-w-[425px] bg-white">
+                                <DialogHeader>
+                                    <DialogTitle>Edit Team Adjustment</DialogTitle>
+                                </DialogHeader>
+                                <AdjustmentForm
+                                    global={false}
+                                    teamId={editingTeamAdjustmentData.teamId}
+                                    adjustmentData={{
+                                        amount: Math.abs(editingTeamAdjustmentData.adjustment.adjustmentAmount),
+                                        type: editingTeamAdjustmentData.adjustment.credit,
+                                        notes: editingTeamAdjustmentData.adjustment.notes || "",
+                                    }}
+                                    handleAdjustment={(teamId, amount, type, notes, global) => {
+                                        // First remove the old adjustment
+                                        if (editingTeamAdjustmentId && editingTeamAdjustmentData) {
+                                            const { division, subdivision } = editingTeamAdjustmentData;
+                                            // Remove the old adjustment
+                                            const newPayoutsData = { ...payoutsData };
+                                            const team = newPayoutsData[division][subdivision][teamId];
+                                            
+                                            if (team.adjustments && team.adjustments[editingTeamAdjustmentId]) {
+                                                // Subtract the old adjustment amount
+                                                team.adjustmentAmount -= team.adjustments[editingTeamAdjustmentId].adjustmentAmount;
+                                                
+                                                // Delete the old adjustment
+                                                delete team.adjustments[editingTeamAdjustmentId];
+                                                
+                                                // Ensure formatted amount with two decimal places
+                                                const formattedAmount = Number(amount.toFixed(2));
+                                                
+                                                // Add the new adjustment with the same ID
+                                                team.adjustments[editingTeamAdjustmentId] = {
+                                                    global,
+                                                    adjustmentAmount: formattedAmount * (type ? 1 : -1),
+                                                    credit: type,
+                                                    notes: notes || "Edited adjustment"
+                                                };
+                                                
+                                                // Update the total adjustment amount
+                                                team.adjustmentAmount += formattedAmount * (type ? 1 : -1);
+                                                
+                                                // Ensure total is also formatted
+                                                team.adjustmentAmount = Number(team.adjustmentAmount.toFixed(2));
+                                                
+                                                setPayoutsData(newPayoutsData);
+                                                toast.success("Team adjustment updated successfully");
+                                            }
+                                        }
+                                        setEditTeamAdjustmentDialogOpen(false);
+                                    }}
+                                    setOpen={setEditTeamAdjustmentDialogOpen}
+                                />
+                            </DialogContent>
+                        </Dialog>
+                    )}
                 </>
             )}
         </div>
