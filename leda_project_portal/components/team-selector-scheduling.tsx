@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-	Control,
-	useFormContext,
-	FormProvider,
-} from "react-hook-form";
+import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,9 +29,9 @@ import {
 // Define the form values interface
 interface FormValues {
 	teamId: string;
-    teamName: string;
-    opposingTeamId: string;
-    opposingTeamName: string;
+	teamName: string;
+	opposingTeamId: string;
+	opposingTeamName: string;
 }
 
 interface DivisionSelectorProps {
@@ -43,20 +39,23 @@ interface DivisionSelectorProps {
 	control: Control<any>;
 	name: string;
 	label: string;
-    selectedTeams: string[];
-    teamEntries: [string, { teamId: string; placeId: string; teamName: string }][];
-    disabled? : boolean;
-    defaultId?: string;
+	selectedTeams: string[];
+	teamEntries: [
+		string,
+		{ teamId: string; placeId: string; teamName: string }
+	][];
+	disabled?: boolean;
+	defaultId?: string;
 }
 
 export default function TeamSelector({
 	control,
 	name,
 	label,
-    selectedTeams,
-    teamEntries,
-    disabled,
-    defaultId,
+	selectedTeams,
+	teamEntries,
+	disabled,
+	defaultId,
 }: DivisionSelectorProps) {
 	return (
 		<FormProvider {...useFormContext()}>
@@ -67,7 +66,13 @@ export default function TeamSelector({
 					<FormItem>
 						<FormLabel>{label}</FormLabel>
 						<FormControl>
-							<DivisionSelectorContent selectedTeams={selectedTeams} teamEntries={teamEntries} disabled={disabled} defaultId={defaultId} name={name}/>
+							<DivisionSelectorContent
+								selectedTeams={selectedTeams}
+								teamEntries={teamEntries}
+								disabled={disabled}
+								defaultId={defaultId}
+								name={name}
+							/>
 						</FormControl>
 						<FormMessage />
 					</FormItem>
@@ -79,13 +84,22 @@ export default function TeamSelector({
 
 interface DivisionSelectorContentProps {
 	selectedTeams: string[];
-    teamEntries: [string, { teamId: string; placeId: string; teamName: string }][];
-    disabled?: boolean;
-    defaultId?: string;
+	teamEntries: [
+		string,
+		{ teamId: string; placeId: string; teamName: string }
+	][];
+	disabled?: boolean;
+	defaultId?: string;
 	name: string;
 }
 
-const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selectedTeams, teamEntries, disabled, defaultId, name }) => {
+const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
+	selectedTeams,
+	teamEntries,
+	disabled,
+	defaultId,
+	name,
+}) => {
 	// Use form context to get watch and setValue functions
 	const { watch, setValue } = useFormContext<FormValues>();
 	// Watch the appropriate field value based on the name prop
@@ -115,9 +129,14 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 		if (defaultId) {
 			setValue(name as keyof FormValues, defaultId);
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const defaultTeam = teamEntries.find(([key, team]) => team.teamId === defaultId);
+			const defaultTeam = teamEntries.find(
+				([, team]) => team.teamId === defaultId
+			);
 			if (defaultTeam) {
-				setValue(`${name}Name` as keyof FormValues, defaultTeam[1].teamName);
+				setValue(
+					`${name}Name` as keyof FormValues,
+					defaultTeam[1].teamName
+				);
 			}
 		}
 	}, [defaultId, setValue, teamEntries, name]);
@@ -125,7 +144,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
-				<Popover open={open} onOpenChange={setOpen} >
+				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild disabled={disabled}>
 						<Button
 							variant="outline"
@@ -134,9 +153,8 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 							className="w-[200px] justify-between"
 						>
 							{fieldName
-								? teams.find(
-										(type) => type.value === fieldName
-								  )?.label
+								? teams.find((type) => type.value === fieldName)
+										?.label
 								: "Select a Team"}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
@@ -152,8 +170,14 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({ selec
 											key={type.value}
 											value={type.value}
 											onSelect={() => {
-												setValue(name as keyof FormValues, type.value);
-                                                setValue(`${name}Name` as keyof FormValues, type.name);
+												setValue(
+													name as keyof FormValues,
+													type.value
+												);
+												setValue(
+													`${name}Name` as keyof FormValues,
+													type.name
+												);
 												setOpen(false);
 											}}
 											className="hover:bg-gray-200"

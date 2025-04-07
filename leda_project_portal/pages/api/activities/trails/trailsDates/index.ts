@@ -17,15 +17,18 @@ export default async function handler(
 				'SELECT DISTINCT "trailsDate" FROM public.leda_trails_history ORDER BY "trailsDate" desc;'
 			);
 			// Format the trailsDate
-			const formattedResult = result.rows.map(item => ({
+			const formattedResult = result.rows.map((item) => ({
 				...item,
-				trailsDate: format(new Date(item.trailsDate), "MM-dd-yyyy")
+				trailsDate: format(new Date(item.trailsDate), "MM-dd-yyyy"),
 			}));
 			// Respond with the query result
 			res.status(200).json(formattedResult);
 		} catch (error) {
 			// Handle any errors that occur during the query
-			res.status(500).json({ message: "Failed to fetch season code ", error });
+			res.status(500).json({
+				message: "Failed to fetch season code ",
+				error,
+			});
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods

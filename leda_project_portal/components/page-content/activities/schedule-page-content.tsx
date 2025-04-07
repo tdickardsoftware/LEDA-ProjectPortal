@@ -277,24 +277,24 @@ export default function ScheduleContent() {
 		<div className="flex flex-col max-w-[65vw]">
 			<div className="flex justify-between">
 				<FolderTabMed title="Season Code">
-				<div className="flex gap-4">
-					<SeasonCodeSelector
-						disabled={currentSeason}
-						handleSelect={handleSeasonCodeSelect}
-						setDisabled={setDisabled}
-						useCurrentSeason={currentSeason}
-						seasonCode={seasonCode || ""}
-					/>
-					<div className="flex items-center gap-4">
-						<Label>Current Season?</Label>
-						<Checkbox
-							checked={currentSeason}
-							onCheckedChange={() =>
-								setCurrentSeason(!currentSeason)
-							}
+					<div className="flex gap-4">
+						<SeasonCodeSelector
+							disabled={currentSeason}
+							handleSelect={handleSeasonCodeSelect}
+							setDisabled={setDisabled}
+							useCurrentSeason={currentSeason}
+							seasonCode={seasonCode || ""}
 						/>
+						<div className="flex items-center gap-4">
+							<Label>Current Season?</Label>
+							<Checkbox
+								checked={currentSeason}
+								onCheckedChange={() =>
+									setCurrentSeason(!currentSeason)
+								}
+							/>
+						</div>
 					</div>
-				</div>
 				</FolderTabMed>
 				<FolderTabMed title="Manage Schedule">
 					<div>

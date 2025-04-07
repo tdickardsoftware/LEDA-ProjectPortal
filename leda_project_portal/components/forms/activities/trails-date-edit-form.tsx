@@ -4,7 +4,14 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
 import { toast } from "sonner";
 import React from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,10 +37,9 @@ export default function TrailsDateEditForm({
 	index,
 }: {
 	rowData: TrailsDateData;
-	handleRefresh: (index:string) => void;
+	handleRefresh: (index: string) => void;
 	index: string;
 }) {
-
 	const formRef = React.useRef<HTMLFormElement>(null);
 	const form = useForm<z.infer<typeof TrailsDateDataFormSchema>>({
 		resolver: zodResolver(TrailsDateDataFormSchema),
@@ -52,8 +58,12 @@ export default function TrailsDateEditForm({
 	async function onSubmit(values: z.infer<typeof TrailsDateDataFormSchema>) {
 		values.ledaId = rowData.ledaId;
 		values.trailsDate = rowData.trailsDate;
-		values.singlesPlace = values.singlesPlace ? Number(values.singlesPlace) : undefined;
-		values.doublesPlace = values.doublesPlace ? Number(values.doublesPlace) : undefined;
+		values.singlesPlace = values.singlesPlace
+			? Number(values.singlesPlace)
+			: undefined;
+		values.doublesPlace = values.doublesPlace
+			? Number(values.doublesPlace)
+			: undefined;
 		try {
 			const response = await fetch(trailsRoute, {
 				method: "PUT",
@@ -78,7 +88,6 @@ export default function TrailsDateEditForm({
 			form.reset();
 			handleRefresh(index);
 			console.log("Form updated successfully!", results);
-
 		} catch (error) {
 			console.error("Form update error", error);
 			toast.error(
@@ -116,7 +125,9 @@ export default function TrailsDateEditForm({
 												field.onChange(
 													e.target.value === ""
 														? undefined
-														: parseFloat(e.target.value)
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>
@@ -140,7 +151,9 @@ export default function TrailsDateEditForm({
 												field.onChange(
 													e.target.value === ""
 														? undefined
-														: parseFloat(e.target.value)
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>
@@ -164,7 +177,9 @@ export default function TrailsDateEditForm({
 												field.onChange(
 													e.target.value === ""
 														? undefined
-														: parseFloat(e.target.value)
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>
@@ -192,7 +207,9 @@ export default function TrailsDateEditForm({
 					</div>
 				</div>
 				<div className="flex items-center justify-center">
-					<Button type="submit" variant={"outline"}>Update</Button>
+					<Button type="submit" variant={"outline"}>
+						Update
+					</Button>
 				</div>
 			</form>
 		</Form>

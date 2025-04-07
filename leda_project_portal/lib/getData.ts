@@ -46,7 +46,9 @@ export async function fetchPlayers() {
 			},
 		});
 		if (!response.ok) {
-			throw new Error("Network response was not ok: " +  await response.text());
+			throw new Error(
+				"Network response was not ok: " + (await response.text())
+			);
 		}
 		const data = (await response.json()) as Player[];
 		return data;
@@ -72,7 +74,7 @@ export async function fetchPlayerMember(ledaId: string) {
 			if (response.status === 404) {
 				return null;
 			}
-			console.log(response)
+			console.log(response);
 			throw new Error("Network response was not ok");
 		}
 		const data = (await response.json()) as PlayerMemberInfo;
@@ -122,7 +124,7 @@ export async function fetchTeam(ledaId: string) {
 			if (response.status === 404) {
 				return null;
 			}
-			console.log(response)
+			console.log(response);
 			throw new Error("Network response was not ok");
 		}
 		const data = (await response.json()) as Team;
@@ -172,7 +174,7 @@ export async function fetchPlace(ledaId: string) {
 			if (response.status === 404) {
 				return null;
 			}
-			console.log(response)
+			console.log(response);
 			throw new Error("Network response was not ok");
 		}
 		const data = (await response.json()) as Place;
@@ -373,12 +375,15 @@ export async function fetchSeasons() {
 export async function fetchSeason(seasonCode: string) {
 	// attempt to get data
 	try {
-		const response = await fetch(`${seasonRouteServer}?seasonCode=${seasonCode}`, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+		const response = await fetch(
+			`${seasonRouteServer}?seasonCode=${seasonCode}`,
+			{
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -416,20 +421,25 @@ export async function fetchTrailsDates() {
 //
 // Fetch trails date data for a specific trails date
 //
-export async function fetchTrailsDateData(trailsDate: string) : Promise<TrailsDateData[]> {
+export async function fetchTrailsDateData(
+	trailsDate: string
+): Promise<TrailsDateData[]> {
 	// attempt to get data
 	try {
-		const response = await fetch(`${trailsRoute}?trailsDate=${trailsDate}`, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+		const response = await fetch(
+			`${trailsRoute}?trailsDate=${trailsDate}`,
+			{
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
 		const data = (await response.json()).rows as TrailsDateData[];
-		console.log(data)
+		console.log(data);
 		return data;
 		// if it cannot get data error out
 	} catch (error) {

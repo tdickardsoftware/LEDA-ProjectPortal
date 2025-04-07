@@ -23,7 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import PlayerSelector from "@/components/ui/player-selector";
-import { Tab } from '@headlessui/react';
+import { Tab } from "@headlessui/react";
 
 export const teamFormSchema = z.object({
 	ledaId: z
@@ -57,7 +57,10 @@ export default function PlaceAddForm({
 	// Define the steps
 	const steps = [
 		{ name: "Basic Info", fields: ["ledaId", "teamName"] },
-		{ name: "Team Details", fields: ["establishedDate", "lastTeamFeePayment", "memo"] },
+		{
+			name: "Team Details",
+			fields: ["establishedDate", "lastTeamFeePayment", "memo"],
+		},
 		{ name: "Team Members", fields: ["memberIdList"] },
 	];
 
@@ -81,7 +84,7 @@ export default function PlaceAddForm({
 	// Handle step navigation
 	const nextStep = async () => {
 		const currentStepFields = steps[currentStep].fields;
-		
+
 		// Special case for team members step which doesn't need validation
 		if (currentStep === 2) {
 			if (currentStep < steps.length - 1) {
@@ -91,10 +94,12 @@ export default function PlaceAddForm({
 			}
 			return;
 		}
-		
+
 		// Validate only the fields in the current step
-		const result = await form.trigger(currentStepFields as (keyof z.infer<typeof teamFormSchema>)[]);
-		
+		const result = await form.trigger(
+			currentStepFields as (keyof z.infer<typeof teamFormSchema>)[]
+		);
+
 		if (result) {
 			if (currentStep < steps.length - 1) {
 				setCurrentStep(currentStep + 1);
@@ -119,8 +124,11 @@ export default function PlaceAddForm({
 			const submissionValues = generateIDStatus
 				? { ...values, ledaId: 0 }
 				: values;
-			const submissionValues2 = { ...submissionValues, memberIdList: memberIdList }
-			
+			const submissionValues2 = {
+				...submissionValues,
+				memberIdList: memberIdList,
+			};
+
 			const response = await fetch(teamRoute, {
 				method: "POST",
 				headers: {
@@ -167,7 +175,10 @@ export default function PlaceAddForm({
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4 mx-auto"
 			>
-				<Tab.Group selectedIndex={currentStep} onChange={setCurrentStep}>
+				<Tab.Group
+					selectedIndex={currentStep}
+					onChange={setCurrentStep}
+				>
 					<div className="mb-6">
 						<div className="flex border-b border-gray-200">
 							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
@@ -176,15 +187,22 @@ export default function PlaceAddForm({
 										key={index}
 										className={({ selected }) =>
 											`w-full py-2.5 text-sm font-medium leading-5 
-											${selected 
-												? 'border-b-2 border-blue-500 text-blue-600' 
-												: 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-											} ${index < currentStep ? 'text-green-500' : ''}`
+											${
+												selected
+													? "border-b-2 border-blue-500 text-blue-600"
+													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+											} ${
+												index < currentStep
+													? "text-green-500"
+													: ""
+											}`
 										}
 									>
 										<span className="flex items-center justify-center">
 											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
-												{index < currentStep ? '✓' : index + 1}
+												{index < currentStep
+													? "✓"
+													: index + 1}
 											</span>
 											{step.name}
 										</span>
@@ -231,7 +249,10 @@ export default function PlaceAddForm({
 													onChange={(e) => {
 														field.onChange(
 															e.target.value
-																? Number(e.target.value)
+																? Number(
+																		e.target
+																			.value
+																  )
 																: undefined
 														);
 													}}
@@ -240,7 +261,8 @@ export default function PlaceAddForm({
 											<FormMessage />
 											{ledaIdExists && (
 												<p className="text-red-500 text-sm mt-1">
-													This LEDA ID is already in use
+													This LEDA ID is already in
+													use
 												</p>
 											)}
 										</FormItem>
@@ -253,7 +275,7 @@ export default function PlaceAddForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 2: Team Details */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
@@ -288,13 +310,15 @@ export default function PlaceAddForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 3: Team Members */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
 								<h1>Team Members</h1>
 								<hr className="bg-gray-300 mb-4"></hr>
-								<PlayerSelector setMemberIdList={handleSetMemberIdList}/>
+								<PlayerSelector
+									setMemberIdList={handleSetMemberIdList}
+								/>
 							</div>
 						</Tab.Panel>
 					</Tab.Panels>
@@ -302,10 +326,10 @@ export default function PlaceAddForm({
 
 				<div className="flex justify-between">
 					<Button type="button" onClick={prevStep}>
-						{currentStep === 0 ? 'Cancel' : 'Back'}
+						{currentStep === 0 ? "Cancel" : "Back"}
 					</Button>
 					<Button type="button" onClick={nextStep}>
-						{currentStep === steps.length - 1 ? 'Submit' : 'Next'}
+						{currentStep === steps.length - 1 ? "Submit" : "Next"}
 					</Button>
 				</div>
 			</form>

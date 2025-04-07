@@ -143,18 +143,22 @@ export function SubdivisionScheduler({
 	// Get teams that already have matchups for a specific game date
 	const getTeamsWithMatchups = (gameTitle: string) => {
 		const teamsWithMatchups: string[] = [];
-		
+
 		for (const division in MatchData) {
 			for (const subdivision in MatchData[division]) {
 				for (const teamLetter in MatchData[division][subdivision]) {
 					const team = MatchData[division][subdivision][teamLetter];
-					if (team && team.matchesData && team.matchesData[gameTitle]) {
+					if (
+						team &&
+						team.matchesData &&
+						team.matchesData[gameTitle]
+					) {
 						teamsWithMatchups.push(team.teamId);
 					}
 				}
 			}
 		}
-		
+
 		return teamsWithMatchups;
 	};
 
@@ -683,10 +687,10 @@ export function SubdivisionScheduler({
 																}
 																selectedTeamLetter={
 																	key
-																	}
-																teamsWithMatchups={
-																	getTeamsWithMatchups(gameTitle)
 																}
+																teamsWithMatchups={getTeamsWithMatchups(
+																	gameTitle
+																)}
 															/>
 														</DialogContent>
 													</Dialog>

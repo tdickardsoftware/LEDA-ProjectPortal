@@ -22,14 +22,14 @@ import { seasonRoute } from "@/lib/apiRoutes";
 interface WeekSelectorProps {
 	handleSelect: (value: string) => void;
 	seasonCode: string;
-    disabled: boolean;
+	disabled: boolean;
 }
 
 // SeasonCodeSelector component definition
 const WeekSelector: React.FC<WeekSelectorProps> = ({
 	handleSelect,
 	seasonCode,
-    disabled,
+	disabled,
 }) => {
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
@@ -39,32 +39,37 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 	>([]);
 	// State to store the selected season code
 	const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
-	const [selectedWeekLabel, setSelectedWeekLabel] = useState<string>("Select a Week...");
+	const [selectedWeekLabel, setSelectedWeekLabel] =
+		useState<string>("Select a Week...");
 
 	const handleSelectWeek = (value: string, label: string) => {
 		setSelectedWeek(value);
 		setSelectedWeekLabel(label); // Update the button's label
 		handleSelect(value); // Update the parent component's state
 		setOpen(false);
-	}
+	};
 
 	useEffect(() => {
 		async function loadSeasonCodes() {
 			if (!seasonCode) return; // Skip if no seasonCode is provided
 			try {
-				const response = await fetch(seasonRoute+`?seasonCode=${seasonCode}`);
+				const response = await fetch(
+					seasonRoute + `?seasonCode=${seasonCode}`
+				);
 				const data = await response.json();
-                const dates = data.dates;
-                
-                const formattedDates = Object.entries(dates).map(([key, value]) => {
-                    // Extract the week number from the key (e.g., "Date1" -> "1")
-                    const weekNumber = key.replace("Date", "");
-                    return {
-                        value: key,
-                        label: `Week ${weekNumber} - ${value}`
-                    };
-                });
-                
+				const dates = data.dates;
+
+				const formattedDates = Object.entries(dates).map(
+					([key, value]) => {
+						// Extract the week number from the key (e.g., "Date1" -> "1")
+						const weekNumber = key.replace("Date", "");
+						return {
+							value: key,
+							label: `Week ${weekNumber} - ${value}`,
+						};
+					}
+				);
+
 				setSeasonCodes(formattedDates);
 			} catch (error) {
 				console.error("Failed to fetch season codes", error);
@@ -83,7 +88,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 							role="combobox"
 							aria-expanded={open}
 							className="w-[200px] justify-between"
-							>
+						>
 							<span className="truncate">
 								{selectedWeekLabel}
 							</span>
@@ -104,7 +109,10 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 											key={type.value}
 											value={type.value}
 											onSelect={() => {
-												handleSelectWeek(type.value, type.label);
+												handleSelectWeek(
+													type.value,
+													type.label
+												);
 											}}
 											className="hover:bg-gray-200"
 										>

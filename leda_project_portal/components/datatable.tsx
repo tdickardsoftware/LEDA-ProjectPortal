@@ -163,14 +163,17 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 													? false
 													: true,
 											href: `/Portal/${
-												selectedRowsData[0]?.ledaId ? "Management" : "Maintenance"
+												selectedRowsData[0]?.ledaId
+													? "Management"
+													: "Maintenance"
 											}/**REPLACE**/${
-												selectedRowsData[0]?.ledaId ?? selectedRowsData[0]?.seasonCode
+												selectedRowsData[0]?.ledaId ??
+												selectedRowsData[0]?.seasonCode
 											}`,
 										}
 									)}
 								</div>
-							): null}
+							) : null}
 							{editDialog ? (
 								<div>
 									{React.cloneElement(

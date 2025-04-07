@@ -12,8 +12,12 @@ import { rosterRoute } from "@/lib/apiRoutes";
 
 // Define the schema for form validation using zod
 const divisionFormSchema = z.object({
-	targetSeasonCode: z.string().min(1, { message: "Target Seaon is Required" }),
-    sourceSeasonCode: z.string().min(1, { message: "Source Season is Required" }),
+	targetSeasonCode: z
+		.string()
+		.min(1, { message: "Target Seaon is Required" }),
+	sourceSeasonCode: z
+		.string()
+		.min(1, { message: "Source Season is Required" }),
 });
 
 // Define styles for the form container
@@ -22,34 +26,36 @@ const formContainerStyle =
 
 // Define the RosterCopyForm component
 export default function RosterCopyForm({
-    setOpen
+	setOpen,
 }: {
-    setOpen: (value: boolean) => void;
+	setOpen: (value: boolean) => void;
 }) {
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
 		resolver: zodResolver(divisionFormSchema),
 		defaultValues: {
 			targetSeasonCode: "",
-            sourceSeasonCode: "",
+			sourceSeasonCode: "",
 		},
 	});
 
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
-        const confirmed = window.confirm("This will overwrite any existing data on the selected season. Do you want to proceed?");
-        if (!confirmed) return;
+		const confirmed = window.confirm(
+			"This will overwrite any existing data on the selected season. Do you want to proceed?"
+		);
+		if (!confirmed) return;
 
-		fetch(rosterRoute+"/rosterUpserter", {
+		fetch(rosterRoute + "/rosterUpserter", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify(values),
-		})
-		console.log(values)
-        setOpen(false)
-		window.location.reload()
+		});
+		console.log(values);
+		setOpen(false);
+		window.location.reload();
 	}
 
 	// Render the form
@@ -61,9 +67,19 @@ export default function RosterCopyForm({
 			>
 				<div className="flex space-x-4">
 					<div className={formContainerStyle}>
-						<SeasonCodeSelector name="sourceSeasonCode" label="Source Season Code *" control={form.control} exclusive={true}/>
-                        <SeasonCodeSelector name="targetSeasonCode" label="Target Season Code *" control={form.control} excludeCode={form.getValues("sourceSeasonCode")}/>
-                    </div>
+						<SeasonCodeSelector
+							name="sourceSeasonCode"
+							label="Source Season Code *"
+							control={form.control}
+							exclusive={true}
+						/>
+						<SeasonCodeSelector
+							name="targetSeasonCode"
+							label="Target Season Code *"
+							control={form.control}
+							excludeCode={form.getValues("sourceSeasonCode")}
+						/>
+					</div>
 				</div>
 				<div className="flex justify-center">
 					<Button variant={"outline"}>Copy Roster</Button>

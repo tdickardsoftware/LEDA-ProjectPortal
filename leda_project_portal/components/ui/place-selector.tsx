@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-	Control,
-	useFormContext,
-	FormProvider,
-} from "react-hook-form";
+import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -67,7 +63,6 @@ export default function PlaceSelector({
 	);
 }
 
-
 const DivisionSelectorContent = () => {
 	// Use form context to get watch and setValue functions
 	const { watch, setValue } = useFormContext<FormValues>();
@@ -76,9 +71,7 @@ const DivisionSelectorContent = () => {
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
 	// State to store the fetched member types
-	const [teams, setTeams] = useState<
-		{ value: string; label: string;}[]
-	>([]);
+	const [teams, setTeams] = useState<{ value: string; label: string }[]>([]);
 
 	// Fetch member types from the API endpoint
 	useEffect(() => {
@@ -86,13 +79,12 @@ const DivisionSelectorContent = () => {
 			try {
 				const response = await fetch(placeRoute);
 				const data = await response.json();
-                setTeams(
-                    data
-                        .map((type: { ledaId: string, name: string }) => ({
-                            value: type.ledaId,
-                            label: type.ledaId + " - " + type.name,
-                        }))
-                );
+				setTeams(
+					data.map((type: { ledaId: string; name: string }) => ({
+						value: type.ledaId,
+						label: type.ledaId + " - " + type.name,
+					}))
+				);
 			} catch (error) {
 				console.error("Failed to fetch places", error);
 			}
@@ -112,9 +104,8 @@ const DivisionSelectorContent = () => {
 							className="w-[200px] justify-between"
 						>
 							{placeId
-								? teams.find(
-										(type) => type.value === placeId
-								  )?.label
+								? teams.find((type) => type.value === placeId)
+										?.label
 								: "Select a Place"}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
@@ -130,10 +121,7 @@ const DivisionSelectorContent = () => {
 											key={type.value}
 											value={type.value}
 											onSelect={() => {
-												setValue(
-													"placeId",
-													type.value
-												);
+												setValue("placeId", type.value);
 												setOpen(false);
 											}}
 											className="hover:bg-gray-200"

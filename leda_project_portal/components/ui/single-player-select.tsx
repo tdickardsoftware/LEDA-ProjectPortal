@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-	Control,
-	FormProvider,
-	useFormContext,
-} from "react-hook-form";
+import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -62,7 +58,10 @@ export default function PlayerSelect({
 					<FormItem>
 						<FormLabel>{label}</FormLabel>
 						<FormControl>
-							<PlaceOwnerSelectContent trailsDateData={trailsDateData}  disabled={disabled}/>
+							<PlaceOwnerSelectContent
+								trailsDateData={trailsDateData}
+								disabled={disabled}
+							/>
 						</FormControl>
 						<FormMessage />
 					</FormItem>
@@ -77,7 +76,10 @@ interface PlaceOwnerSelectContentProps {
 	disabled?: boolean;
 }
 
-const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({ trailsDateData, disabled }) => {
+const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({
+	trailsDateData,
+	disabled,
+}) => {
 	const formContext = useFormContext<FormValues>();
 	const currentValue = formContext ? formContext.watch("ledaId") : "";
 
@@ -93,13 +95,18 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({ trail
 				const data = await response.json();
 				const filteredData = data.filter(
 					(type: { ledaId: string }) =>
-						!trailsDateData.some((trail) => Number(trail.ledaId) === Number(type.ledaId))
+						!trailsDateData.some(
+							(trail) =>
+								Number(trail.ledaId) === Number(type.ledaId)
+						)
 				);
 				setPlayers(
-					filteredData.map((type: { ledaId: string; fullName: string }) => ({
-						value: type.ledaId,
-						label: type.ledaId + " - " + type.fullName,
-					}))
+					filteredData.map(
+						(type: { ledaId: string; fullName: string }) => ({
+							value: type.ledaId,
+							label: type.ledaId + " - " + type.fullName,
+						})
+					)
 				);
 			} catch (error) {
 				console.error("Failed to fetch players", error);
@@ -121,7 +128,8 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({ trail
 						>
 							{currentValue
 								? players.find(
-										(type) => Number(type.value) === currentValue
+										(type) =>
+											Number(type.value) === currentValue
 								  )?.label
 								: "Select a player..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

@@ -22,7 +22,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import { Team } from "@/lib/definitions";
 import PlayerSelector from "@/components/ui/player-selector";
-import { Tab } from '@headlessui/react';
+import { Tab } from "@headlessui/react";
 
 const teamInfoSchema = z.object({
 	ledaId: z
@@ -43,7 +43,7 @@ export default function TeamEditForm({
 	onClose,
 	onRefresh,
 	rowData,
-	handleRefresh
+	handleRefresh,
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
@@ -53,11 +53,14 @@ export default function TeamEditForm({
 	const [formData, setFormData] = useState<Team>({} as Team);
 	const [memberIdList, setMemberIdList] = useState<string>("");
 	const [currentStep, setCurrentStep] = useState(0);
-	
+
 	// Define the steps
 	const steps = [
 		{ name: "Basic Info", fields: ["ledaId", "teamName"] },
-		{ name: "Team Details", fields: ["establishedDate", "lastTeamFeePayment", "memo"] },
+		{
+			name: "Team Details",
+			fields: ["establishedDate", "lastTeamFeePayment", "memo"],
+		},
 		{ name: "Team Members", fields: [] },
 	];
 
@@ -75,15 +78,15 @@ export default function TeamEditForm({
 			lastTeamFeePayment: formData.lastTeamFeePayment || "",
 		},
 	});
-	
+
 	function handleSetMemberIdList(memberIdList: string) {
 		setMemberIdList(memberIdList);
 	}
-	
+
 	// Handle step navigation
 	const nextStep = async () => {
 		const currentStepFields = steps[currentStep].fields;
-		
+
 		// Special case for team members step which doesn't need validation
 		if (currentStep === 2) {
 			if (currentStep < steps.length - 1) {
@@ -93,10 +96,12 @@ export default function TeamEditForm({
 			}
 			return;
 		}
-		
+
 		// Validate only the fields in the current step
-		const result = await form.trigger(currentStepFields as (keyof z.infer<typeof teamInfoSchema>)[]);
-		
+		const result = await form.trigger(
+			currentStepFields as (keyof z.infer<typeof teamInfoSchema>)[]
+		);
+
 		if (result) {
 			if (currentStep < steps.length - 1) {
 				setCurrentStep(currentStep + 1);
@@ -118,7 +123,7 @@ export default function TeamEditForm({
 			}
 		}
 	};
-	
+
 	useEffect(() => {
 		if (!rowData || !rowData.ledaId) {
 			return;
@@ -157,7 +162,7 @@ export default function TeamEditForm({
 	}
 
 	async function onSubmit(values: z.infer<typeof teamInfoSchema>) {
-		const submittedValues = {...values, memberIdList: memberIdList}
+		const submittedValues = { ...values, memberIdList: memberIdList };
 		try {
 			const response = await fetch(teamRoute, {
 				method: "PUT",
@@ -202,7 +207,10 @@ export default function TeamEditForm({
 				ref={formRef}
 				onSubmitCapture={(e) => e.preventDefault()}
 			>
-				<Tab.Group selectedIndex={currentStep} onChange={setCurrentStep}>
+				<Tab.Group
+					selectedIndex={currentStep}
+					onChange={setCurrentStep}
+				>
 					<div className="mb-6">
 						<div className="flex border-b border-gray-200">
 							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
@@ -211,15 +219,22 @@ export default function TeamEditForm({
 										key={index}
 										className={({ selected }) =>
 											`w-full py-2.5 text-sm font-medium leading-5 
-											${selected 
-												? 'border-b-2 border-blue-500 text-blue-600' 
-												: 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-											} ${index < currentStep ? 'text-green-500' : ''}`
+											${
+												selected
+													? "border-b-2 border-blue-500 text-blue-600"
+													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+											} ${
+												index < currentStep
+													? "text-green-500"
+													: ""
+											}`
 										}
 									>
 										<span className="flex items-center justify-center">
 											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
-												{index < currentStep ? '✓' : index + 1}
+												{index < currentStep
+													? "✓"
+													: index + 1}
 											</span>
 											{step.name}
 										</span>
@@ -233,7 +248,10 @@ export default function TeamEditForm({
 						{/* Step 1: Basic Info */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
-								<h1>Team Basic Information for LEDA ID #{rowData.ledaId}</h1>
+								<h1>
+									Team Basic Information for LEDA ID #
+									{rowData.ledaId}
+								</h1>
 								<hr className="bg-gray-300 mb-4"></hr>
 								<FormField
 									control={form.control}
@@ -250,7 +268,10 @@ export default function TeamEditForm({
 													onChange={(e) => {
 														field.onChange(
 															e.target.value
-																? Number(e.target.value)
+																? Number(
+																		e.target
+																			.value
+																  )
 																: undefined
 														);
 													}}
@@ -267,7 +288,7 @@ export default function TeamEditForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 2: Team Details */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
@@ -302,14 +323,17 @@ export default function TeamEditForm({
 								/>
 							</div>
 						</Tab.Panel>
-						
+
 						{/* Step 3: Team Members */}
 						<Tab.Panel>
 							<div className={formContainerStyle}>
 								<h1>Team Members</h1>
 								<hr className="bg-gray-300 mb-4"></hr>
 								<div className="player-selector-container">
-									<PlayerSelector setMemberIdList={handleSetMemberIdList} existingJsonList={memberIdList}/>
+									<PlayerSelector
+										setMemberIdList={handleSetMemberIdList}
+										existingJsonList={memberIdList}
+									/>
 								</div>
 							</div>
 						</Tab.Panel>
@@ -318,10 +342,14 @@ export default function TeamEditForm({
 
 				<div className="flex justify-between">
 					<Button type="button" onClick={prevStep}>
-						{currentStep === 0 ? (handleRefresh ? 'Back' : 'Cancel') : 'Back'}
+						{currentStep === 0
+							? handleRefresh
+								? "Back"
+								: "Cancel"
+							: "Back"}
 					</Button>
 					<Button type="button" onClick={nextStep}>
-						{currentStep === steps.length - 1 ? 'Update' : 'Next'}
+						{currentStep === steps.length - 1 ? "Update" : "Next"}
 					</Button>
 				</div>
 			</form>
