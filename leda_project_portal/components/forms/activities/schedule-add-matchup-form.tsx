@@ -32,7 +32,8 @@ export default function SchedulingAddMatchupForm({
     date,
     setOpen,
     selectedTeam,
-    selectedTeamLetter
+    selectedTeamLetter,
+    teamsWithMatchups
 }: {
     teamEntries: [string, { teamId: string; placeId: string; teamName: string }][]
     handleAddMatchup: (selectedTeamletter: string, teamId: string, gameTitle: string, date: string, matchTime: string, home: boolean, opposingTeamId: string, opposingTeamLetter: string) => void;
@@ -42,6 +43,7 @@ export default function SchedulingAddMatchupForm({
     date: string;
     selectedTeam: string;
     selectedTeamLetter: string;
+    teamsWithMatchups: string[];
 }) {
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
@@ -84,7 +86,6 @@ export default function SchedulingAddMatchupForm({
                                             type="time"
                                             onChange={(e) => {
                                                 field.onChange(e.target.value);
-                                                console.log(e.target.value);
                                             }}
                                         />
                                     </FormControl>
@@ -96,7 +97,13 @@ export default function SchedulingAddMatchupForm({
                             <TeamSelector control={form.control} name="teamId" label="Selected Team" selectedTeams={[]} teamEntries={teamEntries} disabled={true} defaultId={selectedTeam}/>
                             <CheckboxDefault control={form.control} name="home" label="Home Team?" className="h-5 w-5" />
                         </div>
-                        <TeamSelector control={form.control} name="opposingTeamId" label="Opposing Team *" selectedTeams={[selectedTeam]} teamEntries={teamEntries} />
+                        <TeamSelector 
+                            control={form.control} 
+                            name="opposingTeamId" 
+                            label="Opposing Team *" 
+                            selectedTeams={[selectedTeam, ...teamsWithMatchups]} 
+                            teamEntries={teamEntries} 
+                        />
                     </div>
 				</div>
 				<div className="flex justify-center">

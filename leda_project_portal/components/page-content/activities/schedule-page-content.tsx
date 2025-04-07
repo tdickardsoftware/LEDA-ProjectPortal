@@ -138,10 +138,9 @@ export default function ScheduleContent() {
 				>
 			>
 		) => {
-			console.log(updatedMatchData);
 			setMatchData(updatedMatchData);
 			// Save data to the server
-			const result = await fetch(`${scheduleRoute}`, {
+			await fetch(`${scheduleRoute}`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -151,7 +150,6 @@ export default function ScheduleContent() {
 					scheduleData: updatedMatchData,
 				}),
 			});
-			console.log(result);
 			setEnableSaveButton(false);
 		},
 		[seasonCode]
@@ -205,7 +203,6 @@ export default function ScheduleContent() {
 					);
 					if (matchDataResult.status === 200) {
 						const matchData = await matchDataResult.json();
-						console.log(matchData);
 						if (matchData) {
 							setMatchData(
 								JSON.parse(
@@ -305,7 +302,8 @@ export default function ScheduleContent() {
 							<Button
 								onClick={() => handleSaveData(updatedMatchData)}
 								variant="outline"
-								disabled={enableSaveButton}
+								className="hover:bg-gray-100 border-gray-300 text-gray-700"
+								disabled={!enableSaveButton}
 							>
 								Save Changes
 							</Button>
