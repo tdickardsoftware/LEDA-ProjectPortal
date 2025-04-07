@@ -35,6 +35,7 @@ import { Spinner } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { FolderTabMed } from "@/components/ui/folder-tab";
 
 // Define types for better code readability
 type TeamInfo = {
@@ -879,38 +880,42 @@ export default function RostersContent() {
 			) : (
 				<>
 					<div className="flex justify-between">
-						<div className="flex gap-4">
-							<SeasonCodeSelector
-								disabled={currentSeason}
-								handleSelect={handleSeasonCodeSelect}
-								setDisabled={setDisabled}
-								useCurrentSeason={currentSeason}
-								seasonCode={seasonCode || ""}
-							/>
-							<div className="flex items-center gap-4">
-								<Label>Current Season?</Label>
-								<Checkbox
-									checked={currentSeason}
-									onCheckedChange={() =>
-										setCurrentSeason(!currentSeason)
-									}
+						<FolderTabMed title="Season Code">
+							<div className="flex gap-4">
+								<SeasonCodeSelector
+									disabled={currentSeason}
+									handleSelect={handleSeasonCodeSelect}
+									setDisabled={setDisabled}
+									useCurrentSeason={currentSeason}
+									seasonCode={seasonCode || ""}
 								/>
+								<div className="flex items-center gap-4">
+									<Label>Current Season?</Label>
+									<Checkbox
+										checked={currentSeason}
+										onCheckedChange={() =>
+											setCurrentSeason(!currentSeason)
+										}
+									/>
+								</div>
 							</div>
-						</div>
-						<div className="flex gap-4">
-							{handleAddDivision()}
-							{update && (
-								<Button
-									variant="outline"
-									onClick={() =>
-										setDeleteRosterAlertOpen(true)
-									}
-								>
-									Delete Roster
-								</Button>
-							)}
-							{handleCopyRoster()}
-						</div>
+						</FolderTabMed>
+						<FolderTabMed title="Roster Actions">
+							<div className="flex gap-4">
+								{handleAddDivision()}
+								{update && (
+									<Button
+										variant="outline"
+										onClick={() =>
+											setDeleteRosterAlertOpen(true)
+										}
+									>
+										Delete Roster
+									</Button>
+								)}
+								{handleCopyRoster()}
+							</div>
+						</FolderTabMed>
 					</div>
 
 					{/* Delete Roster Alert Dialog */}
