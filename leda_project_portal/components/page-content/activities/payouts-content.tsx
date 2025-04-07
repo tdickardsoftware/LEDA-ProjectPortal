@@ -4,7 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import React, { useState, useCallback, useEffect } from "react";
-import { rosterRoute, seasonRoute, weeklyScoresheetsRoute } from "@/lib/apiRoutes";
+import { rosterRoute, seasonRoute, weeklyScoresheetsRoute, payoutRoute } from "@/lib/apiRoutes";
 import { Spinner } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
@@ -114,34 +114,42 @@ export default function PayoutsContent() {
         adjustmentId: string;
     } | null>(null);
 
+    const [originalPayoutsData, setOriginalPayoutsData] = useState<PayoutsData>({}); // Store original data for comparison
+
     // Create payouts data when divisions data changes
     useEffect(() => {
         if (Object.keys(divisionsData).length > 0) {
-            const newPayoutsData: PayoutsData = {};
-            
-            Object.keys(divisionsData).forEach(division => {
-                newPayoutsData[division] = {};
-                
-                Object.keys(divisionsData[division]?.subdivisions || {}).forEach(subdivision => {
-                    newPayoutsData[division][subdivision] = {};
-                    
-                    // Use Object.entries to get both key and TeamInfo object
-                    Object.entries(divisionsData[division]?.subdivisions[subdivision] || {}).forEach(([, teamInfo]) => {
-                        // Use the teamId property from the TeamInfo object
-                        const teamId = teamInfo.teamId;
-                        
-                        newPayoutsData[division][subdivision][teamId] = {
-                            place: null,
-                            amount: 0,
-                            adjustmentAmount: 0,
-                            adjustments: {}
-                        };
+            setPayoutsData((prevPayoutsData) => {
+                const mergedPayoutsData: PayoutsData = { ...prevPayoutsData };
+
+                Object.keys(divisionsData).forEach(division => {
+                    if (!mergedPayoutsData[division]) {
+                        mergedPayoutsData[division] = {};
+                    }
+
+                    Object.keys(divisionsData[division]?.subdivisions || {}).forEach(subdivision => {
+                        if (!mergedPayoutsData[division][subdivision]) {
+                            mergedPayoutsData[division][subdivision] = {};
+                        }
+
+                        Object.entries(divisionsData[division]?.subdivisions[subdivision] || {}).forEach(([, teamInfo]) => {
+                            const teamId = teamInfo.teamId;
+
+                            if (!mergedPayoutsData[division][subdivision][teamId]) {
+                                mergedPayoutsData[division][subdivision][teamId] = {
+                                    place: null,
+                                    amount: 0,
+                                    adjustmentAmount: 0,
+                                    adjustments: {}
+                                };
+                            }
+                        });
                     });
                 });
+
+                console.log("Merged payouts data:", mergedPayoutsData);
+                return mergedPayoutsData;
             });
-            
-            setPayoutsData(newPayoutsData);
-            console.log("Payouts data created:", newPayoutsData);
         }
     }, [divisionsData]);
 
@@ -168,6 +176,10 @@ export default function PayoutsContent() {
         }
     }, [divisionsData]);
 
+    // Utility function to create a deep copy of an object
+    const deepCopy = (obj: PayoutsData): PayoutsData => {
+        return JSON.parse(JSON.stringify(obj));
+    };
 
     // Handle season code selection
     const handleSeasonCodeSelect = useCallback(
@@ -177,6 +189,30 @@ export default function PayoutsContent() {
 
             try {
                 setLoading(true);
+
+                // Fetch payouts data for the selected seasonCode
+                const payoutsResult = await fetch(
+                    `${payoutRoute}?seasonCode=${value}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                let foundPayoutsData = false;
+                if (payoutsResult.status === 200) {
+                    const payoutsData = await payoutsResult.json();
+                    if (payoutsData && payoutsData.length > 0) {
+                        setPayoutsData(payoutsData[0].payoutsData);
+                        setOriginalPayoutsData(deepCopy(payoutsData[0].payoutsData)); // Use deep copy here
+                        foundPayoutsData = true;
+                        toast.success("Payouts data loaded successfully");
+                    }
+                }
+
+                // Always fetch roster data to ensure UI structure is populated
                 const result = await fetch(
                     `${rosterRoute}?seasonCode=${value}`,
                     {
@@ -191,49 +227,47 @@ export default function PayoutsContent() {
                     const data = await result.json();
                     if (data) {
                         const roster = data;
-                        // Update state with the fetched data
                         const fetchedData = JSON.parse(
                             JSON.stringify(roster.teamInfomation)
                         );
                         setDivisionsData(fetchedData);
+
+                        if (!foundPayoutsData) {
+                            toast.info("Creating new payouts data from roster");
+                        }
+                    }
+                }
+
+                const weeksResult = await fetch(`${seasonRoute}?seasonCode=${value}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+
+                if (weeksResult.status === 200) {
+                    const weeksData = await weeksResult.json();
+                    if (weeksData) {
+                        setWeekCount(Object.keys(weeksData.dates).length);
                     }
 
-                    const weeksResult = await fetch(`${seasonRoute}?seasonCode=${value}`, {
+                    const completedScoresheetCountResult = await fetch(`${weeklyScoresheetsRoute}?seasonCode=${value}&countOfFinishedWeeks=${true}`, {
                         method: "GET",
                         headers: {
                             "Content-Type": "application/json",
                         },
                     });
-                    
-                    if (weeksResult.status === 200) {
-                        const weeksData = await weeksResult.json();
-                        if (weeksData) {
-                            setWeekCount(Object.keys(weeksData.dates).length)
-                        }
 
-                        const completedScoresheetCountResult = await fetch(`${weeklyScoresheetsRoute}?seasonCode=${value}&countOfFinishedWeeks=${true}`, {
-                            method: "GET",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                        });
-
-                        if (completedScoresheetCountResult.status === 200) {
-                            const completedScoresheetData = await completedScoresheetCountResult.json();
-                            if (completedScoresheetData){
-                                setCompletedScoresheetCount(completedScoresheetData.count)
-                            }
+                    if (completedScoresheetCountResult.status === 200) {
+                        const completedScoresheetData = await completedScoresheetCountResult.json();
+                        if (completedScoresheetData) {
+                            setCompletedScoresheetCount(completedScoresheetData.count);
                         }
-                        
                     }
-
-                } else {
-                    setDivisionsData({});
-                    toast.error("No roster data found for this season");
                 }
             } catch (error) {
-                console.error("Failed to fetch roster data:", error);
-                toast.error("Failed to load roster data");
+                console.error("Failed to fetch data:", error);
+                toast.error("Failed to load data");
             } finally {
                 setLoading(false);
             }
@@ -241,6 +275,10 @@ export default function PayoutsContent() {
         [seasonCode]
     );
 
+    // Utility function to check if payouts data has changed
+    const hasPayoutsDataChanged = () => {
+        return JSON.stringify(payoutsData) !== JSON.stringify(originalPayoutsData);
+    };
 
     const handleAdjustment = (teamId: string, amount: number, type: boolean, notes: string | undefined, global: boolean) => {
         // Update payouts data with the new adjustment
@@ -477,6 +515,36 @@ export default function PayoutsContent() {
         toast.success("Payouts calculated successfully");
     };
 
+
+    const handleSavePayoutsData = async () => {
+        try {
+            
+
+            const response = await fetch(payoutRoute, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    seasonCode: seasonCode,
+                    payoutsData: payoutsData, // Explicitly stringify the payoutsData object
+                }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                toast.success("Payouts data saved successfully");
+            } else {
+                throw new Error(result.message || "Failed to save payouts data");
+            }
+        } catch (error) {
+            console.error("Error saving payouts data:", error);
+            toast.error(`Failed to save payouts data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+        setOriginalPayoutsData(deepCopy(payoutsData));
+    };
+
     return (
         <div className="flex flex-col max-w-[65vw] overflow-x-auto"> {/* Added overflow-x-auto for horizontal scrolling */}
             {loading ? (
@@ -647,16 +715,15 @@ export default function PayoutsContent() {
                                                                                         <span>{team} - {teamInfo?.teamName}</span>
                                                                                     )}
                                                                                 </span>
-                                                                                <Button 
-                                                                                    variant="outline" 
-                                                                                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 border-gray-300 text-gray-700 text-xs"
+                                                                                <div 
+                                                                                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-xs text-gray-700 cursor-pointer"
                                                                                     onClick={(e) => {
                                                                                         e.stopPropagation();
                                                                                         handleLocalAdjustmentClick(teamId, teamInfo?.teamName);
                                                                                     }}
                                                                                 >
                                                                                     Add Adjustment
-                                                                                </Button>
+                                                                                </div>
                                                                             </div>
                                                                         </AccordionTrigger>
                                                                         <AccordionContent>
@@ -772,8 +839,57 @@ export default function PayoutsContent() {
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
-                        ))}
-                    
+                        )   
+                    )}
+                    <div className="flex justify-center gap-4 mt-6">
+                        <Button
+                            variant="outline"
+                            className="hover:bg-gray-100 border-gray-300 text-gray-700"
+                            onClick={() => {
+                                handleSavePayoutsData();
+                            }}
+                            disabled={!hasPayoutsDataChanged()} // Disable button if data hasn't changed
+                        >
+                            Save Payout Data
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="hover:bg-red-600 border-gray-300 text-gray-700"
+                            onClick={() => {
+                                // Ask for confirmation before resetting
+                                if (window.confirm("Are you sure you want to reset all payout data? This will remove all place, amount, and adjustment information.")) {
+                                    // Create new payouts data structure from scratch
+                                    const newPayoutsData: PayoutsData = {};
+                                    
+                                    Object.keys(divisionsData).forEach(division => {
+                                        newPayoutsData[division] = {};
+                                        
+                                        Object.keys(divisionsData[division]?.subdivisions || {}).forEach(subdivision => {
+                                            newPayoutsData[division][subdivision] = {};
+                                            
+                                            // Use Object.entries to get both key and TeamInfo object
+                                            Object.entries(divisionsData[division]?.subdivisions[subdivision] || {}).forEach(([, teamInfo]) => {
+                                                // Use the teamId property from the TeamInfo object
+                                                const teamId = teamInfo.teamId;
+                                                
+                                                newPayoutsData[division][subdivision][teamId] = {
+                                                    place: null,
+                                                    amount: 0,
+                                                    adjustmentAmount: 0,
+                                                    adjustments: {}
+                                                };
+                                            });
+                                        });
+                                    });
+                                    
+                                    setPayoutsData(newPayoutsData);
+                                    toast.success("Payouts have been reset");
+                                }
+                            }}
+                        >
+                            Reset Payouts
+                        </Button>
+                    </div>
                     {/* Local Adjustment Dialog */}
                     <Dialog open={adjustmentDialogOpen} onOpenChange={setAdjustmentDialogOpen}>
                         <DialogContent className="sm:max-w-[425px] bg-white">

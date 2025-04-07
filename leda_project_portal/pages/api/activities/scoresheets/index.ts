@@ -10,8 +10,7 @@ export default async function handler(
     if (req.method === "POST") {
         const data = req.body as WeeklyScoresheet;
         try {
-            // Log the incoming data for debugging
-            console.log("Incoming Data:", JSON.stringify(data, null, 2));
+            
 
             const query = `
                 INSERT INTO public.leda_weekly_scoresheets ("seasonCode", "weekNum", "scoresheetData", "finishedScoresheet")

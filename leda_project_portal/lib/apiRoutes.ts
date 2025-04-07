@@ -40,6 +40,8 @@ export const rosterRoute = "/api/activities/roster";
 export const  scheduleRoute = "/api/activities/schedule";
 // Define route for weekly scoresheets not on serverside
 export const weeklyScoresheetsRoute = "/api/activities/scoresheets";
+// Define route for payout not on the serverside
+export const payoutRoute = "/api/activities/payout";
 
 //
 // Server Routes
@@ -77,3 +79,5 @@ export const rosterRouteServer = "http://" + process.env.VERCEL_URL + rosterRout
 export const scheduleRouteServer = "http://" + process.env.VERCEL_URL + scheduleRoute;
 // Define route for weekly scoresheets api
 export const weeklyScoresheetsRouteServer = "http://" + process.env.VERCEL_URL + weeklyScoresheetsRoute;
+// Define route for payout api
+export const payoutRouteServer = "http://" + process.env.VERCEL_URL + payoutRoute;

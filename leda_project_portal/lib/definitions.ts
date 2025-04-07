@@ -217,3 +217,10 @@ export type PlayerPoints = {
 	totalPoints: number;
 	teamLedaId: number;
 }
+//
+// Define type to identify the shape of our data from postgres for a Payout
+//
+export type Payout = {
+	seasonCode: string;
+	payoutsData: JSON;
+}
