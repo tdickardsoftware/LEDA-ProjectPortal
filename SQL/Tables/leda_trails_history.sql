@@ -4,9 +4,9 @@
 
 CREATE TABLE IF NOT EXISTS public.leda_trails_history
 (
-    id bigint NOT NULL  DEFAULT nextval('public.leda_trails_history_seq'::regclass),
-    "ledaPlayerId" bigint NOT NULL,
-    "notes" text COLLATE pg_catalog."default",
+    id bigint NOT NULL DEFAULT nextval('leda_trails_history_seq'::regclass),
+    "ledaId" bigint NOT NULL,
+    notes text COLLATE pg_catalog."default",
     "singlesPlace" bigint NOT NULL,
     "doublesPlace" bigint NOT NULL,
     "trailsPoints" bigint NOT NULL,
