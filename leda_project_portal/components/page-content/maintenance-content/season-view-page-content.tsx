@@ -26,7 +26,7 @@ export function SeasonPageContent({seasonData} : {seasonData: Season}) {
                     <h1 className="text-4xl font-bold mb-4">Season: {seasonData.desc}</h1>
                     <div className="flex justify-between items-center">
                         <h2 className="text-2xl font-semibold mb-6">Season Code: {seasonData.seasonCode}</h2>
-                        <Button onClick={handleEdit} className="bg-blue-500 hover:bg-blue-400 text-white">Edit Season</Button>
+                        <Button onClick={handleEdit} className="hover:bg-gray-100 border-gray-300 text-gray-700">Edit Season</Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Card className="shadow-lg">

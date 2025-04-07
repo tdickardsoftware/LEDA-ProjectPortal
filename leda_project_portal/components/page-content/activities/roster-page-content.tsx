@@ -606,7 +606,7 @@ export default function RostersContent() {
 		() => (
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogTrigger asChild>
-					<Button variant="outline" disabled={disabled}>
+					<Button variant="outline" disabled={disabled} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						Add Division
 					</Button>
 				</DialogTrigger>
@@ -630,7 +630,7 @@ export default function RostersContent() {
 		() => (
 			<Dialog open={copyOpen} onOpenChange={setCopyOpen}>
 				<DialogTrigger asChild>
-					<Button variant="outline">Copy Roster</Button>
+					<Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700">Copy Roster</Button>
 				</DialogTrigger>
 				<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
 					<DialogHeader>
@@ -906,6 +906,7 @@ export default function RostersContent() {
 								{update && (
 									<Button
 										variant="outline"
+										className="hover:bg-gray-100 border-gray-300 text-gray-700"
 										onClick={() =>
 											setDeleteRosterAlertOpen(true)
 										}
@@ -1279,7 +1280,7 @@ export default function RostersContent() {
 					{update && (
 						<div className="flex justify-center gap-4">
 							<Button
-								className="mt-4"
+								className="hover:bg-gray-100 border-gray-300 text-gray-700 mt-4"
 								variant="outline"
 								disabled={!hasChanges || loading}
 								onClick={handleUpdateRoster}
@@ -1287,7 +1288,7 @@ export default function RostersContent() {
 								Update Roster
 							</Button>
 							<Button
-								className="mt-4"
+								className="hover:bg-gray-100 border-gray-300 text-gray-700 mt-4"
 								variant="outline"
 								disabled={!hasChanges || loading}
 								onClick={() => {

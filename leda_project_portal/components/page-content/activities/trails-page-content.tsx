@@ -260,7 +260,7 @@ export default function TrainsPageContent() {
                                 <div className="flex flex-col gap-2">
                                     {!addPlayer && (
                                         <div className="flex justify-end pt-4">
-                                            <Button variant={"outline"} onClick={() => setAddPlayer(!addPlayer)}>Add Player</Button>
+                                            <Button variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => setAddPlayer(!addPlayer)}>Add Player</Button>
                                         </div>
                                     )}
                                     {addPlayer && (
@@ -327,7 +327,7 @@ export default function TrainsPageContent() {
                             />
                             {!addPlayer && (
                                 <div className="flex justify-end pt-4">
-                                    <Button variant={"outline"} onClick={() => setAddPlayer(!addPlayer)}>Add Player</Button>
+                                    <Button variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => setAddPlayer(!addPlayer)}>Add Player</Button>
                                 </div>
                             )}
                             {addPlayer && (
@@ -380,7 +380,7 @@ export default function TrainsPageContent() {
                                 </div>
                             )}
                             <div className="flex items-center justify-center py-2">
-                                <Button variant={"outline"} onClick={() => handleSubmit(trailsDateData)} disabled={trailsDateData.length === 0}>Add Trails Date</Button>
+                                <Button variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => handleSubmit(trailsDateData)} disabled={trailsDateData.length === 0}>Add Trails Date</Button>
                             </div>
                         </CardContent>
                     </>

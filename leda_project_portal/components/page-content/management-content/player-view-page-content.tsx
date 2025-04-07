@@ -25,7 +25,7 @@ export default function PlayerPageContent({playerData} : {playerData: PlayerMemb
                     <h1 className="text-4xl font-bold mb-4">Name: {playerData.fullName}</h1>
                     <div className="flex justify-between items-center">
                         <h2 className="text-2xl font-semibold mb-6">LEDA ID #{playerData.ledaId}</h2>
-                        <Button onClick={handleEdit} className="bg-blue-500 hover:bg-blue-400 text-white">Edit Player</Button>
+                        <Button onClick={handleEdit} className="hover:bg-gray-100 border-gray-300 text-gray-700">Edit Player</Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Card className="shadow-lg">

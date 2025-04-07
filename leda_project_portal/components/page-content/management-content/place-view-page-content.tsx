@@ -25,7 +25,7 @@ export default function PlacePageContent({placeData} : {placeData: Place}) {
                     <h1 className="text-4xl font-bold mb-4">Name: {placeData.name}</h1>
                     <div className="flex justify-between items-center">
                         <h2 className="text-2xl font-semibold mb-6">LEDA ID #{placeData.ledaId}</h2>
-                        <Button onClick={handleEdit} className="bg-blue-500 hover:bg-blue-400 text-white">
+                        <Button onClick={handleEdit} className="hover:bg-gray-100 border-gray-300 text-gray-700">
                             Edit Place
                         </Button>
                     </div>
