@@ -27,6 +27,18 @@ export default function PlayerPageContent({
 		window.location.reload();
 	};
 
+	// Function to format dates in EST as MM/DD/YYYY
+	const formatDate = (date: string | Date | null | undefined) => {
+		if (!date) return "N/A";
+		const parsedDate = typeof date === "string" ? new Date(date) : date;
+		return parsedDate.toLocaleDateString("en-US", {
+			timeZone: "America/New_York",
+			month: "2-digit",
+			day: "2-digit",
+			year: "numeric"
+		});
+	};
+
 	return (
 		<div className="container mx-auto p-6">
 			{!editValues && (
@@ -53,9 +65,7 @@ export default function PlayerPageContent({
 							<CardContent>
 								<p className="text-lg">
 									Date of Birth:{" "}
-									{new Date(
-										playerData.dateOfBirth
-									).toLocaleDateString("en-US")}
+									{formatDate(playerData.dateOfBirth)}
 								</p>
 								<p className="text-lg">
 									Email: {playerData.email}
@@ -92,9 +102,7 @@ export default function PlayerPageContent({
 							<CardContent>
 								<p className="text-lg">
 									Established Date:{" "}
-									{new Date(
-										playerData.establishedDate
-									).toLocaleDateString("en-US")}
+									{formatDate(playerData.establishedDate)}
 								</p>
 								<p className="text-lg">
 									Bad Standing:{" "}
@@ -124,11 +132,7 @@ export default function PlayerPageContent({
 								</p>
 								<p className="text-lg">
 									Inactive Date:{" "}
-									{playerData.inactiveDate
-										? new Date(
-												playerData.inactiveDate
-										  ).toLocaleDateString("en-US")
-										: "N/A"}
+									{formatDate(playerData.inactiveDate)}
 								</p>
 								<p className="text-lg">
 									Last Membership Fee Payment:{" "}
@@ -136,13 +140,7 @@ export default function PlayerPageContent({
 								</p>
 								<p className="text-lg">
 									Last Trails Date:{" "}
-									{playerData.lastTrailsDate
-										? new Date(
-												playerData.lastTrailsDate
-										  ).toLocaleString("en-US", {
-												timeZone: "America/New_York",
-										  })
-										: "N/A"}
+									{formatDate(playerData.lastTrailsDate)}
 								</p>
 								<p className="text-lg">
 									Member Type: {playerData.memberType}
