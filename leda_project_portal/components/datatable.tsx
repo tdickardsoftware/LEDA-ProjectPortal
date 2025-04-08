@@ -68,18 +68,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		return () => clearTimeout(handler); // Cleanup on each change
 	}, [searchQuery]);
 
-	// Extract selected rows' data
-	const selectedRowsData = React.useMemo(() => {
-		return Object.keys(rowSelection).map((key) => tableData[parseInt(key)]);
-	}, [rowSelection, tableData]);
+	
 
-	// Update selectedRowCount whenever rowSelection changes
-	React.useEffect(() => {
-		setSelectedRowCount(Object.keys(rowSelection).length);
-		if (passValueToParent) {
-			passValueToParent(JSON.stringify(selectedRowsData)); // Send selected row data to parent
-		}
-	}, [rowSelection, passValueToParent, selectedRowsData]);
+	
 
 	// Filtered data based on debounced query
 	const filteredData = React.useMemo(() => {
@@ -94,6 +85,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	}, [debouncedQuery, tableData]);
 
 	const table = useReactTable({
+		// Assign table instance to ref
+		// Removed invalid onTableInstanceChange property
 		data: filteredData, // Use filtered data here
 		columns,
 		getCoreRowModel: getCoreRowModel(),
@@ -112,6 +105,22 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		},
 	});
 
+	// Extract selected rows' data
+	const selectedRowsData = React.useMemo(() => {
+		const selectedRowIds = Object.keys(rowSelection);
+		// Get row data directly from the table's row model rather than using tableData indices
+		return table.getRowModel().rows
+			.filter(row => selectedRowIds.includes(row.id))
+			.map(row => row.original);
+	}, [rowSelection, table]);
+
+	// Update selectedRowCount whenever rowSelection changes
+	React.useEffect(() => {
+		setSelectedRowCount(Object.keys(rowSelection).length);
+		if (passValueToParent) {
+			passValueToParent(JSON.stringify(selectedRowsData)); // Send selected row data to parent
+		}
+	}, [rowSelection, passValueToParent, selectedRowsData]);
 	// Refresh the table data
 	const handleRefresh = async () => {
 		try {
