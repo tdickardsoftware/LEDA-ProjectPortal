@@ -126,15 +126,31 @@ export default async function handler(
 		const query4 =
 			'select "lastTrailsDate" from public.leda_membership_info where "ledaId" = $1;';
 		const values4 = [data.ledaId];
-		const lastTrailsDate = (await queryPost(query4, values4)).rows[0]
-			.lastTrailsDate;
-		let result4;
-		if (lastTrailsDate === null || lastTrailsDate < data.trailsDate) {
+		// Get query result and handle the case where it might not exist
+		const lastTrailsDateResult = await queryPost(query4, values4);
+		let lastTrailsDate = null;
+		let result4 = null;
+		
+		// Check if we have results before accessing them
+		if (lastTrailsDateResult.rows && lastTrailsDateResult.rows.length > 0) {
+			lastTrailsDate = lastTrailsDateResult.rows[0].lastTrailsDate;
+		} 
+		
+		// Make sure dates are properly compared by parsing them
+		const newTrailsDate = new Date(data.trailsDate);
+		const currentLastDate = lastTrailsDate ? new Date(lastTrailsDate) : null;
+		
+		// Update only if null or if new date is later
+		if (lastTrailsDate === null || currentLastDate === null || newTrailsDate > currentLastDate) {
 			const query5 =
 				'update public.leda_membership_info set "lastTrailsDate" = $2 where "ledaId" = $1;';
 			const values5 = [data.ledaId, data.trailsDate];
 			result4 = await queryPost(query5, values5);
+			console.log("Updated lastTrailsDate for player", data.ledaId, "to", data.trailsDate);
+		} else {
+			console.log("Did not update lastTrailsDate - new date not later than existing");
 		}
+
 		// execute queries
 		const result3 = await queryPost(query3, values3);
 		const result = await queryPost(query, values);
