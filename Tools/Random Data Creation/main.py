@@ -29,8 +29,8 @@ def generate_fake_data(count):
         city = fake.city()
         state = fake.state_abbr()
         zip_code = fake.zipcode()
-        phone_number = fake.phone_number()
-        other_number = fake.phone_number() if random.random() > 0.6 else "NULL"
+        phone_number = ''.join(filter(str.isdigit, fake.phone_number()))[:10]
+        other_number = ''.join(filter(str.isdigit, fake.phone_number()))[:10] if random.random() > 0.6 else "NULL"
         email = fake.email()
         gender = random.choice(["Male", "Female", "Other"])
         
