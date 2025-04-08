@@ -139,7 +139,9 @@ export default function PlayerPageContent({
 									{playerData.lastTrailsDate
 										? new Date(
 												playerData.lastTrailsDate
-										  ).toLocaleDateString("en-US")
+										  ).toLocaleString("en-US", {
+												timeZone: "America/New_York",
+										  })
 										: "N/A"}
 								</p>
 								<p className="text-lg">
