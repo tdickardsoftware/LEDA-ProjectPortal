@@ -98,7 +98,6 @@ export function SubdivisionScheduler({
     const [MatchData, setMatchData] = useState(matchData);
 
     // Use division and subdivision directly
-    const currentMatchData = MatchData[division]?.[subdivision] || {};
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const [initialMatchData, setInitialMatchData] = useState(matchData);
