@@ -50,6 +50,7 @@ export default function ScheduleContent() {
 							home: boolean;
 							opposingTeamId: string;
 							opposingTeamLetter: string;
+							subdivisionId?: string;
 						};
 					};
 				};
