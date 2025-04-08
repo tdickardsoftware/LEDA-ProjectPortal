@@ -50,6 +50,7 @@ export default function ScheduleContent() {
 							home: boolean;
 							opposingTeamId: string;
 							opposingTeamLetter: string;
+							subdivisionId?: string;
 						};
 					};
 				};
@@ -131,6 +132,7 @@ export default function ScheduleContent() {
 									home: boolean;
 									opposingTeamId: string;
 									opposingTeamLetter: string;
+									subdivisionId?: string; // Add subdivision tracking
 								}
 							>;
 						}
@@ -138,7 +140,10 @@ export default function ScheduleContent() {
 				>
 			>
 		) => {
-			setMatchData(updatedMatchData);
+			// Process the updated match data to ensure subdivision isolation
+			const processedMatchData = ensureSubdivisionIsolation(updatedMatchData);
+			setMatchData(processedMatchData);
+			
 			// Save data to the server
 			await fetch(`${scheduleRoute}`, {
 				method: "POST",
@@ -147,13 +152,14 @@ export default function ScheduleContent() {
 				},
 				body: JSON.stringify({
 					seasonCode: seasonCode,
-					scheduleData: updatedMatchData,
+					scheduleData: processedMatchData,
 				}),
 			});
 			setEnableSaveButton(false);
 		},
 		[seasonCode]
 	);
+
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(
 		async (value: string) => {
@@ -204,11 +210,11 @@ export default function ScheduleContent() {
 					if (matchDataResult.status === 200) {
 						const matchData = await matchDataResult.json();
 						if (matchData) {
-							setMatchData(
-								JSON.parse(
-									JSON.stringify(matchData.scheduleData)
-								)
+							// Add unique subdivision identifiers to ensure proper isolation
+							const processedMatchData = ensureSubdivisionIsolation(
+								JSON.parse(JSON.stringify(matchData.scheduleData))
 							);
+							setMatchData(processedMatchData);
 						}
 					} else {
 						// Populate matchData
@@ -229,6 +235,7 @@ export default function ScheduleContent() {
 												home: boolean;
 												opposingTeamId: string;
 												opposingTeamLetter: string;
+												subdivisionId?: string; // Add subdivision tracking
 											}
 										>;
 									}
@@ -272,6 +279,50 @@ export default function ScheduleContent() {
 		},
 		[seasonCode]
 	);
+
+	// Helper function to ensure subdivision isolation
+	const ensureSubdivisionIsolation = (
+		matchData: Record<
+			string,
+			Record<
+				string,
+				Record<
+					string,
+					{
+						teamName: string;
+						teamId: string;
+						matchesData: Record<
+							string,
+							{
+								matchDate: string;
+								matchTime: string;
+								home: boolean;
+								opposingTeamId: string;
+								opposingTeamLetter: string;
+								subdivisionId?: string;
+							}
+						>;
+					}
+				>
+			>
+		>
+	) => {
+		// Add subdivision identifiers to each match
+		Object.keys(matchData).forEach((division) => {
+			Object.keys(matchData[division]).forEach((subdivision) => {
+				Object.keys(matchData[division][subdivision]).forEach((teamLetter) => {
+					const subdivisionId = `${division}-${subdivision}`;
+					Object.keys(matchData[division][subdivision][teamLetter].matchesData).forEach(
+						(matchId) => {
+							matchData[division][subdivision][teamLetter].matchesData[matchId].subdivisionId = 
+								subdivisionId;
+						}
+					);
+				});
+			});
+		});
+		return matchData;
+	};
 
 	return !loading ? (
 		<div className="flex flex-col max-w-[65vw]">
