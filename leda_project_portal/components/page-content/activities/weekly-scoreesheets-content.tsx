@@ -1278,12 +1278,10 @@ export default function WeeklyScoresheetsContent() {
 		points: number,
 		notes?: string
 	) => {
-		if (!formattedScoreData) return;
-
+		// Create a copy of existing data, or initialize if it doesn't exist
+		const updatedData = formattedScoreData ? { ...formattedScoreData } : {};
+		
 		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-
-		// Create a copy of the current formatted score data
-		const updatedData = { ...formattedScoreData };
 
 		// Ensure the necessary nested structure exists
 		if (!updatedData[selectedDivision]) {
@@ -1353,6 +1351,9 @@ export default function WeeklyScoresheetsContent() {
 			points,
 			notes: notes || "",
 		};
+
+		// Log to verify the penalty was added
+		console.log("Added penalty:", updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties);
 
 		// Update the counter state
 		if (isHomeTeam) {
@@ -1436,7 +1437,7 @@ export default function WeeklyScoresheetsContent() {
 		// Create a copy of the current formatted score data
 		const updatedData = { ...formattedScoreData };
 
-		// Find the right team (home or away) to update the penalty
+			// Find the right team (home or away) to update the penalty
 		const teamKey =
 			teamId === selectedHomeTeamId
 				? selectedHomeTeamId
@@ -1632,7 +1633,7 @@ export default function WeeklyScoresheetsContent() {
 				?.teamInformation?.[teamId]?.teamMembers?.[playerId]
 				?.mentions?.[mentionId]
 		) {
-			// Update the existing mention with the new values
+				// Update the existing mention with the new values
 			updatedData[selectedDivision][selectedSubdivision][
 				matchupKey
 			].teamInformation[teamId].teamMembers[playerId].mentions![
@@ -1662,7 +1663,12 @@ export default function WeeklyScoresheetsContent() {
 		points: number,
 		notes?: string
 	) => {
-		if (!formattedScoreData || !selectedPlayerForMention) return;
+		if (!formattedScoreData || !selectedPlayerForMention) {
+			// Initialize data if needed
+			if (!formattedScoreData) setFormattedScoreData({});
+			
+			return;
+		}
 
 		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
 		const playerId = selectedPlayerForMention.id;
@@ -1773,6 +1779,8 @@ export default function WeeklyScoresheetsContent() {
 		setFormattedScoreData(updatedData);
 
 		console.log(updatedData);
+
+;
 
 		// Mark data as changed to enable save button
 		handleDataChange();
@@ -2671,12 +2679,18 @@ export default function WeeklyScoresheetsContent() {
 								<div className="flex justify-center mt-4">
 									<Button
 										onClick={calculatePlayerPoints}
-										className="bg-blue-600 hover:bg-blue-700 text-white"
+										className={`${
+											isDataChanged 
+												? "bg-blue-600 hover:bg-blue-700 text-white animate-pulse" 
+												: "bg-blue-600 hover:bg-blue-700 text-white"
+										}`}
 										disabled={isSaving || !isDataChanged} // Disable button if no data has changed
 									>
 										{isSaving
 											? "Saving..."
-											: "Save Scoresheet"}
+											: isDataChanged 
+												? "Save Scoresheet (Changes Pending)" 
+												: "Save Scoresheet"}
 									</Button>
 									<Button
 										onClick={resetScoresheet}
