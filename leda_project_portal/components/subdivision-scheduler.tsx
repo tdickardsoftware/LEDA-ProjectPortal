@@ -354,46 +354,82 @@ export function SubdivisionScheduler({
 		// Clone the current state to avoid direct mutation
 		const updatedMatchData = JSON.parse(JSON.stringify(MatchData));
 
-		// Find both teams in the matchData structure
-		for (const division in updatedMatchData) {
-			for (const subdivision in updatedMatchData[division]) {
-				const selectedTeam =
-					updatedMatchData[division][subdivision][selectedTeamLetter];
-				const opposingTeam =
-					updatedMatchData[division][subdivision][opposingTeamLetter];
-
-				// Skip if either team is not found in this subdivision
-				if (!selectedTeam || !opposingTeam) continue;
-
-				// Initialize matchesData if it doesn't exist (should be there but just in case)
-				if (!selectedTeam.matchesData) selectedTeam.matchesData = {};
-				if (!opposingTeam.matchesData) opposingTeam.matchesData = {};
-
-				// Update the selected team's matchup data
-				selectedTeam.matchesData[gameTitle] = {
-					matchDate: date,
-					matchTime: matchTime,
-					home: home,
-					opposingTeamId: opposingTeamId,
-					opposingTeamLetter: opposingTeamLetter,
-				};
-
-				// Update the opposing team's matchup data with the inverse home/away status
-				opposingTeam.matchesData[gameTitle] = {
-					matchDate: date,
-					matchTime: matchTime,
-					home: !home,
-					opposingTeamId: teamId,
-					opposingTeamLetter: selectedTeamLetter,
-				};
-
-				// Update state and call parent handlers
-				setMatchData(updatedMatchData);
-				handleSaveData(updatedMatchData);
-				setEnabledSaveButton(true);
-				return;
-			}
-		}
+		 // First, find the current matchup to get the previous opposing team
+		 let previousOpposingTeamLetter = null;
+    
+		 // Search for the current matchup in the data structure
+		 for (const division in updatedMatchData) {
+			 for (const subdivision in updatedMatchData[division]) {
+				 const selectedTeam = updatedMatchData[division][subdivision][selectedTeamLetter];
+				 
+				 if (selectedTeam && selectedTeam.matchesData && selectedTeam.matchesData[gameTitle]) {
+					 previousOpposingTeamLetter = selectedTeam.matchesData[gameTitle].opposingTeamLetter;
+					 break;
+				 }
+			 }
+			 if (previousOpposingTeamLetter) break;
+		 }
+	 
+		 // If previous opposing team letter exists and is different from the new one
+		 if (previousOpposingTeamLetter && previousOpposingTeamLetter !== opposingTeamLetter) {
+			 // Remove the matchup from the previous opposing team
+			 for (const division in updatedMatchData) {
+				 for (const subdivision in updatedMatchData[division]) {
+					 const previousOpposingTeam = 
+						 updatedMatchData[division][subdivision][previousOpposingTeamLetter];
+					 
+					 if (previousOpposingTeam && 
+						 previousOpposingTeam.matchesData && 
+						 previousOpposingTeam.matchesData[gameTitle]) {
+						 
+						 // Delete the matchup for the previous opposing team
+						 delete previousOpposingTeam.matchesData[gameTitle];
+						 break;
+					 }
+				 }
+			 }
+		 }
+	 
+		 // Now proceed with updating the matchup for the selected team and new opposing team
+		 for (const division in updatedMatchData) {
+			 for (const subdivision in updatedMatchData[division]) {
+				 const selectedTeam =
+					 updatedMatchData[division][subdivision][selectedTeamLetter];
+				 const opposingTeam =
+					 updatedMatchData[division][subdivision][opposingTeamLetter];
+	 
+				 // Skip if either team is not found in this subdivision
+				 if (!selectedTeam || !opposingTeam) continue;
+	 
+				 // Initialize matchesData if it doesn't exist
+				 if (!selectedTeam.matchesData) selectedTeam.matchesData = {};
+				 if (!opposingTeam.matchesData) opposingTeam.matchesData = {};
+	 
+				 // Update the selected team's matchup data
+				 selectedTeam.matchesData[gameTitle] = {
+					 matchDate: date,
+					 matchTime: matchTime,
+					 home: home,
+					 opposingTeamId: opposingTeamId,
+					 opposingTeamLetter: opposingTeamLetter,
+				 };
+	 
+				 // Update the opposing team's matchup data with the inverse home/away status
+				 opposingTeam.matchesData[gameTitle] = {
+					 matchDate: date,
+					 matchTime: matchTime,
+					 home: !home,
+					 opposingTeamId: teamId,
+					 opposingTeamLetter: selectedTeamLetter,
+				 };
+	 
+				 // Update state and call parent handlers
+				 setMatchData(updatedMatchData);
+				 handleSaveData(updatedMatchData);
+				 setEnabledSaveButton(true);
+				 return;
+			 }
+		 }
 	};
 
 	// Add state for place names

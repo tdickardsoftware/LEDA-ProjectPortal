@@ -462,7 +462,7 @@ export default function PlaceAddForm({
 								<InputDefault
 									control={form.control}
 									name="lastSanctioningDate"
-									label="Last Sanctioning Date"
+									label="Last Sanctioning Date *"
 									type="date"
 								/>
 								<CheckboxDefault
