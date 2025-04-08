@@ -28,7 +28,7 @@ import { Calendar } from "lucide-react";
 //
 // Component export
 //
-export default function TrainsPageContent() {
+export default function TrailsPageContent() {  // Fixed typo: TrainsPageContent -> TrailsPageContent
 	//
 	// States
 	//
@@ -48,15 +48,16 @@ export default function TrainsPageContent() {
 	// Boolean to determine if you are adding a player
 	const [addPlayer, setAddPlayer] = useState<boolean>(false);
 	// The trails date for when you are adding an entry
+	const getEasternTime = (date = new Date()) => {
+		return new Date(
+			date.toLocaleString("en-US", {
+				timeZone: "America/New_York",
+			})
+		);
+	};
+	
 	const [addTrailsDate, setAddTrailsDate] = useState<string | null>(
-		format(
-			new Date(
-				new Date().toLocaleString("en-US", {
-					timeZone: "America/New_York",
-				})
-			),
-			"MM-dd-yyyy"
-		)
+		format(getEasternTime(), "MM-dd-yyyy")
 	);
 	//
 	// Function Name: handleAddPlayer
@@ -119,9 +120,7 @@ export default function TrainsPageContent() {
 	//
 	const handleDateSelect = (date: Date | null) => {
 		if (date === null) return;
-		const selectedDate = new Date(
-			date.toLocaleString("en-US", { timeZone: "America/New_York" })
-		);
+		const selectedDate = getEasternTime(date);
 		const formattedDate = format(selectedDate, "MM-dd-yyyy");
 		setAddTrailsDate(formattedDate);
 	};
@@ -240,14 +239,7 @@ export default function TrainsPageContent() {
 			}));
 			setData(formattedResult);
 
-			const currentDate = format(
-				new Date(
-					new Date().toLocaleString("en-US", {
-						timeZone: "America/New_York",
-					})
-				),
-				"MM-dd-yyyy"
-			);
+			const currentDate = format(getEasternTime(), "MM-dd-yyyy");
 			const currentTrailsDate = formattedResult.find(
 				(item) => item.trailsDate === currentDate
 			);
