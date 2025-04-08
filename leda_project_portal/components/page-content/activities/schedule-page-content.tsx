@@ -402,6 +402,8 @@ export default function ScheduleContent() {
 														]
 													).length > 0 && (
 														<SubdivisionScheduler
+															division={division}
+															subdivision={subdivision}
 															teams={
 																divisionsData[
 																	division

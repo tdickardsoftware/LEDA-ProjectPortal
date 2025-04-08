@@ -94,7 +94,9 @@ export default function PlayerPageContent({
 									Established Date:{" "}
 									{new Date(
 										playerData.establishedDate
-									).toLocaleDateString("en-US")}
+									).toLocaleDateString("en-US", {
+										timeZone: "UTC",
+									})}
 								</p>
 								<p className="text-lg">
 									Bad Standing:{" "}
@@ -127,7 +129,9 @@ export default function PlayerPageContent({
 									{playerData.inactiveDate
 										? new Date(
 												playerData.inactiveDate
-										  ).toLocaleDateString("en-US")
+										  ).toLocaleDateString("en-US", {
+												timeZone: "UTC",
+										  })
 										: "N/A"}
 								</p>
 								<p className="text-lg">
@@ -139,7 +143,9 @@ export default function PlayerPageContent({
 									{playerData.lastTrailsDate
 										? new Date(
 												playerData.lastTrailsDate
-										  ).toLocaleDateString("en-US")
+										  ).toLocaleDateString("en-US", {
+												timeZone: "UTC",
+										  })
 										: "N/A"}
 								</p>
 								<p className="text-lg">
