@@ -247,6 +247,7 @@ export default function WeeklyScoresheetsContent() {
 		desc: string;
 		points: number;
 		notes: string;
+		count: number;
 	} | null>(null);
 
 	// Event handlers
@@ -1578,6 +1579,7 @@ export default function WeeklyScoresheetsContent() {
 				desc: mention.desc,
 				points: mention.points,
 				notes: mention.notes || "",
+				count: mention.count || 0,
 			});
 
 			// Find the player name based on the ID
@@ -1616,7 +1618,8 @@ export default function WeeklyScoresheetsContent() {
 		mentionCode: string,
 		desc: string,
 		points: number,
-		notes?: string
+		notes?: string,
+		count: number = 0
 	) => {
 		if (!formattedScoreData || !selectedPlayerForMention) return;
 
@@ -1643,6 +1646,7 @@ export default function WeeklyScoresheetsContent() {
 				desc: desc,
 				points: points,
 				notes: notes || "",
+				count: count || 0,
 			};
 
 			// Update state
@@ -1661,7 +1665,8 @@ export default function WeeklyScoresheetsContent() {
 		mentionCode: string,
 		desc: string,
 		points: number,
-		notes?: string
+		notes?: string,
+		count: number = 0
 	) => {
 		if (!formattedScoreData || !selectedPlayerForMention) {
 			// Initialize data if needed
@@ -1767,6 +1772,7 @@ export default function WeeklyScoresheetsContent() {
 			desc,
 			points,
 			notes: notes || "",
+			count: count || 0,
 		};
 
 		// Update the mention counter state
@@ -2736,14 +2742,16 @@ export default function WeeklyScoresheetsContent() {
 							mentionCode,
 							desc,
 							points,
-							notes
+							notes,
+							count
 						) =>
 							updateMention(
 								mentionId,
 								mentionCode,
 								desc,
 								points,
-								notes
+								notes,
+								count
 							)
 						}
 					/>

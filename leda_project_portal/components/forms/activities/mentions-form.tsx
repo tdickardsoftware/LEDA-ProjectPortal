@@ -32,6 +32,10 @@ const divisionFormSchema = z.object({
 		.number()
 		.min(0, { message: "Points must be a positive number." })
 		.optional(),
+	count: z
+		.number()
+		.min(0, { message: "Count must be a positive number." })
+		.optional(),
 	mentionCode: z.string().optional(),
 	mentionDesc: z.string().optional(),
 	notes: z.string().optional(),
@@ -59,7 +63,8 @@ export default function MentionForm({
 		mentionCode: string,
 		desc: string,
 		points: number,
-		notes?: string
+		notes?: string,
+		count?: number
 	) => void;
 	isEditMode?: boolean;
 	initialMention?: {
@@ -68,13 +73,15 @@ export default function MentionForm({
 		desc: string;
 		points: number;
 		notes: string;
+		count?: number;
 	} | null;
 	updateMention?: (
 		mentionId: string,
 		mentionCode: string,
 		desc: string,
 		points: number,
-		notes?: string
+		notes?: string,
+		count?: number
 	) => void;
 }) {
 	// Initialize form with React Hook Form and Zod validation
@@ -88,6 +95,7 @@ export default function MentionForm({
 				mentionBasis: "",
 			},
 			points: undefined,
+			count: undefined,
 			mentionCode: "",
 			mentionDesc: "",
 			notes: "",
@@ -107,6 +115,7 @@ export default function MentionForm({
 			form.setValue("mentionCode", initialMention.code);
 			form.setValue("mentionDesc", initialMention.desc);
 			form.setValue("points", initialMention.points);
+			form.setValue("count", initialMention.count || 0);
 			form.setValue("notes", initialMention.notes || "");
 		}
 	}, [form, isEditMode, initialMention]);
@@ -123,7 +132,8 @@ export default function MentionForm({
 				values.mentionCode || "",
 				values.mentionDesc || "",
 				values.points ?? 0,
-				values.notes
+				values.notes,
+				values.count ?? 0
 			);
 		} else {
 			// Add new mention
@@ -131,7 +141,8 @@ export default function MentionForm({
 				values.mentionCode || "",
 				values.mentionDesc || "",
 				values.points ?? 0,
-				values.notes
+				values.notes,
+				values.count ?? 0
 			);
 
 			// Reset the form instead of closing the dialog
@@ -143,6 +154,7 @@ export default function MentionForm({
 					mentionBasis: "",
 				},
 				points: undefined,
+				count: 0,
 				mentionCode: "",
 				mentionDesc: "",
 				notes: "",
@@ -219,6 +231,43 @@ export default function MentionForm({
 								</FormItem>
 							)}
 						/>
+						
+						<FormField
+							control={form.control}
+							name="count"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Count</FormLabel>
+									<FormControl>
+									<Input
+											placeholder="Number of Darts"
+											type="number"
+											{...field}
+											value={
+												field.value === undefined
+													? ""
+													: field.value
+											}
+											onChange={(e) => {
+												const value = e.target.value;
+												if (/^\d*$/.test(value)) {
+													field.onChange(
+														value === ""
+															? undefined
+															: parseInt(
+																	value,
+																	10
+															  )
+													);
+												}
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						
 						<FormField
 							control={form.control}
 							name="notes"
