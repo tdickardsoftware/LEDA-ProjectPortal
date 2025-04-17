@@ -237,7 +237,7 @@ export default function MentionForm({
 							name="count"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Count</FormLabel>
+									<FormLabel>Number of Darts/Count</FormLabel>
 									<FormControl>
 									<Input
 											placeholder="Number of Darts"
