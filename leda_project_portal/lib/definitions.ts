@@ -224,3 +224,15 @@ export type Payout = {
 	seasonCode: string;
 	payoutsData: JSON;
 };
+//
+// Define type to identify the shape of our data from postgres for a Trails Player History
+//
+export type TrailsPlayerHistory = {
+	trailsDate: string;
+	previousTotalPoints: number;
+	totalPoints: number;
+	changeBy: number;
+	modifyDate: Date;
+	singlesPlace: number;
+	doublesPlace: number;
+};

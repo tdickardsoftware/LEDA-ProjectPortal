@@ -18,17 +18,23 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import PlayerTrailsHistoryContent from "./player-trails-history-content";
 
 export default function PlayerPageContent({
 	playerData,
 }: {
 	playerData: PlayerMemberInfo;
 }) {
-	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [isTrailsHistoryDialogOpen, setIsTrailsHistoryDialogOpen] = useState(false);
 
 	const handleEdit = () => {
-		setIsDialogOpen(!isDialogOpen);
+		setIsEditDialogOpen(!isEditDialogOpen);
 	};
+
+	const handleTrailsHistory = () => {
+		setIsTrailsHistoryDialogOpen(!isTrailsHistoryDialogOpen);
+	}
 
 	const handleRefresh = () => {
 		window.location.reload();
@@ -56,6 +62,7 @@ export default function PlayerPageContent({
 							</Button>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								onClick={handleTrailsHistory}
 							>
 								Trails History
 							</Button>
@@ -221,8 +228,27 @@ export default function PlayerPageContent({
 					</Button>
 				</div>
 			</div>
+			
+			<Dialog open={isTrailsHistoryDialogOpen} onOpenChange={setIsTrailsHistoryDialogOpen}>
+				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Trails History</DialogTitle>
+					</DialogHeader>
+					<PlayerTrailsHistoryContent playerData={playerData} />
+					<div className="flex justify-center">
+						<Button
+							className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							asChild
+						>
+							<Link href={"/Portal/Activities/Trails"} prefetch={true}>
+								Manage Trails Data
+							</Link>
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 
-			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
 				<DialogContent className="w-fit bg-white">
 					<DialogHeader>
 						<DialogTitle>Edit Player: {playerData.fullName}</DialogTitle>
