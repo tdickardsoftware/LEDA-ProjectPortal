@@ -19,6 +19,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import PlayerTrailsHistoryContent from "./player-trails-history-content";
+import PlayerMentionsHistoryContent from "./player-mentions-history-content";
 
 export default function PlayerPageContent({
 	playerData,
@@ -27,6 +28,7 @@ export default function PlayerPageContent({
 }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isTrailsHistoryDialogOpen, setIsTrailsHistoryDialogOpen] = useState(false);
+	const [isMentionsHistoryDialogOpen, setIsMentionsHistoryDialogOpen] = useState(false);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -35,6 +37,10 @@ export default function PlayerPageContent({
 	const handleTrailsHistory = () => {
 		setIsTrailsHistoryDialogOpen(!isTrailsHistoryDialogOpen);
 	}
+
+	const handleMentionsHistory = () => {
+		setIsMentionsHistoryDialogOpen(!isMentionsHistoryDialogOpen);
+	};
 
 	const handleRefresh = () => {
 		window.location.reload();
@@ -68,6 +74,7 @@ export default function PlayerPageContent({
 							</Button>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								onClick={handleMentionsHistory}
 							>
 								Mentions History
 							</Button>
@@ -228,6 +235,12 @@ export default function PlayerPageContent({
 					</Button>
 				</div>
 			</div>
+
+			<Dialog open={isMentionsHistoryDialogOpen} onOpenChange={setIsMentionsHistoryDialogOpen}>
+				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+					<PlayerMentionsHistoryContent playerData={playerData} />
+				</DialogContent>
+			</Dialog>
 			
 			<Dialog open={isTrailsHistoryDialogOpen} onOpenChange={setIsTrailsHistoryDialogOpen}>
 				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
