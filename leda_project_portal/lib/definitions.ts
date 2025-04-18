@@ -236,3 +236,18 @@ export type TrailsPlayerHistory = {
 	singlesPlace: number;
 	doublesPlace: number;
 };
+//
+// Define type to identify the shape of our data from postgres for a Mention Player History
+//
+export type MentionPlayerHistory = {
+	ledaId: string;
+	mentionCode: string;
+	mentionDesc: string;
+	mentionPoints: number;
+	seasonCode: string;
+	weekNum: number;
+	notes: string;
+	mentionId: string;
+	creationDate?: Date;
+	count: number;
+};

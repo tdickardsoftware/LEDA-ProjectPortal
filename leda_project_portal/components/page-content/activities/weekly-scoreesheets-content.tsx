@@ -27,6 +27,7 @@ import {
 	teamRoute,
 	playerRoute,
 	weeklyScoresheetsRoute,
+	mentionPlayerHistoryRoute,
 } from "@/lib/apiRoutes";
 import FolderTab, { FolderTabMed } from "@/components/ui/folder-tab";
 import { Player } from "@/lib/definitions";
@@ -825,6 +826,7 @@ export default function WeeklyScoresheetsContent() {
 						desc: string;
 						points: number;
 						notes: string;
+						count?: number;
 					}
 				>;
 			}
@@ -857,7 +859,7 @@ export default function WeeklyScoresheetsContent() {
 
 			// Only add mentions if they exist
 			if (existingMentions && Object.keys(existingMentions).length > 0) {
-				// Convert the mentions to ensure notes is always a string
+				// Convert the mentions to ensure notes is always a string and count is always present
 				const formattedMentions: Record<
 					string,
 					{
@@ -865,6 +867,7 @@ export default function WeeklyScoresheetsContent() {
 						desc: string;
 						points: number;
 						notes: string;
+						count?: number;
 					}
 				> = {};
 
@@ -873,7 +876,8 @@ export default function WeeklyScoresheetsContent() {
 						mentionCode: mention.mentionCode,
 						desc: mention.desc,
 						points: mention.points,
-						notes: mention.notes || "", // Ensure notes is always a string, never undefined
+						notes: mention.notes || "",
+						count: mention.count ?? 0, // Always include count, default to 0 if missing
 					};
 				});
 
@@ -896,6 +900,7 @@ export default function WeeklyScoresheetsContent() {
 						desc: string;
 						points: number;
 						notes: string;
+						count?: number;
 					}
 				>;
 			}
@@ -928,7 +933,7 @@ export default function WeeklyScoresheetsContent() {
 
 			// Only add mentions if they exist
 			if (existingMentions && Object.keys(existingMentions).length > 0) {
-				// Convert the mentions to ensure notes is always a string
+				// Convert the mentions to ensure notes is always a string and count is always present
 				const formattedMentions: Record<
 					string,
 					{
@@ -936,6 +941,7 @@ export default function WeeklyScoresheetsContent() {
 						desc: string;
 						points: number;
 						notes: string;
+						count?: number;
 					}
 				> = {};
 
@@ -944,7 +950,8 @@ export default function WeeklyScoresheetsContent() {
 						mentionCode: mention.mentionCode,
 						desc: mention.desc,
 						points: mention.points,
-						notes: mention.notes || "", // Ensure notes is always a string, never undefined
+						notes: mention.notes || "",
+						count: mention.count ?? 0,
 					};
 
 					awayTeamMembers[String(player.ledaId)].mentions =
@@ -1030,11 +1037,15 @@ export default function WeeklyScoresheetsContent() {
 			);
 
 			let completeData: FormattedScoreData = data;
+			let previousData: FormattedScoreData | null = null;
 
 			// If there's existing data, merge it with our new data
 			if (fetchResponse.ok) {
 				const existingData = await fetchResponse.json();
 				if (existingData && existingData.scoresheetData) {
+					 // Store previous data for mention history comparison
+					previousData = JSON.parse(JSON.stringify(existingData.scoresheetData));
+					
 					// For the current matchup, use our new data completely (including penalty removals)
 					// but merge with other matchups that might exist
 					const existingScoreData =
@@ -1130,6 +1141,16 @@ export default function WeeklyScoresheetsContent() {
 					body: JSON.stringify(awayTeamPointsPayload),
 				});
 
+				 // Process players and their mentions
+				await processMentionHistory(
+					matchupData,
+					previousData,
+					selectedDivision,
+					selectedSubdivision,
+					matchupKey,
+					parseInt(selectedWeek)
+				);
+
 				// Save player points for each player in the home team
 				const homePlayers =
 					matchupData.teamInformation[selectedHomeTeamId].teamMembers;
@@ -1193,6 +1214,226 @@ export default function WeeklyScoresheetsContent() {
 			console.error("Error saving scoresheet:", error);
 		} finally {
 			setIsSaving(false);
+		}
+	};
+
+	// Add this new helper function to process mentions history
+	const processMentionHistory = async (
+			matchupData: {
+				teamInformation: Record<string, {
+					teamName: string;
+					teamLetter: string;
+					home: boolean;
+					teamMembers: Record<string, {
+						name: string;
+						gameStats: Record<string, boolean>;
+						gamePoints: string;
+						mentions?: Record<string, {
+							mentionCode: string;
+							desc: string;
+							points: number;
+							notes?: string;
+							count?: number;
+						}>;
+					}>;
+					penalties?: Record<string, {
+						penaltyCode: string;
+						points: number;
+						notes?: string;
+					}>;
+				}>;
+			gameInformation: Record<string, {
+				homeWin: boolean;
+				homePoints: string;
+				awayPoints: string;
+			}>;
+			teamPoints: {
+				homePoints: string;
+				awayPoints: string;
+			};
+		},
+		previousData: FormattedScoreData | null,
+		division: string,
+		subdivision: string,
+		matchupKey: string,
+		weekNum: number
+	) => {
+		// Process both teams
+		const teamIds = [selectedHomeTeamId, selectedAwayTeamId];
+		
+		for (const teamId of teamIds) {
+			const teamMembers = matchupData.teamInformation[teamId]?.teamMembers || {};
+			
+			// Process each player in the team
+			for (const playerId in teamMembers) {
+				const player = teamMembers[playerId];
+				const currentMentions = player.mentions || {};
+				
+				// Get previous mentions for this player if they exist
+				const previousMentions = 
+					previousData?.[division]?.[subdivision]?.[matchupKey]?.
+					teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions || {};
+				
+				// Track which mentions were processed to identify deletions
+				const processedMentionIds = new Set<string>();
+				
+				// Process current mentions - add new or update existing
+				for (const mentionId in currentMentions) {
+					const mention = currentMentions[mentionId];
+					processedMentionIds.add(mentionId);
+					
+					// If this mention exists in previous data, it's an update
+					if (previousMentions[mentionId]) {
+						// Check if anything changed
+						const prevMention = previousMentions[mentionId];
+						if (
+							prevMention.mentionCode !== mention.mentionCode ||
+							prevMention.desc !== mention.desc ||
+							prevMention.points !== mention.points ||
+							prevMention.notes !== mention.notes
+						) {
+							// Update the mention history
+							await updateMentionHistory({
+								ledaId: playerId,
+								mentionId,
+								mentionCode: mention.mentionCode,
+								mentionDesc: mention.desc,
+								mentionPoints: mention.points,
+								seasonCode,
+								weekNum,
+								notes: mention.notes || "",
+								count: mention.count || 0, // Ensure count is always provided
+							});
+						}
+					} else {
+						// This is a new mention, add it to history
+						await createMentionHistory({
+							ledaId: playerId,
+							mentionId,
+							mentionCode: mention.mentionCode,
+							mentionDesc: mention.desc,
+							mentionPoints: mention.points,
+							seasonCode,
+							weekNum,
+							notes: mention.notes || "",
+							count: mention.count || 0, // Ensure count is always provided
+						});
+					}
+				}
+				
+				// Check for deleted mentions
+				for (const mentionId in previousMentions) {
+					if (!processedMentionIds.has(mentionId)) {
+						// This mention was deleted, remove it from history
+						await deleteMentionHistory({
+							ledaId: playerId,
+							mentionId,
+							seasonCode,
+							weekNum,
+							mentionCode: "",  // Not needed for deletion
+							mentionDesc: "",   // Not needed for deletion
+							mentionPoints: 0,  // Not needed for deletion
+							notes: ""         // Not needed for deletion
+						});
+					}
+				}
+			}
+		}
+	};
+
+	// Helper functions for mention history API calls
+	const createMentionHistory = async (data: {
+		ledaId: string;
+		mentionId: string;
+		mentionCode: string;
+		mentionDesc: string;
+		mentionPoints: number;
+		seasonCode: string;
+		weekNum: number;
+		notes: string;
+		count?: number; // Add count field
+	}) => {
+		try {
+			const response = await fetch(mentionPlayerHistoryRoute, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					...data,
+					count: data.count ?? 0, // Ensure count is always provided
+				}),
+			});
+			
+			if (!response.ok) {
+				throw new Error(`Failed to create mention history: ${response.statusText}`);
+			}
+			
+			console.log(`Created mention history for player ${data.ledaId}, mention ${data.mentionId}`);
+		} catch (error) {
+			console.error("Error creating mention history:", error);
+		}
+	};
+
+	const updateMentionHistory = async (data: {
+		ledaId: string;
+		mentionId: string;
+		mentionCode: string;
+		mentionDesc: string;
+		mentionPoints: number;
+		seasonCode: string;
+		weekNum: number;
+		notes: string;
+		count?: number; // Add count field
+	}) => {
+		try {
+			const response = await fetch(mentionPlayerHistoryRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					...data,
+					count: data.count ?? 0, // Ensure count is always provided
+				}),
+			});
+			
+			if (!response.ok) {
+				throw new Error(`Failed to update mention history: ${response.statusText}`);
+			}
+			
+			console.log(`Updated mention history for player ${data.ledaId}, mention ${data.mentionId}`);
+		} catch (error) {
+			console.error("Error updating mention history:", error);
+		}
+	};
+
+	const deleteMentionHistory = async (data: {
+		ledaId: string;
+		mentionId: string;
+		mentionCode: string;
+		mentionDesc: string;
+		mentionPoints: number;
+		seasonCode: string;
+		weekNum: number;
+		notes: string;
+	}) => {
+		try {
+			const response = await fetch(mentionPlayerHistoryRoute, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(data),
+			});
+			
+			if (!response.ok) {
+				throw new Error(`Failed to delete mention history: ${response.statusText}`);
+			}
+			
+			console.log(`Deleted mention history for player ${data.ledaId}, mention ${data.mentionId}`);
+		} catch (error) {
+			console.error("Error deleting mention history:", error);
 		}
 	};
 
@@ -1618,8 +1859,8 @@ export default function WeeklyScoresheetsContent() {
 		mentionCode: string,
 		desc: string,
 		points: number,
+		count: number,
 		notes?: string,
-		count: number = 0
 	) => {
 		if (!formattedScoreData || !selectedPlayerForMention) return;
 
@@ -1665,16 +1906,14 @@ export default function WeeklyScoresheetsContent() {
 		mentionCode: string,
 		desc: string,
 		points: number,
+		count: number,
 		notes?: string,
-		count: number = 0
 	) => {
 		if (!formattedScoreData || !selectedPlayerForMention) {
 			// Initialize data if needed
 			if (!formattedScoreData) setFormattedScoreData({});
-			
 			return;
 		}
-
 		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
 		const playerId = selectedPlayerForMention.id;
 		const teamId = selectedPlayerForMention.teamId;
@@ -1774,19 +2013,22 @@ export default function WeeklyScoresheetsContent() {
 			notes: notes || "",
 			count: count || 0,
 		};
-
 		// Update the mention counter state
 		setMentionCounters({
 			...mentionCounters,
 			[playerMentionKey]: newCounter,
 		});
 
-		// Update state
+		// Update state with the new data
 		setFormattedScoreData(updatedData);
-
-		console.log(updatedData);
-
-;
+		setTimeout(() => {
+			console.log(formattedScoreData)
+		}, 0);
+		// Temporarily close and reopen the dialog to force a refresh
+		setMentionDialogOpen(false);
+		setTimeout(() => {
+			setMentionDialogOpen(true);
+		}, 50);
 
 		// Mark data as changed to enable save button
 		handleDataChange();
@@ -2492,194 +2734,194 @@ export default function WeeklyScoresheetsContent() {
 
 								{/* Add the Game Points Table */}
 								<FolderTab title="Game Points">
-									{isLoading ? (
-										<FolderTabSkeleton />
-									) : (
-										<div className="overflow-x-auto">
-											<Table>
-												<TableHeader>
-													<TableRow>
-														<TableHead></TableHead>
-														{Array.from({
-															length: 11,
-														}).map((_, i) => (
-															<TableHead
-																key={i}
-																className="text-center"
-															>
-																<div className="flex flex-col items-center gap-1">
-																	<span>
-																		Game{" "}
-																		{i + 1}
-																	</span>
-																	<div className="flex items-center space-x-2">
-																		<Checkbox
-																			id={`home-win-${i}`}
-																			checked={
-																				homeWins[
-																					i
-																				]
-																			}
-																			onCheckedChange={() =>
-																				handleHomeWinToggle(
-																					i
-																				)
-																			}
-																		/>
-																		<Label
-																			htmlFor={`home-win-${i}`}
-																			className="text-xs"
-																		>
-																			Home
-																			Win
-																		</Label>
+										{isLoading ? (
+											<FolderTabSkeleton />
+										) : (
+											<div className="overflow-x-auto">
+												<Table>
+													<TableHeader>
+														<TableRow>
+															<TableHead></TableHead>
+															{Array.from({
+																length: 11,
+															}).map((_, i) => (
+																<TableHead
+																	key={i}
+																	className="text-center"
+																>
+																	<div className="flex flex-col items-center gap-1">
+																		<span>
+																			Game{" "}
+																			{i + 1}
+																		</span>
+																		<div className="flex items-center space-x-2">
+																			<Checkbox
+																				id={`home-win-${i}`}
+																				checked={
+																					homeWins[
+																						i
+																					]
+																				}
+																				onCheckedChange={() =>
+																					handleHomeWinToggle(
+																						i
+																					)
+																				}
+																			/>
+																			<Label
+																				htmlFor={`home-win-${i}`}
+																				className="text-xs"
+																			>
+																				Home
+																				Win
+																			</Label>
+																		</div>
 																	</div>
+																</TableHead>
+															))}
+														</TableRow>
+													</TableHeader>
+													<TableBody>
+														<TableRow>
+															<TableCell className="font-medium">
+																Home Points
+															</TableCell>
+															{Array.from({
+																length: 11,
+															}).map((_, i) => (
+																<TableCell
+																	key={i}
+																	className="text-center"
+																>
+																	<input
+																		type="text"
+																		inputMode="numeric"
+																		pattern="[0-9]*"
+																		value={
+																			homePoints[
+																				i
+																			]
+																		}
+																		onChange={(
+																			e
+																		) =>
+																			handleHomePointsChange(
+																				i,
+																				e
+																					.target
+																					.value
+																			)
+																		}
+																		className="w-12 text-center border border-gray-300 rounded p-1"
+																		placeholder="0"
+																	/>
+																</TableCell>
+															))}
+														</TableRow>
+														<TableRow>
+															<TableCell className="font-medium">
+																Away Points
+															</TableCell>
+															{Array.from({
+																length: 11,
+															}).map((_, i) => (
+																<TableCell
+																	key={i}
+																	className="text-center"
+																>
+																	<input
+																		type="text"
+																		inputMode="numeric"
+																		pattern="[0-9]*"
+																		value={
+																			awayPoints[
+																				i
+																			]
+																		}
+																		onChange={(
+																			e
+																		) =>
+																			handleAwayPointsChange(
+																				i,
+																				e
+																					.target
+																					.value
+																			)
+																		}
+																		className="w-12 text-center border border-gray-300 rounded p-1"
+																		placeholder="0"
+																	/>
+																</TableCell>
+															))}
+														</TableRow>
+														<TableRow className="bg-gray-50">
+															<TableCell className="font-bold">
+																Total
+															</TableCell>
+															<TableCell
+																colSpan={5}
+																className="text-center font-bold"
+															>
+																Home:{" "}
+																{
+																	calculatePoints()
+																		.rawHomePoints
+																}
+																{calculatePoints()
+																	.homePenaltyPoints >
+																	0 && (
+																	<span className="text-red-600 ml-2">
+																		(-
+																		{
+																			calculatePoints()
+																				.homePenaltyPoints
+																		}{" "}
+																		penalties)
+																	</span>
+																)}
+																<div className="text-sm font-normal mt-1">
+																	Final:{" "}
+																	{
+																		calculatePoints()
+																			.finalHomePoints
+																	}
 																</div>
-															</TableHead>
-														))}
-													</TableRow>
-												</TableHeader>
-												<TableBody>
-													<TableRow>
-														<TableCell className="font-medium">
-															Home Points
-														</TableCell>
-														{Array.from({
-															length: 11,
-														}).map((_, i) => (
-															<TableCell
-																key={i}
-																className="text-center"
-															>
-																<input
-																	type="text"
-																	inputMode="numeric"
-																	pattern="[0-9]*"
-																	value={
-																		homePoints[
-																			i
-																		]
-																	}
-																	onChange={(
-																		e
-																	) =>
-																		handleHomePointsChange(
-																			i,
-																			e
-																				.target
-																				.value
-																		)
-																	}
-																	className="w-12 text-center border border-gray-300 rounded p-1"
-																	placeholder="0"
-																/>
 															</TableCell>
-														))}
-													</TableRow>
-													<TableRow>
-														<TableCell className="font-medium">
-															Away Points
-														</TableCell>
-														{Array.from({
-															length: 11,
-														}).map((_, i) => (
 															<TableCell
-																key={i}
-																className="text-center"
+																colSpan={6}
+																className="text-center font-bold"
 															>
-																<input
-																	type="text"
-																	inputMode="numeric"
-																	pattern="[0-9]*"
-																	value={
-																		awayPoints[
-																			i
-																		]
-																	}
-																	onChange={(
-																		e
-																	) =>
-																		handleAwayPointsChange(
-																			i,
-																			e
-																				.target
-																				.value
-																		)
-																	}
-																	className="w-12 text-center border border-gray-300 rounded p-1"
-																	placeholder="0"
-																/>
-															</TableCell>
-														))}
-													</TableRow>
-													<TableRow className="bg-gray-50">
-														<TableCell className="font-bold">
-															Total
-														</TableCell>
-														<TableCell
-															colSpan={5}
-															className="text-center font-bold"
-														>
-															Home:{" "}
-															{
-																calculatePoints()
-																	.rawHomePoints
-															}
-															{calculatePoints()
-																.homePenaltyPoints >
-																0 && (
-																<span className="text-red-600 ml-2">
-																	(-
-																	{
-																		calculatePoints()
-																			.homePenaltyPoints
-																	}{" "}
-																	penalties)
-																</span>
-															)}
-															<div className="text-sm font-normal mt-1">
-																Final:{" "}
+																Away:{" "}
 																{
 																	calculatePoints()
-																		.finalHomePoints
+																		.rawAwayPoints
 																}
-															</div>
-														</TableCell>
-														<TableCell
-															colSpan={6}
-															className="text-center font-bold"
-														>
-															Away:{" "}
-															{
-																calculatePoints()
-																	.rawAwayPoints
-															}
-															{calculatePoints()
-																.awayPenaltyPoints >
-																0 && (
-																<span className="text-red-600 ml-2">
-																	(-
+																{calculatePoints()
+																	.awayPenaltyPoints >
+																	0 && (
+																	<span className="text-red-600 ml-2">
+																		(-
+																		{
+																			calculatePoints()
+																				.awayPenaltyPoints
+																		}{" "}
+																		penalties)
+																	</span>
+																)}
+																<div className="text-sm font-normal mt-1">
+																	Final:{" "}
 																	{
 																		calculatePoints()
-																			.awayPenaltyPoints
-																	}{" "}
-																	penalties)
-																</span>
-															)}
-															<div className="text-sm font-normal mt-1">
-																Final:{" "}
-																{
-																	calculatePoints()
-																		.finalAwayPoints
-																}
-															</div>
-														</TableCell>
-													</TableRow>
-												</TableBody>
-											</Table>
-										</div>
-									)}
-								</FolderTab>
+																			.finalAwayPoints
+																	}
+																</div>
+															</TableCell>
+														</TableRow>
+													</TableBody>
+												</Table>
+											</div>
+										)}
+									</FolderTab>
 
 								{/* Add Save and Reset Buttons */}
 								<div className="flex justify-center mt-4">
@@ -2750,8 +2992,9 @@ export default function WeeklyScoresheetsContent() {
 								mentionCode,
 								desc,
 								points,
+								count || 0,
 								notes,
-								count
+								
 							)
 						}
 					/>
@@ -2764,6 +3007,9 @@ export default function WeeklyScoresheetsContent() {
 									Existing Mentions
 								</h3>
 								{(() => {
+									// Debugging: Log the formattedScoreData structure
+									console.log("Formatted Score Data:", formattedScoreData);
+
 									const mentions =
 										formattedScoreData?.[
 											selectedDivision
@@ -2774,6 +3020,9 @@ export default function WeeklyScoresheetsContent() {
 										]?.teamMembers?.[
 											selectedPlayerForMention.id
 										]?.mentions;
+
+									// Debugging: Log the mentions object
+									console.log("Mentions for Player:", mentions);
 
 									if (
 										mentions &&
