@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import PlayerTrailsHistoryContent from "./player-trails-history-content";
 import PlayerMentionsHistoryContent from "./player-mentions-history-content";
+import PlayerTDPHistoryContent from "./player-tdp-history-content";
 
 export default function PlayerPageContent({
 	playerData,
@@ -29,6 +30,7 @@ export default function PlayerPageContent({
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isTrailsHistoryDialogOpen, setIsTrailsHistoryDialogOpen] = useState(false);
 	const [isMentionsHistoryDialogOpen, setIsMentionsHistoryDialogOpen] = useState(false);
+	const [isTDPHistoryDialogOpen, setIsTDPHistoryDialogOpen] = useState(false);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -41,6 +43,10 @@ export default function PlayerPageContent({
 	const handleMentionsHistory = () => {
 		setIsMentionsHistoryDialogOpen(!isMentionsHistoryDialogOpen);
 	};
+
+	const handleTDPHistory = () => {
+		setIsTDPHistoryDialogOpen(!isTDPHistoryDialogOpen);
+	}
 
 	const handleRefresh = () => {
 		window.location.reload();
@@ -85,6 +91,7 @@ export default function PlayerPageContent({
 							</Button>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								onClick={handleTDPHistory}
 							>
 								Top Darter Points History
 							</Button>
@@ -272,6 +279,15 @@ export default function PlayerPageContent({
 						onRefresh={handleRefresh}
 						onClose={handleEdit}
 					/>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isTDPHistoryDialogOpen} onOpenChange={setIsTDPHistoryDialogOpen}>
+				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Top Darter Points History for {playerData.fullName}</DialogTitle>
+					</DialogHeader>
+					<PlayerTDPHistoryContent playerData={playerData} />
 				</DialogContent>
 			</Dialog>
 		</div>

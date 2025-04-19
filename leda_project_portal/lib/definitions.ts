@@ -251,3 +251,22 @@ export type MentionPlayerHistory = {
 	creationDate?: Date;
 	count: number;
 };
+//
+// Define type to identify the shape of our data from postgres for top darter seasons and points
+//
+export type TopDarterTotals = {
+	seasonCode: string;
+	totalPoints: number;
+}
+//
+// Define type to identify the shape of our data from postgres for Weekly Top Darter Scores
+//
+export type WeeklyTopDarterScores = {
+	weekNum: number;
+	totalPoints: number;
+	gameName: string;
+	changeBy: number;
+	prevTotalPoints: number;
+	teamLedaId: number;
+	teamName: string;
+}
