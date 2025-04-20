@@ -451,22 +451,26 @@ export default function WeeklyScoresheetsContent() {
 						Object.values(
 							matchupData.teamInformation[homeTeamId]
 								?.teamMembers || {}
-						).map((member, index) => ({
-							ledaId: index + 1, // Convert to number
-							firstName: member.name.split(" ")[0] || "",
-							lastName: member.name.split(" ")[1] || "",
-							middleInitial: "",
-							addressOne: "",
-							addressTwo: "",
-							city: "",
-							state: "",
-							zip: "",
-							phoneNumber: "",
-							email: "",
-							fullName: member.name,
-							gender: "Unknown", // Default or fetched value
-							dateOfBirth: new Date(), // Default or fetched value
-						}))
+						).map((member, index) => {
+							const name = member.name || "";
+							const [firstName = "", lastName = ""] = name.split(" ");
+							return {
+								ledaId: index + 1, // Convert to number
+								firstName,
+								lastName,
+								middleInitial: "",
+								addressOne: "",
+								addressTwo: "",
+								city: "",
+								state: "",
+								zip: "",
+								phoneNumber: "",
+								email: "",
+								fullName: name,
+								gender: "Unknown", // Default or fetched value
+								dateOfBirth: new Date(), // Default or fetched value
+							};
+						})
 					);
 
 					// Set away team data using actual away team ID
@@ -485,22 +489,26 @@ export default function WeeklyScoresheetsContent() {
 						Object.values(
 							matchupData.teamInformation[awayTeamId]
 								?.teamMembers || {}
-						).map((member, index) => ({
-							ledaId: index + 1, // Convert to number
-							firstName: member.name.split(" ")[0] || "",
-							lastName: member.name.split(" ")[1] || "",
-							middleInitial: "",
-							addressOne: "",
-							addressTwo: "",
-							city: "",
-							state: "",
-							zip: "",
-							phoneNumber: "",
-							email: "",
-							fullName: member.name,
-							gender: "Unknown", // Default or fetched value
-							dateOfBirth: new Date(), // Default or fetched value
-						}))
+						).map((member, index) => {
+							const name = member.name || "";
+							const [firstName = "", lastName = ""] = name.split(" ");
+							return {
+								ledaId: index + 1, // Convert to number
+								firstName,
+								lastName,
+								middleInitial: "",
+								addressOne: "",
+								addressTwo: "",
+								city: "",
+								state: "",
+								zip: "",
+								phoneNumber: "",
+								email: "",
+								fullName: name,
+								gender: "Unknown", // Default or fetched value
+								dateOfBirth: new Date(), // Default or fetched value
+							};
+						})
 					);
 
 					// Set game data with safety checks
