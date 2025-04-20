@@ -250,6 +250,7 @@ export type MentionPlayerHistory = {
 	mentionId: string;
 	creationDate?: Date;
 	count: number;
+	teamId: number;
 };
 //
 // Define type to identify the shape of our data from postgres for top darter seasons and points

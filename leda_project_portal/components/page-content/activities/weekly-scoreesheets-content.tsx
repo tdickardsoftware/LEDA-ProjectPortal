@@ -334,6 +334,22 @@ export default function WeeklyScoresheetsContent() {
 							playerGameData[`Game ${i}`] = false;
 						}
 						homeGameData[player.ledaId] = playerGameData;
+
+						 // Defensive: Ensure formattedScoreData is initialized
+						if (!formattedScoreData) {
+							setFormattedScoreData({});
+						}
+						const fsd = formattedScoreData || {};
+
+						// Initialize mentions if not already present
+						fsd[divisionName] = fsd[divisionName] || {};
+						fsd[divisionName][subdivisionName] = fsd[divisionName][subdivisionName] || {};
+						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`] =
+							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`] || { teamInformation: {} };
+						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedHomeTeamId] =
+							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedHomeTeamId] || { teamMembers: {} };
+						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedHomeTeamId].teamMembers[player.ledaId] =
+							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedHomeTeamId].teamMembers[player.ledaId] || { mentions: {} };
 					});
 
 					console.log(homeGameData);
@@ -371,6 +387,21 @@ export default function WeeklyScoresheetsContent() {
 							playerGameData[`Game ${i}`] = false;
 						}
 						awayGameData[player.ledaId] = playerGameData;
+						 // Defensive: Ensure formattedScoreData is initialized
+						if (!formattedScoreData) {
+							setFormattedScoreData({});
+						}
+						const fsd = formattedScoreData || {};
+
+						// Initialize mentions if not already present
+						fsd[divisionName] = fsd[divisionName] || {};
+						fsd[divisionName][subdivisionName] = fsd[divisionName][subdivisionName] || {};
+						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`] =
+							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`] || { teamInformation: {} };
+						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedAwayTeamId] =
+							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedAwayTeamId] || { teamMembers: {} };
+						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedAwayTeamId].teamMembers[player.ledaId] =
+							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedAwayTeamId].teamMembers[player.ledaId] || { mentions: {} };
 					});
 					setAwayTeamGameData(awayGameData);
 
@@ -1302,7 +1333,8 @@ export default function WeeklyScoresheetsContent() {
 								seasonCode,
 								weekNum,
 								notes: mention.notes || "",
-								count: mention.count || 0, // Ensure count is always provided
+								count: mention.count || 0,
+								teamId: teamId, // Add teamId
 							});
 						}
 					} else {
@@ -1316,7 +1348,8 @@ export default function WeeklyScoresheetsContent() {
 							seasonCode,
 							weekNum,
 							notes: mention.notes || "",
-							count: mention.count || 0, // Ensure count is always provided
+							count: mention.count || 0,
+							teamId: teamId, // Add teamId
 						});
 					}
 				}
@@ -1330,10 +1363,11 @@ export default function WeeklyScoresheetsContent() {
 							mentionId,
 							seasonCode,
 							weekNum,
-							mentionCode: "",  // Not needed for deletion
-							mentionDesc: "",   // Not needed for deletion
-							mentionPoints: 0,  // Not needed for deletion
-							notes: ""         // Not needed for deletion
+							mentionCode: "",
+							mentionDesc: "",
+							mentionPoints: 0,
+							notes: "",
+							teamId: teamId, // Add teamId
 						});
 					}
 				}
@@ -1352,6 +1386,7 @@ export default function WeeklyScoresheetsContent() {
 		weekNum: number;
 		notes: string;
 		count?: number; // Add count field
+		teamId?: string; // Add teamId parameter
 	}) => {
 		try {
 			const response = await fetch(mentionPlayerHistoryRoute, {
@@ -1362,6 +1397,7 @@ export default function WeeklyScoresheetsContent() {
 				body: JSON.stringify({
 					...data,
 					count: data.count ?? 0, // Ensure count is always provided
+					teamId: data.teamId ?? (data.ledaId.startsWith(selectedHomeTeamId) ? selectedHomeTeamId : selectedAwayTeamId)
 				}),
 			});
 			
@@ -1385,6 +1421,7 @@ export default function WeeklyScoresheetsContent() {
 		weekNum: number;
 		notes: string;
 		count?: number; // Add count field
+		teamId?: string; // Add teamId parameter
 	}) => {
 		try {
 			const response = await fetch(mentionPlayerHistoryRoute, {
@@ -1395,6 +1432,7 @@ export default function WeeklyScoresheetsContent() {
 				body: JSON.stringify({
 					...data,
 					count: data.count ?? 0, // Ensure count is always provided
+					teamId: data.teamId ?? (data.ledaId.startsWith(selectedHomeTeamId) ? selectedHomeTeamId : selectedAwayTeamId)
 				}),
 			});
 			
@@ -1417,6 +1455,7 @@ export default function WeeklyScoresheetsContent() {
 		seasonCode: string;
 		weekNum: number;
 		notes: string;
+		teamId?: string; // Add teamId parameter
 	}) => {
 		try {
 			const response = await fetch(mentionPlayerHistoryRoute, {
@@ -1424,7 +1463,10 @@ export default function WeeklyScoresheetsContent() {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(data),
+				body: JSON.stringify({
+					...data,
+					teamId: data.teamId ?? (data.ledaId.startsWith(selectedHomeTeamId) ? selectedHomeTeamId : selectedAwayTeamId)
+				}),
 			});
 			
 			if (!response.ok) {
@@ -1782,9 +1824,32 @@ export default function WeeklyScoresheetsContent() {
 			teamId: teamId,
 			teamName: teamName,
 		});
-
-		// Open the mention dialog
-		setMentionDialogOpen(true);
+		
+		// Log useful debug information
+		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+		console.log("Opening mentions dialog for:", playerName, "Team:", teamName);
+		console.log("Current matchup:", matchupKey);
+		console.log("Team ID:", teamId, "Player ID:", playerId);
+		
+		if (formattedScoreData) {
+			// Log the path to help debug
+			console.log("Division:", selectedDivision);
+			console.log("Subdivision:", selectedSubdivision);
+			
+			// Check if mentions exist
+			const mentions = formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]
+				?.teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions;
+			
+			console.log("Existing mentions:", mentions);
+		}
+		
+		// Force the dialog to show properly by using a small delay
+		// This ensures React has time to process state updates
+		setMentionDialogOpen(false); // First close in case it was open
+		
+		setTimeout(() => {
+			setMentionDialogOpen(true); // Then open with a slight delay
+		}, 10);
 	};
 
 	const handleMentionEditing = (
