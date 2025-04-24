@@ -87,7 +87,7 @@ export default function PlayerPageContent({
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
 							>
-								Payment History
+								Payment History *WIP*
 							</Button>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
@@ -99,11 +99,6 @@ export default function PlayerPageContent({
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
 							>
 								Roster History
-							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
-							>
-								Overall History?
 							</Button>
 						</div>
 					</FolderTabMed>
