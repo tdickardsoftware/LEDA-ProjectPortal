@@ -271,3 +271,17 @@ export type WeeklyTopDarterScores = {
 	teamLedaId: number;
 	teamName: string;
 }
+//
+// Define type to identify the shape of our data from postgres for Player Roster History
+//
+export type PlayerRosterHistory = {
+	player_id: number;
+	team_id: number;
+	team_letter: string;
+	team_name: string;
+	division: string;
+	subdivision: string;
+	season_code: string;
+	total_points: number;
+	place: number;
+}
