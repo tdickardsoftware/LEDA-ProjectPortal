@@ -14,7 +14,7 @@
  * penalties, and point calculations across multiple teams and players.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
@@ -172,7 +172,7 @@ const areAllMatchupsValid = (data: FormattedScoreData): boolean => {
 	return true;
 };
 
-export default function WeeklyScoresheetsContent() {
+export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderSeasonCode?: string }) {
 	// State declarations
 	const [seasonCode, setSeasonCode] = useState<string>("");
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
@@ -250,6 +250,17 @@ export default function WeeklyScoresheetsContent() {
 		notes: string;
 		count: number;
 	} | null>(null);
+
+	// Use renderSeasonCode if provided
+	useEffect(() => {
+		if (renderSeasonCode) {
+			setSeasonCode(renderSeasonCode);
+			setCurrentSeason(false); // Disable current season checkbox when season code is provided
+			setSeasonSelected(false); // Allow week selection
+			handleSeasonCodeSelect(renderSeasonCode);
+		}
+	}, [renderSeasonCode]);  // Include renderSeasonCode in dependency array
+
 
 	// Event handlers
 	const handleDataChange = () => {

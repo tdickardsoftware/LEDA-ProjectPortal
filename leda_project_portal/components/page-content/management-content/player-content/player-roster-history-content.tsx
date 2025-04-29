@@ -11,7 +11,7 @@ import {
     TableHeader, 
     TableRow 
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/skeleton";
 import {
     Pagination,
     PaginationContent,
@@ -21,6 +21,15 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Users, ClipboardList, BarChart } from "lucide-react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function PlayerRosterHistoryContent({
     playerData,
@@ -164,40 +173,88 @@ export default function PlayerRosterHistoryContent({
         <>
             <h2 className="text-2xl font-bold mb-4">Player Roster History</h2>
             {isLoading ? (
-                <div className="space-y-2">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
+                <div >
+                    <Spinner />
                 </div>
             ) : rosterHistory.length > 0 ? (
-                <>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Season</TableHead>
-                                <TableHead>Team Name</TableHead>
-                                <TableHead>Division</TableHead>
-                                <TableHead>Subdivision</TableHead>
-                                <TableHead>Team Letter</TableHead>
-                                <TableHead className="text-right">Points</TableHead>
-                                <TableHead className="text-right">Place</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {getCurrentPageData().map((item, index) => (
-                                <TableRow key={`${item.seasonCode}-${index}`}>
-                                    <TableCell className="font-medium">{item.seasonCode}</TableCell>
-                                    <TableCell>{item.team_name}</TableCell>
-                                    <TableCell>{item.division}</TableCell>
-                                    <TableCell>{item.subdivision}</TableCell>
-                                    <TableCell>{item.team_letter}</TableCell>
-                                    <TableCell className="text-right">{item.totalPoints}</TableCell>
-                                    <TableCell className="text-right">{item.place}</TableCell>
+                <div className="w-full">
+                    <div className="relative overflow-x-auto">
+                        <Table className="w-full">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-20">Season</TableHead>
+                                    <TableHead className="w-40">Team Name</TableHead>
+                                    <TableHead className="w-32">Division</TableHead>
+                                    <TableHead className="w-32">Subdivision</TableHead>
+                                    <TableHead className="w-24">Team Letter</TableHead>
+                                    <TableHead className="w-20 text-right">Points</TableHead>
+                                    <TableHead className="w-20 text-right">Place</TableHead>
+                                    <TableHead className="w-28">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {getCurrentPageData().map((item, index) => (
+                                    <TableRow key={`${item.seasonCode}-${index}`} className="group relative">
+                                        <TableCell className="font-medium">{item.seasonCode}</TableCell>
+                                        <TableCell>{item.team_name}</TableCell>
+                                        <TableCell>{item.division}</TableCell>
+                                        <TableCell>{item.subdivision}</TableCell>
+                                        <TableCell>{item.team_letter}</TableCell>
+                                        <TableCell className="text-right">{item.totalPoints}</TableCell>
+                                        <TableCell className="text-right">{item.place}</TableCell>
+                                        <TableCell className="p-2">
+                                            <div className="flex gap-2 justify-start">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button asChild size="icon" className="hover:bg-gray-100 border-gray-300 text-gray-700">
+                                                                <Link href={`/Portal/Management/Teams/${item.team_id}`} prefetch target="_blank">
+                                                                    <Users className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="bg-white">
+                                                            <p>View Team</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                                
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button asChild size="icon" className="hover:bg-gray-100 border-gray-300 text-gray-700">
+                                                                <Link href={`/Portal/Activities/Rosters/${item.seasonCode}`} prefetch target="_blank">
+                                                                    <ClipboardList className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="bg-white">
+                                                            <p>View Roster for {item.seasonCode}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                                
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button asChild size="icon" className="hover:bg-gray-100 border-gray-300 text-gray-700">
+                                                                <Link href={`/Portal/Activities/Weekly-Score/${item.seasonCode}`} prefetch target="_blank">
+                                                                    <BarChart className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="bg-white">
+                                                            <p>View Weekly Scoresheet Data for {item.seasonCode}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                     
                     <div className="flex items-center justify-between mt-4">
                         <Pagination>
@@ -220,7 +277,7 @@ export default function PlayerRosterHistoryContent({
                             </PaginationContent>
                         </Pagination>
                     </div>
-                </>
+                </div>
             ) : (
                 <div className="text-center p-4 text-gray-500">
                     No roster history found for this player
