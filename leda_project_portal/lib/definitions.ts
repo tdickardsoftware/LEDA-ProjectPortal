@@ -281,7 +281,7 @@ export type PlayerRosterHistory = {
 	team_name: string;
 	division: string;
 	subdivision: string;
-	season_code: string;
-	total_points: number;
+	seasonCode: string;
+	totalPoints: number;
 	place: number;
 }

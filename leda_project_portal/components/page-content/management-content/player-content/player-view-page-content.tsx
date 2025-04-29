@@ -21,6 +21,7 @@ import {
 import PlayerTrailsHistoryContent from "./player-trails-history-content";
 import PlayerMentionsHistoryContent from "./player-mentions-history-content";
 import PlayerTDPHistoryContent from "./player-tdp-history-content";
+import PlayerRosterHistoryContent from "./player-roster-history-content";
 
 export default function PlayerPageContent({
 	playerData,
@@ -31,6 +32,7 @@ export default function PlayerPageContent({
 	const [isTrailsHistoryDialogOpen, setIsTrailsHistoryDialogOpen] = useState(false);
 	const [isMentionsHistoryDialogOpen, setIsMentionsHistoryDialogOpen] = useState(false);
 	const [isTDPHistoryDialogOpen, setIsTDPHistoryDialogOpen] = useState(false);
+	const [isRosterHistoryDialogOpen, setIsRosterHistoryDialogOpen] = useState(false);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -46,6 +48,10 @@ export default function PlayerPageContent({
 
 	const handleTDPHistory = () => {
 		setIsTDPHistoryDialogOpen(!isTDPHistoryDialogOpen);
+	}
+
+	const handleRosterHistory = () => {
+		setIsRosterHistoryDialogOpen(!isRosterHistoryDialogOpen);
 	}
 
 	const handleRefresh = () => {
@@ -97,6 +103,7 @@ export default function PlayerPageContent({
 							</Button>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								onClick={handleRosterHistory}
 							>
 								Roster History
 							</Button>
@@ -283,6 +290,16 @@ export default function PlayerPageContent({
 						<DialogTitle>Top Darter Points History for {playerData.fullName}</DialogTitle>
 					</DialogHeader>
 					<PlayerTDPHistoryContent playerData={playerData} />
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isRosterHistoryDialogOpen} onOpenChange={setIsRosterHistoryDialogOpen}>
+
+			<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Roster History for {playerData.fullName}</DialogTitle>
+					</DialogHeader>
+					<PlayerRosterHistoryContent playerData={playerData} />
 				</DialogContent>
 			</Dialog>
 		</div>
