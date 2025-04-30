@@ -224,3 +224,64 @@ export type Payout = {
 	seasonCode: string;
 	payoutsData: JSON;
 };
+//
+// Define type to identify the shape of our data from postgres for a Trails Player History
+//
+export type TrailsPlayerHistory = {
+	trailsDate: string;
+	previousTotalPoints: number;
+	totalPoints: number;
+	changeBy: number;
+	modifyDate: Date;
+	singlesPlace: number;
+	doublesPlace: number;
+};
+//
+// Define type to identify the shape of our data from postgres for a Mention Player History
+//
+export type MentionPlayerHistory = {
+	ledaId: string;
+	mentionCode: string;
+	mentionDesc: string;
+	mentionPoints: number;
+	seasonCode: string;
+	weekNum: number;
+	notes: string;
+	mentionId: string;
+	creationDate?: Date;
+	count: number;
+	teamId: number;
+};
+//
+// Define type to identify the shape of our data from postgres for top darter seasons and points
+//
+export type TopDarterTotals = {
+	seasonCode: string;
+	totalPoints: number;
+}
+//
+// Define type to identify the shape of our data from postgres for Weekly Top Darter Scores
+//
+export type WeeklyTopDarterScores = {
+	weekNum: number;
+	totalPoints: number;
+	gameName: string;
+	changeBy: number;
+	prevTotalPoints: number;
+	teamLedaId: number;
+	teamName: string;
+}
+//
+// Define type to identify the shape of our data from postgres for Player Roster History
+//
+export type PlayerRosterHistory = {
+	player_id: number;
+	team_id: number;
+	team_letter: string;
+	team_name: string;
+	division: string;
+	subdivision: string;
+	seasonCode: string;
+	totalPoints: number;
+	place: number;
+}

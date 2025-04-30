@@ -24,7 +24,7 @@ export const FolderTabMed: React.FC<FolderTabProps> = ({
 }) => {
 	return (
 		<div
-			className={`relative bg-gray-100 rounded-lg shadow-md border border-gray-300 ${
+			className={`relative bg-gray-50 rounded-lg shadow-md border border-gray-300 ${
 				className || ""
 			}`}
 		>

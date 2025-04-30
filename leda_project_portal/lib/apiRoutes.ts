@@ -42,6 +42,10 @@ export const  scheduleRoute = "/api/activities/schedule";
 export const weeklyScoresheetsRoute = "/api/activities/scoresheets";
 // Define route for payout not on the serverside
 export const payoutRoute = "/api/activities/payout";
+// Define route for trailsPlayerHistory not on the serverside
+export const trailsPlayerHistoryRoute = "/api/activities/trails/trailsPlayerHistory";
+// Define route for mentionPlayerHistory not on the serverside 
+export const mentionPlayerHistoryRoute = "/api/maintenance/mention/mentionHistory";
 
 //
 // Server Routes
@@ -81,3 +85,7 @@ export const scheduleRouteServer = "http://" + process.env.VERCEL_URL + schedule
 export const weeklyScoresheetsRouteServer = "http://" + process.env.VERCEL_URL + weeklyScoresheetsRoute;
 // Define route for payout api
 export const payoutRouteServer = "http://" + process.env.VERCEL_URL + payoutRoute;
+// Define route for trailsPlayerHistory api
+export const trailsPlayerHistoryRouteServer = "http://" + process.env.VERCEL_URL + trailsPlayerHistoryRoute;
+// Define route for mentionPlayerHistory api
+export const mentionPlayerHistoryRouteServer = "http://" + process.env.VERCEL_URL + mentionPlayerHistoryRoute;

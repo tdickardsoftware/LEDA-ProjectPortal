@@ -72,6 +72,7 @@ export interface PlayerMention {
 	mentionCode: string;
 	desc: string;
 	points: number;
+	count?: number;
 	notes?: string;
 }
 
