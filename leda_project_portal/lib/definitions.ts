@@ -285,3 +285,17 @@ export type PlayerRosterHistory = {
 	totalPoints: number;
 	place: number;
 }
+//
+// Define type to identify the shape of our data from postgres for Payment History
+//
+export type PaymentHistory = {
+	ledaId: number;
+	type: string;
+	paymentType: string;
+	amount: number;
+	seasonCode: string;
+	comp: boolean
+	notes: string;
+	paidOff: boolean;
+	date: Date;
+}

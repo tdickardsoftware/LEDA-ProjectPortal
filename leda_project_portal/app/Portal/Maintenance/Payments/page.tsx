@@ -1,5 +1,5 @@
+import PaymentsPageContent from "@/components/page-content/maintenance-content/payments-page-content";
 import { Separator } from "@/components/ui/separator";
-import UnderConstruction from "@/components/ui/under-construction";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default function Page() {
                 </p>
                 <Separator />
             </div>
-            <UnderConstruction />
+            <PaymentsPageContent />
         </main>
     );
 }
