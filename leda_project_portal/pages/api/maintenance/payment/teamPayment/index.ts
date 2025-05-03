@@ -54,24 +54,42 @@ export default async function handler(
         try {
             // Parse the request body as PaymentHistory type
             const data = req.body as PaymentHistory;
+            let query: string;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let values: any;
+            if (data.paymentNbr === null || data.paymentNbr === undefined) {
+                query = 'INSERT INTO maint.leda_maint_team_payment_history("ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)'
 
-            // SQL query for upserting payment history (insert or update on conflict)
-            const query = 'INSERT INTO maint.leda_maint_team_payment_history("paymentNbr", "ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT ("paymentNbr") DO UPDATE SET "ledaId" = $2, "type" = $3, "paymentType" = $4, "amount" = $5, "seasonCode" = $6, "comp" = $7, "notes" = $8, "paidOff" = $9, "date" = $10;'
+                // Prepare values for the SQL query
+                values = [
+                    data.ledaId,
+                    data.type,
+                    data.paymentType,
+                    data.amount,
+                    data.seasonCode,
+                    data.comp,
+                    data.notes,
+                    data.paidOff,
+                    data.date // Note: Ensure this matches the column "paymentDate"
+                ];
+            } else {
+                // SQL query for upserting payment history (insert or update on conflict)
+                query = 'INSERT INTO maint.leda_maint_team_payment_history("paymentNbr", "ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT ("paymentNbr") DO UPDATE SET "ledaId" = $2, "type" = $3, "paymentType" = $4, "amount" = $5, "seasonCode" = $6, "comp" = $7, "notes" = $8, "paidOff" = $9, "date" = $10;'
 
-            // Prepare values for the SQL query
-            const values = [
-                data.paymentNbr,
-                data.ledaId,
-                data.type,
-                data.paymentType,
-                data.amount,
-                data.seasonCode,
-                data.comp,
-                data.notes,
-                data.paidOff,
-                data.date // Note: Ensure this matches the column "paymentDate"
-            ];
-
+                // Prepare values for the SQL query
+                values = [
+                    data.paymentNbr,
+                    data.ledaId,
+                    data.type,
+                    data.paymentType,
+                    data.amount,
+                    data.seasonCode,
+                    data.comp,
+                    data.notes,
+                    data.paidOff,
+                    data.date // Note: Ensure this matches the column "paymentDate"
+                ];
+            }
             // Execute the upsert query
             const results = await queryPost(query, values);
 

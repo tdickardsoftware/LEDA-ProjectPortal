@@ -21,6 +21,8 @@ import {
   placePaymentHistoryRoute 
 } from "@/lib/apiRoutes";
 import { Button } from "./ui/button";
+import PaymentHistoryFormDialog from "./payment-history-form-dialog";
+import { PencilIcon, XIcon } from "lucide-react";
 
 interface PaymentVisualisorProps {
   type: "player" | "team" | "place";
@@ -48,6 +50,13 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = payments.slice(indexOfFirstRecord, indexOfLastRecord);
   const totalPages = Math.ceil(payments.length / recordsPerPage);
+
+  // Function to refresh payment data after a new payment is added
+  const refreshPayments = () => {
+    setLoading(true);
+    // This will trigger the useEffect that fetches payments
+    setSelectedDate(selectedDate);
+  };
 
 // Fetch all unique payment dates
 useEffect(() => {
@@ -148,12 +157,49 @@ useEffect(() => {
     };
 }, [type, ledaId, selectedDate]);
 
+  // Function to delete a payment record
+  const handleDeletePayment = async (payment: PaymentHistory) => {
+    if (!window.confirm("Are you sure you want to delete this payment record? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      let baseRoute = '';
+      if (type === 'player') baseRoute = playerPaymentHistoryRoute;
+      else if (type === 'team') baseRoute = teamPaymentHistoryRoute;
+      else if (type === 'place') baseRoute = placePaymentHistoryRoute;
+      else return;
+
+      const response = await fetch(`${baseRoute}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payment),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete payment: ${response.statusText}`);
+      }
+
+      // Refresh the payment data after successful deletion
+      refreshPayments();
+      window.location.reload()
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+      alert("Failed to delete payment. Please try again.");
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
-        <Button className="hover:bg-gray-100 border-gray-300 text-gray-700">
-          Add {capitalizedType} Payment
-        </Button>
+        <PaymentHistoryFormDialog 
+          buttonText={`Add ${capitalizedType} Payment`}
+          onSuccess={refreshPayments}
+          initialLedaId={ledaId}
+          route={type === 'player' ? playerPaymentHistoryRoute : type === 'team' ? teamPaymentHistoryRoute : placePaymentHistoryRoute }
+        />
         <Select
           value={selectedDate}
           onValueChange={setSelectedDate}
@@ -210,6 +256,28 @@ useEffect(() => {
                     </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 py-4 bg-gray-50">
+                  <div className="flex justify-end mb-2 gap-2">
+                    <PaymentHistoryFormDialog
+                      buttonText=""
+                      buttonIcon={<PencilIcon className="h-4 w-4" />}
+                      onSuccess={refreshPayments}
+                      initialLedaId={ledaId}
+                      route={type === 'player' ? playerPaymentHistoryRoute : type === 'team' ? teamPaymentHistoryRoute : placePaymentHistoryRoute}
+                      paymentData={payment}
+                      isEditing={true}
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePayment(payment);
+                      }}
+                      className="text-red-600 hover:text-red-800 hover:bg-red-100"
+                    >
+                      <XIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="font-semibold">Type:</p>
