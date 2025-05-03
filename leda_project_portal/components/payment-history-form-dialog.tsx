@@ -43,17 +43,20 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-// Import PlayerSelect instead of PlayerSelector
+// Import all selector components
 import PlayerSelect from "@/components/ui/single-player-select";
-import { PaymentHistory } from "@/lib/definitions"; // Add this import for the type
+import TeamSelector from "@/components/ui/team-selector";
+import PlaceSelector from "@/components/ui/place-selector";
+import { PaymentHistory } from "@/lib/definitions";
 
 // Define form schema with Zod
 const formSchema = z.object({
-  // Change player to ledaId to match the field name used by PlayerSelect
-  ledaId: z.number({
-    required_error: "Player is required",
-  }),
+  // Dynamic ID fields based on type
+  ledaId: z.number().optional(),
+  teamLedaId: z.string().optional(),
+  placeId: z.string().optional(),
   fullName: z.string().optional(),
+  teamName: z.string().optional(), // For team selector
   type: z.any(), // For PaymentTypeSelector
   paymentType: z.string({
     required_error: "Please select payment type",
@@ -72,12 +75,13 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface PaymentHistoryFormDialogProps {
   buttonText?: string;
-  buttonIcon?: ReactNode; // Add this prop for the pencil icon
+  buttonIcon?: ReactNode;
   onSuccess?: () => void;
-  initialLedaId?: string; // Add this prop to directly set a player
+  initialLedaId?: string;
   route: string;
-  paymentData?: PaymentHistory; // Add this prop for editing existing payment
-  isEditing?: boolean; // Add this flag to indicate editing mode
+  paymentData?: PaymentHistory;
+  isEditing?: boolean;
+  type: "player" | "team" | "place"; // Add this to match PaymentVisualisor
 }
 
 export default function PaymentHistoryFormDialog({
@@ -88,6 +92,7 @@ export default function PaymentHistoryFormDialog({
   route,
   paymentData,
   isEditing = false,
+  type = "player", // Default to player type
 }: PaymentHistoryFormDialogProps) {
   const [open, setOpen] = useState(false);
   
@@ -95,20 +100,31 @@ export default function PaymentHistoryFormDialog({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      ledaId: initialLedaId ? Number(initialLedaId) : undefined,
+      ledaId: initialLedaId && type === "player" ? Number(initialLedaId) : undefined,
+      teamLedaId: initialLedaId && type === "team" ? initialLedaId : undefined,
+      placeId: initialLedaId && type === "place" ? initialLedaId : undefined,
       fullName: "",
       comp: false,
       paidOff: true,
       paymentType: "Full",
       date: new Date(),
       notes: "",
+      amount: "", // Initialize amount as an empty string instead of undefined
     },
   });
 
   // Set initial form values if editing an existing payment
   useEffect(() => {
     if (paymentData && isEditing) {
-      form.setValue("ledaId", Number(paymentData.ledaId));
+      // Set the appropriate ID based on type
+      if (type === "player") {
+        form.setValue("ledaId", Number(paymentData.ledaId));
+      } else if (type === "team") {
+        form.setValue("teamLedaId", paymentData.ledaId.toString());
+      } else if (type === "place") {
+        form.setValue("placeId", paymentData.ledaId.toString());
+      }
+      
       form.setValue("fullName", paymentData.fullName || "");
       form.setValue("paymentType", paymentData.paymentType || "Full");
       form.setValue("amount", paymentData.amount?.toString() || "");
@@ -127,9 +143,16 @@ export default function PaymentHistoryFormDialog({
         form.setValue("type", { paymentType: paymentData.type });
       }
     } else if (initialLedaId) {
-      form.setValue("ledaId", Number(initialLedaId));
+      // Set the appropriate ID based on type for new payments
+      if (type === "player") {
+        form.setValue("ledaId", Number(initialLedaId));
+      } else if (type === "team") {
+        form.setValue("teamLedaId", initialLedaId);
+      } else if (type === "place") {
+        form.setValue("placeId", initialLedaId);
+      }
     }
-  }, [paymentData, isEditing, initialLedaId, form]);
+  }, [paymentData, isEditing, initialLedaId, form, type]);
 
   // Handle form submission
   const onSubmit = async (data: FormValues) => {
@@ -152,9 +175,21 @@ export default function PaymentHistoryFormDialog({
         console.log("Payment type data structure:", JSON.stringify(data.type, null, 2));
       }
       
+      // Get the appropriate ID based on the type
+      let ledaId: string;
+      if (type === "player" && data.ledaId) {
+        ledaId = data.ledaId.toString();
+      } else if (type === "team" && data.teamLedaId) {
+        ledaId = data.teamLedaId.toString();
+      } else if (type === "place" && data.placeId) {
+        ledaId = data.placeId.toString();
+      } else {
+        throw new Error("No valid ID found for the selected type");
+      }
+      
       const payload = {
-        ledaId: data.ledaId.toString(), // Convert number to string for API
-        type: paymentTypeValue, // Use the safely extracted value
+        ledaId: ledaId,
+        type: paymentTypeValue,
         paymentType: data.paymentType,
         amount: data.amount,
         seasonCode: data.seasonCode,
@@ -219,13 +254,28 @@ export default function PaymentHistoryFormDialog({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Player Selector - using PlayerSelect instead of PlayerSelector */}
-            <PlayerSelect
-              control={form.control}
-              name="ledaId"
-              label="Player"
-              trailsDateData={[]} // Empty array as we don't need to filter any players out
-            />
+            {/* Conditionally render the appropriate selector based on type */}
+            {type === "player" ? (
+              <PlayerSelect
+                control={form.control}
+                name="ledaId"
+                label="Player"
+                trailsDateData={[]} // Empty array as we don't need to filter any players out
+              />
+            ) : type === "team" ? (
+              <TeamSelector
+                control={form.control}
+                name="teamLedaId"
+                label="Team"
+                selectedTeams={[]} // Empty array as we don't want to exclude any teams
+              />
+            ) : (
+              <PlaceSelector
+                control={form.control}
+                name="placeId"
+                label="Place"
+              />
+            )}
             
             {/* Season Code Selector */}
             <SeasonCodeSelector
@@ -275,7 +325,11 @@ export default function PaymentHistoryFormDialog({
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
-                    <Input placeholder="0.00" {...field} />
+                    <Input 
+                      placeholder="0.00" 
+                      {...field} 
+                      value={field.value || ""} // Ensure value is never undefined
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

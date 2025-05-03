@@ -199,6 +199,7 @@ useEffect(() => {
           onSuccess={refreshPayments}
           initialLedaId={ledaId}
           route={type === 'player' ? playerPaymentHistoryRoute : type === 'team' ? teamPaymentHistoryRoute : placePaymentHistoryRoute }
+          type={type}
         />
         <Select
           value={selectedDate}
@@ -265,6 +266,7 @@ useEffect(() => {
                       route={type === 'player' ? playerPaymentHistoryRoute : type === 'team' ? teamPaymentHistoryRoute : placePaymentHistoryRoute}
                       paymentData={payment}
                       isEditing={true}
+                      type={type}
                     />
                     <Button 
                       variant="ghost" 
