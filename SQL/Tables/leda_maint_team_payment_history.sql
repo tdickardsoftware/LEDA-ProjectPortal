@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS maint.leda_maint_team_payment_history
     notes text COLLATE pg_catalog."default",
     "paidOff" boolean NOT NULL DEFAULT false,
     date date NOT NULL DEFAULT CURRENT_DATE,
+    "paymentNbr" bigint NOT NULL DEFAULT nextval('maint.leda_maint_payment_nbr_seq'::regclass),
     CONSTRAINT leda_maint_team_payment_history_pkey PRIMARY KEY (id)
 )
 
