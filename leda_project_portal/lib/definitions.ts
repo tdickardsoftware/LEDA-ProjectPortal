@@ -293,7 +293,7 @@ export type PaymentHistory = {
 	ledaId: number;
 	type: string;
 	paymentType: string;
-	amount: number;
+	amount: string;
 	seasonCode: string;
 	comp: boolean
 	notes: string;

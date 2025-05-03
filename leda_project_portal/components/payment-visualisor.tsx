@@ -2,13 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   Select,
   SelectContent,
@@ -22,6 +20,7 @@ import {
   teamPaymentHistoryRoute, 
   placePaymentHistoryRoute 
 } from "@/lib/apiRoutes";
+import { Button } from "./ui/button";
 
 interface PaymentVisualisorProps {
   type: "player" | "team" | "place";
@@ -38,6 +37,14 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
   const [selectedDate, setSelectedDate] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 10;
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = payments.slice(indexOfFirstRecord, indexOfLastRecord);
+  const totalPages = Math.ceil(payments.length / recordsPerPage);
 
 // Fetch all unique payment dates
 useEffect(() => {
@@ -55,7 +62,10 @@ useEffect(() => {
             if (!response.ok) return setUniqueDates([]);
             
             const data = await response.json();
-            const dates = Array.isArray(data) ? data : (data?.rows || []);
+            // Convert the field name from "date" to "paymentDate" to match the interface
+            const dates = Array.isArray(data) 
+                ? data.map(item => ({ paymentDate: item.date })) 
+                : (data?.rows || []).map((item: { date: string }) => ({ paymentDate: item.date }));
             setUniqueDates(dates);
         } catch {
             setUniqueDates([]);
@@ -145,7 +155,7 @@ useEffect(() => {
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Filter by date" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             <SelectItem value="all">All Dates</SelectItem>
             {Array.isArray(uniqueDates) && uniqueDates.map((date, index) => (
               <SelectItem key={`${date.paymentDate}-${index}`} value={date.paymentDate}>
@@ -165,36 +175,113 @@ useEffect(() => {
           <p>{error}</p>
         </div>
       ) : payments.length > 0 ? (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Payment #</TableHead>
-              <TableHead>LEDA ID</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Payment Type</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Season Code</TableHead>
-              <TableHead>Payment Date</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {payments.map((payment) => (
-              <TableRow key={payment.paymentNbr}>
-                <TableCell>{payment.paymentNbr}</TableCell>
-                <TableCell>{payment.ledaId}</TableCell>
-                <TableCell>{payment.type}</TableCell>
-                <TableCell>{payment.paymentType}</TableCell>
-                <TableCell>${payment.amount ? payment.amount.toFixed(2) : '0.00'}</TableCell>
-                <TableCell>{payment.seasonCode}</TableCell>
-                <TableCell>
-                  {payment.date || payment.date ? 
-                    new Date(payment.date || payment.date).toLocaleDateString() : 
-                    'N/A'}
-                </TableCell>
-              </TableRow>
+        <>
+          <Accordion type="single" collapsible className="w-full">
+            {currentRecords.map((payment) => (
+              <AccordionItem key={payment.paymentNbr} value={`payment-${payment.paymentNbr}`}>
+                <AccordionTrigger className="grid grid-cols-4 w-full text-left px-4 py-2 hover:bg-gray-50">
+                  <span>{payment.ledaId}</span>
+                  <span>{payment.fullName || 'N/A'}</span>
+                  <span>{payment.amount}</span>
+                  <span>
+                    {payment.date ? 
+                      new Date(payment.date).toLocaleDateString() : 
+                      'N/A'}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 py-4 bg-gray-50">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-semibold">Payment #:</p>
+                      <p>{payment.paymentNbr}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">Type:</p>
+                      <p>{payment.type}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">Payment Type:</p>
+                      <p>{payment.paymentType}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">Season Code:</p>
+                      <p>{payment.seasonCode}</p>
+                    </div>
+                    {payment.notes && (
+                      <div className="col-span-2">
+                        <p className="font-semibold">Notes:</p>
+                        <p>{payment.notes}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold">Comp:</p>
+                      <p>{payment.comp ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">Paid Off:</p>
+                      <p>{payment.paidOff ? 'Yes' : 'No'}</p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </TableBody>
-        </Table>
+          </Accordion>
+          
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-gray-700">
+              Showing <span className="font-medium">{indexOfFirstRecord + 1}</span> to{" "}
+              <span className="font-medium">
+                {Math.min(indexOfLastRecord, payments.length)}
+              </span>{" "}
+              of <span className="font-medium">{payments.length}</span> results
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded ${
+                  currentPage === 1 
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                Previous
+              </Button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                // Show current page and two pages on either side if possible
+                const pageNum = Math.min(
+                  Math.max(currentPage - 2 + i, 1),
+                  totalPages
+                );
+                return (
+                  <Button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 hover:bg-gray-300'
+                    }`}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+              <Button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded ${
+                  currentPage === totalPages
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </>
       ) : (
         <div className="flex justify-center items-center h-40">
           <p>No payment records found.</p>
