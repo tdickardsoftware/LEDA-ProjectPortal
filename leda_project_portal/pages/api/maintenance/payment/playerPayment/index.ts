@@ -11,28 +11,37 @@ export default async function handler(
     if  (req.method === "GET") {
         if (req.query.ledaId) {
             try {
-                // Execute the database query to fetch payment history information for a specific ledaId
-                const result = await query<PaymentHistory>(
-                    'SELECT "paymentNbr", "ledaId", "type", "paymentType", "amount", "seasonCode", "paymentDate" FROM maint.leda_maint_player_payment_history WHERE "ledaId" = $1 ORDER BY "paymentNbr";',
-                    [req.query.ledaId as string]
-                );
-                // Respond with the query result
-                res.status(200).json(result.rows);
+            // Execute the database query to fetch payment history with player full name for a specific ledaId
+            const result = await query<PaymentHistory & { fullName: string }>(
+                `SELECT h."paymentNbr", h."ledaId", h."type", h."paymentType", h."amount", h."seasonCode", h."comp", h."notes", h."paidOff", h."date",
+                CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName"
+                 FROM maint.leda_maint_player_payment_history h
+                 LEFT JOIN public.leda_player_info p ON h."ledaId" = p."ledaId"
+                 WHERE h."ledaId" = $1
+                 ORDER BY h."paymentNbr";`,
+                [req.query.ledaId as string]
+            );
+            // Respond with the query result
+            res.status(200).json(result.rows);
             } catch (error) {
-                // Handle any errors that occur during the query
-                res.status(500).json({ message: "Failed to fetch payment history for ledaId", error });
+            // Handle any errors that occur during the query
+            res.status(500).json({ message: "Failed to fetch payment history for ledaId", error });
             }
         } else {
             try {
-                // Execute the database query to fetch payment history information
-                const result = await query<PaymentHistory>(
-                    'SELECT "paymentNbr", "ledaId", "type", "paymentType", "amount", "seasonCode", "paymentDate" FROM maint.leda_maint_player_payment_history ORDER BY "paymentNbr";'
-                );
-                // Respond with the query result
-                res.status(200).json(result.rows);
+            // Execute the database query to fetch payment history with player full name
+            const result = await query<PaymentHistory & { fullName: string }>(
+                `SELECT h."paymentNbr", h."ledaId", h."type", h."paymentType", h."amount", h."seasonCode", h."comp", h."notes", h."paidOff", h."date",
+                CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName"
+                 FROM maint.leda_maint_player_payment_history h
+                 LEFT JOIN public.leda_player_info p ON h."ledaId" = p."ledaId"
+                 ORDER BY h."paymentNbr";`
+            );
+            // Respond with the query result
+            res.status(200).json(result.rows);
             } catch (error) {
-                // Handle any errors that occur during the query
-                res.status(500).json({ message: "Failed to fetch payment history", error });
+            // Handle any errors that occur during the query
+            res.status(500).json({ message: "Failed to fetch payment history", error });
             }
         }
     } else if (req.method === "POST") {
@@ -41,7 +50,7 @@ export default async function handler(
             const data = req.body as PaymentHistory;
 
             // SQL query for upserting payment history (insert or update on conflict)
-            const query = 'INSERT INTO maint.leda_maint_player_payment_history("paymentNbr", "ledaId", "type", "paymentType", "amount", "seasonCode", "paymentDate") VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT ("paymentNbr") DO UPDATE SET "ledaId" = $2, "type" = $3, "paymentType" = $4, "amount" = $5, "seasonCode" = $6, "paymentDate" = $7;'
+            const query = 'INSERT INTO maint.leda_maint_player_payment_history("paymentNbr", "ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT ("paymentNbr") DO UPDATE SET "ledaId" = $2, "type" = $3, "paymentType" = $4, "amount" = $5, "seasonCode" = $6, "comp" = $7, "notes" = $8, "paidOff" = $9, "date" = $10;'
 
             // Prepare values for the SQL query
             const values = [
@@ -51,6 +60,9 @@ export default async function handler(
             data.paymentType,
             data.amount,
             data.seasonCode,
+            data.comp,
+            data.notes,
+            data.paidOff,
             data.date // Note: Ensure this matches the column "paymentDate"
             ];
 
