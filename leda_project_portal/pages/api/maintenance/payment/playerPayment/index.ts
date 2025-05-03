@@ -11,12 +11,14 @@ export default async function handler(
     if  (req.method === "GET") {
         if (req.query.ledaId) {
             try {
-            // Execute the database query to fetch payment history with player full name for a specific ledaId
-            const result = await query<PaymentHistory & { fullName: string }>(
+            // Execute the database query to fetch payment history with player full name and fiscalYear for a specific ledaId
+            const result = await query<PaymentHistory & { fullName: string; fiscalYear: string }>(
                 `SELECT h."paymentNbr", h."ledaId", h."type", h."paymentType", h."amount", h."seasonCode", h."comp", h."notes", h."paidOff", h."date",
-                CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName"
+                CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName",
+                s."fiscalYear"
                  FROM maint.leda_maint_player_payment_history h
                  LEFT JOIN public.leda_player_info p ON h."ledaId" = p."ledaId"
+                 LEFT JOIN maint.leda_maint_seasons s ON h."seasonCode" = s."seasonCode"
                  WHERE h."ledaId" = $1
                  ORDER BY h."paymentNbr";`,
                 [req.query.ledaId as string]
@@ -29,12 +31,14 @@ export default async function handler(
             }
         } else {
             try {
-            // Execute the database query to fetch payment history with player full name
-            const result = await query<PaymentHistory & { fullName: string }>(
+            // Execute the database query to fetch payment history with player full name and fiscalYear
+            const result = await query<PaymentHistory & { fullName: string; fiscalYear: string }>(
                 `SELECT h."paymentNbr", h."ledaId", h."type", h."paymentType", h."amount", h."seasonCode", h."comp", h."notes", h."paidOff", h."date",
-                CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName"
+                CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName",
+                s."fiscalYear"
                  FROM maint.leda_maint_player_payment_history h
                  LEFT JOIN public.leda_player_info p ON h."ledaId" = p."ledaId"
+                 LEFT JOIN maint.leda_maint_seasons s ON h."seasonCode" = s."seasonCode"
                  ORDER BY h."paymentNbr";`
             );
             // Respond with the query result

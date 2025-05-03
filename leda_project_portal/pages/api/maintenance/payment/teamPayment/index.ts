@@ -11,37 +11,43 @@ export default async function handler(
     if  (req.method === "GET") {
         if (req.query.ledaId && typeof req.query.ledaId === "string") {
             try {
-                // Execute the database query to fetch payment history information for a specific ledaId, joined with team info
-                const result = await query<PaymentHistory & { fullName: string }>(
-                    `SELECT h."paymentNbr", h."ledaId", h."type", h."paymentType", h."amount", h."seasonCode", h."comp", h."notes", h."paidOff", h."date", t."teamName" AS "fullName"
-                     FROM maint.leda_maint_team_payment_history h
-                     JOIN public.leda_team_info t ON h."ledaId" = t."ledaId"
-                     WHERE h."ledaId" = $1
-                     ORDER BY h."paymentNbr";`,
-                    [req.query.ledaId]
-                );
-                // Respond with the query result
-                res.status(200).json(result.rows);
+            // Execute the database query to fetch payment history information for a specific ledaId, joined with team info and seasons
+            const result = await query<PaymentHistory & { fullName: string; fiscalYear: string }>(
+                `SELECT h."paymentNbr", h."ledaId", h."type", h."paymentType", h."amount", h."seasonCode", h."comp", h."notes", h."paidOff", h."date", 
+                    t."teamName" AS "fullName",
+                    s."fiscalYear"
+                 FROM maint.leda_maint_team_payment_history h
+                 JOIN public.leda_team_info t ON h."ledaId" = t."ledaId"
+                 JOIN maint.leda_maint_seasons s ON h."seasonCode" = s."seasonCode"
+                 WHERE h."ledaId" = $1
+                 ORDER BY h."paymentNbr";`,
+                [req.query.ledaId]
+            );
+            // Respond with the query result
+            res.status(200).json(result.rows);
             } catch (error) {
-                // Handle any errors that occur during the query
-                console.error("Error fetching payment history for ledaId:", error);
-                res.status(500).json({ message: "Failed to fetch payment history for ledaId", error: (error as Error).message });
+            // Handle any errors that occur during the query
+            console.error("Error fetching payment history for ledaId:", error);
+            res.status(500).json({ message: "Failed to fetch payment history for ledaId", error: (error as Error).message });
             }
         } else {
             try {
-                // Execute the database query to fetch payment history information, joined with team info
-                const result = await query<PaymentHistory & { fullName: string }>(
-                    `SELECT h."paymentNbr", h."ledaId", h."type", h."paymentType", h."amount", h."seasonCode", h."comp", h."notes", h."paidOff", h."date", t."teamName" AS "fullName"
-                     FROM maint.leda_maint_team_payment_history h
-                     JOIN public.leda_team_info t ON h."ledaId" = t."ledaId"
-                     ORDER BY h."paymentNbr";`
-                );
-                // Respond with the query result
-                res.status(200).json(result.rows);
+            // Execute the database query to fetch payment history information, joined with team info and seasons
+            const result = await query<PaymentHistory & { fullName: string; fiscalYear: string }>(
+                `SELECT h."paymentNbr", h."ledaId", h."type", h."paymentType", h."amount", h."seasonCode", h."comp", h."notes", h."paidOff", h."date", 
+                    t."teamName" AS "fullName",
+                    s."fiscalYear"
+                 FROM maint.leda_maint_team_payment_history h
+                 JOIN public.leda_team_info t ON h."ledaId" = t."ledaId"
+                 JOIN maint.leda_maint_seasons s ON h."seasonCode" = s."seasonCode"
+                 ORDER BY h."paymentNbr";`
+            );
+            // Respond with the query result
+            res.status(200).json(result.rows);
             } catch (error) {
-                // Handle any errors that occur during the query
-                console.error("Error fetching all payment history:", error);
-                res.status(500).json({ message: "Failed to fetch payment history", error: (error as Error).message });
+            // Handle any errors that occur during the query
+            console.error("Error fetching all payment history:", error);
+            res.status(500).json({ message: "Failed to fetch payment history", error: (error as Error).message });
             }
         }
     } else if (req.method === "POST") {

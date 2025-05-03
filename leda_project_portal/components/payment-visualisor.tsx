@@ -179,22 +179,32 @@ useEffect(() => {
           <Accordion type="single" collapsible className="w-full">
             {currentRecords.map((payment) => (
               <AccordionItem key={payment.paymentNbr} value={`payment-${payment.paymentNbr}`}>
-                <AccordionTrigger className="grid grid-cols-4 w-full text-left px-4 py-2 hover:bg-gray-50">
-                  <span>{payment.ledaId}</span>
-                  <span>{payment.fullName || 'N/A'}</span>
-                  <span>{payment.amount}</span>
-                  <span>
-                    {payment.date ? 
-                      new Date(payment.date).toLocaleDateString() : 
-                      'N/A'}
-                  </span>
+                <AccordionTrigger className="flex flex-row w-full text-left px-4 py-2 hover:bg-gray-50 gap-6">
+                    <div className="flex flex-col">
+                        <span className="text-xs text-gray-500">Payment #</span>
+                        <span>{payment.paymentNbr}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-xs text-gray-500">LEDA ID</span>
+                        <span>{payment.ledaId}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-xs text-gray-500">Name</span>
+                        <span>{payment.fullName || 'N/A'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-xs text-gray-500">Amount</span>
+                        <span>{payment.amount}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-xs text-gray-500">Date</span>
+                        <span>
+                            {payment.date ? new Date(payment.date).toLocaleDateString() : 'N/A'}
+                        </span>
+                    </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 py-4 bg-gray-50">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="font-semibold">Payment #:</p>
-                      <p>{payment.paymentNbr}</p>
-                    </div>
                     <div>
                       <p className="font-semibold">Type:</p>
                       <p>{payment.type}</p>
@@ -206,6 +216,10 @@ useEffect(() => {
                     <div>
                       <p className="font-semibold">Season Code:</p>
                       <p>{payment.seasonCode}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">Fiscal Year:</p>
+                      <p>{payment.fiscalYear}</p>
                     </div>
                     {payment.notes && (
                       <div className="col-span-2">

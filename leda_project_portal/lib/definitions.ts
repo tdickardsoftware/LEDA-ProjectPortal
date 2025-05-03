@@ -299,5 +299,6 @@ export type PaymentHistory = {
 	notes: string;
 	paidOff: boolean;
 	date: Date;
-	fullName: string;
+	fullName?: string;
+	fiscalYear?: string;
 }
