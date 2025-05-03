@@ -38,6 +38,9 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Capitalize first letter of type
+  const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 10;
@@ -147,7 +150,10 @@ useEffect(() => {
 
   return (
     <div className="w-full">
-      <div className="flex justify-end items-center mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <Button className="hover:bg-gray-100 border-gray-300 text-gray-700">
+          Add {capitalizedType} Payment
+        </Button>
         <Select
           value={selectedDate}
           onValueChange={setSelectedDate}
@@ -256,8 +262,8 @@ useEffect(() => {
                 disabled={currentPage === 1}
                 className={`px-3 py-1 rounded ${
                   currentPage === 1 
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'hover:bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed' 
+                    : 'hover:bg-gray-100 border-gray-300 text-gray-700'
                 }`}
               >
                 Previous
@@ -274,8 +280,8 @@ useEffect(() => {
                     onClick={() => setCurrentPage(pageNum)}
                     className={`px-3 py-1 rounded ${
                       currentPage === pageNum
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 hover:bg-gray-300'
+                        ? ' bg-gray-300 hover:bg-gray-100 border-gray-300 text-gray-700'
+                        : 'bg-gray-200 hover:bg-gray-100 border-gray-300 text-gray-700'
                     }`}
                   >
                     {pageNum}
@@ -287,8 +293,8 @@ useEffect(() => {
                 disabled={currentPage === totalPages}
                 className={`px-3 py-1 rounded ${
                   currentPage === totalPages
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'hover:bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed'
+                    : 'hover:bg-gray-100 border-gray-300 text-gray-700'
                 }`}
               >
                 Next
