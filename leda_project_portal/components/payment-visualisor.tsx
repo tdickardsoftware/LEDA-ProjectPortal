@@ -133,6 +133,13 @@ useEffect(() => {
                 });
             }
 
+            // Sort data by date in descending order (newest dates first)
+            data.sort((a: PaymentHistory, b: PaymentHistory) => {
+                const dateA = new Date(a.date || '');
+                const dateB = new Date(b.date || '');
+                return dateB.getTime() - dateA.getTime();
+            });
+
             if (isMounted) {
                 setPayments(data);
             }
