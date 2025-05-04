@@ -297,12 +297,6 @@ useEffect(() => {
                       <p className="font-semibold">Fiscal Year:</p>
                       <p>{payment.fiscalYear}</p>
                     </div>
-                    {payment.notes && (
-                      <div className="col-span-2">
-                        <p className="font-semibold">Notes:</p>
-                        <p>{payment.notes}</p>
-                      </div>
-                    )}
                     <div>
                       <p className="font-semibold">Comp:</p>
                       <p>{payment.comp ? 'Yes' : 'No'}</p>
@@ -311,6 +305,12 @@ useEffect(() => {
                       <p className="font-semibold">Paid Off:</p>
                       <p>{payment.paidOff ? 'Yes' : 'No'}</p>
                     </div>
+                    {payment.notes && (
+                      <div className="col-span-2">
+                        <p className="font-semibold">Notes:</p>
+                        <p>{payment.notes}</p>
+                      </div>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
