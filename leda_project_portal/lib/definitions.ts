@@ -302,3 +302,10 @@ export type PaymentHistory = {
 	fullName?: string;
 	fiscalYear?: string;
 }
+//
+// Define type to identify the shape of our data from postgres for SeasonCode data
+//
+export type SeasonCode = {
+	seasonCode: string;
+	desc?: string;
+}
