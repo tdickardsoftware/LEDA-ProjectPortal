@@ -20,6 +20,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import RosterSeasonCodeSelector from "@/components/ui/roster-season-code-selector";
+import { Checkbox } from "@/components/ui/checkbox";
+import { rosterRoute } from "@/lib/apiRoutes";
 
 interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	columns: ColumnDef<TData, TValue>[];
@@ -35,6 +39,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	singleRowSelection?: boolean;
 	passValueToParent?: (value: string) => void;
 	defaultSelectedRow?: number; // Optional prop for default selected row
+	filter?: boolean; // New optional prop
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
@@ -51,6 +56,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	singleRowSelection,
 	passValueToParent,
 	defaultSelectedRow,
+	filter,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
@@ -58,6 +64,13 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const [tableData, setTableData] = React.useState(data); // State for table data
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
+
+	// Filter state
+	const [filterPopoverOpen, setFilterPopoverOpen] = React.useState(false);
+	const [filterSeasonCode, setFilterSeasonCode] = React.useState<string>("");
+	const [filterCurrentSeason, setFilterCurrentSeason] = React.useState<boolean>(true);
+	const [filteredLedaIds, setFilteredLedaIds] = React.useState<string[] | null>(null);
+	const [filterLoading, setFilterLoading] = React.useState(false);
 
 	// Debounce the search input
 	React.useEffect(() => {
@@ -68,21 +81,50 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		return () => clearTimeout(handler); // Cleanup on each change
 	}, [searchQuery]);
 
-	
+	// When filterCurrentSeason changes, reset filterSeasonCode if needed
+	React.useEffect(() => {
+		if (filterCurrentSeason) setFilterSeasonCode("");
+	}, [filterCurrentSeason]);
 
-	
+	const handleApplyFilter = async () => {
+		if (!filterSeasonCode) return;
+		setFilterLoading(true);
+		try {
+			let res;
+			if (pageName.includes("Players")) {
+				res = await fetch(`${rosterRoute}/rosterPlayerView?seasonCode=${filterSeasonCode}`);
+			} else if (pageName.includes("Places")) {
+				res = await fetch(`${rosterRoute}/rosterPlaceView?seasonCode=${filterSeasonCode}`);
+			} else {
+				res = await fetch(`${rosterRoute}/rosterTeamView?seasonCode=${filterSeasonCode}`);
+			}
+			const ids: { ledaId: string | number }[] = await res.json();
+			// Extract ledaId values from the array of objects
+			const ledaIds = Array.isArray(ids) ? ids.map((item) => String(item.ledaId)) : [];
+			setFilteredLedaIds(ledaIds);
+			setFilterPopoverOpen(false);
+		} catch (e) {
+			console.error("Failed to filter by season", e);
+		} finally {
+			setFilterLoading(false);
+		}
+	};
 
-	// Filtered data based on debounced query
+	// Filtered data based on debounced query and filter
 	const filteredData = React.useMemo(() => {
-		if (!debouncedQuery) return tableData;
-		return tableData.filter((row) =>
+		let base = tableData;
+		if (filteredLedaIds) {
+			base = base.filter(row => filteredLedaIds.includes(String(row.ledaId)));
+		}
+		if (!debouncedQuery) return base;
+		return base.filter((row) =>
 			Object.values(row).some((value) =>
 				String(value)
 					.toLowerCase()
 					.includes(debouncedQuery.toLowerCase())
 			)
 		);
-	}, [debouncedQuery, tableData]);
+	}, [debouncedQuery, tableData, filteredLedaIds]);
 
 	const table = useReactTable({
 		// Assign table instance to ref
@@ -161,6 +203,50 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 							</div>
 						) : null}
 						<div className="flex space-x-2">
+							{/* Filter By Season Button and Popover */}
+							{filter && (
+								<Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
+									<PopoverTrigger asChild>
+										<Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => setFilterPopoverOpen(true)}>
+											Filter By Season
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent className="w-[260px] bg-white">
+										<div className="flex flex-col gap-3">
+											<RosterSeasonCodeSelector
+												disabled={filterCurrentSeason}
+												handleSelect={setFilterSeasonCode}
+												useCurrentSeason={filterCurrentSeason}
+												seasonCode={filterSeasonCode}
+											/>
+											<div className="flex items-center gap-2">
+												<Checkbox
+													checked={filterCurrentSeason}
+													onCheckedChange={() => setFilterCurrentSeason(!filterCurrentSeason)}
+												/>
+												<span>Current Season?</span>
+											</div>
+											<Button
+												onClick={handleApplyFilter}
+												disabled={!filterSeasonCode || filterLoading}
+												className="w-full"
+											>
+												{filterLoading ? "Applying..." : "Apply"}
+											</Button>
+											{filteredLedaIds && (
+												<Button
+													variant="ghost"
+													onClick={() => setFilteredLedaIds(null)}
+													className="w-full text-xs text-gray-500"
+												>
+													Clear Filter
+												</Button>
+											)}
+										</div>
+									</PopoverContent>
+								</Popover>
+							)}
+							{/* ...existing code for viewLink, editDialog, deleteDialog... */}
 							{viewLink ? (
 								<div>
 									{React.cloneElement(
