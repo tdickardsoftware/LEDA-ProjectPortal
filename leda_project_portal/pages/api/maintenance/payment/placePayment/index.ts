@@ -112,34 +112,6 @@ export default async function handler(
                     data.paidOff,
                     data.date // Note: Ensure this matches the column "paymentDate"
                     ];
-            } else if (data.type === "Part" && data.paidOff === true) {
-                const getPartPaymentNbrQuery = 'SELECT "paymentNbr" FROM maint.leda_maint_team_payment_history WHERE "type" = $1 AND "seasonCode" = $2 AND "ledaId" = $3 AND "paidOff" = false;'
-                const getPartPaymentNbrValues = [
-                    data.type,
-                    data.seasonCode,
-                    data.ledaId
-                ];
-                const result = await query(getPartPaymentNbrQuery, getPartPaymentNbrValues);
-                
-                // Extract payment numbers from the result
-                const paymentNbrs = result.rows.map(row => row.paymentNbr);
-                
-                // Update all unpaid part payments to paid
-                const updatePaidOffQuery = 'UPDATE maint.leda_maint_team_payment_history SET "paidOff" = true WHERE "paymentNbr" = ANY($1);';
-                await queryPost(updatePaidOffQuery, [paymentNbrs]);
-                
-                queryAdd = 'INSERT INTO maint.leda_maint_team_payment_history("ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);'
-                 values = [
-                    data.ledaId,
-                    data.type,
-                    data.paymentType,
-                    data.amount,
-                    data.seasonCode,
-                    data.comp,
-                    data.notes,
-                    data.paidOff,
-                    data.date // Note: Ensure this matches the column "paymentDate"
-                    ];
             } else {
                 queryAdd = 'INSERT INTO maint.leda_maint_place_payment_history("paymentNbr", "ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT ("paymentNbr") DO UPDATE SET"ledaId" = $2, "type" = $3, "paymentType" = $4, "amount" = $5, "seasonCode" = $6, "comp" = $7, "notes" = $8, "paidOff" = $9, "date" = $10;'
 
