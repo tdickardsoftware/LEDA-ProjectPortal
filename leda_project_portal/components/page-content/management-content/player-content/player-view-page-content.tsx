@@ -22,6 +22,8 @@ import PlayerTrailsHistoryContent from "./player-trails-history-content";
 import PlayerMentionsHistoryContent from "./player-mentions-history-content";
 import PlayerTDPHistoryContent from "./player-tdp-history-content";
 import PlayerRosterHistoryContent from "./player-roster-history-content";
+import PaymentHistoryFormDialog from "@/components/payment-history-form-dialog";
+import { playerPaymentHistoryRoute } from "@/lib/apiRoutes";
 
 export default function PlayerPageContent({
 	playerData,
@@ -95,6 +97,12 @@ export default function PlayerPageContent({
 							>
 								Payment History *WIP*
 							</Button>
+							<PaymentHistoryFormDialog
+								buttonText="Add Player Payment"
+								initialLedaId={playerData.ledaId.toString()}
+								route={playerPaymentHistoryRoute}
+								type="player"
+							/>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
 								onClick={handleTDPHistory}
@@ -107,6 +115,7 @@ export default function PlayerPageContent({
 							>
 								Roster History
 							</Button>
+							
 						</div>
 					</FolderTabMed>
 				</div>
