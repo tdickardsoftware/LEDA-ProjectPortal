@@ -9,7 +9,7 @@ export default async function handler(
 	if (req.method === "GET") {
 		if (req.query.getSeasonCodeInfo === "true") {
 			try {
-				const querySelect = `SELECT r."seasonCode", s."desc" FROM public.leda_roster_info r JOIN maint.leda_maint_seasons s ON r."seasonCode" = s."seasonCode" WHERE r."teamInfomation" IS NOT NULL`
+				const querySelect = `SELECT r."seasonCode", s."desc", s."isCurrentSeason" FROM public.leda_roster_info r JOIN maint.leda_maint_seasons s ON r."seasonCode" = s."seasonCode" WHERE r."teamInfomation" IS NOT NULL`
 				const result = await query<SeasonCode>(querySelect);
 				res.status(200).json(result.rows);
 			} catch (error) {

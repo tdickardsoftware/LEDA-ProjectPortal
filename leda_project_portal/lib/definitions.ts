@@ -308,4 +308,5 @@ export type PaymentHistory = {
 export type SeasonCode = {
 	seasonCode: string;
 	desc?: string;
+	isCurrentSeason?: boolean;
 }
