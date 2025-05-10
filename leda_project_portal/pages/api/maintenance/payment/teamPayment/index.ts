@@ -57,7 +57,21 @@ export default async function handler(
             let query: string;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let values: any;
-            if (data.paymentNbr === null || data.paymentNbr === undefined) {
+            // Check if there are any partial payments for a player if another partial payment is being added
+            let unpaidPartPayments = false;
+            if (data.type === "Part" && data.paidOff !== false) {
+                // SQL query to check for unpaid part payments
+                const checkQuery = `SELECT "paymentNbr" FROM maint.leda_maint_player_payment_history WHERE "type" = 'Part'  AND "seasonCode" = $1 AND "ledaId" = $2 AND "paidOff" = false;`
+                // Prepare values for the SQL query
+                const checkValues = [
+                    data.seasonCode,
+                    data.ledaId
+                ];
+                // Check if there are any unpaid part payments for the given ledaId and seasonCode
+                const checkResult = await query(checkQuery, checkValues);
+                unpaidPartPayments = checkResult.rows.length > 0;
+            }
+            if ((data.paymentNbr === null || data.paymentNbr === undefined) && !unpaidPartPayments) {
                 query = 'INSERT INTO maint.leda_maint_team_payment_history("ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)'
 
                 // Prepare values for the SQL query

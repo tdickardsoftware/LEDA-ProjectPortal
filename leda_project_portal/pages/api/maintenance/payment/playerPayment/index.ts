@@ -52,11 +52,54 @@ export default async function handler(
         try {
             // Parse the request body as PaymentHistory type
             const data = req.body as PaymentHistory;
-            let query: string;
+            let queryAdd: string;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let values : any;
-            if (data.paymentNbr === null || data.paymentNbr === undefined) {
-                 query = 'INSERT INTO maint.leda_maint_player_payment_history("ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);'
+            // Check if there are any partial payments for a player if another partial payment is being added
+            let unpaidPartPayments = false;
+            if (data.type === "Part" && data.paidOff !== false) {
+                // SQL query to check for unpaid part payments
+                const checkQuery = `SELECT "paymentNbr" FROM maint.leda_maint_player_payment_history WHERE "type" = 'Part'  AND "seasonCode" = $1 AND "ledaId" = $2 AND "paidOff" = false;`
+                // Prepare values for the SQL query
+                const checkValues = [
+                    data.seasonCode,
+                    data.ledaId
+                ];
+                // Check if there are any unpaid part payments for the given ledaId and seasonCode
+                const checkResult = await query(checkQuery, checkValues);
+                unpaidPartPayments = checkResult.rows.length > 0;
+            }
+
+            if ((data.paymentNbr === null || data.paymentNbr === undefined) && !unpaidPartPayments) {
+                 queryAdd = 'INSERT INTO maint.leda_maint_player_payment_history("ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);'
+                 values = [
+                    data.ledaId,
+                    data.type,
+                    data.paymentType,
+                    data.amount,
+                    data.seasonCode,
+                    data.comp,
+                    data.notes,
+                    data.paidOff,
+                    data.date // Note: Ensure this matches the column "paymentDate"
+                    ];
+            } else if (data.type === "Part" && data.paidOff === true) {
+                const getPartPaymentNbrQuery = 'SELECT "paymentNbr" FROM maint.leda_maint_player_payment_history WHERE "type" = $1 AND "seasonCode" = $2 AND "ledaId" = $3 AND "paidOff" = false;'
+                const getPartPaymentNbrValues = [
+                    data.type,
+                    data.seasonCode,
+                    data.ledaId
+                ];
+                const result = await query(getPartPaymentNbrQuery, getPartPaymentNbrValues);
+                
+                // Extract payment numbers from the result
+                const paymentNbrs = result.rows.map(row => row.paymentNbr);
+                
+                // Update all unpaid part payments to paid
+                const updatePaidOffQuery = 'UPDATE maint.leda_maint_player_payment_history SET "paidOff" = true WHERE "paymentNbr" = ANY($1);';
+                await queryPost(updatePaidOffQuery, [paymentNbrs]);
+                
+                queryAdd = 'INSERT INTO maint.leda_maint_player_payment_history("ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);'
                  values = [
                     data.ledaId,
                     data.type,
@@ -70,7 +113,7 @@ export default async function handler(
                     ];
             } else {
                 // SQL query for upserting payment history (insert or update on conflict)
-                query = 'INSERT INTO maint.leda_maint_player_payment_history("paymentNbr", "ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT ("paymentNbr") DO UPDATE SET "ledaId" = $2, "type" = $3, "paymentType" = $4, "amount" = $5, "seasonCode" = $6, "comp" = $7, "notes" = $8, "paidOff" = $9, "date" = $10;'
+                queryAdd = 'INSERT INTO maint.leda_maint_player_payment_history("paymentNbr", "ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT ("paymentNbr") DO UPDATE SET "ledaId" = $2, "type" = $3, "paymentType" = $4, "amount" = $5, "seasonCode" = $6, "comp" = $7, "notes" = $8, "paidOff" = $9, "date" = $10;'
                 values = [
                     data.paymentNbr,
                     data.ledaId,
@@ -86,7 +129,7 @@ export default async function handler(
             }
 
             // Execute the upsert query
-            const results = await queryPost(query, values);
+            const results = await queryPost(queryAdd, values);
 
             // Respond with the result of the upsert operation
             res.status(201).json(results);
