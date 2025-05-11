@@ -143,7 +143,12 @@ useEffect(() => {
             if (isMounted) {
                 setPayments(data);
             }
-        } catch (error) {
+        } catch (error: unknown) {
+            // Only handle errors that are not abort errors
+            if (error instanceof Error && error.name === "AbortError") {
+                // Ignore abort errors
+                return;
+            }
             console.error("Payment fetch error:", error);
             if (isMounted) {
                 setPayments([]);

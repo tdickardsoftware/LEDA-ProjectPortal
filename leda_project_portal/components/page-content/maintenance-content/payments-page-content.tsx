@@ -1,17 +1,32 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PaymentVisualisor } from "@/components/payment-visualisor";
 
 export default function PaymentsPageContent() {
+    const TAB_KEY = "payments-active-tab";
     const [activeTab, setActiveTab] = useState("player");
+
+    // Load tab from localStorage on mount
+    useEffect(() => {
+        const storedTab = typeof window !== "undefined" ? localStorage.getItem(TAB_KEY) : null;
+        if (storedTab) setActiveTab(storedTab);
+    }, []);
+
+    // Store tab in localStorage on change
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab);
+        if (typeof window !== "undefined") {
+            localStorage.setItem(TAB_KEY, tab);
+        }
+    };
 
     return (
         <div className="w-full max-w-full-4xl"> 
             <Tabs 
                 value={activeTab} 
-                onValueChange={setActiveTab} 
+                onValueChange={handleTabChange} 
                 className="w-full" 
                 orientation="horizontal"
             >
