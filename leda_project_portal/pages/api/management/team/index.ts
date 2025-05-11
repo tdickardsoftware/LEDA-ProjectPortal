@@ -94,14 +94,13 @@ export default async function handler(
 		try {
 			const results = req.body as Team;
 			const query = `UPDATE public.leda_team_info
-				SET "teamName" = $2, "establishedDate" = $3, memo = $4, "lastTeamFeePayment" = $5, "memberIdList" = $6
+				SET "teamName" = $2, "establishedDate" = $3, memo = $4, "memberIdList" = $5
 				WHERE "ledaId" = $1;`;
 			const values = [
 				results.ledaId,
 				results.teamName,
 				results.establishedDate,
 				results.memo,
-				results.lastTeamFeePayment,
 				results.memberIdList
 			];
 			const result = await queryPost(query, values);

@@ -310,3 +310,10 @@ export type SeasonCode = {
 	desc?: string;
 	isCurrentSeason?: boolean;
 }
+//
+// Define type to identify the shape of our data from postgres for a history view
+//
+export type HistoryView = {
+	seasonCode: string;
+	ledaId: number;
+}
