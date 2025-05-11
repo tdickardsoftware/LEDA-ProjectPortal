@@ -71,8 +71,8 @@ export default async function handler(
             }
 
             if ((data.paymentNbr === null || data.paymentNbr === undefined) && !unpaidPartPayments) {
-                 queryAdd = 'INSERT INTO maint.leda_maint_player_payment_history("ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);'
-                 values = [
+                queryAdd = 'INSERT INTO maint.leda_maint_player_payment_history("ledaId", "type", "paymentType", "amount", "seasonCode", "comp", "notes", "paidOff", "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);'
+                values = [
                     data.ledaId,
                     data.type,
                     data.paymentType,
@@ -82,7 +82,47 @@ export default async function handler(
                     data.notes,
                     data.paidOff,
                     data.date // Note: Ensure this matches the column "paymentDate"
+                ];
+                if ((data.type === "Part" || data.type === "Memb") && data.paidOff === true) {
+                    const getLastPaymentInfoQuery = `SELECT "lastMembershipFeePayment" from public.leda_membership_info WHERE "ledaId" = $1;`
+                    const getLastPaymentInfoValues = [
+                        data.ledaId
                     ];
+                    const getLastPaymentInfoResult = await query(getLastPaymentInfoQuery, getLastPaymentInfoValues);
+                    const paymentInfo = getLastPaymentInfoResult.rows[0].lastMembershipFeePayment;
+                    if (paymentInfo.includes("UNPAID")) {
+                        const getCurrentFiscalYearQuery = `SELECT "fiscalYear" FROM maint.leda_maint_seasons WHERE "seasonCode" = $1;`
+                        const getCurrentFiscalYearValues = [data.seasonCode];
+                        const getCurrentFiscalYearResult = await query(getCurrentFiscalYearQuery, getCurrentFiscalYearValues);
+                        const currentSeasonFiscalYear = getCurrentFiscalYearResult.rows[0]?.fiscalYear;
+                        const updateLastPaymentQuery = `UPDATE public.leda_membership_info SET "lastMembershipFeePayment" = $1 WHERE "ledaId" = $2;`
+                        const updateLastPaymentValues = [
+                            `PAID - ${data.seasonCode} - ${currentSeasonFiscalYear}`,
+                            data.ledaId
+                        ];
+                        await queryPost(updateLastPaymentQuery, updateLastPaymentValues);
+                    } else {
+                        const lastSeasonCode = paymentInfo.split(" - ")[1];
+                        const getLastSeasonCodeDate1Query = `SELECT dates->>'Date1' as date1 FROM maint.leda_maint_seasons WHERE "seasonCode" = $1;`
+                        const getLastSeasonCodeDate1Values = [lastSeasonCode];
+                        const getLastSeasonCodeDate1Result = await query(getLastSeasonCodeDate1Query, getLastSeasonCodeDate1Values);
+                        const lastSeasonCodeDate1 = getLastSeasonCodeDate1Result.rows[0]?.date1;
+
+                        const getCurrentSeasonCodeDate1Query = `SELECT dates->>'Date1' as date1, "fiscalYear" FROM maint.leda_maint_seasons WHERE "seasonCode" = $1;`
+                        const getCurrentSeasonCodeDate1Values = [data.seasonCode];
+                        const getCurrentSeasonCodeDate1Result = await query(getCurrentSeasonCodeDate1Query, getCurrentSeasonCodeDate1Values);
+                        const currentSeasonCodeDate1 = getCurrentSeasonCodeDate1Result.rows[0]?.date1;
+                        const currentSeasonFiscalYear = getCurrentSeasonCodeDate1Result.rows[0]?.fiscalYear;
+                        if (lastSeasonCodeDate1 && currentSeasonCodeDate1 && new Date(lastSeasonCodeDate1) < new Date(currentSeasonCodeDate1)) {
+                            const updateLastPaymentQuery = `UPDATE public.leda_membership_info SET "lastMembershipFeePayment" = $1 WHERE "ledaId" = $2;`
+                            const updateLastPaymentValues = [
+                                `PAID - ${data.seasonCode} - ${currentSeasonFiscalYear}`,
+                                data.ledaId
+                            ];
+                            await queryPost(updateLastPaymentQuery, updateLastPaymentValues);
+                        }
+                    }
+                }
             } else if (data.type === "Part" && data.paidOff === true) {
                 const getPartPaymentNbrQuery = 'SELECT "paymentNbr" FROM maint.leda_maint_player_payment_history WHERE "type" = $1 AND "seasonCode" = $2 AND "ledaId" = $3 AND "paidOff" = false;'
                 const getPartPaymentNbrValues = [
@@ -147,7 +187,7 @@ export default async function handler(
             const data = req.body as PaymentHistory;
 
             // SQL query for deleting payment history by paymentNbr
-            const query = 'DELETE FROM maint.leda_maint_player_payment_history WHERE "paymentNbr" = $1;'
+            const queryDel = 'DELETE FROM maint.leda_maint_player_payment_history WHERE "paymentNbr" = $1;'
             
             // Prepare values for the SQL query
             const values = [
@@ -155,7 +195,40 @@ export default async function handler(
             ];
 
             // Execute the delete query
-            const results = await queryPost(query, values);
+            const results = await queryPost(queryDel, values);
+
+            if ((data.type === "Part" || data.type === "Memb") && data.paidOff === true) {
+                // Query the view to get the most recent PAID status for this player
+                const paidStatusQuery = `
+                    SELECT "seasonCode", "fiscalYear"
+                    FROM public.leda_player_paid_status
+                    WHERE "ledaId" = $1 AND status = 'PAID'
+                    ORDER BY date1 DESC
+                    LIMIT 1;
+                `;
+                const paidStatusResult = await query(paidStatusQuery, [data.ledaId]);
+                if (paidStatusResult.rows.length > 0) {
+                    const { seasonCode, fiscalYear } = paidStatusResult.rows[0];
+                    const updateLastPaymentQuery = `
+                        UPDATE public.leda_membership_info
+                        SET "lastMembershipFeePayment" = $1
+                        WHERE "ledaId" = $2;
+                    `;
+                    const updateLastPaymentValues = [
+                        `PAID - ${seasonCode} - ${fiscalYear}`,
+                        data.ledaId
+                    ];
+                    await queryPost(updateLastPaymentQuery, updateLastPaymentValues);
+                } else {
+                    // No previous PAID found, set to UNPAID
+                    const updateLastPaymentQuery = `
+                        UPDATE public.leda_membership_info
+                        SET "lastMembershipFeePayment" = 'UNPAID'
+                        WHERE "ledaId" = $1;
+                    `;
+                    await queryPost(updateLastPaymentQuery, [data.ledaId]);
+                }
+            }
 
             // Respond with the result of the delete operation
             res.status(200).json(results);

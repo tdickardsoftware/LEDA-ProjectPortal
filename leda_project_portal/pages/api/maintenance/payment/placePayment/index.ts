@@ -83,7 +83,7 @@ export default async function handler(
                     data.notes,
                     data.paidOff,
                     data.date // Note: Ensure this matches the column "paymentDate"
-            ]   ;
+                ];
             } else if (data.type === "Part" && data.paidOff === true) {
                 const getPartPaymentNbrQuery = 'SELECT "paymentNbr" FROM maint.leda_maint_place_payment_history WHERE "type" = $1 AND "seasonCode" = $2 AND "ledaId" = $3 AND "paidOff" = false;'
                 const getPartPaymentNbrValues = [
