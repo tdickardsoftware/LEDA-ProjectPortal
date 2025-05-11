@@ -23,6 +23,13 @@ import {
 import { Button } from "./ui/button";
 import PaymentHistoryFormDialog from "./payment-history-form-dialog";
 import { PencilIcon, XIcon } from "lucide-react";
+import PaymentTypeSelectorNF from "./ui/payment-type-selector-nf";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { FilterIcon } from "lucide-react";
 
 interface PaymentVisualisorProps {
   type: "player" | "team" | "place";
@@ -37,8 +44,11 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
   const [payments, setPayments] = useState<PaymentHistory[]>([]);
   const [uniqueDates, setUniqueDates] = useState<PaymentDate[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("all");
+  const [selectedPaymentType, setSelectedPaymentType] = useState<{ paymentType: string; desc: string } | undefined>(undefined);
+  const [appliedPaymentType, setAppliedPaymentType] = useState<{ paymentType: string; desc: string } | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
   
   // Capitalize first letter of type
   const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
@@ -56,6 +66,20 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
     setLoading(true);
     // This will trigger the useEffect that fetches payments
     setSelectedDate(selectedDate);
+  };
+
+  // Function to clear all filters
+  const clearFilters = () => {
+    setSelectedDate("all");
+    setSelectedPaymentType(undefined);
+    setAppliedPaymentType(undefined);
+    setFilterOpen(false);
+  };
+
+  // Function to apply the selected filter
+  const applyFilter = () => {
+    setAppliedPaymentType(selectedPaymentType);
+    setFilterOpen(false);
   };
 
 // Fetch all unique payment dates
@@ -133,6 +157,14 @@ useEffect(() => {
                 });
             }
 
+            // Filter by selected payment type if one is selected
+            if (appliedPaymentType) {
+                data = data.filter((payment: PaymentHistory) => {
+                    // Handle field name mismatch - payment data uses 'type' field but selector uses 'paymentType'
+                    return payment.type === appliedPaymentType.paymentType;
+                });
+            }
+
             // Sort data by date in descending order (newest dates first)
             data.sort((a: PaymentHistory, b: PaymentHistory) => {
                 const dateA = new Date(a.date || '');
@@ -167,7 +199,7 @@ useEffect(() => {
         isMounted = false;
         controller.abort();
     };
-}, [type, ledaId, selectedDate]);
+}, [type, ledaId, selectedDate, appliedPaymentType]);
 
   // Function to delete a payment record
   const handleDeletePayment = async (payment: PaymentHistory) => {
@@ -213,23 +245,91 @@ useEffect(() => {
           route={type === 'player' ? playerPaymentHistoryRoute : type === 'team' ? teamPaymentHistoryRoute : placePaymentHistoryRoute }
           type={type}
         />
-        <Select
-          value={selectedDate}
-          onValueChange={setSelectedDate}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filter by date" />
-          </SelectTrigger>
-          <SelectContent className="bg-white">
-            <SelectItem value="all">All Dates</SelectItem>
-            {Array.isArray(uniqueDates) && uniqueDates.map((date, index) => (
-              <SelectItem key={`${date.paymentDate}-${index}`} value={date.paymentDate}>
-                {date.paymentDate ? new Date(date.paymentDate).toLocaleDateString() : 'Unknown date'}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select
+            value={selectedDate}
+            onValueChange={setSelectedDate}
+          >
+            <SelectTrigger className="w-[200px] border-gray-400 text-gray-700">
+              <SelectValue placeholder="Filter by date" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border-gray-400 text-gray-700">
+              <SelectItem value="all">All Dates</SelectItem>
+              {Array.isArray(uniqueDates) && uniqueDates.map((date, index) => (
+                <SelectItem key={`${date.paymentDate}-${index}`} value={date.paymentDate}>
+                  {date.paymentDate ? new Date(date.paymentDate).toLocaleDateString() : 'Unknown date'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="border-gray-400 text-gray-700">
+                <FilterIcon className="h-4 w-4 mr-2" /> 
+                {appliedPaymentType ? "Payment Type Filter" : "Filter by Type"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-4 bg-white border-gray-400 text-gray-700">
+              <div className="space-y-4">
+                <h4 className="font-medium">Filter by Payment Type</h4>
+                <PaymentTypeSelectorNF
+                  value={selectedPaymentType}
+                  onChange={setSelectedPaymentType}
+                  label="Payment Type"
+                />
+                <div className="flex justify-between mt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={clearFilters} 
+                    className="text-sm border-gray-400 text-gray-700"
+                  >
+                    Clear Filters
+                  </Button>
+                  <Button 
+                    onClick={applyFilter} 
+                    className="text-sm border-gray-400 text-gray-700"
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
+      
+      {/* Show active filters if any are applied */}
+      {(selectedDate !== "all" || appliedPaymentType) && (
+        <div className="flex gap-2 mb-4 items-center">
+          <span className="text-sm text-gray-500">Active filters:</span>
+          {selectedDate !== "all" && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-xs flex items-center gap-1 bg-gray-100"
+              onClick={() => setSelectedDate("all")}
+            >
+              Date: {new Date(selectedDate).toLocaleDateString()}
+              <XIcon className="h-3 w-3" />
+            </Button>
+          )}
+          {appliedPaymentType && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-xs flex items-center gap-1 bg-gray-100"
+              onClick={() => {
+                setAppliedPaymentType(undefined);
+                setSelectedPaymentType(undefined);
+              }}
+            >
+              Type: {appliedPaymentType.paymentType}
+              <XIcon className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      )}
       
       {loading ? (
         <div className="flex justify-center items-center h-40">
