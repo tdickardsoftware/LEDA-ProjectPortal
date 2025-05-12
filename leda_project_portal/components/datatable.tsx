@@ -9,6 +9,7 @@ import {
 	useReactTable,
 	getPaginationRowModel,
 	getSortedRowModel,
+	CellContext,
 } from "@tanstack/react-table";
 import {
 	Table,
@@ -20,6 +21,20 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import RosterSeasonCodeSelector from "@/components/ui/roster-season-code-selector";
+import { Checkbox } from "@/components/ui/checkbox";
+import { placePaymentHistoryRoute, rosterRoute, teamPaymentHistoryRoute } from "@/lib/apiRoutes";
+// Import the required icons and paymentRoute
+import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { playerPaymentHistoryRoute } from "@/lib/apiRoutes";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Add interface for payment status data
+interface PaymentStatus {
+	ledaId: string | number;
+	status: 'PAID' | 'PART' | 'UNPAID';
+}
 
 interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	columns: ColumnDef<TData, TValue>[];
@@ -35,6 +50,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 	singleRowSelection?: boolean;
 	passValueToParent?: (value: string) => void;
 	defaultSelectedRow?: number; // Optional prop for default selected row
+	filter?: boolean; // New optional prop
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
@@ -51,6 +67,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	singleRowSelection,
 	passValueToParent,
 	defaultSelectedRow,
+	filter,
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
@@ -58,6 +75,21 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const [tableData, setTableData] = React.useState(data); // State for table data
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
+
+	// Filter state
+	const [filterPopoverOpen, setFilterPopoverOpen] = React.useState(false);
+	const [filterSeasonCode, setFilterSeasonCode] = React.useState<string>("");
+	const [filterCurrentSeason, setFilterCurrentSeason] = React.useState<boolean>(true);
+	const [filteredLedaIds, setFilteredLedaIds] = React.useState<string[] | null>(null);
+	const [filterLoading, setFilterLoading] = React.useState(false);
+	
+	// Add new state for payment status
+	const [showPaymentStatus, setShowPaymentStatus] = React.useState<boolean>(false);
+	const [paymentStatusData, setPaymentStatusData] = React.useState<PaymentStatus[]>([]);
+	const [paymentStatusLoading, setPaymentStatusLoading] = React.useState(false);
+
+	// Add local state for the Show Payment Status checkbox
+	const [pendingShowPaymentStatus, setPendingShowPaymentStatus] = React.useState<boolean>(false);
 
 	// Debounce the search input
 	React.useEffect(() => {
@@ -68,27 +100,177 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		return () => clearTimeout(handler); // Cleanup on each change
 	}, [searchQuery]);
 
-	
+	// When filterCurrentSeason changes, reset filterSeasonCode and pendingShowPaymentStatus if needed
+	React.useEffect(() => {
+		if (filterCurrentSeason) {
+			setFilterSeasonCode("");
+			setPendingShowPaymentStatus(false);
+			setShowPaymentStatus(false); // Reset payment status when changing season
+		}
+	}, [filterCurrentSeason]);
 
-	
+	// Function to fetch payment status data
+	const fetchPaymentStatus = React.useCallback(async (seasonCode: string) => {
+		if (!seasonCode) return;
+		
+		setPaymentStatusLoading(true);
+		try {
+			let res;
+			if (pageName.includes("Players")) {
+				res = await fetch(`${playerPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`);
+			} else if (pageName.includes("Places")) {
+				res = await fetch(`${placePaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`);
+			} else {
+				res = await fetch(`${teamPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`);
+			}
+			const data = await res.json();
+			setPaymentStatusData(Array.isArray(data) ? data : []);
+		} catch (e) {
+			console.error("Failed to fetch payment status", e);
+			setPaymentStatusData([]);
+		} finally {
+			setPaymentStatusLoading(false);
+		}
+	}, [pageName]);
 
-	// Filtered data based on debounced query
+	// Only fetch payment status when showPaymentStatus is set (after Apply)
+	React.useEffect(() => {
+		if (showPaymentStatus && filterSeasonCode) {
+			fetchPaymentStatus(filterSeasonCode);
+		} else {
+			setPaymentStatusData([]);
+		}
+	}, [showPaymentStatus, filterSeasonCode, fetchPaymentStatus]);
+
+	const handleApplyFilter = async () => {
+		if (!filterSeasonCode) return;
+		setFilterLoading(true);
+		try {
+			let res;
+			if (pageName.includes("Players")) {
+				res = await fetch(`${rosterRoute}/rosterPlayerView?seasonCode=${filterSeasonCode}`);
+			} else if (pageName.includes("Places")) {
+				res = await fetch(`${rosterRoute}/rosterPlaceView?seasonCode=${filterSeasonCode}`);
+			} else {
+				res = await fetch(`${rosterRoute}/rosterTeamView?seasonCode=${filterSeasonCode}`);
+			}
+			const ids: { ledaId: string | number }[] = await res.json();
+			// Extract ledaId values from the array of objects
+			const ledaIds = Array.isArray(ids) ? ids.map((item) => String(item.ledaId)) : [];
+			setFilteredLedaIds(ledaIds);
+			setShowPaymentStatus(pendingShowPaymentStatus); // Only set showPaymentStatus on Apply
+			setFilterPopoverOpen(false);
+		} catch (e) {
+			console.error("Failed to filter by season", e);
+		} finally {
+			setFilterLoading(false);
+		}
+	};
+
+	// Filtered data based on debounced query and filter
 	const filteredData = React.useMemo(() => {
-		if (!debouncedQuery) return tableData;
-		return tableData.filter((row) =>
+		let base = tableData;
+		if (filteredLedaIds) {
+			base = base.filter(row => filteredLedaIds.includes(String(row.ledaId)));
+		}
+		if (!debouncedQuery) return base;
+		return base.filter((row) =>
 			Object.values(row).some((value) =>
 				String(value)
 					.toLowerCase()
 					.includes(debouncedQuery.toLowerCase())
 			)
 		);
-	}, [debouncedQuery, tableData]);
+	}, [debouncedQuery, tableData, filteredLedaIds]);
+
+	// Function to get payment status for a given ledaId
+	const getPaymentStatus = React.useCallback((ledaId: string | number) => {
+		const paymentRecord = paymentStatusData.find(p => String(p.ledaId) === String(ledaId));
+		return paymentRecord?.status || null;
+	}, [paymentStatusData]);
+
+	// Helper to render payment status icon with tooltip
+	const renderPaymentStatusIcon = React.useCallback((ledaId: string | number) => {
+		if (!showPaymentStatus || paymentStatusData.length === 0) return null;
+		
+		const status = getPaymentStatus(ledaId);
+		if (!status) return null;
+
+		let icon = null;
+		let tooltipText = "";
+		switch (status) {
+			case 'PAID':
+				icon = <CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />;
+				tooltipText = "Paid";
+				break;
+			case 'PART':
+				icon = <AlertTriangle className="h-5 w-5 text-amber-500 ml-2" />;
+				tooltipText = "Partial";
+				break;
+			case 'UNPAID':
+				icon = <XCircle className="h-5 w-5 text-red-500 ml-2" />;
+				tooltipText = "Unpaid";
+				break;
+			default:
+				return null;
+		}
+		return (
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<span>{icon}</span>
+					</TooltipTrigger>
+					<TooltipContent className="bg-white rounded-lg">
+						{tooltipText}
+					</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		);
+	}, [showPaymentStatus, paymentStatusData, getPaymentStatus]);
+
+	// Enhance columns with payment status if enabled
+	const enhancedColumns = React.useMemo(() => {
+		if (!showPaymentStatus || paymentStatusData.length === 0) return columns;
+		
+		return columns.map(col => {
+			// Find the column that likely contains the name (assuming it has 'name' in the id or accessorKey)
+			const isNameColumn = (col.id?.toLowerCase().includes('name') || 
+								 ('accessorKey' in col && typeof col.accessorKey === 'string' && col.accessorKey.toLowerCase().includes('name')));
+			
+			if (isNameColumn) {
+				return {
+					...col,
+					cell: (info: CellContext<TData, TValue>) => {
+							// Render the original cell content
+							let originalContent: React.ReactNode;
+							if (col.cell) {
+								originalContent = flexRender(col.cell, info);
+							} else if ('accessorKey' in col && typeof col.accessorKey === 'string') {
+								originalContent = String(info.row.original[col.accessorKey]);
+							} else {
+								originalContent = String(info.getValue());
+							}
+							const ledaId = info.row.original.ledaId;
+							
+							// Render both the original content and the icon
+							return (
+								<div className="flex items-center">
+									{originalContent}
+									{renderPaymentStatusIcon(Number(ledaId))}
+								</div>
+							);
+						}
+				};
+			}
+			return col;
+		});
+	}, [columns, showPaymentStatus, paymentStatusData, renderPaymentStatusIcon]);
 
 	const table = useReactTable({
 		// Assign table instance to ref
 		// Removed invalid onTableInstanceChange property
 		data: filteredData, // Use filtered data here
-		columns,
+		columns: enhancedColumns, // Use enhanced columns instead of original columns
 		getCoreRowModel: getCoreRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		onSortingChange: setSorting,
@@ -161,6 +343,67 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 							</div>
 						) : null}
 						<div className="flex space-x-2">
+							{/* Filter By Season Button and Popover */}
+							{filter && (
+								<Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
+									<PopoverTrigger asChild>
+										<Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => setFilterPopoverOpen(true)}>
+											Filter By Season
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent className="w-[260px] bg-white">
+										<div className="flex flex-col gap-3">
+											<RosterSeasonCodeSelector
+												disabled={filterCurrentSeason}
+												handleSelect={setFilterSeasonCode}
+												useCurrentSeason={filterCurrentSeason}
+												seasonCode={filterSeasonCode}
+											/>
+											<div className="flex items-center gap-2">
+												<Checkbox
+													checked={filterCurrentSeason}
+													onCheckedChange={() => setFilterCurrentSeason(!filterCurrentSeason)}
+												/>
+												<span>Current Season?</span>
+											</div>
+												{/* Show Payment Status checkbox only affects pendingShowPaymentStatus */}
+												{filterSeasonCode && (
+													<div className="flex items-center gap-2">
+														<Checkbox
+															checked={pendingShowPaymentStatus}
+															onCheckedChange={() => setPendingShowPaymentStatus(!pendingShowPaymentStatus)}
+															disabled={paymentStatusLoading}
+														/>
+														<span>Show Payment Status</span>
+														{paymentStatusLoading && <span className="text-xs ml-2">(Loading...)</span>}
+													</div>
+												)}
+											<Button
+												onClick={handleApplyFilter}
+												disabled={!filterSeasonCode || filterLoading}
+												className="w-full"
+											>
+												{filterLoading ? "Applying..." : "Apply"}
+											</Button>
+											{filteredLedaIds && (
+												<Button
+													variant="ghost"
+													onClick={() => {
+														setFilteredLedaIds(null);
+														setShowPaymentStatus(false);
+														setPendingShowPaymentStatus(false);
+														setPaymentStatusData([]);
+													}}
+													className="w-full text-xs text-gray-500"
+												>
+													Clear Filter
+												</Button>
+											)}
+										</div>
+									</PopoverContent>
+								</Popover>
+							)}
+							{/* ...existing code for viewLink, editDialog, deleteDialog... */}
 							{viewLink ? (
 								<div>
 									{React.cloneElement(

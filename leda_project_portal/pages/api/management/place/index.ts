@@ -128,10 +128,9 @@ export default async function handler(
 					"regularSponsor" = $16,
 					"currentSponsor" = $17,
 					issues = $18,
-					"lastBarFeePayment" = $19,
-					"lastSanctioningDate" = $20,
-					"contactId" = $21,
-					"placeType" = $22
+					"lastSanctioningDate" = $19,
+					"contactId" = $20,
+					"placeType" = $21
 				WHERE "ledaId" = $1;`;
 			const values = [
 				data.ledaId,
@@ -152,7 +151,6 @@ export default async function handler(
 				data.regularSponsor,
 				data.currentSponsor,
 				data.issues,
-				data.lastBarFeePayment,
 				data.lastSanctioningDate,
 				data.contactId,
 				data.placeType,

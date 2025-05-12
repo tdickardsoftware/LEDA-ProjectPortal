@@ -92,6 +92,30 @@ export default function MaintenancePageContent() {
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
 						<CardTitle className="text-lg font-semibold">
+							Payments
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<p className="text-gray-700">
+							View, Add, Edit, or Delete Payments
+						</p>
+					</CardContent>
+					<Link
+						href="/Portal/Maintenance/Payments"
+						className="text-gray-700 hover:text-gray-500"
+						prefetch
+					>
+						<CardFooter className="flex justify-between items-center w-full mt-4">
+							<span className="font-medium">View Payments</span>
+							<ArrowRight className="w-5 h-5" />
+						</CardFooter>
+					</Link>
+				</Card>
+			</div>
+			<div>
+				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
+					<CardHeader>
+						<CardTitle className="text-lg font-semibold">
 							Payout Tiers
 						</CardTitle>
 					</CardHeader>

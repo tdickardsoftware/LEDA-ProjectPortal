@@ -21,7 +21,6 @@ import { toast } from "sonner";
 import PhoneNumberInput from "@/components/ui/phone-number-input";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
-import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import PlaceTypeSelector from "@/components/ui/place-type-selector";
 import { Textarea } from "@/components/ui/textarea";
 import PlaceOwnerSelector from "@/components/ui/place-owner-select";
@@ -119,7 +118,6 @@ export default function PlaceAddForm({
 		{
 			name: "Additional Info",
 			fields: [
-				"lastBarFeePayment",
 				"lastSanctioningDate",
 				"sendMailings",
 				"regularSponsor",
@@ -152,7 +150,7 @@ export default function PlaceAddForm({
 			regularSponsor: false,
 			currentSponsor: false,
 			issues: false,
-			lastBarFeePayment: "",
+			lastBarFeePayment: "UNPAID - NEW PLACE ADDED",
 			lastSanctioningDate: "",
 			placeType: "",
 			contactId: "",
@@ -211,14 +209,11 @@ export default function PlaceAddForm({
 				);
 			}
 
-			const results = await response.json();
 			toast.success("Successfully submitted the form!");
 
 			// Reset form and state
 			form.reset();
 			setGenerateIDStatus(true);
-
-			console.log("Form submitted successfully!", results);
 			onClose(); // Close the form
 			onRefresh(); // Refresh the datatable with the place API route
 		} catch (error) {
@@ -454,11 +449,6 @@ export default function PlaceAddForm({
 							<div className={formContainerStyle}>
 								<h1>Additional Information</h1>
 								<hr className="bg-gray-300 mb-4"></hr>
-								<SeasonCodeSelector
-									control={form.control}
-									name="lastBarFeePayment"
-									label="Last Bar Fee Payment *"
-								/>
 								<InputDefault
 									control={form.control}
 									name="lastSanctioningDate"

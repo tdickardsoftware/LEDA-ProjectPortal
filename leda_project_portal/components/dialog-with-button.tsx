@@ -18,7 +18,7 @@ import React from "react";
 //
 // Form imports
 //
-import PlayerAddInformationForm from "@/components/forms/management/player-info-form";
+import PlayerAddInformationForm from "@/components/forms/management/player-add-form";
 import PlaceAddForm from "@/components/forms/management/place-add-form";
 import TeamAddForm from "@/components/forms/management/team-add-form";
 import DivisionAddForm from "@/components/forms/maintenance/division-add-form";

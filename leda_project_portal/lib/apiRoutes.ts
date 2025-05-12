@@ -46,6 +46,12 @@ export const payoutRoute = "/api/activities/payout";
 export const trailsPlayerHistoryRoute = "/api/activities/trails/trailsPlayerHistory";
 // Define route for mentionPlayerHistory not on the serverside 
 export const mentionPlayerHistoryRoute = "/api/maintenance/mention/mentionHistory";
+// Define route for playerPaymentHistory not on the serverside
+export const playerPaymentHistoryRoute = "/api/maintenance/payment/playerPayment";
+// Define route for teamPaymentHistory not on the serverside
+export const teamPaymentHistoryRoute = "/api/maintenance/payment/teamPayment";
+// Define route for placePaymentHistory not on the serverside
+export const placePaymentHistoryRoute = "/api/maintenance/payment/placePayment";
 
 //
 // Server Routes
@@ -89,3 +95,9 @@ export const payoutRouteServer = "http://" + process.env.VERCEL_URL + payoutRout
 export const trailsPlayerHistoryRouteServer = "http://" + process.env.VERCEL_URL + trailsPlayerHistoryRoute;
 // Define route for mentionPlayerHistory api
 export const mentionPlayerHistoryRouteServer = "http://" + process.env.VERCEL_URL + mentionPlayerHistoryRoute;
+// Define route for playerPaymentHistory api
+export const playerPaymentHistoryRouteServer = "http://" + process.env.VERCEL_URL + playerPaymentHistoryRoute;
+// Define route for teamPaymentHistory api
+export const teamPaymentHistoryRouteServer = "http://" + process.env.VERCEL_URL + teamPaymentHistoryRoute;
+// Define route for placePaymentHistory api
+export const placePaymentHistoryRouteServer = "http://" + process.env.VERCEL_URL + placePaymentHistoryRoute;
