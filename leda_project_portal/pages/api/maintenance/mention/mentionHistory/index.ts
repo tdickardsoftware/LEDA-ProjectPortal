@@ -7,7 +7,6 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
-    // TODO - implement teamId for a mention.
     if (req.method === "POST") {
         try {
             const data = req.body as MentionPlayerHistory
