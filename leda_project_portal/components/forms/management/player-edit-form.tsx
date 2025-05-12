@@ -459,15 +459,14 @@ export default function PlayerEditInformationForm({
 													className={inputWidth}
 													type="number"
 													onChange={(e) => {
-														field.onChange(
-															e.target.value
-																? Number(
-																		e.target
-																			.value
-																  )
-																: undefined
-														);
-													}}
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
+												);
+											}}
 												/>
 											</FormControl>
 											<FormMessage />

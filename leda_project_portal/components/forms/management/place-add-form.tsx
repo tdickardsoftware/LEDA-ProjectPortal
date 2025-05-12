@@ -145,7 +145,7 @@ export default function PlaceAddForm({
 			website: "",
 			establishDate: "",
 			memo: "",
-			numberOfBoards: 0,
+			numberOfBoards: undefined,
 			sendMailings: false,
 			regularSponsor: false,
 			currentSponsor: false,
@@ -300,15 +300,14 @@ export default function PlaceAddForm({
 													className={inputWidth}
 													type="number"
 													onChange={(e) => {
-														field.onChange(
-															e.target.value
-																? Number(
-																		e.target
-																			.value
-																  )
-																: undefined
-														);
-													}}
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
+												);
+												}}
 												/>
 											</FormControl>
 											<FormMessage />
@@ -404,15 +403,14 @@ export default function PlaceAddForm({
 													className={inputWidth}
 													type="number"
 													onChange={(e) => {
-														field.onChange(
-															e.target.value
-																? Number(
-																		e.target
-																			.value
-																  )
-																: undefined
-														);
-													}}
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
+												);
+											}}
 												/>
 											</FormControl>
 											<FormMessage />
