@@ -24,6 +24,7 @@ import PlayerTDPHistoryContent from "./player-tdp-history-content";
 import PlayerRosterHistoryContent from "./player-roster-history-content";
 import PaymentHistoryFormDialog from "@/components/payment-history-form-dialog";
 import { playerPaymentHistoryRoute } from "@/lib/apiRoutes";
+import PlayerPaymentHistoryContent from "./player-payment-history-content";
 
 export default function PlayerPageContent({
 	playerData,
@@ -35,6 +36,7 @@ export default function PlayerPageContent({
 	const [isMentionsHistoryDialogOpen, setIsMentionsHistoryDialogOpen] = useState(false);
 	const [isTDPHistoryDialogOpen, setIsTDPHistoryDialogOpen] = useState(false);
 	const [isRosterHistoryDialogOpen, setIsRosterHistoryDialogOpen] = useState(false);
+	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] = useState(false);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -55,6 +57,10 @@ export default function PlayerPageContent({
 	const handleRosterHistory = () => {
 		setIsRosterHistoryDialogOpen(!isRosterHistoryDialogOpen);
 	}
+
+	const handlePaymentHistory = () => {
+		setIsPaymentHistoryDialogOpen(!isPaymentHistoryDialogOpen);
+	};
 
 	const handleRefresh = () => {
 		window.location.reload();
@@ -94,14 +100,16 @@ export default function PlayerPageContent({
 							</Button>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								onClick={handlePaymentHistory}
 							>
-								Payment History *WIP*
+								Payment History
 							</Button>
 							<PaymentHistoryFormDialog
 								buttonText="Add Player Payment"
 								initialLedaId={playerData.ledaId.toString()}
 								route={playerPaymentHistoryRoute}
 								type="player"
+								onSuccess={() => setIsPaymentHistoryDialogOpen(true)}
 							/>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
@@ -309,6 +317,15 @@ export default function PlayerPageContent({
 						<DialogTitle>Roster History for {playerData.fullName}</DialogTitle>
 					</DialogHeader>
 					<PlayerRosterHistoryContent playerData={playerData} />
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isPaymentHistoryDialogOpen} onOpenChange={setIsPaymentHistoryDialogOpen}>
+				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Payment History for {playerData.fullName}</DialogTitle>
+					</DialogHeader>
+					<PlayerPaymentHistoryContent playerData={playerData} />
 				</DialogContent>
 			</Dialog>
 		</div>
