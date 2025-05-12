@@ -149,7 +149,7 @@ export default function PlaceEditForm({
 				? new Date(formData.establishDate).toISOString().split("T")[0]
 				: undefined,
 			memo: formData.memo || "",
-			numberOfBoards: formData.numberOfBoards || 0,
+			numberOfBoards: formData.numberOfBoards || undefined,
 			sendMailings: formData.sendMailings || false,
 			regularSponsor: formData.regularSponsor || false,
 			currentSponsor: formData.currentSponsor || false,
@@ -357,15 +357,14 @@ export default function PlaceEditForm({
 													className={inputWidth}
 													type="number"
 													onChange={(e) => {
-														field.onChange(
-															e.target.value
-																? Number(
-																		e.target
-																			.value
-																  )
-																: undefined
-														);
-													}}
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
+												);
+											}}
 												/>
 											</FormControl>
 											<FormMessage />
@@ -443,15 +442,14 @@ export default function PlaceEditForm({
 													className={inputWidth}
 													type="number"
 													onChange={(e) => {
-														field.onChange(
-															e.target.value
-																? Number(
-																		e.target
-																			.value
-																  )
-																: undefined
-														);
-													}}
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
+												);
+											}}
 												/>
 											</FormControl>
 											<FormMessage />

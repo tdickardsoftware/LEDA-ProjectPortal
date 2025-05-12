@@ -112,9 +112,11 @@ export default function PayoutTierAddForm({
 											type="number"
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>
@@ -142,9 +144,11 @@ export default function PayoutTierAddForm({
 											type="number"
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>
