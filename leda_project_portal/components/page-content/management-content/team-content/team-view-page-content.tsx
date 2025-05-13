@@ -34,6 +34,7 @@ import RosterSeasonCodeSelector from "@/components/ui/roster-season-code-selecto
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import TeamPaymentHistoryContent from "./team-payment-history-content";
 
 export default function TeamPageContent({
 	teamData,
@@ -55,6 +56,7 @@ export default function TeamPageContent({
 	const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
 	const [paymentStatusData, setPaymentStatusData] = useState<{ ledaId: string, status: 'PAID' | 'PART' | 'UNPAID' }[]>([]);
 	const [filterCurrentSeason, setFilterCurrentSeason] = useState(true);
+	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] = useState(false);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -62,6 +64,10 @@ export default function TeamPageContent({
 
 	const handleRefresh = () => {
 		window.location.reload();
+	};
+
+	const handlePaymentHistory = () => {
+		setIsPaymentHistoryDialogOpen(!isPaymentHistoryDialogOpen);
 	};
 
 	// Fetch payment status for team members for the selected season
@@ -153,6 +159,12 @@ export default function TeamPageContent({
 								route={teamPaymentHistoryRoute}
 								type="team"
 							/>
+							<Button
+								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								onClick={handlePaymentHistory}
+							>
+								Payment History
+							</Button>
 							{/* Show Payment Status Popover */}
 							<Popover open={showPaymentPopover} onOpenChange={setShowPaymentPopover}>
 								<PopoverTrigger asChild>
@@ -292,6 +304,15 @@ export default function TeamPageContent({
 						onClose={handleEdit}
 						handleRefresh={handleRefresh}
 					/>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isPaymentHistoryDialogOpen} onOpenChange={setIsPaymentHistoryDialogOpen}>
+				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Payment History for {teamData.teamName}</DialogTitle>
+					</DialogHeader>
+					<TeamPaymentHistoryContent teamData={teamData} />
 				</DialogContent>
 			</Dialog>
 		</div>
