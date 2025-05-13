@@ -1164,10 +1164,12 @@ export default function PayoutsContent() {
 																															{adjustment.credit
 																																? "Credit"
 																																: "Debit"}
+
 																															:{" "}
 																															{adjustment.credit
 																																? ""
 																																: "-"}
+
 																															$
 																															{Math.abs(
 																																adjustment.adjustmentAmount
@@ -1276,10 +1278,12 @@ export default function PayoutsContent() {
 																															{adjustment.credit
 																																? "Credit"
 																																: "Debit"}
+
 																															:{" "}
 																															{adjustment.credit
 																																? ""
 																																: "-"}
+
 																															$
 																															{Math.abs(
 																																adjustment.adjustmentAmount

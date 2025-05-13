@@ -137,12 +137,15 @@ export default function MentionEditForm({
 				<div className="flex space-x-4">
 					{/* Mention Information Section */}
 					<div className={formContainerStyle}>
-						<h1>Mention Information for Mention Code #{rowData.mentionCode}</h1>
+						<h1>
+							Mention Information for Mention Code #
+							{rowData.mentionCode}
+						</h1>
 						<InputDefault
 							control={form.control}
 							name="mentionCode"
 							label="Mention Code *"
-                            disabled
+							disabled
 						/>
 						<FormField
 							control={form.control}
@@ -158,9 +161,11 @@ export default function MentionEditForm({
 											type="number"
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>

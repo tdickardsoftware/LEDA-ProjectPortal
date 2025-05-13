@@ -50,6 +50,7 @@ export default async function Page() {
 					}
 					apiEndpoint={playerRoute}
 					defaultSort="ledaId"
+					filter={true}
 				/>
 			</div>
 		</>

@@ -56,7 +56,7 @@ const PhoneNumberInputContent: React.FC<PhoneNumberInputProps> = ({
 }) => {
 	const {
 		field: { onChange, onBlur, value, ref },
-		fieldState: {  },
+		fieldState: {},
 	} = useController({
 		name,
 		control,

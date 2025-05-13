@@ -31,73 +31,76 @@ import SchedulingEditMatchupForm from "@/components/forms/activities/schedule-ed
 import { placeRoute } from "@/lib/apiRoutes";
 
 interface SubdivisionSchedulerProps {
-    division: string;
-    subdivision: string;
-    teams: Record<string, { teamId: string; placeId: string; teamName: string }>;
-    gameDates: Record<string, string>;
-    matchData: Record<
-        string,
-        Record<
-            string,
-            Record<
-                string,
-                {
-                    teamName: string;
-                    teamId: string;
-                    matchesData: Record<
-                        string,
-                        {
-                            matchDate: string;
-                            matchTime: string;
-                            home: boolean;
-                            opposingTeamId: string;
-                            opposingTeamLetter: string;
-                        }
-                    >;
-                }
-            >
-        >
-    >;
-    setEnabledSaveButton: (value: boolean) => void;
-    handleSaveData: (
-        updatedMatchData: Record<
-            string,
-            Record<
-                string,
-                Record<
-                    string,
-                    {
-                        teamName: string;
-                        teamId: string;
-                        matchesData: Record<
-                            string,
-                            {
-                                matchDate: string;
-                                matchTime: string;
-                                home: boolean;
-                                opposingTeamId: string;
-                                opposingTeamLetter: string;
-                            }
-                        >;
-                    }
-                >
-            >
-        >
-    ) => void;
+	division: string;
+	subdivision: string;
+	teams: Record<
+		string,
+		{ teamId: string; placeId: string; teamName: string }
+	>;
+	gameDates: Record<string, string>;
+	matchData: Record<
+		string,
+		Record<
+			string,
+			Record<
+				string,
+				{
+					teamName: string;
+					teamId: string;
+					matchesData: Record<
+						string,
+						{
+							matchDate: string;
+							matchTime: string;
+							home: boolean;
+							opposingTeamId: string;
+							opposingTeamLetter: string;
+						}
+					>;
+				}
+			>
+		>
+	>;
+	setEnabledSaveButton: (value: boolean) => void;
+	handleSaveData: (
+		updatedMatchData: Record<
+			string,
+			Record<
+				string,
+				Record<
+					string,
+					{
+						teamName: string;
+						teamId: string;
+						matchesData: Record<
+							string,
+							{
+								matchDate: string;
+								matchTime: string;
+								home: boolean;
+								opposingTeamId: string;
+								opposingTeamLetter: string;
+							}
+						>;
+					}
+				>
+			>
+		>
+	) => void;
 }
 
 export function SubdivisionScheduler({
-    division,
-    subdivision,
-    teams,
-    gameDates,
-    matchData,
-    setEnabledSaveButton,
-    handleSaveData,
+	division,
+	subdivision,
+	teams,
+	gameDates,
+	matchData,
+	setEnabledSaveButton,
+	handleSaveData,
 }: SubdivisionSchedulerProps) {
-    const [MatchData, setMatchData] = useState(matchData);
+	const [MatchData, setMatchData] = useState(matchData);
 
-    // Use division and subdivision directly
+	// Use division and subdivision directly
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const [initialMatchData, setInitialMatchData] = useState(matchData);
@@ -133,8 +136,14 @@ export function SubdivisionScheduler({
 
 	// Find matchup data for a team on a specific game date
 	const getTeamMatchup = (teamLetter: string, gameTitle: string) => {
-		if (MatchData[division]?.[subdivision]?.[teamLetter]?.matchesData?.[gameTitle]) {
-			return MatchData[division][subdivision][teamLetter].matchesData[gameTitle];
+		if (
+			MatchData[division]?.[subdivision]?.[teamLetter]?.matchesData?.[
+				gameTitle
+			]
+		) {
+			return MatchData[division][subdivision][teamLetter].matchesData[
+				gameTitle
+			];
 		}
 		return null;
 	};
@@ -176,8 +185,10 @@ export function SubdivisionScheduler({
 
 		// Only update teams within the current subdivision
 		if (updatedMatchData[division]?.[subdivision]) {
-			const selectedTeam = updatedMatchData[division][subdivision][selectedTeamLetter];
-			const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
+			const selectedTeam =
+				updatedMatchData[division][subdivision][selectedTeamLetter];
+			const opposingTeam =
+				updatedMatchData[division][subdivision][opposingTeamLetter];
 
 			// Skip if either team is not found in this subdivision
 			if (!selectedTeam || !opposingTeam) {
@@ -196,7 +207,7 @@ export function SubdivisionScheduler({
 				home: !!home,
 				opposingTeamId: opposingTeamId,
 				opposingTeamLetter: opposingTeamLetter,
-				subdivisionId: `${division}-${subdivision}` // Add subdivision tracking
+				subdivisionId: `${division}-${subdivision}`, // Add subdivision tracking
 			};
 
 			// Update the opposing team's matchup for this specific game title
@@ -206,7 +217,7 @@ export function SubdivisionScheduler({
 				home: !home,
 				opposingTeamId: teamId,
 				opposingTeamLetter: selectedTeamLetter,
-				subdivisionId: `${division}-${subdivision}` // Add subdivision tracking
+				subdivisionId: `${division}-${subdivision}`, // Add subdivision tracking
 			};
 
 			// Update the state with the new data
@@ -244,13 +255,15 @@ export function SubdivisionScheduler({
 
 		if (team?.matchesData?.[gameTitle]) {
 			// Get the opposing team's information before deletion
-			const opposingTeamLetter = team.matchesData[gameTitle].opposingTeamLetter;
+			const opposingTeamLetter =
+				team.matchesData[gameTitle].opposingTeamLetter;
 
 			// Delete matchup from current team
 			delete team.matchesData[gameTitle];
 
 			// Also delete the matchup from the opposing team
-			const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
+			const opposingTeam =
+				updatedMatchData[division][subdivision][opposingTeamLetter];
 			if (opposingTeam?.matchesData?.[gameTitle]) {
 				delete opposingTeam.matchesData[gameTitle];
 			}
@@ -316,28 +329,39 @@ export function SubdivisionScheduler({
 
 		// First, find the current matchup to get the previous opposing team
 		let previousOpposingTeamLetter = null;
-    
+
 		// Search for the current matchup only in the current subdivision
-		if (updatedMatchData[division]?.[subdivision]?.[selectedTeamLetter]?.matchesData?.[gameTitle]) {
-			previousOpposingTeamLetter = updatedMatchData[division][subdivision][selectedTeamLetter]
-				.matchesData[gameTitle].opposingTeamLetter;
+		if (
+			updatedMatchData[division]?.[subdivision]?.[selectedTeamLetter]
+				?.matchesData?.[gameTitle]
+		) {
+			previousOpposingTeamLetter =
+				updatedMatchData[division][subdivision][selectedTeamLetter]
+					.matchesData[gameTitle].opposingTeamLetter;
 		}
-	 
+
 		// If previous opposing team letter exists and is different from the new one
-		if (previousOpposingTeamLetter && previousOpposingTeamLetter !== opposingTeamLetter) {
+		if (
+			previousOpposingTeamLetter &&
+			previousOpposingTeamLetter !== opposingTeamLetter
+		) {
 			// Remove the matchup from the previous opposing team in the same subdivision
 			const previousOpposingTeam =
-				updatedMatchData[division][subdivision][previousOpposingTeamLetter];
-			
+				updatedMatchData[division][subdivision][
+					previousOpposingTeamLetter
+				];
+
 			if (previousOpposingTeam?.matchesData?.[gameTitle]) {
 				// Delete the matchup for the previous opposing team
 				delete previousOpposingTeam.matchesData[gameTitle];
 			}
 		}
-	 
+
 		// Now proceed with updating the matchup for the selected team and new opposing team
-		const selectedTeam = updatedMatchData[division][subdivision][selectedTeamLetter];
-		const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
+		const selectedTeam =
+			updatedMatchData[division][subdivision][selectedTeamLetter];
+		const opposingTeam =
+			updatedMatchData[division][subdivision][opposingTeamLetter];
 
 		// Skip if either team is not found in this subdivision
 		if (!selectedTeam || !opposingTeam) {
@@ -356,7 +380,7 @@ export function SubdivisionScheduler({
 			home: home,
 			opposingTeamId: opposingTeamId,
 			opposingTeamLetter: opposingTeamLetter,
-			subdivisionId: `${division}-${subdivision}` // Add subdivision tracking
+			subdivisionId: `${division}-${subdivision}`, // Add subdivision tracking
 		};
 
 		// Update the opposing team's matchup data with the inverse home/away status
@@ -366,7 +390,7 @@ export function SubdivisionScheduler({
 			home: !home,
 			opposingTeamId: teamId,
 			opposingTeamLetter: selectedTeamLetter,
-			subdivisionId: `${division}-${subdivision}` // Add subdivision tracking
+			subdivisionId: `${division}-${subdivision}`, // Add subdivision tracking
 		};
 
 		// Update state and call parent handlers
@@ -416,7 +440,9 @@ export function SubdivisionScheduler({
 
 	// Get team name by ID
 	const getTeamNameById = (teamId: string) => {
-		const team = Object.values(teams).find((team) => team.teamId === teamId);
+		const team = Object.values(teams).find(
+			(team) => team.teamId === teamId
+		);
 		return team ? team.teamName : "Unknown Team";
 	};
 

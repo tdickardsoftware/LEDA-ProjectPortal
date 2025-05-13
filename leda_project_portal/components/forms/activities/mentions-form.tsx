@@ -32,6 +32,10 @@ const divisionFormSchema = z.object({
 		.number()
 		.min(0, { message: "Points must be a positive number." })
 		.optional(),
+	count: z
+		.number()
+		.min(0, { message: "Count must be a positive number." })
+		.optional(),
 	mentionCode: z.string().optional(),
 	mentionDesc: z.string().optional(),
 	notes: z.string().optional(),
@@ -59,6 +63,7 @@ export default function MentionForm({
 		mentionCode: string,
 		desc: string,
 		points: number,
+		count: number,
 		notes?: string
 	) => void;
 	isEditMode?: boolean;
@@ -68,13 +73,15 @@ export default function MentionForm({
 		desc: string;
 		points: number;
 		notes: string;
+		count?: number;
 	} | null;
 	updateMention?: (
 		mentionId: string,
 		mentionCode: string,
 		desc: string,
 		points: number,
-		notes?: string
+		notes?: string,
+		count?: number
 	) => void;
 }) {
 	// Initialize form with React Hook Form and Zod validation
@@ -88,6 +95,7 @@ export default function MentionForm({
 				mentionBasis: "",
 			},
 			points: undefined,
+			count: undefined,
 			mentionCode: "",
 			mentionDesc: "",
 			notes: "",
@@ -97,7 +105,7 @@ export default function MentionForm({
 	// Set initial values when in edit mode and when initialMention changes
 	useEffect(() => {
 		if (isEditMode && initialMention) {
-			// Instead of just setting form values, also set the mentionData for the selector
+			// Set all fields, including count, when in edit mode
 			form.setValue("mentionData", {
 				mentionCode: initialMention.code,
 				desc: initialMention.desc,
@@ -107,6 +115,7 @@ export default function MentionForm({
 			form.setValue("mentionCode", initialMention.code);
 			form.setValue("mentionDesc", initialMention.desc);
 			form.setValue("points", initialMention.points);
+			form.setValue("count", initialMention.count ?? undefined); // Properly set the count field
 			form.setValue("notes", initialMention.notes || "");
 		}
 	}, [form, isEditMode, initialMention]);
@@ -116,21 +125,41 @@ export default function MentionForm({
 	 * Delegates to either updateMention or handleMentionSubmit based on mode
 	 */
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
+		// Ensure count is always set to a valid number
+		const countValue = values.count ?? 0;
+
+		console.log(countValue);
+
 		if (isEditMode && initialMention && updateMention) {
-			// Update existing mention
 			updateMention(
 				initialMention.id,
 				values.mentionCode || "",
 				values.mentionDesc || "",
 				values.points ?? 0,
-				values.notes
+				values.notes,
+				countValue // Ensure count is passed
 			);
+
+			// Reset the form after updating
+			form.reset({
+				mentionData: {
+					mentionCode: "",
+					desc: "",
+					points: "",
+					mentionBasis: "",
+				},
+				points: undefined,
+				count: undefined, // Reset count to undefined
+				mentionCode: "",
+				mentionDesc: "",
+				notes: "",
+			});
 		} else {
-			// Add new mention
 			handleMentionSubmit(
 				values.mentionCode || "",
 				values.mentionDesc || "",
 				values.points ?? 0,
+				countValue, // Ensure count is passed
 				values.notes
 			);
 
@@ -143,6 +172,7 @@ export default function MentionForm({
 					mentionBasis: "",
 				},
 				points: undefined,
+				count: undefined, // Set to undefined instead of 0
 				mentionCode: "",
 				mentionDesc: "",
 				notes: "",
@@ -219,6 +249,43 @@ export default function MentionForm({
 								</FormItem>
 							)}
 						/>
+
+						<FormField
+							control={form.control}
+							name="count"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Number of Darts/Count</FormLabel>
+									<FormControl>
+										<Input
+											placeholder="Number of Darts"
+											type="number"
+											{...field}
+											value={
+												field.value === undefined
+													? ""
+													: field.value
+											}
+											onChange={(e) => {
+												const value = e.target.value;
+												if (/^\d*$/.test(value)) {
+													field.onChange(
+														value === ""
+															? undefined
+															: parseInt(
+																	value,
+																	10
+															  )
+													);
+												}
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
 						<FormField
 							control={form.control}
 							name="notes"

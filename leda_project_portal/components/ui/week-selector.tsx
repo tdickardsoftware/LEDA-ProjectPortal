@@ -78,6 +78,12 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 		loadSeasonCodes();
 	}, [seasonCode]);
 
+	useEffect(() => {
+		// Reset the selected week when the season code changes
+		setSelectedWeek(null);
+		setSelectedWeekLabel("Select a Week...");
+	}, [seasonCode]);
+
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">

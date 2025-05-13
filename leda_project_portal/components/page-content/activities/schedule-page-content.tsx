@@ -141,9 +141,10 @@ export default function ScheduleContent() {
 			>
 		) => {
 			// Process the updated match data to ensure subdivision isolation
-			const processedMatchData = ensureSubdivisionIsolation(updatedMatchData);
+			const processedMatchData =
+				ensureSubdivisionIsolation(updatedMatchData);
 			setMatchData(processedMatchData);
-			
+
 			// Save data to the server
 			await fetch(`${scheduleRoute}`, {
 				method: "POST",
@@ -211,9 +212,12 @@ export default function ScheduleContent() {
 						const matchData = await matchDataResult.json();
 						if (matchData) {
 							// Add unique subdivision identifiers to ensure proper isolation
-							const processedMatchData = ensureSubdivisionIsolation(
-								JSON.parse(JSON.stringify(matchData.scheduleData))
-							);
+							const processedMatchData =
+								ensureSubdivisionIsolation(
+									JSON.parse(
+										JSON.stringify(matchData.scheduleData)
+									)
+								);
 							setMatchData(processedMatchData);
 						}
 					} else {
@@ -310,15 +314,20 @@ export default function ScheduleContent() {
 		// Add subdivision identifiers to each match
 		Object.keys(matchData).forEach((division) => {
 			Object.keys(matchData[division]).forEach((subdivision) => {
-				Object.keys(matchData[division][subdivision]).forEach((teamLetter) => {
-					const subdivisionId = `${division}-${subdivision}`;
-					Object.keys(matchData[division][subdivision][teamLetter].matchesData).forEach(
-						(matchId) => {
-							matchData[division][subdivision][teamLetter].matchesData[matchId].subdivisionId = 
+				Object.keys(matchData[division][subdivision]).forEach(
+					(teamLetter) => {
+						const subdivisionId = `${division}-${subdivision}`;
+						Object.keys(
+							matchData[division][subdivision][teamLetter]
+								.matchesData
+						).forEach((matchId) => {
+							matchData[division][subdivision][
+								teamLetter
+							].matchesData[matchId].subdivisionId =
 								subdivisionId;
-						}
-					);
-				});
+						});
+					}
+				);
 			});
 		});
 		return matchData;
@@ -403,7 +412,9 @@ export default function ScheduleContent() {
 													).length > 0 && (
 														<SubdivisionScheduler
 															division={division}
-															subdivision={subdivision}
+															subdivision={
+																subdivision
+															}
 															teams={
 																divisionsData[
 																	division

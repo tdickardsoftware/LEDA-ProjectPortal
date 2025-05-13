@@ -36,7 +36,10 @@ export default async function handler(
 				res.status(200).json(result.rows);
 			} catch (error) {
 				// Handle any errors that occur during the query
-				res.status(500).json({ message: "Failed to fetch payout tiers ", error });
+				res.status(500).json({
+					message: "Failed to fetch payout tiers ",
+					error,
+				});
 			}
 		}
 	}
@@ -63,7 +66,9 @@ export default async function handler(
 					message: "place already exists",
 				});
 			} else {
-				res.status(500).json({ message: (error as Error).message || "Server error" }); // Send error info in JSON
+				res.status(500).json({
+					message: (error as Error).message || "Server error",
+				}); // Send error info in JSON
 			}
 		}
 	} else if (req.method === "DELETE") {
@@ -75,7 +80,9 @@ export default async function handler(
 			res.status(201).json({ delete1: result });
 		} catch (error) {
 			console.error("Error in PayoutTierHandler:", error as Error);
-			res.status(500).json({ message: (error as Error).message || "Server error" });
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
 		}
 	} else if (req.method === "PUT") {
 		try {
@@ -86,7 +93,9 @@ export default async function handler(
 			res.status(201).json({ update1: result });
 		} catch (error) {
 			console.error("Error in PayoutTierHandler:", error as Error);
-			res.status(500).json({ message: (error as Error).message || "Server error" });
+			res.status(500).json({
+				message: (error as Error).message || "Server error",
+			});
 		}
 	} else {
 		res.status(405).json({ error: "Method not allowed" });

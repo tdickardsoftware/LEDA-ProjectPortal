@@ -14,12 +14,15 @@ export default function RootLayout({
 	return (
 		<main>
 			<SidebarProvider>
-					<AppSidebar className="z-20" />
-					<SidebarInset>
+				<AppSidebar className="z-20" />
+				<SidebarInset>
 					<div className="flex-1 min-w-0 bg-background">
 						<header className="flex h-16 shrink-0 items-center gap-2 px-4 w-full">
-							<SidebarTrigger className="-ml-1"/>
-							<Separator orientation="vertical" className="mr-2 h-4 bg-gray-300" />
+							<SidebarTrigger className="-ml-1" />
+							<Separator
+								orientation="vertical"
+								className="mr-2 h-4 bg-gray-300"
+							/>
 							<div className="flex-1">
 								<Breadcrumb>
 									<BreadcrumbList>
@@ -28,9 +31,7 @@ export default function RootLayout({
 								</Breadcrumb>
 							</div>
 						</header>
-						<div className="p-4">
-							{children}
-						</div>
+						<div className="p-4">{children}</div>
 					</div>
 				</SidebarInset>
 			</SidebarProvider>

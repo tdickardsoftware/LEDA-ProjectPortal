@@ -77,6 +77,10 @@ const data = {
 					url: "/Portal/Maintenance/Payment-Types",
 				},
 				{
+					title: "Payments",
+					url: "/Portal/Maintenance/Payments",
+				},
+				{
 					title: "Payout Tiers",
 					url: "/Portal/Maintenance/Payout-Tiers",
 				},

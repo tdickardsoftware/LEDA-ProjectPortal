@@ -4,7 +4,14 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import React from "react";
@@ -126,7 +133,9 @@ export default function PayoutTierEditForm({
 				<div className="flex space-x-4">
 					{/* Payout Tier Information Section */}
 					<div className={formContainerStyle}>
-						<h1>Payout Tier Information for Place #{rowData.place}</h1>
+						<h1>
+							Payout Tier Information for Place #{rowData.place}
+						</h1>
 						<FormField
 							control={form.control}
 							name="place"
@@ -141,12 +150,14 @@ export default function PayoutTierEditForm({
 											type="number"
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
-                                            disabled
+											disabled
 										/>
 									</FormControl>
 									<FormMessage />
@@ -167,9 +178,11 @@ export default function PayoutTierEditForm({
 											type="number"
 											onChange={(e) => {
 												field.onChange(
-													e.target.value
-														? Number(e.target.value)
-														: undefined
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
 												);
 											}}
 										/>

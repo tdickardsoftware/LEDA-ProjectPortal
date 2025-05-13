@@ -23,9 +23,14 @@ import { Separator } from "@/components/ui/separator";
 import { seasonRoute } from "@/lib/apiRoutes";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
 // Define the schema for form validation using zod
 const seasonFormSchema = z.object({
@@ -72,19 +77,19 @@ export default function SeasonEditForm({
 			dates: JSON.stringify(rowData.dates),
 		},
 	});
-	
+
 	// Define state for dates
 	// eslint-disable-next-line react-hooks/rules-of-hooks
-	const [dates, setDates] = React.useState<string>(JSON.stringify(rowData.dates));
+	const [dates, setDates] = React.useState<string>(
+		JSON.stringify(rowData.dates)
+	);
 
 	// Handle date change for manual date selection
-	const handleDateChange = (
-		selectedDate: Date | null,
-		index: number
-	) => {
+	const handleDateChange = (selectedDate: Date | null, index: number) => {
 		if (selectedDate) {
 			const updatedDates = JSON.parse(dates || "{}");
-			updatedDates[`Date${index + 1}`] = selectedDate.toLocaleDateString("en-US");
+			updatedDates[`Date${index + 1}`] =
+				selectedDate.toLocaleDateString("en-US");
 			setDates(JSON.stringify(updatedDates));
 		}
 	};
@@ -190,50 +195,63 @@ export default function SeasonEditForm({
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-                                    {(() => {
-                                        try {
-                                            const datesObject = JSON.parse(dates || "{}");
-                                            if (datesObject && typeof datesObject === "object") {
-                                                return Object.entries(datesObject).map(
-                                                    ([key, value], index) => (
-                                                        <TableRow key={index}>
-                                                            <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                                {key}
-                                                                
-                                                            </TableCell>
-                                                            <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                                <DatePicker
-                                                                        showIcon
-                                                                        selected={new Date(value as string)}
-                                                                        onChange={(date) =>
-                                                                            handleDateChange(date, index)
-                                                                        }
-                                                                        dateFormat="MM/dd/yyyy"
-                                                                        className="w-full border border-gray-300 rounded-md p-2"
-                                                                    />
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    )
-                                                );
-                                            } else {
-                                                return (
-                                                    <TableRow>
-                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                            Invalid dates format
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            }
-                                        } catch {
-                                            return (
-                                                <TableRow>
-                                                    <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        Error parsing dates
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        }
-                                    })()}
+									{(() => {
+										try {
+											const datesObject = JSON.parse(
+												dates || "{}"
+											);
+											if (
+												datesObject &&
+												typeof datesObject === "object"
+											) {
+												return Object.entries(
+													datesObject
+												).map(([key, value], index) => (
+													<TableRow key={index}>
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+															{key}
+														</TableCell>
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+															<DatePicker
+																showIcon
+																selected={
+																	new Date(
+																		value as string
+																	)
+																}
+																onChange={(
+																	date
+																) =>
+																	handleDateChange(
+																		date,
+																		index
+																	)
+																}
+																dateFormat="MM/dd/yyyy"
+																className="w-full border border-gray-300 rounded-md p-2"
+															/>
+														</TableCell>
+													</TableRow>
+												));
+											} else {
+												return (
+													<TableRow>
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+															Invalid dates format
+														</TableCell>
+													</TableRow>
+												);
+											}
+										} catch {
+											return (
+												<TableRow>
+													<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														Error parsing dates
+													</TableCell>
+												</TableRow>
+											);
+										}
+									})()}
 								</TableBody>
 							</Table>
 						</div>

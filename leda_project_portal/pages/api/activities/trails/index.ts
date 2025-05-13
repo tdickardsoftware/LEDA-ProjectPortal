@@ -60,19 +60,25 @@ export default async function handler(
 			const query4 =
 				'SELECT "totalPoints" FROM public.leda_trails_point_totals_audit WHERE "ledaId" = $1 order by "modifyDate" desc;';
 			const values4 = [data.ledaId];
-			const oldTotalPoints = (await queryPost(query4, values4)).rows[0]
-				.totalPoints;
+			const oldTotalPointsResult = await queryPost(query4, values4);
+			// Handle case where no rows are returned
+			let oldTotalPoints = 0;
+			if (oldTotalPointsResult.rows.length > 0) {
+				oldTotalPoints = oldTotalPointsResult.rows[0].totalPoints;
+			}
 			// calculate new total
 			const newTotalPoints = Number(oldTotalPoints) + changeBy;
 			// create query to insert audit record
 			const query3 =
-				'INSERT into public.leda_trails_point_totals_audit ("ledaId", "modifyDate", "previousTotalPoints", "totalPoints", "changeBy", "trailsDate") VALUES ($1, current_timestamp, $2, $3, $4, $5);';
+				'INSERT into public.leda_trails_point_totals_audit ("ledaId", "modifyDate", "previousTotalPoints", "totalPoints", "changeBy", "trailsDate", "singlesPlace", "doublesPlace") VALUES ($1, current_timestamp, $2, $3, $4, $5, $6, $7);';
 			const values3 = [
 				data.ledaId,
 				oldTotalPoints,
 				newTotalPoints,
 				changeBy,
 				data.trailsDate,
+				data.singlesPlace,
+				data.doublesPlace,
 			];
 			const result3 = await queryPost(query3, values3);
 			const result = await queryPost(query, values);
@@ -114,13 +120,15 @@ export default async function handler(
 			Number(oldTotalPoints) + Number(data.trailsPoints);
 		// create query to insert audit record
 		const query3 =
-			'INSERT into public.leda_trails_point_totals_audit ("ledaId", "modifyDate", "previousTotalPoints", "totalPoints", "changeBy", "trailsDate") VALUES ($1, current_timestamp, $2, $3, $4, $5);';
+			'INSERT into public.leda_trails_point_totals_audit ("ledaId", "modifyDate", "previousTotalPoints", "totalPoints", "changeBy", "trailsDate", "singlesPlace", "doublesPlace") VALUES ($1, current_timestamp, $2, $3, $4, $5, $6, $7);';
 		const values3 = [
 			data.ledaId,
 			oldTotalPoints,
 			newTotalPoints,
 			data.trailsPoints,
 			data.trailsDate,
+			data.singlesPlace,
+			data.doublesPlace,
 		];
 
 		const query4 =
@@ -130,25 +138,38 @@ export default async function handler(
 		const lastTrailsDateResult = await queryPost(query4, values4);
 		let lastTrailsDate = null;
 		let result4 = null;
-		
+
 		// Check if we have results before accessing them
 		if (lastTrailsDateResult.rows && lastTrailsDateResult.rows.length > 0) {
 			lastTrailsDate = lastTrailsDateResult.rows[0].lastTrailsDate;
-		} 
-		
+		}
+
 		// Make sure dates are properly compared by parsing them
 		const newTrailsDate = new Date(data.trailsDate);
-		const currentLastDate = lastTrailsDate ? new Date(lastTrailsDate) : null;
-		
+		const currentLastDate = lastTrailsDate
+			? new Date(lastTrailsDate)
+			: null;
+
 		// Update only if null or if new date is later
-		if (lastTrailsDate === null || currentLastDate === null || newTrailsDate > currentLastDate) {
+		if (
+			lastTrailsDate === null ||
+			currentLastDate === null ||
+			newTrailsDate > currentLastDate
+		) {
 			const query5 =
 				'update public.leda_membership_info set "lastTrailsDate" = $2 where "ledaId" = $1;';
 			const values5 = [data.ledaId, data.trailsDate];
 			result4 = await queryPost(query5, values5);
-			console.log("Updated lastTrailsDate for player", data.ledaId, "to", data.trailsDate);
+			console.log(
+				"Updated lastTrailsDate for player",
+				data.ledaId,
+				"to",
+				data.trailsDate
+			);
 		} else {
-			console.log("Did not update lastTrailsDate - new date not later than existing");
+			console.log(
+				"Did not update lastTrailsDate - new date not later than existing"
+			);
 		}
 
 		// execute queries
@@ -167,8 +188,12 @@ export default async function handler(
 		const query2 =
 			'SELECT "totalPoints" FROM public.leda_trails_point_totals_audit WHERE "ledaId" = $1 order by "modifyDate" desc;';
 		const values2 = [data.ledaId];
-		const oldTotalPoints = (await queryPost(query2, values2)).rows[0]
-			.totalPoints;
+		const oldTotalPointsResult = await queryPost(query2, values2);
+		// Handle case where no rows are returned
+		let oldTotalPoints = 0;
+		if (oldTotalPointsResult.rows.length > 0) {
+			oldTotalPoints = oldTotalPointsResult.rows[0].totalPoints;
+		}
 		// create query to get old points from old record
 		const query3 =
 			'SELECT "trailsPoints" FROM public.leda_trails_history WHERE "ledaId" = $1 AND "trailsDate" = $2;';
@@ -180,13 +205,15 @@ export default async function handler(
 		const newTotalPoints = Number(oldTotalPoints) + changeBy;
 		// create query to insert audit record
 		const query4 =
-			'INSERT into public.leda_trails_point_totals_audit ("ledaId", "modifyDate", "previousTotalPoints", "totalPoints", "changeBy", "trailsDate") VALUES ($1, current_timestamp, $2, $3, $4, $5);';
+			'INSERT into public.leda_trails_point_totals_audit ("ledaId", "modifyDate", "previousTotalPoints", "totalPoints", "changeBy", "trailsDate", "singlesPlace", "doublesPlace") VALUES ($1, current_timestamp, $2, $3, $4, $5, $6, $7);';
 		const values4 = [
 			data.ledaId,
 			oldTotalPoints,
 			newTotalPoints,
 			changeBy,
 			data.trailsDate,
+			null,
+			null,
 		];
 		// execute queries
 		const result4 = await queryPost(query4, values4);

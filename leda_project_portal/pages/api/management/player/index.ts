@@ -173,7 +173,6 @@ export default async function handler(
 			});
 		}
 	} else if (req.method === "PUT") {
-		console.log("PUT request");
 		try {
 			const data = req.body as PlayerMemberInfo;
 			const query1 = `
@@ -222,13 +221,12 @@ export default async function handler(
 					"formOnFile" = $6,
 					"needsMemberCard" = $7,
 					"inactiveDate" = $8,
-					"lastMembershipFeePayment" = $9,
-					"lastTrailsDate" = $10,
-					"memberType" = $11,
-					"cannotBeCaptain" = $12,
-					"lifetimeMember" = $13,
-					"lifetimeMemberReason" = $14
-				WHERE "ledaId" = $15
+					"lastTrailsDate" = $9,
+					"memberType" = $10,
+					"cannotBeCaptain" = $11,
+					"lifetimeMember" = $12,
+					"lifetimeMemberReason" = $13
+				WHERE "ledaId" = $14
 			`;
 			const values2 = [
 				data.establishedDate,
@@ -239,7 +237,6 @@ export default async function handler(
 				data.formOnFile,
 				data.needsMemberCard,
 				data.inactiveDate,
-				data.lastMembershipFeePayment,
 				data.lastTrailsDate,
 				data.memberType,
 				data.cannotBeCaptain,

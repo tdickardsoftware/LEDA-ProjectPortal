@@ -1,4 +1,4 @@
-import PlacePageContent from "@/components/page-content/management-content/place-view-page-content";
+import PlacePageContent from "@/components/page-content/management-content/place-content/place-view-page-content";
 import { fetchPlace } from "@/lib/getData";
 import { notFound } from "next/navigation";
 
@@ -14,9 +14,6 @@ export default async function Page(props: { params: PageProps }) {
 	if (!placeData) {
 		notFound();
 	}
-	
 
-	return (
-		<PlacePageContent placeData={placeData}/>
-	);
+	return <PlacePageContent placeData={placeData} />;
 }

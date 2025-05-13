@@ -19,7 +19,6 @@ import { toast } from "sonner";
 import PhoneNumberInput from "@/components/ui/phone-number-input";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
-import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import PlaceTypeSelector from "@/components/ui/place-type-selector";
 import { Textarea } from "@/components/ui/textarea";
 import PlaceOwnerSelector from "@/components/ui/place-owner-select";
@@ -73,7 +72,6 @@ const placeFormSchema = z.object({
 	regularSponsor: z.boolean(),
 	currentSponsor: z.boolean(),
 	issues: z.boolean(),
-	lastBarFeePayment: z.string(),
 	lastSanctioningDate: z.string().optional(),
 	placeType: z.string().min(1, { message: "Place Type is Required" }),
 	contactId: z.string().min(1, { message: "Place Owner is Required" }),
@@ -121,7 +119,6 @@ export default function PlaceEditForm({
 		{
 			name: "Additional Info",
 			fields: [
-				"lastBarFeePayment",
 				"lastSanctioningDate",
 				"sendMailings",
 				"regularSponsor",
@@ -152,12 +149,11 @@ export default function PlaceEditForm({
 				? new Date(formData.establishDate).toISOString().split("T")[0]
 				: undefined,
 			memo: formData.memo || "",
-			numberOfBoards: formData.numberOfBoards || 0,
+			numberOfBoards: formData.numberOfBoards || undefined,
 			sendMailings: formData.sendMailings || false,
 			regularSponsor: formData.regularSponsor || false,
 			currentSponsor: formData.currentSponsor || false,
 			issues: formData.issues || false,
-			lastBarFeePayment: formData.lastBarFeePayment || "",
 			lastSanctioningDate: formData.lastSanctioningDate
 				? new Date(formData.lastSanctioningDate)
 						.toISOString()
@@ -362,12 +358,13 @@ export default function PlaceEditForm({
 													type="number"
 													onChange={(e) => {
 														field.onChange(
-															e.target.value
-																? Number(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
 																		e.target
 																			.value
 																  )
-																: undefined
 														);
 													}}
 												/>
@@ -448,12 +445,13 @@ export default function PlaceEditForm({
 													type="number"
 													onChange={(e) => {
 														field.onChange(
-															e.target.value
-																? Number(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
 																		e.target
 																			.value
 																  )
-																: undefined
 														);
 													}}
 												/>
@@ -486,11 +484,6 @@ export default function PlaceEditForm({
 							<div className={formContainerStyle}>
 								<h1>Additional Information</h1>
 								<hr className="bg-gray-300 mb-4"></hr>
-								<SeasonCodeSelector
-									control={form.control}
-									name="lastBarFeePayment"
-									label="Last Bar Fee Payment *"
-								/>
 								<InputDefault
 									control={form.control}
 									name="lastSanctioningDate"

@@ -28,7 +28,8 @@ import { Calendar } from "lucide-react";
 //
 // Component export
 //
-export default function TrailsPageContent() {  // Fixed typo: TrainsPageContent -> TrailsPageContent
+export default function TrailsPageContent() {
+	// Fixed typo: TrainsPageContent -> TrailsPageContent
 	//
 	// States
 	//
@@ -55,7 +56,7 @@ export default function TrailsPageContent() {  // Fixed typo: TrainsPageContent 
 			})
 		);
 	};
-	
+
 	const [addTrailsDate, setAddTrailsDate] = useState<string | null>(
 		format(getEasternTime(), "MM-dd-yyyy")
 	);

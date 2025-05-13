@@ -1,4 +1,4 @@
-import PlayerPageContent from "@/components/page-content/management-content/player-view-page-content";
+import PlayerPageContent from "@/components/page-content/management-content/player-content/player-view-page-content";
 import { fetchPlayerMember } from "@/lib/getData";
 import { notFound } from "next/navigation";
 
@@ -15,7 +15,5 @@ export default async function Page(props: { params: PageProps }) {
 		notFound();
 	}
 
-	return (
-		<PlayerPageContent playerData={playerData}/>
-	);
+	return <PlayerPageContent playerData={playerData} />;
 }

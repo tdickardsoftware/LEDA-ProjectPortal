@@ -4,7 +4,14 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import React from "react";
@@ -122,12 +129,14 @@ export default function PaymentTypeEditForm({
 				<div className="flex space-x-4">
 					{/* Payment Type Information Section */}
 					<div className={formContainerStyle}>
-						<h1>Payment Type Information for {rowData.paymentType}</h1>
+						<h1>
+							Payment Type Information for {rowData.paymentType}
+						</h1>
 						<InputDefault
 							control={form.control}
 							name="paymentType"
 							label="Payment Type *"
-                            disabled
+							disabled
 						/>
 						<FormField
 							control={form.control}

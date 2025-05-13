@@ -16,7 +16,6 @@ import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import React from "react";
-import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { Textarea } from "@/components/ui/textarea";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
@@ -32,7 +31,6 @@ const teamInfoSchema = z.object({
 	teamName: z.string().min(1, { message: "Team Name is required." }),
 	establishedDate: z.string(),
 	memo: z.string().optional(),
-	lastTeamFeePayment: z.string(),
 });
 
 const formContainerStyle =
@@ -59,7 +57,7 @@ export default function TeamEditForm({
 		{ name: "Basic Info", fields: ["ledaId", "teamName"] },
 		{
 			name: "Team Details",
-			fields: ["establishedDate", "lastTeamFeePayment", "memo"],
+			fields: ["establishedDate", "memo"],
 		},
 		{ name: "Team Members", fields: [] },
 	];
@@ -75,7 +73,6 @@ export default function TeamEditForm({
 				? new Date(formData.establishedDate).toISOString().split("T")[0]
 				: undefined,
 			memo: formData.memo || "",
-			lastTeamFeePayment: formData.lastTeamFeePayment || "",
 		},
 	});
 
@@ -267,12 +264,13 @@ export default function TeamEditForm({
 													type="number"
 													onChange={(e) => {
 														field.onChange(
-															e.target.value
-																? Number(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
 																		e.target
 																			.value
 																  )
-																: undefined
 														);
 													}}
 												/>
@@ -299,11 +297,6 @@ export default function TeamEditForm({
 									name="establishedDate"
 									label="Established Date *"
 									type="date"
-								/>
-								<SeasonCodeSelector
-									control={form.control}
-									name="lastTeamFeePayment"
-									label="Last Team Fee Payment *"
 								/>
 								<FormField
 									control={form.control}

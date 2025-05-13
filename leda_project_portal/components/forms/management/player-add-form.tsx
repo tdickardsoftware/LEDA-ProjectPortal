@@ -23,7 +23,6 @@ import PhoneNumberInput from "@/components/ui/phone-number-input";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
-import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
@@ -72,8 +71,7 @@ const playerInfoSchema = z.object({
 	inactiveDate: z.optional(z.string().optional()),
 	lastMembershipFeePayment: z
 		.string()
-		.min(3, { message: "Last Membership fee is required" })
-		.max(4),
+		.min(1, { message: "Last Membership fee is required" }),
 	lastTrailsDate: z.optional(z.string()),
 	memberType: z.string().min(1, { message: "Member Type is Required" }),
 	cannotBeCaptain: z.boolean(),
@@ -127,7 +125,7 @@ export default function PlayerAddInformationForm({
 			phoneNumber: "",
 			gender: "",
 			ledaId: undefined,
-			lastMembershipFeePayment: "",
+			lastMembershipFeePayment: "UNPAID - New Player",
 			memberType: "",
 		},
 	});
@@ -177,7 +175,6 @@ export default function PlayerAddInformationForm({
 				"formOnFile",
 				"needsMemberCard",
 				"inactiveDate",
-				"lastMembershipFeePayment",
 				"lastTrailsDate",
 				"cannotBeCaptain",
 			],
@@ -238,17 +235,14 @@ export default function PlayerAddInformationForm({
 			if (response.status === 422) {
 				setLedaIdExists(true);
 			}
-
-			const results = await response.json();
 			toast.success("Successfully submitted the form!");
-
 			// Reset form and state
 			form.reset();
 			setGenerateIDStatus(true);
 			setBadStandingStatus(false);
 			setLifetimeMemberStatus(false);
+			window.location.reload();
 
-			console.log("Form submitted successfully!", results);
 			onClose(); // Close the form
 			onRefresh(); // Refresh the datatable with the player API route
 		} catch (error) {
@@ -426,12 +420,13 @@ export default function PlayerAddInformationForm({
 													type="number"
 													onChange={(e) => {
 														field.onChange(
-															e.target.value
-																? Number(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
 																		e.target
 																			.value
 																  )
-																: undefined
 														);
 													}}
 												/>
@@ -609,11 +604,6 @@ export default function PlayerAddInformationForm({
 									name="inactiveDate"
 									label="Inactive Date"
 									type="date"
-								/>
-								<SeasonCodeSelector
-									control={form.control}
-									name="lastMembershipFeePayment"
-									label="Last Membership Fee Payment *"
 								/>
 								<InputDefault
 									control={form.control}

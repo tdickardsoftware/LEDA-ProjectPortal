@@ -15,7 +15,5 @@ export default async function Page(props: { params: PageProps }) {
 		notFound();
 	}
 
-	return (
-		<SeasonPageContent seasonData={seasonData} />
-	);
+	return <SeasonPageContent seasonData={seasonData} />;
 }

@@ -47,6 +47,7 @@ export default async function Page() {
 					}
 					defaultSort="ledaId"
 					apiEndpoint={placeRoute}
+					filter={true}
 				/>
 			</div>
 		</>

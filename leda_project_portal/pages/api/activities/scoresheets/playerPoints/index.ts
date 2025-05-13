@@ -1,6 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { queryPost } from "@/lib/query";
-import { PlayerPoints } from "@/lib/definitions";
+import {
+	PlayerPoints,
+	TopDarterTotals,
+	WeeklyTopDarterScores,
+} from "@/lib/definitions";
 import { query } from "@/lib/dbTypeGet";
 
 export default async function handler(
@@ -177,6 +181,40 @@ export default async function handler(
 					error,
 				});
 			}
+		} else if (
+			req.query.viewPlayerTopDarterPoints === "true" &&
+			req.query.ledaId
+		) {
+			const ledaId = req.query.ledaId;
+			const result = await query<TopDarterTotals>(
+				`SELECT DISTINCT ON ("seasonCode") "seasonCode", "totalPoints"
+				FROM public.leda_weekly_player_points
+				WHERE "ledaId" = $1
+				ORDER BY "seasonCode", "weekNum" DESC`,
+				[ledaId as string]
+			);
+			res.status(200).json(result.rows);
+		} else if (
+			req.query.getSeasonWeekPoints === "true" &&
+			req.query.seasonCode &&
+			req.query.ledaId
+		) {
+			const seasonCode = req.query.seasonCode;
+			const ledaId = req.query.ledaId;
+			const result = await query<WeeklyTopDarterScores>(
+				`SELECT lwpp."weekNum", lwpp."totalPoints",
+				CONCAT('Game ', lwpp."weekNum") as "gameName",
+				(lwpp."totalPoints" - lwpp."prevTotalPoints") as "changeBy",
+				lwpp."prevTotalPoints",
+				lwpp."teamLedaId",
+				lti."teamName"
+				FROM public.leda_weekly_player_points lwpp
+				LEFT JOIN public.leda_team_info lti ON lwpp."teamLedaId" = lti."ledaId"
+				WHERE lwpp."seasonCode" = $1 AND lwpp."ledaId" = $2
+				ORDER BY lwpp."teamLedaId", lwpp."weekNum"`,
+				[seasonCode as string, ledaId as string]
+			);
+			res.status(200).json(result.rows);
 		} else if (req.query.seasonCode) {
 			const seasonCode = req.query.seasonCode;
 			const result = await query<PlayerPoints>(

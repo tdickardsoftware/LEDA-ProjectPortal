@@ -17,7 +17,6 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import React from "react";
-import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputDefault } from "@/components/ui/form-input-default";
@@ -59,7 +58,7 @@ export default function PlaceAddForm({
 		{ name: "Basic Info", fields: ["ledaId", "teamName"] },
 		{
 			name: "Team Details",
-			fields: ["establishedDate", "lastTeamFeePayment", "memo"],
+			fields: ["establishedDate", "memo"],
 		},
 		{ name: "Team Members", fields: ["memberIdList"] },
 	];
@@ -72,7 +71,7 @@ export default function PlaceAddForm({
 			teamName: "",
 			establishedDate: "",
 			memo: "",
-			lastTeamFeePayment: "",
+			lastTeamFeePayment: "UNPAID - NEW TEAM ADDED",
 			memberIdList: "",
 		},
 	});
@@ -248,12 +247,13 @@ export default function PlaceAddForm({
 													type="number"
 													onChange={(e) => {
 														field.onChange(
-															e.target.value
-																? Number(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
 																		e.target
 																			.value
 																  )
-																: undefined
 														);
 													}}
 												/>
@@ -286,11 +286,6 @@ export default function PlaceAddForm({
 									name="establishedDate"
 									label="Established Date *"
 									type="date"
-								/>
-								<SeasonCodeSelector
-									control={form.control}
-									name="lastTeamFeePayment"
-									label="Last Team Fee Payment *"
 								/>
 								<FormField
 									control={form.control}

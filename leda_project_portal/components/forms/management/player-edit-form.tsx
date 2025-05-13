@@ -23,7 +23,6 @@ import PhoneNumberInput from "@/components/ui/phone-number-input";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
-import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
@@ -71,12 +70,6 @@ const playerInfoSchema = z.object({
 	formOnFile: z.boolean(),
 	needsMemberCard: z.boolean(),
 	inactiveDate: z.optional(z.string()),
-	lastMembershipFeePayment: z
-		.string()
-		.min(3, { message: "Last Membership fee is required" })
-		.max(4, {
-			message: "Last Membership fee must be between 3 and 4 characters",
-		}),
 	lastTrailsDate: z.optional(z.string()),
 	memberType: z.string().min(1, { message: "Member Type is Required" }),
 	cannotBeCaptain: z.boolean(),
@@ -153,7 +146,6 @@ export default function PlayerEditInformationForm({
 				"formOnFile",
 				"needsMemberCard",
 				"inactiveDate",
-				"lastMembershipFeePayment",
 				"lastTrailsDate",
 				"cannotBeCaptain",
 			],
@@ -193,7 +185,6 @@ export default function PlayerEditInformationForm({
 			inactiveDate: formData.inactiveDate
 				? new Date(formData.inactiveDate).toISOString().split("T")[0]
 				: undefined,
-			lastMembershipFeePayment: formData.lastMembershipFeePayment || "",
 			lastTrailsDate: formData.lastTrailsDate
 				? new Date(formData.lastTrailsDate).toISOString().split("T")[0]
 				: undefined,
@@ -298,15 +289,13 @@ export default function PlayerEditInformationForm({
 				);
 			}
 
-			const results = await response.json();
 			toast.success("Successfully updated the form!");
 
 			// Reset form and state
 			form.reset();
 			setBadStandingStatus(false);
 			setLifetimeMemberStatus(false);
-
-			console.log("Form updated successfully!", results);
+			window.location.reload();
 			onClose(); // Close the form
 			onRefresh(); // Refresh the datatable with the player API route
 		} catch (error) {
@@ -471,12 +460,13 @@ export default function PlayerEditInformationForm({
 													type="number"
 													onChange={(e) => {
 														field.onChange(
-															e.target.value
-																? Number(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
 																		e.target
 																			.value
 																  )
-																: undefined
 														);
 													}}
 												/>
@@ -648,11 +638,6 @@ export default function PlayerEditInformationForm({
 									name="inactiveDate"
 									label="Inactive Date"
 									type="date"
-								/>
-								<SeasonCodeSelector
-									control={form.control}
-									name="lastMembershipFeePayment"
-									label="Last Membership Fee Payment *"
 								/>
 								<InputDefault
 									control={form.control}

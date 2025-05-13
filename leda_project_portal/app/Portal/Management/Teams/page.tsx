@@ -47,6 +47,7 @@ export default async function Page() {
 					}
 					apiEndpoint={teamRoute}
 					defaultSort="ledaId"
+					filter={true}
 				/>
 			</div>
 		</>
