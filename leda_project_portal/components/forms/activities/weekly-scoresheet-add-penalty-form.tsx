@@ -89,7 +89,7 @@ export default function PenaltyAddForm({
 		resolver: zodResolver(divisionFormSchema),
 		defaultValues: {
 			penaltyCode: "",
-			points: 0,
+			points: undefined,
 			notes: "",
 		},
 	});
@@ -164,17 +164,13 @@ export default function PenaltyAddForm({
 											type="number"
 											{...field}
 											onChange={(e) => {
-												const value = e.target.value;
-												if (/^\d*$/.test(value)) {
-													field.onChange(
-														value === ""
-															? undefined
-															: parseInt(
-																	value,
-																	10
-															  )
-													);
-												}
+												field.onChange(
+													e.target.value === ""
+														? undefined
+														: parseFloat(
+																e.target.value
+														  )
+												);
 											}}
 										/>
 									</FormControl>

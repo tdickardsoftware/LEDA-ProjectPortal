@@ -381,7 +381,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 											<Button
 												onClick={handleApplyFilter}
 												disabled={!filterSeasonCode || filterLoading}
-												className="w-full bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+												className="w-full hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
 											>
 												{filterLoading ? "Applying..." : "Apply"}
 											</Button>

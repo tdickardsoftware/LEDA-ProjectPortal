@@ -14,10 +14,10 @@
  * penalties, and point calculations across multiple teams and players.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import SeasonCodeSelector from "@/components/ui/season-code-selector";
+import SeasonCodeSelector from "@/components/ui/roster-season-code-selector";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -257,7 +257,15 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 			setSeasonCode(renderSeasonCode);
 			setCurrentSeason(false); // Disable current season checkbox when season code is provided
 			setSeasonSelected(false); // Allow week selection
-			handleSeasonCodeSelect(renderSeasonCode);
+			
+			// Call the state reset logic directly instead of calling handleSeasonCodeSelect
+			// This avoids the same function being called with the same value multiple times
+			setSidenavData({});
+			setMatchSelected(false);
+			setFormattedScoreData(null);
+			setSelectedHomeLetter("");
+			setSelectedAwayLetter("");
+			// Add other resets as needed
 		}
 	}, [renderSeasonCode]);  // Include renderSeasonCode in dependency array
 
@@ -267,10 +275,44 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 		setIsDataChanged(true);
 	};
 
-	const handleSeasonCodeSelect = (value: string) => {
+	const handleSeasonCodeSelect = useCallback((value: string) => {
 		setSeasonCode(value);
 		setSeasonSelected(false);
-	};
+		
+		// Reset week-related state when a new season is selected
+		setSelectedWeek("");
+		setSidenavData({});
+		setMatchSelected(false);
+		setFormattedScoreData(null);
+		
+		// Reset matchup data
+		setSelectedHomeLetter("");
+		setSelectedAwayLetter("");
+		setSelectedDivision("");
+		setSelectedSubdivision("");
+		setSelectedHomeTeamId("");
+		setSelectedAwayTeamId("");
+		
+		// Reset team information
+		setHomeTeamInformation(undefined);
+		setAwayTeamInformation(undefined);
+		setHomeTeamPlayerInformation(undefined);
+		setAwayTeamPlayerInformation(undefined);
+		
+		// Reset game data
+		setHomeTeamGameData({});
+		setAwayTeamGameData({});
+		
+		// Reset game wins and points
+		setHomeWins(Array(11).fill(false));
+		setHomePoints(Array(11).fill(""));
+		setAwayPoints(Array(11).fill(""));
+		
+		// Reset penalties and mentions counters
+		setHomePenaltyCounter(0);
+		setAwayPenaltyCounter(0);
+		setMentionCounters({});
+	}, []);  // Empty dependency array since this function shouldn't change
 
 	const handleMatchupSelection = async (
 		homeLetter: string,
