@@ -10,7 +10,7 @@ export default async function handler(
         if (req.query.ledaId) {
             try {
                 const result = await query<PlaceTeamHistoryView>(
-                    `SELECT "seasonCode", "teamName", "teamId", "placeId", placename FROM public.leda_place_team_history where "placeId" = $1`,
+                    `SELECT "seasonCode", "teamId", "teamName", "teamLabel" FROM public.leda_place_team_history where "placeId" = $1`,
                     [req.query.ledaId as string]
                 );
                 res.status(200).json(result.rows);
