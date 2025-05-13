@@ -35,6 +35,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import TeamPaymentHistoryContent from "./team-payment-history-content";
+import TeamPenaltyHistory from "./team-penalty-history";
 
 export default function TeamPageContent({
 	teamData,
@@ -57,6 +58,7 @@ export default function TeamPageContent({
 	const [paymentStatusData, setPaymentStatusData] = useState<{ ledaId: string, status: 'PAID' | 'PART' | 'UNPAID' }[]>([]);
 	const [filterCurrentSeason, setFilterCurrentSeason] = useState(true);
 	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] = useState(false);
+	const [isTeamPenaltyHistoryDialogOpen, setIsTeamHistoryDialogOpen] = useState(false);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -70,6 +72,9 @@ export default function TeamPageContent({
 		setIsPaymentHistoryDialogOpen(!isPaymentHistoryDialogOpen);
 	};
 
+	const handlePenaltyHistory = () => {
+		setIsTeamHistoryDialogOpen(!isTeamPenaltyHistoryDialogOpen);
+	};
 	// Fetch payment status for team members for the selected season
 	const fetchPaymentStatus = useCallback(async (seasonCode: string) => {
 		if (!seasonCode) return;
@@ -164,6 +169,12 @@ export default function TeamPageContent({
 								onClick={handlePaymentHistory}
 							>
 								Payment History
+							</Button>
+							<Button
+								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								onClick={handlePenaltyHistory}
+							>
+								Penalty History
 							</Button>
 							{/* Show Payment Status Popover */}
 							<Popover open={showPaymentPopover} onOpenChange={setShowPaymentPopover}>
@@ -313,6 +324,15 @@ export default function TeamPageContent({
 						<DialogTitle>Payment History for {teamData.teamName}</DialogTitle>
 					</DialogHeader>
 					<TeamPaymentHistoryContent teamData={teamData} />
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isTeamPenaltyHistoryDialogOpen} onOpenChange={setIsTeamHistoryDialogOpen}>
+				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Penalty History for {teamData.teamName}</DialogTitle>
+					</DialogHeader>
+					<TeamPenaltyHistory ledaId={teamData.ledaId} />
 				</DialogContent>
 			</Dialog>
 		</div>
