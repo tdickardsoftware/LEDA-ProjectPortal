@@ -78,24 +78,46 @@ export default function PlayerSelector({
 
 	// Load existing selected players from JSON list
 	useEffect(() => {
-		if (existingJsonList) {
-			try {
-				const parsedList = JSON.parse(existingJsonList);
-				const existingPlayers = Object.keys(parsedList).map((key) => ({
-					ledaId: parsedList[key].ledaId,
-					fullName:
-						players.find((p) => p.ledaId === parsedList[key].ledaId)
-							?.fullName || "",
-					isCaptain: parsedList[key].isCaptain,
-					cannotBeCaptain:
-						players.find((p) => p.ledaId === parsedList[key].ledaId)
-							?.cannotBeCaptain || false,
-				}));
-				setSelectedPlayers(existingPlayers);
-			} catch (error) {
-				console.error("Failed to parse existing JSON list", error);
+		async function loadExistingPlayers() {
+			if (existingJsonList) {
+				try {
+					const parsedList = JSON.parse(existingJsonList);
+					const playerEntries = Object.keys(parsedList).map((key) => ({
+						ledaId: parsedList[key].ledaId,
+						isCaptain: parsedList[key].isCaptain,
+					}));
+					// Fetch cannotBeCaptain for each player
+					const updatedPlayers: Player[] = await Promise.all(
+						playerEntries.map(async (entry) => {
+							let cannotBeCaptain = false;
+							try {
+								const response = await fetch(
+									`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(entry.ledaId)}`
+								);
+								const data = await response.json();
+								cannotBeCaptain = !!data.cannotBeCaptain;
+							} catch {
+								cannotBeCaptain = false;
+							}
+							const fullName =
+								players.find((p) => p.ledaId === entry.ledaId)
+									?.fullName || "";
+							return {
+								ledaId: entry.ledaId,
+								fullName,
+								isCaptain: entry.isCaptain,
+								cannotBeCaptain,
+							};
+						})
+					);
+					setSelectedPlayers(updatedPlayers);
+				} catch (error) {
+					console.error("Failed to parse existing JSON list", error);
+				}
 			}
 		}
+		loadExistingPlayers();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [existingJsonList, players]);
 
 	// Filter out selected players from the list
@@ -131,11 +153,36 @@ export default function PlayerSelector({
 	};
 
 	// Handle player selection
-	const handlePlayerSelection = (player: Player) => {
-		const updatedPlayers = [...selectedPlayers, player];
-		setSelectedPlayers(updatedPlayers);
-		setMemberIdList(generateJsonList(updatedPlayers));
-		setOpen(false);
+	const handlePlayerSelection = async (player: Player) => {
+		try {
+			const response = await fetch(
+				`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(player.ledaId)}`
+			);
+			const data = await response.json();
+			const cannotBeCaptain = !!data.cannotBeCaptain;
+
+			const updatedPlayer = {
+				...player,
+				cannotBeCaptain,
+				isCaptain: false,
+			};
+			const updatedPlayers = [...selectedPlayers, updatedPlayer];
+			setSelectedPlayers(updatedPlayers);
+			setMemberIdList(generateJsonList(updatedPlayers));
+			setOpen(false);
+		} catch (error) {
+			console.error("Failed to check if player can be captain", error);
+			// fallback: add player as before, but mark cannotBeCaptain as false
+			const updatedPlayer = {
+				...player,
+				cannotBeCaptain: false,
+				isCaptain: false,
+			};
+			const updatedPlayers = [...selectedPlayers, updatedPlayer];
+			setSelectedPlayers(updatedPlayers);
+			setMemberIdList(generateJsonList(updatedPlayers));
+			setOpen(false);
+		}
 	};
 
 	// Handle player removal
@@ -211,29 +258,30 @@ export default function PlayerSelector({
 							<span>{player.fullName}</span>
 							<TooltipProvider>
 								<Tooltip>
-									<TooltipTrigger>
-										<Button
-											variant="ghost"
-											size="sm"
-											type="button"
-											onClick={(event) =>
-												handleCaptainSelection(
-													player.ledaId,
-													event
-												)
-											}
-											disabled={player.cannotBeCaptain}
-										>
-											<Star
-												className={cn(
-													"h-4 w-4",
-													player.isCaptain
-														? "text-yellow-500"
-														: "text-gray-400"
-												)}
-											/>
-										</Button>
-									</TooltipTrigger>
+									{!player.cannotBeCaptain && (
+										<TooltipTrigger asChild>
+											<Button
+												variant="ghost"
+												size="sm"
+												type="button"
+												onClick={(event) =>
+													handleCaptainSelection(
+														player.ledaId,
+														event
+													)
+												}
+											>
+												<Star
+													className={cn(
+														"h-4 w-4",
+														player.isCaptain
+															? "text-yellow-500"
+															: "text-gray-400"
+													)}
+												/>
+											</Button>
+										</TooltipTrigger>
+									)}
 									<TooltipContent className="bg-white p-2 rounded shadow-lg">
 										<p>
 											{player.cannotBeCaptain

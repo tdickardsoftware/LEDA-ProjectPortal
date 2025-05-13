@@ -12,7 +12,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import {
 	Dialog,
@@ -22,6 +21,14 @@ import {
 } from "@/components/ui/dialog";
 import PaymentHistoryFormDialog from "@/components/payment-history-form-dialog";
 import { teamPaymentHistoryRoute } from "@/lib/apiRoutes";
+import {
+	Table,
+	TableHeader,
+	TableRow,
+	TableHead,
+	TableBody,
+	TableCell,
+} from "@/components/ui/table";
 
 export default function TeamPageContent({
 	teamData,
@@ -29,9 +36,11 @@ export default function TeamPageContent({
 }: {
 	teamData: Team;
 	memberDetails: {
-		fullName: string | undefined;
+		fullName: string;
 		ledaId: string;
 		isCaptain: boolean;
+		cannotBeCaptain: boolean;
+		badStanding: boolean;
 	}[];
 }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -101,22 +110,48 @@ export default function TeamPageContent({
 							<CardTitle>Team Member Information</CardTitle>
 						</CardHeader>
 						<CardContent>
-							{memberDetails.map((member) => (
-								<p
-									key={member.ledaId}
-									className="text-lg flex items-center"
-								>
-									{member.fullName} (LEDA ID:{" "}
-									{member.ledaId}){" "}
-									{member.isCaptain && (
-										<Star
-											className={cn(
-												"h-4 w-4 text-yellow-500 ml-1"
-											)}
-										/>
-									)}
-								</p>
-							))}
+							<div className="overflow-x-auto">
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead className="px-4 py-2 text-left">Full Name</TableHead>
+											<TableHead className="px-4 py-2 text-left">LEDA ID</TableHead>
+											<TableHead className="px-4 py-2 text-center">Captain</TableHead>
+											<TableHead className="px-4 py-2 text-center">Cannot Be Captain</TableHead>
+											<TableHead className="px-4 py-2 text-center">Bad Standing</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{memberDetails.map((member) => (
+											<TableRow key={member.ledaId}>
+												<TableCell className="px-4 py-2">{member.fullName}</TableCell>
+												<TableCell className="px-4 py-2">{member.ledaId}</TableCell>
+												<TableCell className="px-4 py-2 text-center">
+													{member.isCaptain ? (
+														<Star className="h-4 w-4 text-yellow-500 inline" />
+													) : (
+														<span className="text-gray-400">—</span>
+													)}
+												</TableCell>
+												<TableCell className="px-4 py-2 text-center">
+													{member.cannotBeCaptain ? (
+														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Yes</span>
+													) : (
+														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">No</span>
+													)}
+												</TableCell>
+												<TableCell className="px-4 py-2 text-center">
+													{member.badStanding ? (
+														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Yes</span>
+													) : (
+														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">No</span>
+													)}
+												</TableCell>
+											</TableRow>
+										))}
+									</TableBody>
+								</Table>
+							</div>
 						</CardContent>
 					</Card>
 				</div>
