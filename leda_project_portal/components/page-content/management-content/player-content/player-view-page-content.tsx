@@ -113,9 +113,6 @@ export default function PlayerPageContent({
 								initialLedaId={playerData.ledaId.toString()}
 								route={playerPaymentHistoryRoute}
 								type="player"
-								onSuccess={() =>
-									setIsPaymentHistoryDialogOpen(true)
-								}
 							/>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
