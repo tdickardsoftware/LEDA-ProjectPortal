@@ -20,7 +20,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import PaymentHistoryFormDialog from "@/components/payment-history-form-dialog";
-import { teamPaymentHistoryRoute } from "@/lib/apiRoutes";
+import { teamPaymentHistoryRoute, playerPaymentHistoryRoute } from "@/lib/apiRoutes";
 import {
 	Table,
 	TableHeader,
@@ -102,11 +102,21 @@ export default function TeamPageContent({
 			if (!seasonCode) return;
 			setPaymentStatusLoading(true);
 			try {
-				const res = await fetch(
-					`${teamPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}&teamId=${teamData.ledaId}`
+				// Fetch payment status for each member using playerPaymentHistoryRoute
+				const results = await Promise.all(
+					memberDetails.map(async (member) => {
+						const res = await fetch(
+							`${playerPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}&ledaId=${member.ledaId}`
+						);
+						const data = await res.json();
+						// data may be null/undefined if not found
+						return {
+							ledaId: member.ledaId,
+							status: data?.status || null,
+						};
+					})
 				);
-				const data = await res.json();
-				setPaymentStatusData(Array.isArray(data) ? data : []);
+				setPaymentStatusData(results);
 			} catch (e) {
 				console.error("Failed to fetch payment status", e);
 				setPaymentStatusData([]);
@@ -114,7 +124,7 @@ export default function TeamPageContent({
 				setPaymentStatusLoading(false);
 			}
 		},
-		[teamData.ledaId]
+			[memberDetails]
 	);
 
 	const handleShowPaymentStatus = async () => {

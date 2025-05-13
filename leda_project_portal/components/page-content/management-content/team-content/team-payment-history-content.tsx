@@ -73,10 +73,11 @@ export default function TeamPaymentHistoryContent({
 						data.map((item: PaymentHistory) => {
 							if (!item.date) return null;
 							const date = new Date(item.date);
-							return `${date.getFullYear()}-${String(
-								date.getMonth() + 1
+							// Always use UTC for date string
+							return `${date.getUTCFullYear()}-${String(
+								date.getUTCMonth() + 1
 							).padStart(2, "0")}-${String(
-								date.getDate()
+								date.getUTCDate()
 							).padStart(2, "0")}`;
 						})
 					),
@@ -104,9 +105,10 @@ export default function TeamPaymentHistoryContent({
 		if (selectedDate !== "all") {
 			if (payment.date) {
 				const paymentDate = new Date(payment.date);
-				const paymentDateStr = `${paymentDate.getFullYear()}-${String(
-					paymentDate.getMonth() + 1
-				).padStart(2, "0")}-${String(paymentDate.getDate()).padStart(
+				// Use UTC for comparison
+				const paymentDateStr = `${paymentDate.getUTCFullYear()}-${String(
+					paymentDate.getUTCMonth() + 1
+				).padStart(2, "0")}-${String(paymentDate.getUTCDate()).padStart(
 					2,
 					"0"
 				)}`;
@@ -234,11 +236,16 @@ export default function TeamPaymentHistoryContent({
 								onClick={() => setSelectedDate("all")}
 							>
 								Date:{" "}
-								{new Date(
-									selectedDate + "T00:00:00"
-								).toLocaleDateString("en-US", {
-									timeZone: "UTC",
-								})}
+								{(() => {
+									const [year, month, day] = selectedDate
+										.split("-")
+										.map(Number);
+									return new Date(
+										Date.UTC(year, month - 1, day)
+									).toLocaleDateString("en-US", {
+										timeZone: "UTC",
+									});
+								})()}
 								<XIcon className="h-3 w-3" />
 							</Button>
 						)}
@@ -310,11 +317,12 @@ export default function TeamPaymentHistoryContent({
 										</TableCell>
 										<TableCell>
 											{payment.date
-												? new Date(
-														payment.date
-												  ).toLocaleDateString("en-US", {
-													timeZone: "UTC",
-												})
+												? (() => {
+														const date = new Date(payment.date);
+														return date.toLocaleDateString("en-US", {
+															timeZone: "UTC",
+														});
+												  })()
 												: "N/A"}
 										</TableCell>
 										<TableCell className="max-w-[200px] truncate">

@@ -75,10 +75,11 @@ export default function PlacePaymentHistoryContent({
 						data.map((item: PaymentHistory) => {
 							if (!item.date) return null;
 							const date = new Date(item.date);
-							return `${date.getFullYear()}-${String(
-								date.getMonth() + 1
+							// Always use UTC for date string
+							return `${date.getUTCFullYear()}-${String(
+								date.getUTCMonth() + 1
 							).padStart(2, "0")}-${String(
-								date.getDate()
+								date.getUTCDate()
 							).padStart(2, "0")}`;
 						})
 					),
