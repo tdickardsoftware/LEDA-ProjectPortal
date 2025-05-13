@@ -19,7 +19,10 @@ export default async function handler(
 			res.status(200).json(result.rows);
 		} catch (error) {
 			// Handle any errors that occur during the query
-			res.status(500).json({ message: "Failed to fetch season code ", error });
+			res.status(500).json({
+				message: "Failed to fetch season code ",
+				error,
+			});
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods

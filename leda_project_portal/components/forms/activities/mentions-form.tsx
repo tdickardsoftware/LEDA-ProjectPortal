@@ -64,8 +64,7 @@ export default function MentionForm({
 		desc: string,
 		points: number,
 		count: number,
-		notes?: string,
-		
+		notes?: string
 	) => void;
 	isEditMode?: boolean;
 	initialMention?: {
@@ -106,19 +105,19 @@ export default function MentionForm({
 	// Set initial values when in edit mode and when initialMention changes
 	useEffect(() => {
 		if (isEditMode && initialMention) {
-				// Set all fields, including count, when in edit mode
-				form.setValue("mentionData", {
-					mentionCode: initialMention.code,
-					desc: initialMention.desc,
-					points: initialMention.points.toString(),
-					mentionBasis: "", // We may not have this value when editing
-				});
-				form.setValue("mentionCode", initialMention.code);
-				form.setValue("mentionDesc", initialMention.desc);
-				form.setValue("points", initialMention.points);
-				form.setValue("count", initialMention.count ?? undefined); // Properly set the count field
-				form.setValue("notes", initialMention.notes || "");
-			}
+			// Set all fields, including count, when in edit mode
+			form.setValue("mentionData", {
+				mentionCode: initialMention.code,
+				desc: initialMention.desc,
+				points: initialMention.points.toString(),
+				mentionBasis: "", // We may not have this value when editing
+			});
+			form.setValue("mentionCode", initialMention.code);
+			form.setValue("mentionDesc", initialMention.desc);
+			form.setValue("points", initialMention.points);
+			form.setValue("count", initialMention.count ?? undefined); // Properly set the count field
+			form.setValue("notes", initialMention.notes || "");
+		}
 	}, [form, isEditMode, initialMention]);
 
 	/**
@@ -129,7 +128,7 @@ export default function MentionForm({
 		// Ensure count is always set to a valid number
 		const countValue = values.count ?? 0;
 
-		console.log(countValue)
+		console.log(countValue);
 
 		if (isEditMode && initialMention && updateMention) {
 			updateMention(
@@ -161,7 +160,7 @@ export default function MentionForm({
 				values.mentionDesc || "",
 				values.points ?? 0,
 				countValue, // Ensure count is passed
-				values.notes,
+				values.notes
 			);
 
 			// Reset the form instead of closing the dialog
@@ -250,7 +249,7 @@ export default function MentionForm({
 								</FormItem>
 							)}
 						/>
-						
+
 						<FormField
 							control={form.control}
 							name="count"
@@ -258,7 +257,7 @@ export default function MentionForm({
 								<FormItem>
 									<FormLabel>Number of Darts/Count</FormLabel>
 									<FormControl>
-									<Input
+										<Input
 											placeholder="Number of Darts"
 											type="number"
 											{...field}
@@ -286,7 +285,7 @@ export default function MentionForm({
 								</FormItem>
 							)}
 						/>
-						
+
 						<FormField
 							control={form.control}
 							name="notes"

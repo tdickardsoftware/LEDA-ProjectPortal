@@ -15,7 +15,5 @@ export default async function Page(props: { params: PageProps }) {
 		notFound();
 	}
 
-	return (
-		<PlayerPageContent playerData={playerData}/>
-	);
+	return <PlayerPageContent playerData={playerData} />;
 }

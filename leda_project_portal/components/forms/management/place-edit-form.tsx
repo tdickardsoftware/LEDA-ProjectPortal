@@ -357,14 +357,16 @@ export default function PlaceEditForm({
 													className={inputWidth}
 													type="number"
 													onChange={(e) => {
-												field.onChange(
-													e.target.value === ""
-														? undefined
-														: parseFloat(
-																e.target.value
-														  )
-												);
-											}}
+														field.onChange(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
+																		e.target
+																			.value
+																  )
+														);
+													}}
 												/>
 											</FormControl>
 											<FormMessage />
@@ -442,14 +444,16 @@ export default function PlaceEditForm({
 													className={inputWidth}
 													type="number"
 													onChange={(e) => {
-												field.onChange(
-													e.target.value === ""
-														? undefined
-														: parseFloat(
-																e.target.value
-														  )
-												);
-											}}
+														field.onChange(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
+																		e.target
+																			.value
+																  )
+														);
+													}}
 												/>
 											</FormControl>
 											<FormMessage />

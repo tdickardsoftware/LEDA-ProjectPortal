@@ -71,8 +71,7 @@ const playerInfoSchema = z.object({
 	inactiveDate: z.optional(z.string().optional()),
 	lastMembershipFeePayment: z
 		.string()
-		.min(1, { message: "Last Membership fee is required" })
-		,
+		.min(1, { message: "Last Membership fee is required" }),
 	lastTrailsDate: z.optional(z.string()),
 	memberType: z.string().min(1, { message: "Member Type is Required" }),
 	cannotBeCaptain: z.boolean(),
@@ -242,7 +241,7 @@ export default function PlayerAddInformationForm({
 			setGenerateIDStatus(true);
 			setBadStandingStatus(false);
 			setLifetimeMemberStatus(false);
-			window.location.reload()
+			window.location.reload();
 
 			onClose(); // Close the form
 			onRefresh(); // Refresh the datatable with the player API route
@@ -420,14 +419,16 @@ export default function PlayerAddInformationForm({
 													className={inputWidth}
 													type="number"
 													onChange={(e) => {
-												field.onChange(
-													e.target.value === ""
-														? undefined
-														: parseFloat(
-																e.target.value
-														  )
-												);
-											}}
+														field.onChange(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
+																		e.target
+																			.value
+																  )
+														);
+													}}
 												/>
 											</FormControl>
 											<FormMessage />

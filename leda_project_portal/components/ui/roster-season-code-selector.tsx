@@ -56,7 +56,9 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 	useEffect(() => {
 		async function loadSeasonCodes() {
 			try {
-				const response = await fetch(`${rosterRoute}/rostersWithData?getSeasonCodeInfo=true`);
+				const response = await fetch(
+					`${rosterRoute}/rostersWithData?getSeasonCodeInfo=true`
+				);
 				const data = await response.json();
 				setSeasonCodes(
 					data.map((type: { seasonCode: string; desc: string }) => ({

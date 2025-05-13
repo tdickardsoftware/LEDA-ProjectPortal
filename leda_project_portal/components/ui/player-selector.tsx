@@ -82,17 +82,21 @@ export default function PlayerSelector({
 			if (existingJsonList) {
 				try {
 					const parsedList = JSON.parse(existingJsonList);
-					const playerEntries = Object.keys(parsedList).map((key) => ({
-						ledaId: parsedList[key].ledaId,
-						isCaptain: parsedList[key].isCaptain,
-					}));
+					const playerEntries = Object.keys(parsedList).map(
+						(key) => ({
+							ledaId: parsedList[key].ledaId,
+							isCaptain: parsedList[key].isCaptain,
+						})
+					);
 					// Fetch cannotBeCaptain for each player
 					const updatedPlayers: Player[] = await Promise.all(
 						playerEntries.map(async (entry) => {
 							let cannotBeCaptain = false;
 							try {
 								const response = await fetch(
-									`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(entry.ledaId)}`
+									`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(
+										entry.ledaId
+									)}`
 								);
 								const data = await response.json();
 								cannotBeCaptain = !!data.cannotBeCaptain;
@@ -156,7 +160,9 @@ export default function PlayerSelector({
 	const handlePlayerSelection = async (player: Player) => {
 		try {
 			const response = await fetch(
-				`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(player.ledaId)}`
+				`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(
+					player.ledaId
+				)}`
 			);
 			const data = await response.json();
 			const cannotBeCaptain = !!data.cannotBeCaptain;

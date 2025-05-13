@@ -25,8 +25,10 @@ import PlaceTeamHistoryContent from "./place-team-history-content";
 
 export default function PlacePageContent({ placeData }: { placeData: Place }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] = useState(false);
-	const [isTeamHistoryDialogOpen, setIsTeamHistoryDialogOpen] = useState(false);
+	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] =
+		useState(false);
+	const [isTeamHistoryDialogOpen, setIsTeamHistoryDialogOpen] =
+		useState(false);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -92,9 +94,7 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 							<p className="text-lg">
 								Number of Boards: {placeData.numberOfBoards}
 							</p>
-							<p className="text-lg">
-								Email: {placeData.email}
-							</p>
+							<p className="text-lg">Email: {placeData.email}</p>
 							<p className="text-lg">
 								Phone Number: {placeData.phoneNumber}
 							</p>
@@ -111,12 +111,8 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 									Address Two: {placeData.addressTwo}
 								</p>
 							)}
-							<p className="text-lg">
-								City: {placeData.city}
-							</p>
-							<p className="text-lg">
-								State: {placeData.state}
-							</p>
+							<p className="text-lg">City: {placeData.city}</p>
+							<p className="text-lg">State: {placeData.state}</p>
 							<p className="text-lg">Zip: {placeData.zip}</p>
 						</CardContent>
 					</Card>
@@ -171,11 +167,11 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 					</Card>
 				</div>
 				<div className="mt-6">
-					<Button className="hover:bg-gray-100 border-gray-300 text-gray-700" asChild>
-						<Link
-							href="/Portal/Management/Places"
-							prefetch={true}
-						>
+					<Button
+						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						asChild
+					>
+						<Link href="/Portal/Management/Places" prefetch={true}>
 							Go Back
 						</Link>
 					</Button>
@@ -196,16 +192,24 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 				</DialogContent>
 			</Dialog>
 
-			<Dialog open={isPaymentHistoryDialogOpen} onOpenChange={setIsPaymentHistoryDialogOpen}>
+			<Dialog
+				open={isPaymentHistoryDialogOpen}
+				onOpenChange={setIsPaymentHistoryDialogOpen}
+			>
 				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>Payment History for {placeData.name}</DialogTitle>
+						<DialogTitle>
+							Payment History for {placeData.name}
+						</DialogTitle>
 					</DialogHeader>
 					<PlacePaymentHistoryContent placeData={placeData} />
 				</DialogContent>
 			</Dialog>
 
-			<Dialog open={isTeamHistoryDialogOpen} onOpenChange={setIsTeamHistoryDialogOpen}>
+			<Dialog
+				open={isTeamHistoryDialogOpen}
+				onOpenChange={setIsTeamHistoryDialogOpen}
+			>
 				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
 					<PlaceTeamHistoryContent placeData={placeData} />
 				</DialogContent>

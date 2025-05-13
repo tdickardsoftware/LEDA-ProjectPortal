@@ -4,120 +4,147 @@ import { PlayerMemberInfo } from "@/lib/definitions";
 import { trailsPlayerHistoryRoute } from "@/lib/apiRoutes";
 import { useState, useEffect } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
 } from "@/components/ui/table";
 
 interface TrailsAuditRecord {
-  trailsDate: string;
-  previousTotalPoints: number;
-  totalPoints: number;
-  changeBy: number;
-  modifyDate: string;
-  singlesPlace: number;
-  doublesPlace: number;
+	trailsDate: string;
+	previousTotalPoints: number;
+	totalPoints: number;
+	changeBy: number;
+	modifyDate: string;
+	singlesPlace: number;
+	doublesPlace: number;
 }
 
 export default function PlayerTrailsHistoryContent({
-    playerData,
+	playerData,
 }: {
-    playerData: PlayerMemberInfo;
+	playerData: PlayerMemberInfo;
 }) {
-    const [trailsData, setTrailsData] = useState<TrailsAuditRecord[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+	const [trailsData, setTrailsData] = useState<TrailsAuditRecord[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const getTrailsData = async () => {
-            const results = await fetch(
-                `${trailsPlayerHistoryRoute}?ledaId=${playerData.ledaId}`,
-                {
-                    method: "GET",
-                }
-            );
-            if (!results.ok) {
-                throw new Error("Failed to fetch trails data");
-            }
-            const data = await results.json();
-            return data;
-        }
-        
-        const fetchTrailsData = async () => {
-            try {
-                setIsLoading(true);
-                const data = await getTrailsData();
-                setTrailsData(data);
-                setError(null);
-            } catch (err) {
-                setError("Failed to load trails history data");
-                console.error(err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+	useEffect(() => {
+		const getTrailsData = async () => {
+			const results = await fetch(
+				`${trailsPlayerHistoryRoute}?ledaId=${playerData.ledaId}`,
+				{
+					method: "GET",
+				}
+			);
+			if (!results.ok) {
+				throw new Error("Failed to fetch trails data");
+			}
+			const data = await results.json();
+			return data;
+		};
 
-        fetchTrailsData();
-    }, [playerData.ledaId]);
-    
-    return (
-        <div className="container mx-auto p-6">
-            <div>
-                <h1 className="text-4xl font-bold mb-4">Player Trails History</h1>
-                <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-semibold mb-6">
-                        Player:  #{playerData.ledaId} - {playerData.fullName}
-                    </h2>
-                </div>
-                
-                {isLoading ? (
-                    <p className="text-gray-500 italic">Loading trails history...</p>
-                ) : error ? (
-                    <p className="text-red-500">{error}</p>
-                ) : trailsData.length === 0 ? (
-                    <p className="text-gray-500">No trails history found for this player.</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Trails Date</TableHead>
-                                    <TableHead>Singles Place</TableHead>
-                                    <TableHead>Doubles Place</TableHead>
-                                    <TableHead>Previous Points</TableHead>
-                                    <TableHead>Total Points</TableHead>
-                                    <TableHead>Change</TableHead>
-                                    <TableHead>Modified On</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody className="max-h-[400px] overflow-y-auto">
-                                {trailsData.map((record, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>
-                                            {new Date(record.trailsDate).toLocaleDateString()}
-                                        </TableCell>
-                                        <TableCell>{record.singlesPlace}</TableCell>
-                                        <TableCell>{record.doublesPlace}</TableCell>
-                                        <TableCell>{record.previousTotalPoints}</TableCell>
-                                        <TableCell>{record.totalPoints}</TableCell>
-                                        <TableCell>
-                                            <span className={record.changeBy >= 0 ? "text-green-600" : "text-red-600"}>
-                                                {record.changeBy >= 0 ? "+" : ""}{record.changeBy}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            {new Date(record.modifyDate).toLocaleDateString()}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+		const fetchTrailsData = async () => {
+			try {
+				setIsLoading(true);
+				const data = await getTrailsData();
+				setTrailsData(data);
+				setError(null);
+			} catch (err) {
+				setError("Failed to load trails history data");
+				console.error(err);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchTrailsData();
+	}, [playerData.ledaId]);
+
+	return (
+		<div className="container mx-auto p-6">
+			<div>
+				<h1 className="text-4xl font-bold mb-4">
+					Player Trails History
+				</h1>
+				<div className="flex justify-between items-center">
+					<h2 className="text-2xl font-semibold mb-6">
+						Player: #{playerData.ledaId} - {playerData.fullName}
+					</h2>
+				</div>
+
+				{isLoading ? (
+					<p className="text-gray-500 italic">
+						Loading trails history...
+					</p>
+				) : error ? (
+					<p className="text-red-500">{error}</p>
+				) : trailsData.length === 0 ? (
+					<p className="text-gray-500">
+						No trails history found for this player.
+					</p>
+				) : (
+					<div className="overflow-x-auto">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Trails Date</TableHead>
+									<TableHead>Singles Place</TableHead>
+									<TableHead>Doubles Place</TableHead>
+									<TableHead>Previous Points</TableHead>
+									<TableHead>Total Points</TableHead>
+									<TableHead>Change</TableHead>
+									<TableHead>Modified On</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody className="max-h-[400px] overflow-y-auto">
+								{trailsData.map((record, index) => (
+									<TableRow key={index}>
+										<TableCell>
+											{new Date(
+												record.trailsDate
+											).toLocaleDateString()}
+										</TableCell>
+										<TableCell>
+											{record.singlesPlace}
+										</TableCell>
+										<TableCell>
+											{record.doublesPlace}
+										</TableCell>
+										<TableCell>
+											{record.previousTotalPoints}
+										</TableCell>
+										<TableCell>
+											{record.totalPoints}
+										</TableCell>
+										<TableCell>
+											<span
+												className={
+													record.changeBy >= 0
+														? "text-green-600"
+														: "text-red-600"
+												}
+											>
+												{record.changeBy >= 0
+													? "+"
+													: ""}
+												{record.changeBy}
+											</span>
+										</TableCell>
+										<TableCell>
+											{new Date(
+												record.modifyDate
+											).toLocaleDateString()}
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</div>
+				)}
+			</div>
+		</div>
+	);
 }

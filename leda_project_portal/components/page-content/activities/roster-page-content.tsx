@@ -82,7 +82,11 @@ type ScheduleData = Record<
 	>
 >;
 
-export default function RostersContent({ renderSeasonCode }: { renderSeasonCode?: string }) {
+export default function RostersContent({
+	renderSeasonCode,
+}: {
+	renderSeasonCode?: string;
+}) {
 	// State variables
 	const [seasonCode, setSeasonCode] = useState<string | null>(null);
 	const [selectedDivisions, setSelectedDivisions] = useState<string[]>([]);
@@ -113,15 +117,17 @@ export default function RostersContent({ renderSeasonCode }: { renderSeasonCode?
 	const [update, setUpdate] = useState(false);
 	const [deleteRosterAlertOpen, setDeleteRosterAlertOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
-	const [currentSeason, setCurrentSeason] = useState(renderSeasonCode ? false : true);
-	
+	const [currentSeason, setCurrentSeason] = useState(
+		renderSeasonCode ? false : true
+	);
+
 	// Use renderSeasonCode if provided
 	useEffect(() => {
 		if (renderSeasonCode) {
 			setSeasonCode(renderSeasonCode);
 			handleSeasonCodeSelect(renderSeasonCode);
 		}
-	}, []);  // eslint-disable-line react-hooks/exhaustive-deps
+	}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Extract all team IDs from divisions data
 	const extractTeamIds = useCallback((data: RosterData): string[] => {

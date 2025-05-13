@@ -25,7 +25,10 @@ interface PaymentTypeSelectorNFProps {
 	onChange?: (value: { paymentType: string; desc: string }) => void;
 	label: string;
 	disabled?: boolean;
-	handlePaymentTypeChange?: (value: { paymentType: string; desc: string }) => void;
+	handlePaymentTypeChange?: (value: {
+		paymentType: string;
+		desc: string;
+	}) => void;
 }
 
 const PaymentTypeSelectorNF: React.FC<PaymentTypeSelectorNFProps> = ({
@@ -50,7 +53,10 @@ const PaymentTypeSelectorNF: React.FC<PaymentTypeSelectorNFProps> = ({
 		}
 	}, [propValue]);
 
-	const handleValueChange = (newValue: { paymentType: string; desc: string }) => {
+	const handleValueChange = (newValue: {
+		paymentType: string;
+		desc: string;
+	}) => {
 		setLocalValue(newValue);
 		onChange?.(newValue);
 		handlePaymentTypeChange?.(newValue);
@@ -63,12 +69,10 @@ const PaymentTypeSelectorNF: React.FC<PaymentTypeSelectorNFProps> = ({
 				const response = await fetch(paymentTypeRoute);
 				const data = await response.json();
 				setPaymentTypes(
-					data.map(
-						(item: { paymentType: string; desc: string }) => ({
-							value: item,
-							label: item.paymentType + " - " + item.desc,
-						})
-					)
+					data.map((item: { paymentType: string; desc: string }) => ({
+						value: item,
+						label: item.paymentType + " - " + item.desc,
+					}))
 				);
 			} catch (error) {
 				console.error("Failed to fetch payment types", error);
@@ -84,13 +88,9 @@ const PaymentTypeSelectorNF: React.FC<PaymentTypeSelectorNFProps> = ({
 					JSON.stringify(type.value) === JSON.stringify(localValue)
 			);
 			if (exactMatch) return exactMatch.label;
-			if (
-				typeof localValue === "object" &&
-				"paymentType" in localValue
-			) {
+			if (typeof localValue === "object" && "paymentType" in localValue) {
 				const codeMatch = paymentTypes.find(
-					(type) =>
-						type.value.paymentType === localValue.paymentType
+					(type) => type.value.paymentType === localValue.paymentType
 				);
 				if (codeMatch) return codeMatch.label;
 			}

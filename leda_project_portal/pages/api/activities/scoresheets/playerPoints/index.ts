@@ -1,6 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { queryPost } from "@/lib/query";
-import { PlayerPoints, TopDarterTotals, WeeklyTopDarterScores } from "@/lib/definitions";
+import {
+	PlayerPoints,
+	TopDarterTotals,
+	WeeklyTopDarterScores,
+} from "@/lib/definitions";
 import { query } from "@/lib/dbTypeGet";
 
 export default async function handler(
@@ -177,7 +181,10 @@ export default async function handler(
 					error,
 				});
 			}
-		} else if (req.query.viewPlayerTopDarterPoints === 'true' && req.query.ledaId) {
+		} else if (
+			req.query.viewPlayerTopDarterPoints === "true" &&
+			req.query.ledaId
+		) {
 			const ledaId = req.query.ledaId;
 			const result = await query<TopDarterTotals>(
 				`SELECT DISTINCT ON ("seasonCode") "seasonCode", "totalPoints"
@@ -187,7 +194,11 @@ export default async function handler(
 				[ledaId as string]
 			);
 			res.status(200).json(result.rows);
-		} else if (req.query.getSeasonWeekPoints === 'true' && req.query.seasonCode && req.query.ledaId) {
+		} else if (
+			req.query.getSeasonWeekPoints === "true" &&
+			req.query.seasonCode &&
+			req.query.ledaId
+		) {
 			const seasonCode = req.query.seasonCode;
 			const ledaId = req.query.ledaId;
 			const result = await query<WeeklyTopDarterScores>(
@@ -218,7 +229,7 @@ export default async function handler(
 						"No weekly player points information found for the specified season code",
 				});
 			}
-		} 
+		}
 	} else {
 		res.status(405).json({ message: "Method Not Allowed" });
 	}

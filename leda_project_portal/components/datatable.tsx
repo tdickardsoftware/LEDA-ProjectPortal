@@ -21,19 +21,32 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import RosterSeasonCodeSelector from "@/components/ui/roster-season-code-selector";
 import { Checkbox } from "@/components/ui/checkbox";
-import { placePaymentHistoryRoute, rosterRoute, teamPaymentHistoryRoute } from "@/lib/apiRoutes";
+import {
+	placePaymentHistoryRoute,
+	rosterRoute,
+	teamPaymentHistoryRoute,
+} from "@/lib/apiRoutes";
 // Import the required icons and paymentRoute
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { playerPaymentHistoryRoute } from "@/lib/apiRoutes";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Add interface for payment status data
 interface PaymentStatus {
 	ledaId: string | number;
-	status: 'PAID' | 'PART' | 'UNPAID';
+	status: "PAID" | "PART" | "UNPAID";
 }
 
 interface DataTableProps<TData extends Record<string, unknown>, TValue> {
@@ -79,17 +92,25 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	// Filter state
 	const [filterPopoverOpen, setFilterPopoverOpen] = React.useState(false);
 	const [filterSeasonCode, setFilterSeasonCode] = React.useState<string>("");
-	const [filterCurrentSeason, setFilterCurrentSeason] = React.useState<boolean>(true);
-	const [filteredLedaIds, setFilteredLedaIds] = React.useState<string[] | null>(null);
+	const [filterCurrentSeason, setFilterCurrentSeason] =
+		React.useState<boolean>(true);
+	const [filteredLedaIds, setFilteredLedaIds] = React.useState<
+		string[] | null
+	>(null);
 	const [filterLoading, setFilterLoading] = React.useState(false);
-	
+
 	// Add new state for payment status
-	const [showPaymentStatus, setShowPaymentStatus] = React.useState<boolean>(false);
-	const [paymentStatusData, setPaymentStatusData] = React.useState<PaymentStatus[]>([]);
-	const [paymentStatusLoading, setPaymentStatusLoading] = React.useState(false);
+	const [showPaymentStatus, setShowPaymentStatus] =
+		React.useState<boolean>(false);
+	const [paymentStatusData, setPaymentStatusData] = React.useState<
+		PaymentStatus[]
+	>([]);
+	const [paymentStatusLoading, setPaymentStatusLoading] =
+		React.useState(false);
 
 	// Add local state for the Show Payment Status checkbox
-	const [pendingShowPaymentStatus, setPendingShowPaymentStatus] = React.useState<boolean>(false);
+	const [pendingShowPaymentStatus, setPendingShowPaymentStatus] =
+		React.useState<boolean>(false);
 
 	// Debounce the search input
 	React.useEffect(() => {
@@ -110,28 +131,37 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	}, [filterCurrentSeason]);
 
 	// Function to fetch payment status data
-	const fetchPaymentStatus = React.useCallback(async (seasonCode: string) => {
-		if (!seasonCode) return;
-		
-		setPaymentStatusLoading(true);
-		try {
-			let res;
-			if (pageName.includes("Players")) {
-				res = await fetch(`${playerPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`);
-			} else if (pageName.includes("Places")) {
-				res = await fetch(`${placePaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`);
-			} else {
-				res = await fetch(`${teamPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`);
+	const fetchPaymentStatus = React.useCallback(
+		async (seasonCode: string) => {
+			if (!seasonCode) return;
+
+			setPaymentStatusLoading(true);
+			try {
+				let res;
+				if (pageName.includes("Players")) {
+					res = await fetch(
+						`${playerPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`
+					);
+				} else if (pageName.includes("Places")) {
+					res = await fetch(
+						`${placePaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`
+					);
+				} else {
+					res = await fetch(
+						`${teamPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`
+					);
+				}
+				const data = await res.json();
+				setPaymentStatusData(Array.isArray(data) ? data : []);
+			} catch (e) {
+				console.error("Failed to fetch payment status", e);
+				setPaymentStatusData([]);
+			} finally {
+				setPaymentStatusLoading(false);
 			}
-			const data = await res.json();
-			setPaymentStatusData(Array.isArray(data) ? data : []);
-		} catch (e) {
-			console.error("Failed to fetch payment status", e);
-			setPaymentStatusData([]);
-		} finally {
-			setPaymentStatusLoading(false);
-		}
-	}, [pageName]);
+		},
+		[pageName]
+	);
 
 	// Only fetch payment status when showPaymentStatus is set (after Apply)
 	React.useEffect(() => {
@@ -148,15 +178,23 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		try {
 			let res;
 			if (pageName.includes("Players")) {
-				res = await fetch(`${rosterRoute}/rosterPlayerView?seasonCode=${filterSeasonCode}`);
+				res = await fetch(
+					`${rosterRoute}/rosterPlayerView?seasonCode=${filterSeasonCode}`
+				);
 			} else if (pageName.includes("Places")) {
-				res = await fetch(`${rosterRoute}/rosterPlaceView?seasonCode=${filterSeasonCode}`);
+				res = await fetch(
+					`${rosterRoute}/rosterPlaceView?seasonCode=${filterSeasonCode}`
+				);
 			} else {
-				res = await fetch(`${rosterRoute}/rosterTeamView?seasonCode=${filterSeasonCode}`);
+				res = await fetch(
+					`${rosterRoute}/rosterTeamView?seasonCode=${filterSeasonCode}`
+				);
 			}
 			const ids: { ledaId: string | number }[] = await res.json();
 			// Extract ledaId values from the array of objects
-			const ledaIds = Array.isArray(ids) ? ids.map((item) => String(item.ledaId)) : [];
+			const ledaIds = Array.isArray(ids)
+				? ids.map((item) => String(item.ledaId))
+				: [];
 			setFilteredLedaIds(ledaIds);
 			setShowPaymentStatus(pendingShowPaymentStatus); // Only set showPaymentStatus on Apply
 			setFilterPopoverOpen(false);
@@ -171,7 +209,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const filteredData = React.useMemo(() => {
 		let base = tableData;
 		if (filteredLedaIds) {
-			base = base.filter(row => filteredLedaIds.includes(String(row.ledaId)));
+			base = base.filter((row) =>
+				filteredLedaIds.includes(String(row.ledaId))
+			);
 		}
 		if (!debouncedQuery) return base;
 		return base.filter((row) =>
@@ -184,87 +224,114 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	}, [debouncedQuery, tableData, filteredLedaIds]);
 
 	// Function to get payment status for a given ledaId
-	const getPaymentStatus = React.useCallback((ledaId: string | number) => {
-		const paymentRecord = paymentStatusData.find(p => String(p.ledaId) === String(ledaId));
-		return paymentRecord?.status || null;
-	}, [paymentStatusData]);
+	const getPaymentStatus = React.useCallback(
+		(ledaId: string | number) => {
+			const paymentRecord = paymentStatusData.find(
+				(p) => String(p.ledaId) === String(ledaId)
+			);
+			return paymentRecord?.status || null;
+		},
+		[paymentStatusData]
+	);
 
 	// Helper to render payment status icon with tooltip
-	const renderPaymentStatusIcon = React.useCallback((ledaId: string | number) => {
-		if (!showPaymentStatus || paymentStatusData.length === 0) return null;
-		
-		const status = getPaymentStatus(ledaId);
-		if (!status) return null;
-
-		let icon = null;
-		let tooltipText = "";
-		switch (status) {
-			case 'PAID':
-				icon = <CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />;
-				tooltipText = "Paid";
-				break;
-			case 'PART':
-				icon = <AlertTriangle className="h-5 w-5 text-amber-500 ml-2" />;
-				tooltipText = "Partial";
-				break;
-			case 'UNPAID':
-				icon = <XCircle className="h-5 w-5 text-red-500 ml-2" />;
-				tooltipText = "Unpaid";
-				break;
-			default:
+	const renderPaymentStatusIcon = React.useCallback(
+		(ledaId: string | number) => {
+			if (!showPaymentStatus || paymentStatusData.length === 0)
 				return null;
-		}
-		return (
-			<TooltipProvider>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<span>{icon}</span>
-					</TooltipTrigger>
-					<TooltipContent className="bg-white rounded-lg">
-						{tooltipText}
-					</TooltipContent>
-				</Tooltip>
-			</TooltipProvider>
-		);
-	}, [showPaymentStatus, paymentStatusData, getPaymentStatus]);
+
+			const status = getPaymentStatus(ledaId);
+			if (!status) return null;
+
+			let icon = null;
+			let tooltipText = "";
+			switch (status) {
+				case "PAID":
+					icon = (
+						<CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />
+					);
+					tooltipText = "Paid";
+					break;
+				case "PART":
+					icon = (
+						<AlertTriangle className="h-5 w-5 text-amber-500 ml-2" />
+					);
+					tooltipText = "Partial";
+					break;
+				case "UNPAID":
+					icon = <XCircle className="h-5 w-5 text-red-500 ml-2" />;
+					tooltipText = "Unpaid";
+					break;
+				default:
+					return null;
+			}
+			return (
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<span>{icon}</span>
+						</TooltipTrigger>
+						<TooltipContent className="bg-white rounded-lg">
+							{tooltipText}
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
+			);
+		},
+		[showPaymentStatus, paymentStatusData, getPaymentStatus]
+	);
 
 	// Enhance columns with payment status if enabled
 	const enhancedColumns = React.useMemo(() => {
-		if (!showPaymentStatus || paymentStatusData.length === 0) return columns;
-		
-		return columns.map(col => {
+		if (!showPaymentStatus || paymentStatusData.length === 0)
+			return columns;
+
+		return columns.map((col) => {
 			// Find the column that likely contains the name (assuming it has 'name' in the id or accessorKey)
-			const isNameColumn = (col.id?.toLowerCase().includes('name') || 
-								 ('accessorKey' in col && typeof col.accessorKey === 'string' && col.accessorKey.toLowerCase().includes('name')));
-			
+			const isNameColumn =
+				col.id?.toLowerCase().includes("name") ||
+				("accessorKey" in col &&
+					typeof col.accessorKey === "string" &&
+					col.accessorKey.toLowerCase().includes("name"));
+
 			if (isNameColumn) {
 				return {
 					...col,
 					cell: (info: CellContext<TData, TValue>) => {
-							// Render the original cell content
-							let originalContent: React.ReactNode;
-							if (col.cell) {
-								originalContent = flexRender(col.cell, info);
-							} else if ('accessorKey' in col && typeof col.accessorKey === 'string') {
-								originalContent = String(info.row.original[col.accessorKey]);
-							} else {
-								originalContent = String(info.getValue());
-							}
-							const ledaId = info.row.original.ledaId;
-							
-							// Render both the original content and the icon
-							return (
-								<div className="flex items-center">
-									{originalContent}
-									{renderPaymentStatusIcon(Number(ledaId))}
-								</div>
+						// Render the original cell content
+						let originalContent: React.ReactNode;
+						if (col.cell) {
+							originalContent = flexRender(col.cell, info);
+						} else if (
+							"accessorKey" in col &&
+							typeof col.accessorKey === "string"
+						) {
+							originalContent = String(
+								info.row.original[col.accessorKey]
 							);
+						} else {
+							originalContent = String(info.getValue());
 						}
+						const ledaId = info.row.original.ledaId;
+
+						// Render both the original content and the icon
+						return (
+							<div className="flex items-center">
+								{originalContent}
+								{renderPaymentStatusIcon(Number(ledaId))}
+							</div>
+						);
+					},
 				};
 			}
 			return col;
 		});
-	}, [columns, showPaymentStatus, paymentStatusData, renderPaymentStatusIcon]);
+	}, [
+		columns,
+		showPaymentStatus,
+		paymentStatusData,
+		renderPaymentStatusIcon,
+	]);
 
 	const table = useReactTable({
 		// Assign table instance to ref
@@ -291,9 +358,10 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const selectedRowsData = React.useMemo(() => {
 		const selectedRowIds = Object.keys(rowSelection);
 		// Get row data directly from the table's row model rather than using tableData indices
-		return table.getRowModel().rows
-			.filter(row => selectedRowIds.includes(row.id))
-			.map(row => row.original);
+		return table
+			.getRowModel()
+			.rows.filter((row) => selectedRowIds.includes(row.id))
+			.map((row) => row.original);
 	}, [rowSelection, table]);
 
 	// Update selectedRowCount whenever rowSelection changes
@@ -328,10 +396,12 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	}, [defaultSelectedRow]);
 
 	return (
-			<div className="w-full">
+		<div className="w-full">
 			<div className="p-5 shadow-sm bg-white rounded-xl border border-gray-200 w-full transition-all">
 				<div className="overflow-hidden rounded-lg">
-					<h1 className="text-2xl font-medium pb-4 text-center text-gray-700">{pageName}</h1>
+					<h1 className="text-2xl font-medium pb-4 text-center text-gray-700">
+						{pageName}
+					</h1>
 					<div className="flex items-center justify-between space-x-3 mb-4">
 						{addDialog ? (
 							<div>
@@ -345,9 +415,18 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						<div className="flex space-x-2">
 							{/* Filter By Season Button and Popover */}
 							{filter && (
-								<Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
+								<Popover
+									open={filterPopoverOpen}
+									onOpenChange={setFilterPopoverOpen}
+								>
 									<PopoverTrigger asChild>
-										<Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors" onClick={() => setFilterPopoverOpen(true)}>
+										<Button
+											variant="outline"
+											className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+											onClick={() =>
+												setFilterPopoverOpen(true)
+											}
+										>
 											Filter By Season
 										</Button>
 									</PopoverTrigger>
@@ -355,44 +434,83 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 										<div className="flex flex-col gap-3">
 											<RosterSeasonCodeSelector
 												disabled={filterCurrentSeason}
-												handleSelect={setFilterSeasonCode}
-												useCurrentSeason={filterCurrentSeason}
+												handleSelect={
+													setFilterSeasonCode
+												}
+												useCurrentSeason={
+													filterCurrentSeason
+												}
 												seasonCode={filterSeasonCode}
 											/>
 											<div className="flex items-center gap-2">
 												<Checkbox
-													checked={filterCurrentSeason}
-													onCheckedChange={() => setFilterCurrentSeason(!filterCurrentSeason)}
+													checked={
+														filterCurrentSeason
+													}
+													onCheckedChange={() =>
+														setFilterCurrentSeason(
+															!filterCurrentSeason
+														)
+													}
 												/>
-													<span className="text-gray-700 text-sm">Current Season?</span>
+												<span className="text-gray-700 text-sm">
+													Current Season?
+												</span>
 											</div>
-												{/* Show Payment Status checkbox only affects pendingShowPaymentStatus */}
-												{filterSeasonCode && (
-													<div className="flex items-center gap-2">
-														<Checkbox
-															checked={pendingShowPaymentStatus}
-															onCheckedChange={() => setPendingShowPaymentStatus(!pendingShowPaymentStatus)}
-															disabled={paymentStatusLoading}
-														/>
-															<span className="text-gray-700 text-sm">Show Payment Status</span>
-														{paymentStatusLoading && <span className="text-xs ml-2 text-gray-500">(Loading...)</span>}
-													</div>
-												)}
+											{/* Show Payment Status checkbox only affects pendingShowPaymentStatus */}
+											{filterSeasonCode && (
+												<div className="flex items-center gap-2">
+													<Checkbox
+														checked={
+															pendingShowPaymentStatus
+														}
+														onCheckedChange={() =>
+															setPendingShowPaymentStatus(
+																!pendingShowPaymentStatus
+															)
+														}
+														disabled={
+															paymentStatusLoading
+														}
+													/>
+													<span className="text-gray-700 text-sm">
+														Show Payment Status
+													</span>
+													{paymentStatusLoading && (
+														<span className="text-xs ml-2 text-gray-500">
+															(Loading...)
+														</span>
+													)}
+												</div>
+											)}
 											<Button
 												onClick={handleApplyFilter}
-												disabled={!filterSeasonCode || filterLoading}
+												disabled={
+													!filterSeasonCode ||
+													filterLoading
+												}
 												className="w-full hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
 											>
-												{filterLoading ? "Applying..." : "Apply"}
+												{filterLoading
+													? "Applying..."
+													: "Apply"}
 											</Button>
 											{filteredLedaIds && (
 												<Button
 													variant="ghost"
 													onClick={() => {
-														setFilteredLedaIds(null);
-														setShowPaymentStatus(false);
-														setPendingShowPaymentStatus(false);
-														setPaymentStatusData([]);
+														setFilteredLedaIds(
+															null
+														);
+														setShowPaymentStatus(
+															false
+														);
+														setPendingShowPaymentStatus(
+															false
+														);
+														setPaymentStatusData(
+															[]
+														);
 													}}
 													className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
 												>
@@ -476,7 +594,10 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						<Table className="min-w-full">
 							<TableHeader className="bg-gray-50 border-b">
 								{table.getHeaderGroups().map((headerGroup) => (
-									<TableRow key={headerGroup.id} className="border-gray-200">
+									<TableRow
+										key={headerGroup.id}
+										className="border-gray-200"
+									>
 										{headerGroup.headers.map((header) => (
 											<TableHead
 												key={header.id}
@@ -485,7 +606,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 												{header.isPlaceholder
 													? null
 													: flexRender(
-															header.column.columnDef
+															header.column
+																.columnDef
 																.header,
 															header.getContext()
 													  )}
@@ -501,20 +623,24 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 											key={row.id}
 											className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
 											data-state={
-												row.getIsSelected() && "selected"
+												row.getIsSelected() &&
+												"selected"
 											}
 										>
-											{row.getVisibleCells().map((cell) => (
-												<TableCell
-													key={cell.id}
-													className="px-6 py-3 text-sm text-gray-700"
-												>
-													{flexRender(
-														cell.column.columnDef.cell,
-														cell.getContext()
-													)}
-												</TableCell>
-											))}
+											{row
+												.getVisibleCells()
+												.map((cell) => (
+													<TableCell
+														key={cell.id}
+														className="px-6 py-3 text-sm text-gray-700"
+													>
+														{flexRender(
+															cell.column
+																.columnDef.cell,
+															cell.getContext()
+														)}
+													</TableCell>
+												))}
 										</TableRow>
 									))
 								) : (
@@ -542,7 +668,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						Previous
 					</Button>
 					<div className="text-sm text-gray-500">
-						Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+						Page {table.getState().pagination.pageIndex + 1} of{" "}
+						{table.getPageCount()}
 					</div>
 					<Button
 						variant="outline"

@@ -60,7 +60,7 @@ export default async function handler(
 				results.establishedDate,
 				results.memo,
 				results.lastTeamFeePayment,
-				results.memberIdList
+				results.memberIdList,
 			];
 			// Execute the insert query
 			const result = await queryPost(query, values);
@@ -101,7 +101,7 @@ export default async function handler(
 				results.teamName,
 				results.establishedDate,
 				results.memo,
-				results.memberIdList
+				results.memberIdList,
 			];
 			const result = await queryPost(query, values);
 			res.status(200).json(result);

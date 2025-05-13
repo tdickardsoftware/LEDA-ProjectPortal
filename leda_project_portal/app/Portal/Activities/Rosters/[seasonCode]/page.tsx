@@ -10,16 +10,17 @@ export default async function Page(props: { params: PageProps }) {
 	const params = await props.params;
 	const seasonCode = params.seasonCode;
 
-	const response = await fetch(rosterRouteServer + `?seasonCode=${seasonCode}`, {
-		method: "GET",
-		headers: {
-			"Content-Type": "application/json",
-		},
-	})
+	const response = await fetch(
+		rosterRouteServer + `?seasonCode=${seasonCode}`,
+		{
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		}
+	);
 	if (response.status === 404) {
 		notFound();
 	}
-	return (
-		<RosterPageContent renderSeasonCode={seasonCode} />
-	)
+	return <RosterPageContent renderSeasonCode={seasonCode} />;
 }

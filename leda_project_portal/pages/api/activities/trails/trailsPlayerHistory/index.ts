@@ -11,21 +11,21 @@ export default async function handler(
 ) {
 	// Handle GET requests
 	if (req.method === "GET") {
-        if (!req.query.ledaId) {
-            return res.status(400).json({ message: "LEDA ID is required" });
-        }
+		if (!req.query.ledaId) {
+			return res.status(400).json({ message: "LEDA ID is required" });
+		}
 		try {
-            const ledaId = req.query.ledaId as string;
+			const ledaId = req.query.ledaId as string;
 			// Execute the database query to fetch season code information
 			const result = await query<TrailsPlayerHistory>(
 				'SELECT "trailsDate", "previousTotalPoints", "totalPoints", "changeBy", "modifyDate", "singlesPlace", "doublesPlace" from public.leda_trails_point_totals_audit WHERE "ledaId" = $1 ORDER BY "modifyDate" desc, "trailsDate" desc;',
-                [ledaId]
+				[ledaId]
 			);
 			// Format the trailsDate
 			const formattedResult = result.rows.map((item) => ({
 				...item,
 				trailsDate: format(new Date(item.trailsDate), "MM-dd-yyyy"),
-                modifyDate: format(new Date(item.modifyDate), "MM-dd-yyyy"),
+				modifyDate: format(new Date(item.modifyDate), "MM-dd-yyyy"),
 			}));
 			// Respond with the query result
 			res.status(200).json(formattedResult);
@@ -41,4 +41,3 @@ export default async function handler(
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }
- 

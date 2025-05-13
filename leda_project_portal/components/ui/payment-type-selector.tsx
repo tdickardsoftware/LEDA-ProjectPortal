@@ -77,7 +77,9 @@ export default function PaymentTypeSelector({
 								value={field.value}
 								onChange={field.onChange}
 								disabled={disabled}
-								handlePaymentTypeChange={handlePaymentTypeChange} // Pass the change handler to the content component
+								handlePaymentTypeChange={
+									handlePaymentTypeChange
+								} // Pass the change handler to the content component
 							/>
 						</FormControl>
 						<FormMessage />
@@ -108,9 +110,7 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 
 	// Determine value source (form context or props)
 	// Hardcoded to "type" instead of "paymentTypeData"
-	const currentValue = formContext
-		? formContext.watch("type")
-		: localValue;
+	const currentValue = formContext ? formContext.watch("type") : localValue;
 
 	// Handle value changes in either mode
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -130,15 +130,10 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 				const response = await fetch(paymentTypeRoute);
 				const data = await response.json();
 				setPaymentTypes(
-					data.map(
-						(item: {
-							paymentType: string;
-							desc: string;
-						}) => ({
-							value: item, // Store the raw object as value
-							label: item.paymentType + " - " + item.desc,
-						})
-					)
+					data.map((item: { paymentType: string; desc: string }) => ({
+						value: item, // Store the raw object as value
+						label: item.paymentType + " - " + item.desc,
+					}))
 				);
 			} catch (error) {
 				console.error("Failed to fetch payment types", error);

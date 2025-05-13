@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 	title: "Seasons",
 };
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
 	return (
@@ -42,8 +42,11 @@ export default async function Page() {
 							buttonName="Edit Season"
 						/>
 					}
-					viewLink= {
-						<CustomLink linkName="View Season" parentPage="Seasons"/>
+					viewLink={
+						<CustomLink
+							linkName="View Season"
+							parentPage="Seasons"
+						/>
 					}
 					apiEndpoint={seasonRoute}
 				/>

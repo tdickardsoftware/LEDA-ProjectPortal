@@ -137,12 +137,15 @@ export default function MentionEditForm({
 				<div className="flex space-x-4">
 					{/* Mention Information Section */}
 					<div className={formContainerStyle}>
-						<h1>Mention Information for Mention Code #{rowData.mentionCode}</h1>
+						<h1>
+							Mention Information for Mention Code #
+							{rowData.mentionCode}
+						</h1>
 						<InputDefault
 							control={form.control}
 							name="mentionCode"
 							label="Mention Code *"
-                            disabled
+							disabled
 						/>
 						<FormField
 							control={form.control}

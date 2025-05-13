@@ -25,7 +25,9 @@ export default async function Page(props: { params: PageProps }) {
 	}
 
 	const fetchMemberDetails = async () => {
-		const results = await fetch(`${teamRouteServer}/memberInfo?ledaId=${teamData.ledaId}`);
+		const results = await fetch(
+			`${teamRouteServer}/memberInfo?ledaId=${teamData.ledaId}`
+		);
 		if (!results.ok) {
 			throw new Error("Failed to fetch member details");
 		}
@@ -37,7 +39,7 @@ export default async function Page(props: { params: PageProps }) {
 			cannotBeCaptain: member.cannotBeCaptain,
 			badStanding: member.badStanding,
 		}));
-	}
+	};
 
 	// Execute the function to get the actual member details
 	const memberDetails = await fetchMemberDetails();

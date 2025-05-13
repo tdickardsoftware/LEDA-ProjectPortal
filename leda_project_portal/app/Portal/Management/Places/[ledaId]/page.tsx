@@ -14,9 +14,6 @@ export default async function Page(props: { params: PageProps }) {
 	if (!placeData) {
 		notFound();
 	}
-	
 
-	return (
-		<PlacePageContent placeData={placeData}/>
-	);
+	return <PlacePageContent placeData={placeData} />;
 }

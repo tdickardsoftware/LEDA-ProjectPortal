@@ -4,7 +4,14 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import React from "react";
@@ -132,7 +139,7 @@ export default function PeopleTypeEditForm({
 							control={form.control}
 							name="peopleTypeCode"
 							label="People Type Code *"
-                            disabled
+							disabled
 						/>
 						<FormField
 							control={form.control}

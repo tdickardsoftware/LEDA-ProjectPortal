@@ -258,7 +258,7 @@ export type MentionPlayerHistory = {
 export type TopDarterTotals = {
 	seasonCode: string;
 	totalPoints: number;
-}
+};
 //
 // Define type to identify the shape of our data from postgres for Weekly Top Darter Scores
 //
@@ -270,7 +270,7 @@ export type WeeklyTopDarterScores = {
 	prevTotalPoints: number;
 	teamLedaId: number;
 	teamName: string;
-}
+};
 //
 // Define type to identify the shape of our data from postgres for Player Roster History
 //
@@ -284,7 +284,7 @@ export type PlayerRosterHistory = {
 	seasonCode: string;
 	totalPoints: number;
 	place: number;
-}
+};
 //
 // Define type to identify the shape of our data from postgres for Payment History
 //
@@ -295,13 +295,13 @@ export type PaymentHistory = {
 	paymentType: string;
 	amount: string;
 	seasonCode: string;
-	comp: boolean
+	comp: boolean;
 	notes: string;
 	paidOff: boolean;
 	date: Date;
 	fullName?: string;
 	fiscalYear?: string;
-}
+};
 //
 // Define type to identify the shape of our data from postgres for SeasonCode data
 //
@@ -309,14 +309,14 @@ export type SeasonCode = {
 	seasonCode: string;
 	desc?: string;
 	isCurrentSeason?: boolean;
-}
+};
 //
 // Define type to identify the shape of our data from postgres for a history view
 //
 export type HistoryView = {
 	seasonCode: string;
 	ledaId: number;
-}
+};
 //
 // Define type to identify the shape of our data from postgres for a place team history view
 //
@@ -326,4 +326,4 @@ export type PlaceTeamHistoryView = {
 	teamId: number;
 	placeId: number;
 	placeName: string;
-}
+};

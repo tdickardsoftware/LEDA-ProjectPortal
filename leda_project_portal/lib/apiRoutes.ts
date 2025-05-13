@@ -2,7 +2,7 @@
 // Local Routes
 //
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-require ("dotenv").config();
+require("dotenv").config();
 
 // Define Route for place owner api
 export const placeOwnerRoute = "/api/management/player/placeOwner";
@@ -37,17 +37,20 @@ export const trailsRoute = "/api/activities/trails";
 // Define route for roster not on the serverside
 export const rosterRoute = "/api/activities/roster";
 // Define route for schedule not on the serverside
-export const  scheduleRoute = "/api/activities/schedule";
+export const scheduleRoute = "/api/activities/schedule";
 // Define route for weekly scoresheets not on serverside
 export const weeklyScoresheetsRoute = "/api/activities/scoresheets";
 // Define route for payout not on the serverside
 export const payoutRoute = "/api/activities/payout";
 // Define route for trailsPlayerHistory not on the serverside
-export const trailsPlayerHistoryRoute = "/api/activities/trails/trailsPlayerHistory";
-// Define route for mentionPlayerHistory not on the serverside 
-export const mentionPlayerHistoryRoute = "/api/maintenance/mention/mentionHistory";
+export const trailsPlayerHistoryRoute =
+	"/api/activities/trails/trailsPlayerHistory";
+// Define route for mentionPlayerHistory not on the serverside
+export const mentionPlayerHistoryRoute =
+	"/api/maintenance/mention/mentionHistory";
 // Define route for playerPaymentHistory not on the serverside
-export const playerPaymentHistoryRoute = "/api/maintenance/payment/playerPayment";
+export const playerPaymentHistoryRoute =
+	"/api/maintenance/payment/playerPayment";
 // Define route for teamPaymentHistory not on the serverside
 export const teamPaymentHistoryRoute = "/api/maintenance/payment/teamPayment";
 // Define route for placePaymentHistory not on the serverside
@@ -58,46 +61,66 @@ export const placePaymentHistoryRoute = "/api/maintenance/payment/placePayment";
 //
 
 // Define Route for players api
-export const playerRouteServer = "http://" + process.env.VERCEL_URL + playerRoute;
+export const playerRouteServer =
+	"http://" + process.env.VERCEL_URL + playerRoute;
 // Define Route for places api
 export const placeRouteServer = "http://" + process.env.VERCEL_URL + placeRoute;
 // Define Route for teams api
 export const teamRouteServer = "http://" + process.env.VERCEL_URL + teamRoute;
 // Define route for division api
-export const divisionRouteServer = "http://" + process.env.VERCEL_URL + divisionRoute;
+export const divisionRouteServer =
+	"http://" + process.env.VERCEL_URL + divisionRoute;
 // Define route for mention api
-export const mentionRouteServer = "http://" + process.env.VERCEL_URL + mentionRoute;
+export const mentionRouteServer =
+	"http://" + process.env.VERCEL_URL + mentionRoute;
 // Define route for paymentType api
-export const paymentTypeRouteServer = "http://" + process.env.VERCEL_URL + paymentTypeRoute;
+export const paymentTypeRouteServer =
+	"http://" + process.env.VERCEL_URL + paymentTypeRoute;
 // Define route for payoutTier api
-export const payoutTierRouteServer = "http://" + process.env.VERCEL_URL + payoutTierRoute;
+export const payoutTierRouteServer =
+	"http://" + process.env.VERCEL_URL + payoutTierRoute;
 // Define route for penalty api
-export const penaltyRouteServer = "http://" + process.env.VERCEL_URL + penaltyRoute;
+export const penaltyRouteServer =
+	"http://" + process.env.VERCEL_URL + penaltyRoute;
 // Define route for peopleType api
-export const peopleTypeRouteServer = "http://" + process.env.VERCEL_URL + peopleTypeRoute;
+export const peopleTypeRouteServer =
+	"http://" + process.env.VERCEL_URL + peopleTypeRoute;
 // Define route for placeType api
-export const placeTypeRouteServer = "http://" + process.env.VERCEL_URL + placeTypeRoute;
+export const placeTypeRouteServer =
+	"http://" + process.env.VERCEL_URL + placeTypeRoute;
 // Define route for season api
-export const seasonRouteServer = "http://" + process.env.VERCEL_URL + seasonRoute;
+export const seasonRouteServer =
+	"http://" + process.env.VERCEL_URL + seasonRoute;
 // Define route for trailsDate api
-export const trailsDateRouteServer = "http://" + process.env.VERCEL_URL + trailsDateRoute;
+export const trailsDateRouteServer =
+	"http://" + process.env.VERCEL_URL + trailsDateRoute;
 // Define route for trails api
-export const trailsRouteServer = "http://" + process.env.VERCEL_URL + trailsRoute;
+export const trailsRouteServer =
+	"http://" + process.env.VERCEL_URL + trailsRoute;
 // Define route for roster api
-export const rosterRouteServer = "http://" + process.env.VERCEL_URL + rosterRoute;
+export const rosterRouteServer =
+	"http://" + process.env.VERCEL_URL + rosterRoute;
 // Define route for schedule api
-export const scheduleRouteServer = "http://" + process.env.VERCEL_URL + scheduleRoute;
+export const scheduleRouteServer =
+	"http://" + process.env.VERCEL_URL + scheduleRoute;
 // Define route for weekly scoresheets api
-export const weeklyScoresheetsRouteServer = "http://" + process.env.VERCEL_URL + weeklyScoresheetsRoute;
+export const weeklyScoresheetsRouteServer =
+	"http://" + process.env.VERCEL_URL + weeklyScoresheetsRoute;
 // Define route for payout api
-export const payoutRouteServer = "http://" + process.env.VERCEL_URL + payoutRoute;
+export const payoutRouteServer =
+	"http://" + process.env.VERCEL_URL + payoutRoute;
 // Define route for trailsPlayerHistory api
-export const trailsPlayerHistoryRouteServer = "http://" + process.env.VERCEL_URL + trailsPlayerHistoryRoute;
+export const trailsPlayerHistoryRouteServer =
+	"http://" + process.env.VERCEL_URL + trailsPlayerHistoryRoute;
 // Define route for mentionPlayerHistory api
-export const mentionPlayerHistoryRouteServer = "http://" + process.env.VERCEL_URL + mentionPlayerHistoryRoute;
+export const mentionPlayerHistoryRouteServer =
+	"http://" + process.env.VERCEL_URL + mentionPlayerHistoryRoute;
 // Define route for playerPaymentHistory api
-export const playerPaymentHistoryRouteServer = "http://" + process.env.VERCEL_URL + playerPaymentHistoryRoute;
+export const playerPaymentHistoryRouteServer =
+	"http://" + process.env.VERCEL_URL + playerPaymentHistoryRoute;
 // Define route for teamPaymentHistory api
-export const teamPaymentHistoryRouteServer = "http://" + process.env.VERCEL_URL + teamPaymentHistoryRoute;
+export const teamPaymentHistoryRouteServer =
+	"http://" + process.env.VERCEL_URL + teamPaymentHistoryRoute;
 // Define route for placePaymentHistory api
-export const placePaymentHistoryRouteServer = "http://" + process.env.VERCEL_URL + placePaymentHistoryRoute;
+export const placePaymentHistoryRouteServer =
+	"http://" + process.env.VERCEL_URL + placePaymentHistoryRoute;

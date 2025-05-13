@@ -32,11 +32,15 @@ export default function PlayerPageContent({
 	playerData: PlayerMemberInfo;
 }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [isTrailsHistoryDialogOpen, setIsTrailsHistoryDialogOpen] = useState(false);
-	const [isMentionsHistoryDialogOpen, setIsMentionsHistoryDialogOpen] = useState(false);
+	const [isTrailsHistoryDialogOpen, setIsTrailsHistoryDialogOpen] =
+		useState(false);
+	const [isMentionsHistoryDialogOpen, setIsMentionsHistoryDialogOpen] =
+		useState(false);
 	const [isTDPHistoryDialogOpen, setIsTDPHistoryDialogOpen] = useState(false);
-	const [isRosterHistoryDialogOpen, setIsRosterHistoryDialogOpen] = useState(false);
-	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] = useState(false);
+	const [isRosterHistoryDialogOpen, setIsRosterHistoryDialogOpen] =
+		useState(false);
+	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] =
+		useState(false);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -44,7 +48,7 @@ export default function PlayerPageContent({
 
 	const handleTrailsHistory = () => {
 		setIsTrailsHistoryDialogOpen(!isTrailsHistoryDialogOpen);
-	}
+	};
 
 	const handleMentionsHistory = () => {
 		setIsMentionsHistoryDialogOpen(!isMentionsHistoryDialogOpen);
@@ -52,11 +56,11 @@ export default function PlayerPageContent({
 
 	const handleTDPHistory = () => {
 		setIsTDPHistoryDialogOpen(!isTDPHistoryDialogOpen);
-	}
+	};
 
 	const handleRosterHistory = () => {
 		setIsRosterHistoryDialogOpen(!isRosterHistoryDialogOpen);
-	}
+	};
 
 	const handlePaymentHistory = () => {
 		setIsPaymentHistoryDialogOpen(!isPaymentHistoryDialogOpen);
@@ -109,7 +113,9 @@ export default function PlayerPageContent({
 								initialLedaId={playerData.ledaId.toString()}
 								route={playerPaymentHistoryRoute}
 								type="player"
-								onSuccess={() => setIsPaymentHistoryDialogOpen(true)}
+								onSuccess={() =>
+									setIsPaymentHistoryDialogOpen(true)
+								}
 							/>
 							<Button
 								className="hover:bg-gray-100 border-gray-400 text-gray-700"
@@ -123,7 +129,6 @@ export default function PlayerPageContent({
 							>
 								Roster History
 							</Button>
-							
 						</div>
 					</FolderTabMed>
 				</div>
@@ -139,9 +144,7 @@ export default function PlayerPageContent({
 									playerData.dateOfBirth
 								).toLocaleDateString("en-US")}
 							</p>
-							<p className="text-lg">
-								Email: {playerData.email}
-							</p>
+							<p className="text-lg">Email: {playerData.email}</p>
 							<p className="text-lg">
 								Phone Number: {playerData.phoneNumber}
 							</p>
@@ -158,12 +161,8 @@ export default function PlayerPageContent({
 									Address Two: {playerData.addressTwo}
 								</p>
 							)}
-							<p className="text-lg">
-								City: {playerData.city}
-							</p>
-							<p className="text-lg">
-								State: {playerData.state}
-							</p>
+							<p className="text-lg">City: {playerData.city}</p>
+							<p className="text-lg">State: {playerData.state}</p>
 							<p className="text-lg">Zip: {playerData.zip}</p>
 						</CardContent>
 					</Card>
@@ -251,24 +250,30 @@ export default function PlayerPageContent({
 					</Card>
 				</div>
 				<div className="mt-6">
-					<Button className="hover:bg-gray-100 border-gray-300 text-gray-700" asChild>
-						<Link
-							href="/Portal/Management/Players"
-							prefetch={true}
-						>
+					<Button
+						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						asChild
+					>
+						<Link href="/Portal/Management/Players" prefetch={true}>
 							Go Back
 						</Link>
 					</Button>
 				</div>
 			</div>
 
-			<Dialog open={isMentionsHistoryDialogOpen} onOpenChange={setIsMentionsHistoryDialogOpen}>
+			<Dialog
+				open={isMentionsHistoryDialogOpen}
+				onOpenChange={setIsMentionsHistoryDialogOpen}
+			>
 				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
 					<PlayerMentionsHistoryContent playerData={playerData} />
 				</DialogContent>
 			</Dialog>
-			
-			<Dialog open={isTrailsHistoryDialogOpen} onOpenChange={setIsTrailsHistoryDialogOpen}>
+
+			<Dialog
+				open={isTrailsHistoryDialogOpen}
+				onOpenChange={setIsTrailsHistoryDialogOpen}
+			>
 				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Trails History</DialogTitle>
@@ -279,7 +284,10 @@ export default function PlayerPageContent({
 							className="hover:bg-gray-100 border-gray-300 text-gray-700"
 							asChild
 						>
-							<Link href={"/Portal/Activities/Trails"} prefetch={true}>
+							<Link
+								href={"/Portal/Activities/Trails"}
+								prefetch={true}
+							>
 								Manage Trails Data
 							</Link>
 						</Button>
@@ -290,7 +298,9 @@ export default function PlayerPageContent({
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
 				<DialogContent className="w-fit bg-white">
 					<DialogHeader>
-						<DialogTitle>Edit Player: {playerData.fullName}</DialogTitle>
+						<DialogTitle>
+							Edit Player: {playerData.fullName}
+						</DialogTitle>
 					</DialogHeader>
 					<PlayerEditForm
 						rowData={playerData}
@@ -301,29 +311,43 @@ export default function PlayerPageContent({
 				</DialogContent>
 			</Dialog>
 
-			<Dialog open={isTDPHistoryDialogOpen} onOpenChange={setIsTDPHistoryDialogOpen}>
+			<Dialog
+				open={isTDPHistoryDialogOpen}
+				onOpenChange={setIsTDPHistoryDialogOpen}
+			>
 				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>Top Darter Points History for {playerData.fullName}</DialogTitle>
+						<DialogTitle>
+							Top Darter Points History for {playerData.fullName}
+						</DialogTitle>
 					</DialogHeader>
 					<PlayerTDPHistoryContent playerData={playerData} />
 				</DialogContent>
 			</Dialog>
 
-			<Dialog open={isRosterHistoryDialogOpen} onOpenChange={setIsRosterHistoryDialogOpen}>
-
-			<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+			<Dialog
+				open={isRosterHistoryDialogOpen}
+				onOpenChange={setIsRosterHistoryDialogOpen}
+			>
+				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>Roster History for {playerData.fullName}</DialogTitle>
+						<DialogTitle>
+							Roster History for {playerData.fullName}
+						</DialogTitle>
 					</DialogHeader>
 					<PlayerRosterHistoryContent playerData={playerData} />
 				</DialogContent>
 			</Dialog>
 
-			<Dialog open={isPaymentHistoryDialogOpen} onOpenChange={setIsPaymentHistoryDialogOpen}>
+			<Dialog
+				open={isPaymentHistoryDialogOpen}
+				onOpenChange={setIsPaymentHistoryDialogOpen}
+			>
 				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>Payment History for {playerData.fullName}</DialogTitle>
+						<DialogTitle>
+							Payment History for {playerData.fullName}
+						</DialogTitle>
 					</DialogHeader>
 					<PlayerPaymentHistoryContent playerData={playerData} />
 				</DialogContent>

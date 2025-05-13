@@ -6,24 +6,24 @@ export default async function handler(
 	res: NextApiResponse
 ) {
 	if (req.method === "GET") {
-        if (req.query.ledaId ) {
-            try {
-                const result = await query(
-                    `SELECT "cannotBeCaptain" FROM public.leda_membership_info where "ledaId" = $1`,
-                    [req.query.ledaId as string]
-                );
-                res.status(200).json(result.rows[0]);
-            } catch (error) {
-                res.status(500).json({
-                    message: "Failed to fetch roster information",
-                    error,
-                });
-            }
-        } else {
-            res.status(400).json({
-                message: "ledaId query parameter is required",
-            });
-        }
+		if (req.query.ledaId) {
+			try {
+				const result = await query(
+					`SELECT "cannotBeCaptain" FROM public.leda_membership_info where "ledaId" = $1`,
+					[req.query.ledaId as string]
+				);
+				res.status(200).json(result.rows[0]);
+			} catch (error) {
+				res.status(500).json({
+					message: "Failed to fetch roster information",
+					error,
+				});
+			}
+		} else {
+			res.status(400).json({
+				message: "ledaId query parameter is required",
+			});
+		}
 	} else {
 		res.status(405).json({ message: "Method Not Allowed" });
 	}

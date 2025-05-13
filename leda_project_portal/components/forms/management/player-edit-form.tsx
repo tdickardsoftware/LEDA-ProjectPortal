@@ -295,7 +295,7 @@ export default function PlayerEditInformationForm({
 			form.reset();
 			setBadStandingStatus(false);
 			setLifetimeMemberStatus(false);
-			window.location.reload()
+			window.location.reload();
 			onClose(); // Close the form
 			onRefresh(); // Refresh the datatable with the player API route
 		} catch (error) {
@@ -459,14 +459,16 @@ export default function PlayerEditInformationForm({
 													className={inputWidth}
 													type="number"
 													onChange={(e) => {
-												field.onChange(
-													e.target.value === ""
-														? undefined
-														: parseFloat(
-																e.target.value
-														  )
-												);
-											}}
+														field.onChange(
+															e.target.value ===
+																""
+																? undefined
+																: parseFloat(
+																		e.target
+																			.value
+																  )
+														);
+													}}
 												/>
 											</FormControl>
 											<FormMessage />

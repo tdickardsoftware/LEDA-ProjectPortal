@@ -172,7 +172,11 @@ const areAllMatchupsValid = (data: FormattedScoreData): boolean => {
 	return true;
 };
 
-export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderSeasonCode?: string }) {
+export default function WeeklyScoresheetsContent({
+	renderSeasonCode,
+}: {
+	renderSeasonCode?: string;
+}) {
 	// State declarations
 	const [seasonCode, setSeasonCode] = useState<string>("");
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
@@ -257,7 +261,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 			setSeasonCode(renderSeasonCode);
 			setCurrentSeason(false); // Disable current season checkbox when season code is provided
 			setSeasonSelected(false); // Allow week selection
-			
+
 			// Call the state reset logic directly instead of calling handleSeasonCodeSelect
 			// This avoids the same function being called with the same value multiple times
 			setSidenavData({});
@@ -267,8 +271,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 			setSelectedAwayLetter("");
 			// Add other resets as needed
 		}
-	}, [renderSeasonCode]);  // Include renderSeasonCode in dependency array
-
+	}, [renderSeasonCode]); // Include renderSeasonCode in dependency array
 
 	// Event handlers
 	const handleDataChange = () => {
@@ -278,13 +281,13 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 	const handleSeasonCodeSelect = useCallback((value: string) => {
 		setSeasonCode(value);
 		setSeasonSelected(false);
-		
+
 		// Reset week-related state when a new season is selected
 		setSelectedWeek("");
 		setSidenavData({});
 		setMatchSelected(false);
 		setFormattedScoreData(null);
-		
+
 		// Reset matchup data
 		setSelectedHomeLetter("");
 		setSelectedAwayLetter("");
@@ -292,27 +295,27 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 		setSelectedSubdivision("");
 		setSelectedHomeTeamId("");
 		setSelectedAwayTeamId("");
-		
+
 		// Reset team information
 		setHomeTeamInformation(undefined);
 		setAwayTeamInformation(undefined);
 		setHomeTeamPlayerInformation(undefined);
 		setAwayTeamPlayerInformation(undefined);
-		
+
 		// Reset game data
 		setHomeTeamGameData({});
 		setAwayTeamGameData({});
-		
+
 		// Reset game wins and points
 		setHomeWins(Array(11).fill(false));
 		setHomePoints(Array(11).fill(""));
 		setAwayPoints(Array(11).fill(""));
-		
+
 		// Reset penalties and mentions counters
 		setHomePenaltyCounter(0);
 		setAwayPenaltyCounter(0);
 		setMentionCounters({});
-	}, []);  // Empty dependency array since this function shouldn't change
+	}, []); // Empty dependency array since this function shouldn't change
 
 	const handleMatchupSelection = async (
 		homeLetter: string,
@@ -388,7 +391,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 						}
 						homeGameData[player.ledaId] = playerGameData;
 
-						 // Defensive: Ensure formattedScoreData is initialized
+						// Defensive: Ensure formattedScoreData is initialized
 						if (!formattedScoreData) {
 							setFormattedScoreData({});
 						}
@@ -396,13 +399,30 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 
 						// Initialize mentions if not already present
 						fsd[divisionName] = fsd[divisionName] || {};
-						fsd[divisionName][subdivisionName] = fsd[divisionName][subdivisionName] || {};
-						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`] =
-							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`] || { teamInformation: {} };
-						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedHomeTeamId] =
-							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedHomeTeamId] || { teamMembers: {} };
-						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedHomeTeamId].teamMembers[player.ledaId] =
-							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedHomeTeamId].teamMembers[player.ledaId] || { mentions: {} };
+						fsd[divisionName][subdivisionName] =
+							fsd[divisionName][subdivisionName] || {};
+						fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						] = fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						] || { teamInformation: {} };
+						fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						].teamInformation[selectedHomeTeamId] = fsd[
+							divisionName
+						][subdivisionName][`${homeLetter} - ${awayLetter}`]
+							.teamInformation[selectedHomeTeamId] || {
+							teamMembers: {},
+						};
+						fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						].teamInformation[selectedHomeTeamId].teamMembers[
+							player.ledaId
+						] = fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						].teamInformation[selectedHomeTeamId].teamMembers[
+							player.ledaId
+						] || { mentions: {} };
 					});
 
 					console.log(homeGameData);
@@ -440,7 +460,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 							playerGameData[`Game ${i}`] = false;
 						}
 						awayGameData[player.ledaId] = playerGameData;
-						 // Defensive: Ensure formattedScoreData is initialized
+						// Defensive: Ensure formattedScoreData is initialized
 						if (!formattedScoreData) {
 							setFormattedScoreData({});
 						}
@@ -448,13 +468,30 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 
 						// Initialize mentions if not already present
 						fsd[divisionName] = fsd[divisionName] || {};
-						fsd[divisionName][subdivisionName] = fsd[divisionName][subdivisionName] || {};
-						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`] =
-							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`] || { teamInformation: {} };
-						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedAwayTeamId] =
-							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedAwayTeamId] || { teamMembers: {} };
-						fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedAwayTeamId].teamMembers[player.ledaId] =
-							fsd[divisionName][subdivisionName][`${homeLetter} - ${awayLetter}`].teamInformation[selectedAwayTeamId].teamMembers[player.ledaId] || { mentions: {} };
+						fsd[divisionName][subdivisionName] =
+							fsd[divisionName][subdivisionName] || {};
+						fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						] = fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						] || { teamInformation: {} };
+						fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						].teamInformation[selectedAwayTeamId] = fsd[
+							divisionName
+						][subdivisionName][`${homeLetter} - ${awayLetter}`]
+							.teamInformation[selectedAwayTeamId] || {
+							teamMembers: {},
+						};
+						fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						].teamInformation[selectedAwayTeamId].teamMembers[
+							player.ledaId
+						] = fsd[divisionName][subdivisionName][
+							`${homeLetter} - ${awayLetter}`
+						].teamInformation[selectedAwayTeamId].teamMembers[
+							player.ledaId
+						] || { mentions: {} };
 					});
 					setAwayTeamGameData(awayGameData);
 
@@ -506,7 +543,8 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 								?.teamMembers || {}
 						).map((member, index) => {
 							const name = member.name || "";
-							const [firstName = "", lastName = ""] = name.split(" ");
+							const [firstName = "", lastName = ""] =
+								name.split(" ");
 							return {
 								ledaId: index + 1, // Convert to number
 								firstName,
@@ -544,7 +582,8 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 								?.teamMembers || {}
 						).map((member, index) => {
 							const name = member.name || "";
-							const [firstName = "", lastName = ""] = name.split(" ");
+							const [firstName = "", lastName = ""] =
+								name.split(" ");
 							return {
 								ledaId: index + 1, // Convert to number
 								firstName,
@@ -1135,9 +1174,11 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 			if (fetchResponse.ok) {
 				const existingData = await fetchResponse.json();
 				if (existingData && existingData.scoresheetData) {
-					 // Store previous data for mention history comparison
-					previousData = JSON.parse(JSON.stringify(existingData.scoresheetData));
-					
+					// Store previous data for mention history comparison
+					previousData = JSON.parse(
+						JSON.stringify(existingData.scoresheetData)
+					);
+
 					// For the current matchup, use our new data completely (including penalty removals)
 					// but merge with other matchups that might exist
 					const existingScoreData =
@@ -1233,7 +1274,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 					body: JSON.stringify(awayTeamPointsPayload),
 				});
 
-				 // Process players and their mentions
+				// Process players and their mentions
 				await processMentionHistory(
 					matchupData,
 					previousData,
@@ -1311,34 +1352,49 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 
 	// Add this new helper function to process mentions history
 	const processMentionHistory = async (
-			matchupData: {
-				teamInformation: Record<string, {
+		matchupData: {
+			teamInformation: Record<
+				string,
+				{
 					teamName: string;
 					teamLetter: string;
 					home: boolean;
-					teamMembers: Record<string, {
-						name: string;
-						gameStats: Record<string, boolean>;
-						gamePoints: string;
-						mentions?: Record<string, {
-							mentionCode: string;
-							desc: string;
+					teamMembers: Record<
+						string,
+						{
+							name: string;
+							gameStats: Record<string, boolean>;
+							gamePoints: string;
+							mentions?: Record<
+								string,
+								{
+									mentionCode: string;
+									desc: string;
+									points: number;
+									notes?: string;
+									count?: number;
+								}
+							>;
+						}
+					>;
+					penalties?: Record<
+						string,
+						{
+							penaltyCode: string;
 							points: number;
 							notes?: string;
-							count?: number;
-						}>;
-					}>;
-					penalties?: Record<string, {
-						penaltyCode: string;
-						points: number;
-						notes?: string;
-					}>;
-				}>;
-			gameInformation: Record<string, {
-				homeWin: boolean;
-				homePoints: string;
-				awayPoints: string;
-			}>;
+						}
+					>;
+				}
+			>;
+			gameInformation: Record<
+				string,
+				{
+					homeWin: boolean;
+					homePoints: string;
+					awayPoints: string;
+				}
+			>;
 			teamPoints: {
 				homePoints: string;
 				awayPoints: string;
@@ -1352,28 +1408,30 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 	) => {
 		// Process both teams
 		const teamIds = [selectedHomeTeamId, selectedAwayTeamId];
-		
+
 		for (const teamId of teamIds) {
-			const teamMembers = matchupData.teamInformation[teamId]?.teamMembers || {};
-			
+			const teamMembers =
+				matchupData.teamInformation[teamId]?.teamMembers || {};
+
 			// Process each player in the team
 			for (const playerId in teamMembers) {
 				const player = teamMembers[playerId];
 				const currentMentions = player.mentions || {};
-				
+
 				// Get previous mentions for this player if they exist
-				const previousMentions = 
-					previousData?.[division]?.[subdivision]?.[matchupKey]?.
-					teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions || {};
-				
+				const previousMentions =
+					previousData?.[division]?.[subdivision]?.[matchupKey]
+						?.teamInformation?.[teamId]?.teamMembers?.[playerId]
+						?.mentions || {};
+
 				// Track which mentions were processed to identify deletions
 				const processedMentionIds = new Set<string>();
-				
+
 				// Process current mentions - add new or update existing
 				for (const mentionId in currentMentions) {
 					const mention = currentMentions[mentionId];
 					processedMentionIds.add(mentionId);
-					
+
 					// If this mention exists in previous data, it's an update
 					if (previousMentions[mentionId]) {
 						// Check if anything changed
@@ -1414,7 +1472,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 						});
 					}
 				}
-				
+
 				// Check for deleted mentions
 				for (const mentionId in previousMentions) {
 					if (!processedMentionIds.has(mentionId)) {
@@ -1458,15 +1516,23 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 				body: JSON.stringify({
 					...data,
 					count: data.count ?? 0, // Ensure count is always provided
-					teamId: data.teamId ?? (data.ledaId.startsWith(selectedHomeTeamId) ? selectedHomeTeamId : selectedAwayTeamId)
+					teamId:
+						data.teamId ??
+						(data.ledaId.startsWith(selectedHomeTeamId)
+							? selectedHomeTeamId
+							: selectedAwayTeamId),
 				}),
 			});
-			
+
 			if (!response.ok) {
-				throw new Error(`Failed to create mention history: ${response.statusText}`);
+				throw new Error(
+					`Failed to create mention history: ${response.statusText}`
+				);
 			}
-			
-			console.log(`Created mention history for player ${data.ledaId}, mention ${data.mentionId}`);
+
+			console.log(
+				`Created mention history for player ${data.ledaId}, mention ${data.mentionId}`
+			);
 		} catch (error) {
 			console.error("Error creating mention history:", error);
 		}
@@ -1493,15 +1559,23 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 				body: JSON.stringify({
 					...data,
 					count: data.count ?? 0, // Ensure count is always provided
-					teamId: data.teamId ?? (data.ledaId.startsWith(selectedHomeTeamId) ? selectedHomeTeamId : selectedAwayTeamId)
+					teamId:
+						data.teamId ??
+						(data.ledaId.startsWith(selectedHomeTeamId)
+							? selectedHomeTeamId
+							: selectedAwayTeamId),
 				}),
 			});
-			
+
 			if (!response.ok) {
-				throw new Error(`Failed to update mention history: ${response.statusText}`);
+				throw new Error(
+					`Failed to update mention history: ${response.statusText}`
+				);
 			}
-			
-			console.log(`Updated mention history for player ${data.ledaId}, mention ${data.mentionId}`);
+
+			console.log(
+				`Updated mention history for player ${data.ledaId}, mention ${data.mentionId}`
+			);
 		} catch (error) {
 			console.error("Error updating mention history:", error);
 		}
@@ -1526,15 +1600,23 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 				},
 				body: JSON.stringify({
 					...data,
-					teamId: data.teamId ?? (data.ledaId.startsWith(selectedHomeTeamId) ? selectedHomeTeamId : selectedAwayTeamId)
+					teamId:
+						data.teamId ??
+						(data.ledaId.startsWith(selectedHomeTeamId)
+							? selectedHomeTeamId
+							: selectedAwayTeamId),
 				}),
 			});
-			
+
 			if (!response.ok) {
-				throw new Error(`Failed to delete mention history: ${response.statusText}`);
+				throw new Error(
+					`Failed to delete mention history: ${response.statusText}`
+				);
 			}
-			
-			console.log(`Deleted mention history for player ${data.ledaId}, mention ${data.mentionId}`);
+
+			console.log(
+				`Deleted mention history for player ${data.ledaId}, mention ${data.mentionId}`
+			);
 		} catch (error) {
 			console.error("Error deleting mention history:", error);
 		}
@@ -1625,7 +1707,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 	) => {
 		// Create a copy of existing data, or initialize if it doesn't exist
 		const updatedData = formattedScoreData ? { ...formattedScoreData } : {};
-		
+
 		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
 
 		// Ensure the necessary nested structure exists
@@ -1698,7 +1780,11 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 		};
 
 		// Log to verify the penalty was added
-		console.log("Added penalty:", updatedData[selectedDivision][selectedSubdivision][matchupKey].teamInformation[teamKey].penalties);
+		console.log(
+			"Added penalty:",
+			updatedData[selectedDivision][selectedSubdivision][matchupKey]
+				.teamInformation[teamKey].penalties
+		);
 
 		// Update the counter state
 		if (isHomeTeam) {
@@ -1782,7 +1868,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 		// Create a copy of the current formatted score data
 		const updatedData = { ...formattedScoreData };
 
-			// Find the right team (home or away) to update the penalty
+		// Find the right team (home or away) to update the penalty
 		const teamKey =
 			teamId === selectedHomeTeamId
 				? selectedHomeTeamId
@@ -1885,29 +1971,36 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 			teamId: teamId,
 			teamName: teamName,
 		});
-		
+
 		// Log useful debug information
 		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-		console.log("Opening mentions dialog for:", playerName, "Team:", teamName);
+		console.log(
+			"Opening mentions dialog for:",
+			playerName,
+			"Team:",
+			teamName
+		);
 		console.log("Current matchup:", matchupKey);
 		console.log("Team ID:", teamId, "Player ID:", playerId);
-		
+
 		if (formattedScoreData) {
 			// Log the path to help debug
 			console.log("Division:", selectedDivision);
 			console.log("Subdivision:", selectedSubdivision);
-			
+
 			// Check if mentions exist
-			const mentions = formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[matchupKey]
-				?.teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions;
-			
+			const mentions =
+				formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[
+					matchupKey
+				]?.teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions;
+
 			console.log("Existing mentions:", mentions);
 		}
-		
+
 		// Force the dialog to show properly by using a small delay
 		// This ensures React has time to process state updates
 		setMentionDialogOpen(false); // First close in case it was open
-		
+
 		setTimeout(() => {
 			setMentionDialogOpen(true); // Then open with a slight delay
 		}, 10);
@@ -1986,7 +2079,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 		desc: string,
 		points: number,
 		count: number,
-		notes?: string,
+		notes?: string
 	) => {
 		if (!formattedScoreData || !selectedPlayerForMention) return;
 
@@ -2003,7 +2096,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 				?.teamInformation?.[teamId]?.teamMembers?.[playerId]
 				?.mentions?.[mentionId]
 		) {
-				// Update the existing mention with the new values
+			// Update the existing mention with the new values
 			updatedData[selectedDivision][selectedSubdivision][
 				matchupKey
 			].teamInformation[teamId].teamMembers[playerId].mentions![
@@ -2033,7 +2126,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 		desc: string,
 		points: number,
 		count: number,
-		notes?: string,
+		notes?: string
 	) => {
 		if (!formattedScoreData || !selectedPlayerForMention) {
 			// Initialize data if needed
@@ -2148,7 +2241,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 		// Update state with the new data
 		setFormattedScoreData(updatedData);
 		setTimeout(() => {
-			console.log(formattedScoreData)
+			console.log(formattedScoreData);
 		}, 0);
 		// Temporarily close and reopen the dialog to force a refresh
 		setMentionDialogOpen(false);
@@ -2860,211 +2953,211 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 
 								{/* Add the Game Points Table */}
 								<FolderTab title="Game Points">
-										{isLoading ? (
-											<FolderTabSkeleton />
-										) : (
-											<div className="overflow-x-auto">
-												<Table>
-													<TableHeader>
-														<TableRow>
-															<TableHead></TableHead>
-															{Array.from({
-																length: 11,
-															}).map((_, i) => (
-																<TableHead
-																	key={i}
-																	className="text-center"
-																>
-																	<div className="flex flex-col items-center gap-1">
-																		<span>
-																			Game{" "}
-																			{i + 1}
-																		</span>
-																		<div className="flex items-center space-x-2">
-																			<Checkbox
-																				id={`home-win-${i}`}
-																				checked={
-																					homeWins[
-																						i
-																					]
-																				}
-																				onCheckedChange={() =>
-																					handleHomeWinToggle(
-																						i
-																					)
-																				}
-																			/>
-																			<Label
-																				htmlFor={`home-win-${i}`}
-																				className="text-xs"
-																			>
-																				Home
-																				Win
-																			</Label>
-																		</div>
+									{isLoading ? (
+										<FolderTabSkeleton />
+									) : (
+										<div className="overflow-x-auto">
+											<Table>
+												<TableHeader>
+													<TableRow>
+														<TableHead></TableHead>
+														{Array.from({
+															length: 11,
+														}).map((_, i) => (
+															<TableHead
+																key={i}
+																className="text-center"
+															>
+																<div className="flex flex-col items-center gap-1">
+																	<span>
+																		Game{" "}
+																		{i + 1}
+																	</span>
+																	<div className="flex items-center space-x-2">
+																		<Checkbox
+																			id={`home-win-${i}`}
+																			checked={
+																				homeWins[
+																					i
+																				]
+																			}
+																			onCheckedChange={() =>
+																				handleHomeWinToggle(
+																					i
+																				)
+																			}
+																		/>
+																		<Label
+																			htmlFor={`home-win-${i}`}
+																			className="text-xs"
+																		>
+																			Home
+																			Win
+																		</Label>
 																	</div>
-																</TableHead>
-															))}
-														</TableRow>
-													</TableHeader>
-													<TableBody>
-														<TableRow>
-															<TableCell className="font-medium">
-																Home Points
-															</TableCell>
-															{Array.from({
-																length: 11,
-															}).map((_, i) => (
-																<TableCell
-																	key={i}
-																	className="text-center"
-																>
-																	<input
-																		type="text"
-																		inputMode="numeric"
-																		pattern="[0-9]*"
-																		value={
-																			homePoints[
-																				i
-																			]
-																		}
-																		onChange={(
-																			e
-																		) =>
-																			handleHomePointsChange(
-																				i,
-																				e
-																					.target
-																					.value
-																			)
-																		}
-																		className="w-12 text-center border border-gray-300 rounded p-1"
-																		placeholder="0"
-																	/>
-																</TableCell>
-															))}
-														</TableRow>
-														<TableRow>
-															<TableCell className="font-medium">
-																Away Points
-															</TableCell>
-															{Array.from({
-																length: 11,
-															}).map((_, i) => (
-																<TableCell
-																	key={i}
-																	className="text-center"
-																>
-																	<input
-																		type="text"
-																		inputMode="numeric"
-																		pattern="[0-9]*"
-																		value={
-																			awayPoints[
-																				i
-																			]
-																		}
-																		onChange={(
-																			e
-																		) =>
-																			handleAwayPointsChange(
-																				i,
-																				e
-																					.target
-																					.value
-																			)
-																		}
-																		className="w-12 text-center border border-gray-300 rounded p-1"
-																		placeholder="0"
-																	/>
-																</TableCell>
-															))}
-														</TableRow>
-														<TableRow className="bg-gray-50">
-															<TableCell className="font-bold">
-																Total
-															</TableCell>
+																</div>
+															</TableHead>
+														))}
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													<TableRow>
+														<TableCell className="font-medium">
+															Home Points
+														</TableCell>
+														{Array.from({
+															length: 11,
+														}).map((_, i) => (
 															<TableCell
-																colSpan={5}
-																className="text-center font-bold"
+																key={i}
+																className="text-center"
 															>
-																Home:{" "}
-																{
-																	calculatePoints()
-																		.rawHomePoints
-																}
-																{calculatePoints()
-																	.homePenaltyPoints >
-																	0 && (
-																	<span className="text-red-600 ml-2">
-																		(-
-																		{
-																			calculatePoints()
-																				.homePenaltyPoints
-																		}{" "}
-																		penalties)
-																	</span>
-																)}
-																<div className="text-sm font-normal mt-1">
-																	Final:{" "}
+																<input
+																	type="text"
+																	inputMode="numeric"
+																	pattern="[0-9]*"
+																	value={
+																		homePoints[
+																			i
+																		]
+																	}
+																	onChange={(
+																		e
+																	) =>
+																		handleHomePointsChange(
+																			i,
+																			e
+																				.target
+																				.value
+																		)
+																	}
+																	className="w-12 text-center border border-gray-300 rounded p-1"
+																	placeholder="0"
+																/>
+															</TableCell>
+														))}
+													</TableRow>
+													<TableRow>
+														<TableCell className="font-medium">
+															Away Points
+														</TableCell>
+														{Array.from({
+															length: 11,
+														}).map((_, i) => (
+															<TableCell
+																key={i}
+																className="text-center"
+															>
+																<input
+																	type="text"
+																	inputMode="numeric"
+																	pattern="[0-9]*"
+																	value={
+																		awayPoints[
+																			i
+																		]
+																	}
+																	onChange={(
+																		e
+																	) =>
+																		handleAwayPointsChange(
+																			i,
+																			e
+																				.target
+																				.value
+																		)
+																	}
+																	className="w-12 text-center border border-gray-300 rounded p-1"
+																	placeholder="0"
+																/>
+															</TableCell>
+														))}
+													</TableRow>
+													<TableRow className="bg-gray-50">
+														<TableCell className="font-bold">
+															Total
+														</TableCell>
+														<TableCell
+															colSpan={5}
+															className="text-center font-bold"
+														>
+															Home:{" "}
+															{
+																calculatePoints()
+																	.rawHomePoints
+															}
+															{calculatePoints()
+																.homePenaltyPoints >
+																0 && (
+																<span className="text-red-600 ml-2">
+																	(-
 																	{
 																		calculatePoints()
-																			.finalHomePoints
-																	}
-																</div>
-															</TableCell>
-															<TableCell
-																colSpan={6}
-																className="text-center font-bold"
-															>
-																Away:{" "}
+																			.homePenaltyPoints
+																	}{" "}
+																	penalties)
+																</span>
+															)}
+															<div className="text-sm font-normal mt-1">
+																Final:{" "}
 																{
 																	calculatePoints()
-																		.rawAwayPoints
+																		.finalHomePoints
 																}
-																{calculatePoints()
-																	.awayPenaltyPoints >
-																	0 && (
-																	<span className="text-red-600 ml-2">
-																		(-
-																		{
-																			calculatePoints()
-																				.awayPenaltyPoints
-																		}{" "}
-																		penalties)
-																	</span>
-																)}
-																<div className="text-sm font-normal mt-1">
-																	Final:{" "}
+															</div>
+														</TableCell>
+														<TableCell
+															colSpan={6}
+															className="text-center font-bold"
+														>
+															Away:{" "}
+															{
+																calculatePoints()
+																	.rawAwayPoints
+															}
+															{calculatePoints()
+																.awayPenaltyPoints >
+																0 && (
+																<span className="text-red-600 ml-2">
+																	(-
 																	{
 																		calculatePoints()
-																			.finalAwayPoints
-																	}
-																</div>
-															</TableCell>
-														</TableRow>
-													</TableBody>
-												</Table>
-											</div>
-										)}
-									</FolderTab>
+																			.awayPenaltyPoints
+																	}{" "}
+																	penalties)
+																</span>
+															)}
+															<div className="text-sm font-normal mt-1">
+																Final:{" "}
+																{
+																	calculatePoints()
+																		.finalAwayPoints
+																}
+															</div>
+														</TableCell>
+													</TableRow>
+												</TableBody>
+											</Table>
+										</div>
+									)}
+								</FolderTab>
 
 								{/* Add Save and Reset Buttons */}
 								<div className="flex justify-center mt-4">
 									<Button
 										onClick={calculatePlayerPoints}
 										className={`${
-											isDataChanged 
-												? "bg-blue-600 hover:bg-blue-700 text-white animate-pulse" 
+											isDataChanged
+												? "bg-blue-600 hover:bg-blue-700 text-white animate-pulse"
 												: "bg-blue-600 hover:bg-blue-700 text-white"
 										}`}
 										disabled={isSaving || !isDataChanged} // Disable button if no data has changed
 									>
 										{isSaving
 											? "Saving..."
-											: isDataChanged 
-												? "Save Scoresheet (Changes Pending)" 
-												: "Save Scoresheet"}
+											: isDataChanged
+											? "Save Scoresheet (Changes Pending)"
+											: "Save Scoresheet"}
 									</Button>
 									<Button
 										onClick={resetScoresheet}
@@ -3119,8 +3212,7 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 								desc,
 								points,
 								count || 0,
-								notes,
-								
+								notes
 							)
 						}
 					/>
@@ -3134,7 +3226,10 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 								</h3>
 								{(() => {
 									// Debugging: Log the formattedScoreData structure
-									console.log("Formatted Score Data:", formattedScoreData);
+									console.log(
+										"Formatted Score Data:",
+										formattedScoreData
+									);
 
 									const mentions =
 										formattedScoreData?.[
@@ -3148,7 +3243,10 @@ export default function WeeklyScoresheetsContent({ renderSeasonCode }: { renderS
 										]?.mentions;
 
 									// Debugging: Log the mentions object
-									console.log("Mentions for Player:", mentions);
+									console.log(
+										"Mentions for Player:",
+										mentions
+									);
 
 									if (
 										mentions &&
