@@ -153,7 +153,7 @@ export default async function handler(
 
 				// If this is a paid membership or part payment, update lastBarFeePayment
 				if (
-					(data.type === "Part" || data.type === "Memb") &&
+					(data.type === "Part" || data.type === "Bar") &&
 					data.paidOff === true
 				) {
 					const getLastPaymentInfoResult = await query(
