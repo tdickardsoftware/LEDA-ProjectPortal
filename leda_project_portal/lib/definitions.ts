@@ -317,3 +317,13 @@ export type HistoryView = {
 	seasonCode: string;
 	ledaId: number;
 }
+//
+// Define type to identify the shape of our data from postgres for a place team history view
+//
+export type PlaceTeamHistoryView = {
+	seasonCode: string;
+	teamName: string;
+	teamId: number;
+	placeId: number;
+	placeName: string;
+}

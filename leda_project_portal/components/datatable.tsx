@@ -328,11 +328,11 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	}, [defaultSelectedRow]);
 
 	return (
-		<div>
-			<div className="p-4 shadow-lg bg-white rounded-lg border border-gray-200 w-full max-w-4xl">
-				<div className="overflow-hidden rounded-md">
-					<h1 className="text-3xl pb-4 text-center">{pageName}</h1>
-					<div className="flex items-center justify-between space-x-2">
+			<div className="w-full">
+			<div className="p-5 shadow-sm bg-white rounded-xl border border-gray-200 w-full transition-all">
+				<div className="overflow-hidden rounded-lg">
+					<h1 className="text-2xl font-medium pb-4 text-center text-gray-700">{pageName}</h1>
+					<div className="flex items-center justify-between space-x-3 mb-4">
 						{addDialog ? (
 							<div>
 								{React.cloneElement(
@@ -347,11 +347,11 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 							{filter && (
 								<Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
 									<PopoverTrigger asChild>
-										<Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => setFilterPopoverOpen(true)}>
+										<Button variant="outline" className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors" onClick={() => setFilterPopoverOpen(true)}>
 											Filter By Season
 										</Button>
 									</PopoverTrigger>
-									<PopoverContent className="w-[260px] bg-white">
+									<PopoverContent className="w-[260px] bg-white shadow-md rounded-lg border border-gray-200 p-4">
 										<div className="flex flex-col gap-3">
 											<RosterSeasonCodeSelector
 												disabled={filterCurrentSeason}
@@ -364,7 +364,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 													checked={filterCurrentSeason}
 													onCheckedChange={() => setFilterCurrentSeason(!filterCurrentSeason)}
 												/>
-												<span>Current Season?</span>
+													<span className="text-gray-700 text-sm">Current Season?</span>
 											</div>
 												{/* Show Payment Status checkbox only affects pendingShowPaymentStatus */}
 												{filterSeasonCode && (
@@ -374,14 +374,14 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 															onCheckedChange={() => setPendingShowPaymentStatus(!pendingShowPaymentStatus)}
 															disabled={paymentStatusLoading}
 														/>
-														<span>Show Payment Status</span>
-														{paymentStatusLoading && <span className="text-xs ml-2">(Loading...)</span>}
+															<span className="text-gray-700 text-sm">Show Payment Status</span>
+														{paymentStatusLoading && <span className="text-xs ml-2 text-gray-500">(Loading...)</span>}
 													</div>
 												)}
 											<Button
 												onClick={handleApplyFilter}
 												disabled={!filterSeasonCode || filterLoading}
-												className="w-full"
+												className="w-full bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
 											>
 												{filterLoading ? "Applying..." : "Apply"}
 											</Button>
@@ -394,7 +394,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 														setPendingShowPaymentStatus(false);
 														setPaymentStatusData([]);
 													}}
-													className="w-full text-xs text-gray-500"
+													className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
 												>
 													Clear Filter
 												</Button>
@@ -462,89 +462,94 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						</div>
 					</div>
 					{/* Search Input */}
-					<div className="mb-4 py-2">
+					<div className="mb-4">
 						<Input
 							type="text"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 							placeholder="Search..."
-							className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+							className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-all"
 						/>
 					</div>
 
-					<Table className="min-w-full divide-y divide-gray-200 border">
-						<TableHeader className="bg-gray-200">
-							{table.getHeaderGroups().map((headerGroup) => (
-								<TableRow key={headerGroup.id}>
-									{headerGroup.headers.map((header) => (
-										<TableHead
-											key={header.id}
-											className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
-										>
-											{header.isPlaceholder
-												? null
-												: flexRender(
-														header.column.columnDef
-															.header,
-														header.getContext()
-												  )}
-										</TableHead>
-									))}
-								</TableRow>
-							))}
-						</TableHeader>
-						<TableBody>
-							{table.getRowModel().rows?.length ? (
-								table.getRowModel().rows.map((row) => (
-									<TableRow
-										key={row.id}
-										className="hover:bg-zinc-300 transition-colors"
-										data-state={
-											row.getIsSelected() && "selected"
-										}
-									>
-										{row.getVisibleCells().map((cell) => (
-											<TableCell
-												key={cell.id}
-												className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+					<div className="border border-gray-200 rounded-lg overflow-hidden">
+						<Table className="min-w-full">
+							<TableHeader className="bg-gray-50 border-b">
+								{table.getHeaderGroups().map((headerGroup) => (
+									<TableRow key={headerGroup.id} className="border-gray-200">
+										{headerGroup.headers.map((header) => (
+											<TableHead
+												key={header.id}
+												className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
 											>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext()
-												)}
-											</TableCell>
+												{header.isPlaceholder
+													? null
+													: flexRender(
+															header.column.columnDef
+																.header,
+															header.getContext()
+													  )}
+											</TableHead>
 										))}
 									</TableRow>
-								))
-							) : (
-								<TableRow>
-									<TableCell
-										colSpan={columns.length}
-										className="h-24 text-center text-gray-500"
-									>
-										No Results.
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
+								))}
+							</TableHeader>
+							<TableBody>
+								{table.getRowModel().rows?.length ? (
+									table.getRowModel().rows.map((row) => (
+										<TableRow
+											key={row.id}
+											className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+											data-state={
+												row.getIsSelected() && "selected"
+											}
+										>
+											{row.getVisibleCells().map((cell) => (
+												<TableCell
+													key={cell.id}
+													className="px-6 py-3 text-sm text-gray-700"
+												>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext()
+													)}
+												</TableCell>
+											))}
+										</TableRow>
+									))
+								) : (
+									<TableRow>
+										<TableCell
+											colSpan={columns.length}
+											className="h-24 text-center text-gray-500"
+										>
+											No Results.
+										</TableCell>
+									</TableRow>
+								)}
+							</TableBody>
+						</Table>
+					</div>
 				</div>
-				<div className="flex items-center justify-between space-x-2 py-4">
+				<div className="flex items-center justify-between space-x-2 py-4 mt-2">
 					<Button
 						variant="outline"
 						size="sm"
 						onClick={() => table.previousPage()}
 						disabled={!table.getCanPreviousPage()}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
 					>
 						Previous
 					</Button>
+					<div className="text-sm text-gray-500">
+						Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+					</div>
 					<Button
 						variant="outline"
 						size="sm"
 						onClick={() => table.nextPage()}
 						disabled={!table.getCanNextPage()}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
 					>
 						Next
 					</Button>

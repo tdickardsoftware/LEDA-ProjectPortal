@@ -20,9 +20,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import PlacePaymentHistoryContent from "../place-content/place-payment-history-content";
+import PlaceTeamHistoryContent from "./place-team-history-content";
 
 export default function PlacePageContent({ placeData }: { placeData: Place }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] = useState(false);
+	const [isTeamHistoryDialogOpen, setIsTeamHistoryDialogOpen] = useState(false);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -32,6 +36,9 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 		window.location.reload();
 	};
 
+	const handlePaymentHistory = () => {
+		setIsPaymentHistoryDialogOpen(!isPaymentHistoryDialogOpen);
+	};
 	return (
 		<div className="container mx-auto p-6">
 			<div>
@@ -58,6 +65,18 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 								route={placePaymentHistoryRoute}
 								type="place"
 							/>
+							<Button
+								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								onClick={handlePaymentHistory}
+							>
+								Payment History
+							</Button>
+							<Button
+								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								onClick={() => setIsTeamHistoryDialogOpen(true)}
+							>
+								Team History
+							</Button>
 						</div>
 					</FolderTabMed>
 				</div>
@@ -174,6 +193,21 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 						onRefresh={handleRefresh}
 						onClose={handleEdit}
 					/>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isPaymentHistoryDialogOpen} onOpenChange={setIsPaymentHistoryDialogOpen}>
+				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Payment History for {placeData.name}</DialogTitle>
+					</DialogHeader>
+					<PlacePaymentHistoryContent placeData={placeData} />
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isTeamHistoryDialogOpen} onOpenChange={setIsTeamHistoryDialogOpen}>
+				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+					<PlaceTeamHistoryContent placeData={placeData} />
 				</DialogContent>
 			</Dialog>
 		</div>

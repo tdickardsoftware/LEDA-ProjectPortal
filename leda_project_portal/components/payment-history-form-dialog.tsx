@@ -239,7 +239,7 @@ export default function PaymentHistoryFormDialog({
             {buttonIcon}
           </Button>
         ) : (
-          <Button variant="default">{buttonText}</Button>
+          <Button variant="default" className="border-gray-400 text-gray-700">{buttonText}</Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] bg-white">
