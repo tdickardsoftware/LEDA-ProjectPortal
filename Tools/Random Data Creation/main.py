@@ -61,7 +61,7 @@ def generate_fake_data(count):
         inactive_date = fake.date_between(start_date=establish_date, end_date="today") if random.random() < 0.15 else None
         inactive_date_str = inactive_date.strftime("%Y-%m-%d") if inactive_date else "NULL"
         
-        last_membership_fee_payment = 'W24'
+        last_membership_fee_payment = 'UNPAID - NEW PLAYER'
         
         # Use establish_date as datetime object directly
         last_trails_date = fake.date_between(start_date=establish_date, end_date="today")
