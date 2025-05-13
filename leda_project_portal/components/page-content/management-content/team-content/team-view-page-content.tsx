@@ -9,7 +9,7 @@ import {
 } from "@/components//ui/card";
 import TeamEditForm from "@/components/forms/management/team-edit-form";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import { FolderTabMed } from "@/components/ui/folder-tab";
@@ -29,6 +29,11 @@ import {
 	TableBody,
 	TableCell,
 } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import RosterSeasonCodeSelector from "@/components/ui/roster-season-code-selector";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function TeamPageContent({
 	teamData,
@@ -44,6 +49,12 @@ export default function TeamPageContent({
 	}[];
 }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	// Payment status dialog state
+	const [showPaymentPopover, setShowPaymentPopover] = useState(false);
+	const [paymentSeasonCode, setPaymentSeasonCode] = useState<string>("");
+	const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
+	const [paymentStatusData, setPaymentStatusData] = useState<{ ledaId: string, status: 'PAID' | 'PART' | 'UNPAID' }[]>([]);
+	const [filterCurrentSeason, setFilterCurrentSeason] = useState(true);
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -52,6 +63,69 @@ export default function TeamPageContent({
 	const handleRefresh = () => {
 		window.location.reload();
 	};
+
+	// Fetch payment status for team members for the selected season
+	const fetchPaymentStatus = useCallback(async (seasonCode: string) => {
+		if (!seasonCode) return;
+		setPaymentStatusLoading(true);
+		try {
+			const res = await fetch(`${teamPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}&teamId=${teamData.ledaId}`);
+			const data = await res.json();
+			setPaymentStatusData(Array.isArray(data) ? data : []);
+		} catch (e) {
+			console.error("Failed to fetch payment status", e);
+			setPaymentStatusData([]);
+		} finally {
+			setPaymentStatusLoading(false);
+		}
+	}, [teamData.ledaId]);
+
+	const handleShowPaymentStatus = async () => {
+		if (!paymentSeasonCode) return;
+		await fetchPaymentStatus(paymentSeasonCode);
+	};
+
+	// Helper to get payment status for a member
+	const getPaymentStatus = useCallback((ledaId: string) => {
+		const paymentRecord = paymentStatusData.find(p => String(p.ledaId) === String(ledaId));
+		return paymentRecord?.status || null;
+	}, [paymentStatusData]);
+
+	// Helper to render payment status icon with tooltip
+	const renderPaymentStatusIcon = useCallback((ledaId: string) => {
+		const status = getPaymentStatus(ledaId);
+		if (!status) return null;
+		let icon = null;
+		let tooltipText = "";
+		switch (status) {
+			case 'PAID':
+				icon = <CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />;
+				tooltipText = "Paid";
+				break;
+			case 'PART':
+				icon = <AlertTriangle className="h-5 w-5 text-amber-500 ml-2" />;
+				tooltipText = "Partial";
+				break;
+			case 'UNPAID':
+				icon = <XCircle className="h-5 w-5 text-red-500 ml-2" />;
+				tooltipText = "Unpaid";
+				break;
+			default:
+				return null;
+		}
+		return (
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<span>{icon}</span>
+					</TooltipTrigger>
+					<TooltipContent className="bg-white rounded-lg">
+						{tooltipText}
+					</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		);
+	}, [getPaymentStatus]);
 
 	return (
 		<div className="container mx-auto p-6">
@@ -79,6 +153,41 @@ export default function TeamPageContent({
 								route={teamPaymentHistoryRoute}
 								type="team"
 							/>
+							{/* Show Payment Status Popover */}
+							<Popover open={showPaymentPopover} onOpenChange={setShowPaymentPopover}>
+								<PopoverTrigger asChild>
+									<Button
+										className="hover:bg-gray-100 border-gray-400 text-gray-700"
+										onClick={() => setShowPaymentPopover(true)}
+									>
+										Show Payment Status
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent className="w-[350px] bg-white shadow-md rounded-lg border border-gray-200 p-4">
+									<div className="flex flex-col gap-4">
+										<RosterSeasonCodeSelector
+											disabled={filterCurrentSeason}
+											handleSelect={setPaymentSeasonCode}
+											useCurrentSeason={filterCurrentSeason}
+											seasonCode={paymentSeasonCode}
+										/>
+										<div className="flex items-center gap-2">
+											<Checkbox
+												checked={filterCurrentSeason}
+												onCheckedChange={() => setFilterCurrentSeason(!filterCurrentSeason)}
+											/>
+											<span className="text-gray-700 text-sm">Current Season?</span>
+										</div>
+										<Button
+											onClick={handleShowPaymentStatus}
+											disabled={!paymentSeasonCode || paymentStatusLoading}
+											className="w-full"
+										>
+											{paymentStatusLoading ? "Loading..." : "Show Payment Status"}
+										</Button>
+									</div>
+								</PopoverContent>
+							</Popover>
 						</div>
 					</FolderTabMed>
 				</div>
@@ -119,6 +228,8 @@ export default function TeamPageContent({
 											<TableHead className="px-4 py-2 text-center">Captain</TableHead>
 											<TableHead className="px-4 py-2 text-center">Cannot Be Captain</TableHead>
 											<TableHead className="px-4 py-2 text-center">Bad Standing</TableHead>
+											{/* New column for Payment Status */}
+											<TableHead className="px-4 py-2 text-center">Payment Status</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -147,6 +258,10 @@ export default function TeamPageContent({
 														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">No</span>
 													)}
 												</TableCell>
+												{/* Payment Status Icon */}
+												<TableCell className="px-4 py-2 text-center flex items-center justify-center">
+													{renderPaymentStatusIcon(member.ledaId)}
+												</TableCell>
 											</TableRow>
 										))}
 									</TableBody>
@@ -166,7 +281,6 @@ export default function TeamPageContent({
 					</Button>
 				</div>
 			</div>
-
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
 				<DialogContent className="w-fit bg-white">
 					<DialogHeader>
