@@ -181,7 +181,9 @@ export default function PlayerPaymentHistoryContent({
 														year,
 														month - 1,
 														day
-													).toLocaleDateString();
+													).toLocaleDateString("en-US", {
+														timeZone: "UTC",
+													});
 											  })()
 											: "Unknown date"}
 									</SelectItem>
@@ -249,7 +251,9 @@ export default function PlayerPaymentHistoryContent({
 								Date:{" "}
 								{new Date(
 									selectedDate + "T00:00:00"
-								).toLocaleDateString()}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 								<XIcon className="h-3 w-3" />
 							</Button>
 						)}
@@ -324,7 +328,9 @@ export default function PlayerPaymentHistoryContent({
 											{payment.date
 												? new Date(
 														payment.date
-												  ).toLocaleDateString()
+												  ).toLocaleDateString("en-US", {
+													timeZone: "UTC",
+												})
 												: "N/A"}
 										</TableCell>
 										<TableCell className="max-w-[200px] truncate">
