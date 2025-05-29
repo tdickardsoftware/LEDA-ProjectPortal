@@ -168,11 +168,10 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 				if (selectedDate !== "all") {
 					data = data.filter((payment: PaymentHistory) => {
 						const paymentDate = payment.date || "";
-						return (
-							paymentDate &&
-							new Date(paymentDate).toDateString() ===
-								new Date(selectedDate).toDateString()
-						);
+						if (!paymentDate) return false;
+						const paymentUTC = new Date(paymentDate + (paymentDate.endsWith("Z") ? "" : "T00:00:00Z"));
+						const selectedUTC = new Date(selectedDate + "T00:00:00Z");
+						return paymentUTC.toISOString().slice(0, 10) === selectedUTC.toISOString().slice(0, 10);
 					});
 				}
 
@@ -186,8 +185,8 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 
 				// Sort data by date in descending order (newest dates first)
 				data.sort((a: PaymentHistory, b: PaymentHistory) => {
-					const dateA = new Date(a.date || "");
-					const dateB = new Date(b.date || "");
+					const dateA = new Date((a.date || "") + ((a.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
+					const dateB = new Date((b.date || "") + ((b.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
 					return dateB.getTime() - dateA.getTime();
 				});
 
@@ -298,8 +297,8 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 									>
 										{date.paymentDate
 											? new Date(
-													date.paymentDate
-											  ).toLocaleDateString()
+													date.paymentDate + "T00:00:00Z"
+											  ).toLocaleDateString("en-US", { timeZone: "UTC" })
 											: "Unknown date"}
 									</SelectItem>
 								))}
@@ -362,7 +361,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 							className="text-xs flex items-center gap-1 bg-gray-100"
 							onClick={() => setSelectedDate("all")}
 						>
-							Date: {new Date(selectedDate).toLocaleDateString()}
+							Date: {new Date(selectedDate + "T00:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC" })}
 							<XIcon className="h-3 w-3" />
 						</Button>
 					)}
@@ -431,8 +430,8 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 										<span>
 											{payment.date
 												? new Date(
-														payment.date
-												  ).toLocaleDateString()
+														payment.date + (payment.date.endsWith("Z") ? "" : "T00:00:00Z")
+												  ).toLocaleDateString("en-US", { timeZone: "UTC" })
 												: "N/A"}
 										</span>
 									</div>
