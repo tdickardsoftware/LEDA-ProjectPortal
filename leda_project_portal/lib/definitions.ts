@@ -342,3 +342,12 @@ export type TrailsHistoryOfWins = {
 	doublesPlace3: number;
 	doublesPlace4: number;
 }
+//
+// Define type to identify the shape of our data from postgres for a trails history of wins
+//
+export type TrailsTripEligible = {
+	ledaId: number;
+	fullName: string;
+	addressFull: string;
+	totalpoints: number;
+}
