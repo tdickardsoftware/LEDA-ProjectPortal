@@ -16,6 +16,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { trailsRoute } from "@/lib/apiRoutes";
 
 // Define the parameters for the ReportSelector component
 interface ReportSelectorProps {
@@ -28,10 +29,10 @@ interface ReportSelectorProps {
 // Static report data organized by type
 const reportsByType: Record<string, { value: string; label: string }[]> = {
 	trails: [
-		{ value: "trail-usage", label: "Eligible For Trip" },
-		{ value: "trail-maintenance", label: "History of Wins" },
-		{ value: "trail-incidents", label: "Membership List" },
-		{ value: "trail-conditions", label: "Save Points Letter" },
+		{ value: `${trailsRoute}/reports/eligibleForTrip`, label: "Eligible For Trip" },
+		{ value: `${trailsRoute}/reports/historyOfWins`, label: "History of Wins" },
+		{ value: `${trailsRoute}/reports/membershipList`, label: "Membership List" },
+		{ value: `${trailsRoute}/reports/savePointsLetter`, label: "Save Points Letter" },
 	],
 };
 

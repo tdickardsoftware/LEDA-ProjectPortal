@@ -327,3 +327,18 @@ export type PlaceTeamHistoryView = {
 	placeId: number;
 	placeName: string;
 };
+//
+// Define type to identify the shape of our data from postgres for a trails history of wins
+//
+export type TrailsHistoryOfWins = {
+	ledaId: number;
+	fullName: string;
+	singlesPlace1: number;
+	singlesPlace2: number;
+	singlesPlace3: number;
+	singlesPlace4: number;
+	doublesPlace1: number;
+	doublesPlace2: number;
+	doublesPlace3: number;
+	doublesPlace4: number;
+}
