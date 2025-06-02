@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
 import ReportDisplay from "@/components/page-content/reports-content/report-display";
-import { TrailsHistoryOfWins, TrailsTripEligible, TrailsMembershipHistory } from "@/lib/definitions";
+import { TrailsHistoryOfWins, TrailsTripEligible, TrailsMembershipHistory, TrailsPointsList } from "@/lib/definitions";
 import { trailsRoute } from "@/lib/apiRoutes";
 
 export default function TrailsReportLandingContent() {
@@ -136,6 +136,52 @@ export default function TrailsReportLandingContent() {
 		},
 	];
 
+	// Column definitions for points list report
+	const pointsListColumns = [
+		{
+			key: "ledaId",
+			header: "LEDA ID",
+			accessor: (row: TrailsPointsList) => row.ledaId,
+			sortable: true,
+		},
+		{
+			key: "fullname",
+			header: "Full Name",
+			accessor: (row: TrailsPointsList) => row.fullname,
+			sortable: true,
+		},
+		{
+			key: "previousTotalPoints",
+			header: "Previous Points",
+			accessor: (row: TrailsPointsList) => row.previousTotalPoints,
+			sortable: true,
+		},
+		{
+			key: "totalPoints",
+			header: "Total Points",
+			accessor: (row: TrailsPointsList) => row.totalPoints,
+			sortable: true,
+		},
+		{
+			key: "changeBy",
+			header: "Change",
+			accessor: (row: TrailsPointsList) => row.changeBy,
+			sortable: true,
+		},
+		{
+			key: "trailsDate",
+			header: "Trails Date",
+			accessor: (row: TrailsPointsList) => new Date(row.trailsDate).toLocaleDateString(),
+			sortable: true,
+		},
+		{
+			key: "paidDues",
+			header: "Paid Dues",
+			accessor: (row: TrailsPointsList) => row.paidDues ? "Yes" : "No",
+			sortable: true,
+		},
+	];
+
 	// Function to render report content based on selection
 	const renderReportContent = () => {
 		if (!selectedReport) {
@@ -173,6 +219,16 @@ export default function TrailsReportLandingContent() {
 				<ReportDisplay<TrailsMembershipHistory>
 					apiRoute={selectedReport}
 					columns={membershipHistoryColumns}
+					className="h-full"
+				/>
+			);
+		}
+
+		if (selectedReport === `${trailsRoute}/reports/pointsList`) {
+			return (
+				<ReportDisplay<TrailsPointsList>
+					apiRoute={selectedReport}
+					columns={pointsListColumns}
 					className="h-full"
 				/>
 			);

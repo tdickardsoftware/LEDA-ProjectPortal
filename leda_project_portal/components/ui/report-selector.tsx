@@ -32,6 +32,7 @@ const reportsByType: Record<string, { value: string; label: string }[]> = {
 		{ value: `${trailsRoute}/reports/eligibleForTrip`, label: "Eligible For Trip" },
 		{ value: `${trailsRoute}/reports/historyOfWins`, label: "History of Wins" },
 		{ value: `${trailsRoute}/reports/membershipList`, label: "Membership List" },
+        { value: `${trailsRoute}/reports/pointsList`, label: "Points List"},
 		{ value: `${trailsRoute}/reports/savePointsLetter`, label: "Save Points Letter" },
 	],
 };

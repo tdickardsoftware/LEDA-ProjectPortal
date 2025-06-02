@@ -358,3 +358,15 @@ export type TrailsMembershipHistory = {
 	ledaId: number;
 	fullName: string;
 }
+//
+// Define type to identify the shape of our data from postgres for a trails points list
+//
+export type TrailsPointsList = {
+	ledaId: number;
+	previousTotalPoints: number;
+	totalPoints: number;
+	changeBy: number;
+	trailsDate: Date;
+	fullname: string;
+	paidDues: boolean;
+}
