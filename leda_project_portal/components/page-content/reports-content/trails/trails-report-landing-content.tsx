@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
 import ReportDisplay from "@/components/page-content/reports-content/report-display";
-import { TrailsHistoryOfWins, TrailsTripEligible } from "@/lib/definitions";
+import { TrailsHistoryOfWins, TrailsTripEligible, TrailsMembershipHistory } from "@/lib/definitions";
 import { trailsRoute } from "@/lib/apiRoutes";
 
 export default function TrailsReportLandingContent() {
@@ -26,8 +26,6 @@ export default function TrailsReportLandingContent() {
 	// Event handlers
 	const handleReportSelect = (value: string) => {
 		setSelectedReport(value);
-		// TODO: Add navigation logic or report generation based on selected report
-		console.log("Selected report:", value);
 	};
 
 	// Column definitions for historyOfWins report
@@ -122,6 +120,22 @@ export default function TrailsReportLandingContent() {
 		},
 	];
 
+	// Column definitions for membership history report
+	const membershipHistoryColumns = [
+		{
+			key: "ledaId",
+			header: "LEDA ID",
+			accessor: (row: TrailsMembershipHistory) => row.ledaId,
+			sortable: true,
+		},
+		{
+			key: "fullName",
+			header: "Full Name",
+			accessor: (row: TrailsMembershipHistory) => row.fullName,
+			sortable: true,
+		},
+	];
+
 	// Function to render report content based on selection
 	const renderReportContent = () => {
 		if (!selectedReport) {
@@ -149,6 +163,16 @@ export default function TrailsReportLandingContent() {
 				<ReportDisplay<TrailsTripEligible>
 					apiRoute={selectedReport}
 					columns={tripEligibleColumns}
+					className="h-full"
+				/>
+			);
+		}
+
+		if (selectedReport === `${trailsRoute}/reports/membershipList`) {
+			return (
+				<ReportDisplay<TrailsMembershipHistory>
+					apiRoute={selectedReport}
+					columns={membershipHistoryColumns}
 					className="h-full"
 				/>
 			);

@@ -351,3 +351,10 @@ export type TrailsTripEligible = {
 	addressFull: string;
 	totalpoints: number;
 }
+//
+// Define type to identify the shape of our data from postgres for a trails membership history
+//
+export type TrailsMembershipHistory = {
+	ledaId: number;
+	fullName: string;
+}
