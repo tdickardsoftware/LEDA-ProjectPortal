@@ -370,3 +370,12 @@ export type TrailsPointsList = {
 	fullname: string;
 	paidDues: boolean;
 }
+//
+// Define type to identify the shape of our data from postgres for a trails save points letter
+//
+export type TrailsSavePointsLetter = {
+	ledaId: number;
+	fullName: string;
+	lastTrailsDate: Date;
+	totalpoints: number;
+};

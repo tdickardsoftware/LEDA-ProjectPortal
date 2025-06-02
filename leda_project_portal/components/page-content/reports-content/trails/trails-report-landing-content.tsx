@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
 import ReportDisplay from "@/components/page-content/reports-content/report-display";
-import { TrailsHistoryOfWins, TrailsTripEligible, TrailsMembershipHistory, TrailsPointsList } from "@/lib/definitions";
+import { TrailsHistoryOfWins, TrailsTripEligible, TrailsMembershipHistory, TrailsPointsList, TrailsSavePointsLetter } from "@/lib/definitions";
 import { trailsRoute } from "@/lib/apiRoutes";
 
 export default function TrailsReportLandingContent() {
@@ -182,6 +182,34 @@ export default function TrailsReportLandingContent() {
 		},
 	];
 
+	// Column definitions for save points letter report
+	const savePointsLetterColumns = [
+		{
+			key: "ledaId",
+			header: "LEDA ID",
+			accessor: (row: TrailsSavePointsLetter) => row.ledaId,
+			sortable: true,
+		},
+		{
+			key: "fullName",
+			header: "Full Name",
+			accessor: (row: TrailsSavePointsLetter) => row.fullName,
+			sortable: true,
+		},
+		{
+			key: "lastTrailsDate",
+			header: "Last Trails Date",
+			accessor: (row: TrailsSavePointsLetter) => new Date(row.lastTrailsDate).toLocaleDateString(),
+			sortable: true,
+		},
+		{
+			key: "totalpoints",
+			header: "Total Points",
+			accessor: (row: TrailsSavePointsLetter) => row.totalpoints,
+			sortable: true,
+		},
+	];
+
 	// Function to render report content based on selection
 	const renderReportContent = () => {
 		if (!selectedReport) {
@@ -229,6 +257,16 @@ export default function TrailsReportLandingContent() {
 				<ReportDisplay<TrailsPointsList>
 					apiRoute={selectedReport}
 					columns={pointsListColumns}
+					className="h-full"
+				/>
+			);
+		}
+
+		if (selectedReport === `${trailsRoute}/reports/savePointsLetter`) {
+			return (
+				<ReportDisplay<TrailsSavePointsLetter>
+					apiRoute={selectedReport}
+					columns={savePointsLetterColumns}
 					className="h-full"
 				/>
 			);
