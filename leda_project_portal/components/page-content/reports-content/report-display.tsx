@@ -114,59 +114,67 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 
 	return (
 		<div className={className}>
-			<Table>
-				<TableHeader>
-					<TableRow>
-						{columns.map((column) => (
-							<TableHead
-								key={column.key}
-								className={
-									column.sortable
-										? "cursor-pointer hover:bg-gray-50"
-										: ""
-								}
-								onClick={() =>
-									column.sortable && handleSort(column.key)
-								}
-							>
-								<div className="flex items-center gap-1">
-									{column.header}
-									{column.sortable &&
-										sortColumn === column.key && (
-											<span className="text-xs">
-												{sortDirection === "asc"
-													? "↑"
-													: "↓"}
-											</span>
-										)}
-								</div>
-							</TableHead>
-						))}
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{sortedData.length === 0 ? (
-						<TableRow>
-							<TableCell
-								colSpan={columns.length}
-								className="text-center py-8"
-							>
-								No data available
-							</TableCell>
+			<div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+				<Table>
+					<TableHeader>
+						<TableRow className="border-b border-gray-200 bg-gray-50/50">
+							{columns.map((column) => (
+								<TableHead
+									key={column.key}
+									className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 ${
+										column.sortable
+											? "cursor-pointer hover:bg-gray-100 transition-colors"
+											: ""
+									}`}
+									onClick={() =>
+										column.sortable && handleSort(column.key)
+									}
+								>
+									<div className="flex items-center gap-2">
+										{column.header}
+										{column.sortable &&
+											sortColumn === column.key && (
+												<span className="text-xs text-gray-600">
+													{sortDirection === "asc"
+														? "↑"
+														: "↓"}
+												</span>
+											)}
+									</div>
+								</TableHead>
+							))}
 						</TableRow>
-					) : (
-						sortedData.map((row, index) => (
-							<TableRow key={index}>
-								{columns.map((column) => (
-									<TableCell key={column.key}>
-										{column.accessor(row)}
-									</TableCell>
-								))}
+					</TableHeader>
+					<TableBody>
+						{sortedData.length === 0 ? (
+							<TableRow>
+								<TableCell
+									colSpan={columns.length}
+									className="px-6 py-12 text-center text-gray-500"
+								>
+									No data available
+								</TableCell>
 							</TableRow>
-						))
-					)}
-				</TableBody>
-			</Table>
+						) : (
+							sortedData.map((row, index) => (
+								<TableRow
+									key={index}
+									className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+								>
+									{columns.map((column) => (
+										<TableCell
+											key={column.key}
+											className="px-6 py-4 text-sm text-gray-900"
+										>
+											{column.accessor(row)}
+										</TableCell>
+									))}
+								</TableRow>
+							))
+						)}
+					</TableBody>
+				</Table>
+			</div>
 		</div>
 	);
 }
