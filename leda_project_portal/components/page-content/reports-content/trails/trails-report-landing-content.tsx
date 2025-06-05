@@ -27,22 +27,27 @@ import {
 	savePointsLetterColumns
 } from "@/lib/trails-report-definitions";
 import TrailsTripEligibleReport from "./react-pdf/trails-trip-eligible-report";
+import TrailsHistoryOfWinsReport from "./react-pdf/trails-history-of-wins-report";
+import TrailsMembershipHistoryReport from "./react-pdf/trails-membership-history-report";
 
 export default function TrailsReportLandingContent() {
 	// State declarations
 	const [selectedReport, setSelectedReport] = useState<string>("");
 	const [reportData, setReportData] = useState<unknown[]>([]);
+	const [dataFetched, setDataFetched] = useState<boolean>(false);
 
 	// Event handlers
 	const handleReportSelect = (value: string) => {
 		if (value != selectedReport) {
 			setSelectedReport(value);
 			setReportData([]); // Clear previous data when selecting new report
+			setDataFetched(false); // Reset data fetched state
 		}
 	};
 
 	const handleDataFetch = useCallback((data: unknown[]) => {
 		setReportData(data);
+		setDataFetched(true);
 	}, []);
 
 	// Function to render report content based on selection
@@ -59,12 +64,26 @@ export default function TrailsReportLandingContent() {
 
 		if (selectedReport === `${trailsRoute}/reports/historyOfWins`) {
 			return (
-				<ReportDisplay<TrailsHistoryOfWins>
-					apiRoute={selectedReport}
-					columns={historyOfWinsColumns}
-					className="h-full"
-					onDataFetch={handleDataFetch}
-				/>
+				<>
+					<div className="mb-4">
+						
+						{dataFetched && (
+							<PDFDownloadLink
+								document={<TrailsHistoryOfWinsReport data={reportData as TrailsHistoryOfWins[]} />}
+								fileName={`historyOfWins-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`}
+								className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+							>
+								{({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF')}
+							</PDFDownloadLink>
+						)}
+					</div>
+					<ReportDisplay<TrailsHistoryOfWins>
+						apiRoute={selectedReport}
+						columns={historyOfWinsColumns}
+						className="h-full"
+						onDataFetch={handleDataFetch}
+					/>
+				</>
 			);
 		}
 
@@ -72,13 +91,15 @@ export default function TrailsReportLandingContent() {
 			return (
 				<>
 					<div className="mb-4">
-						<PDFDownloadLink
-							document={<TrailsTripEligibleReport data={reportData as TrailsTripEligible[]} />}
-							fileName={`eligibleForTrip-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`}
-							className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-						>
-							{({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF')}
-						</PDFDownloadLink>
+						{dataFetched && (
+							<PDFDownloadLink
+								document={<TrailsTripEligibleReport data={reportData as TrailsTripEligible[]} />}
+								fileName={`eligibleForTrip-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`}
+								className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+							>
+								{({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF')}
+							</PDFDownloadLink>
+						)}
 					</div>
 					<ReportDisplay<TrailsTripEligible>
 						apiRoute={selectedReport}
@@ -92,12 +113,25 @@ export default function TrailsReportLandingContent() {
 
 		if (selectedReport === `${trailsRoute}/reports/membershipList`) {
 			return (
-				<ReportDisplay<TrailsMembershipHistory>
-					apiRoute={selectedReport}
-					columns={membershipHistoryColumns}
-					className="h-full"
-					onDataFetch={handleDataFetch}
-				/>
+				<>
+					<div className="mb-4">
+						{dataFetched && (
+							<PDFDownloadLink
+								document={<TrailsMembershipHistoryReport data={reportData as TrailsMembershipHistory[]} />}
+								fileName={`membershipHistory-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`}
+								className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+							>
+								{({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF')}
+							</PDFDownloadLink>
+						)}
+					</div>
+					<ReportDisplay<TrailsMembershipHistory>
+						apiRoute={selectedReport}
+						columns={membershipHistoryColumns}
+						className="h-full"
+						onDataFetch={handleDataFetch}
+					/>
+				</>
 			);
 		}
 
