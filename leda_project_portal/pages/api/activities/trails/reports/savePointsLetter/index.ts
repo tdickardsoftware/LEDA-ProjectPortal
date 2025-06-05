@@ -13,7 +13,7 @@ export default async function handler(
 		try {
 			// Execute the database query to fetch season code information
 			const result = await query<TrailsSavePointsLetter>(
-				'SELECT "ledaId", "fullName", "lastTrailsDate", "totalpoints" FROM public.leda_reports_trails_save_points'
+				'SELECT "ledaId", "fullName", "addressFirstLine", "addressSecondLine", "lastTrailsDate", "totalpoints" FROM public.leda_reports_trails_save_points'
 			);
 			// Respond with the query result
 			res.status(200).json(result.rows);

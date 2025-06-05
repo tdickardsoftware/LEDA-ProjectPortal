@@ -30,6 +30,7 @@ import TrailsTripEligibleReport from "./react-pdf/trails-trip-eligible-report";
 import TrailsHistoryOfWinsReport from "./react-pdf/trails-history-of-wins-report";
 import TrailsMembershipHistoryReport from "./react-pdf/trails-membership-history-report";
 import TrailsPointsListReport from "./react-pdf/trails-points-list-report";
+import TrailsSavePointsLetterReport from "./react-pdf/trails-save-points-letter-report";
 
 export default function TrailsReportLandingContent() {
 	// State declarations
@@ -162,12 +163,25 @@ export default function TrailsReportLandingContent() {
 
 		if (selectedReport === `${trailsRoute}/reports/savePointsLetter`) {
 			return (
-				<ReportDisplay<TrailsSavePointsLetter>
-					apiRoute={selectedReport}
-					columns={savePointsLetterColumns}
-					className="h-full"
-					onDataFetch={handleDataFetch}
-				/>
+				<>
+					<div className="mb-4">
+						{dataFetched && (
+							<PDFDownloadLink
+								document={<TrailsSavePointsLetterReport data={reportData as TrailsSavePointsLetter[]} />}
+								fileName={`savePointsLetter-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`}
+								className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+							>
+								{({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF')}
+							</PDFDownloadLink>
+						)}
+					</div>
+					<ReportDisplay<TrailsSavePointsLetter>
+						apiRoute={selectedReport}
+						columns={savePointsLetterColumns}
+						className="h-full"
+						onDataFetch={handleDataFetch}
+					/>
+				</>
 			);
 		}
 

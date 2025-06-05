@@ -376,6 +376,8 @@ export type TrailsPointsList = {
 export type TrailsSavePointsLetter = {
 	ledaId: number;
 	fullName: string;
+	addressFirstLine: string;
+	addressSecondLine: string;
 	lastTrailsDate: Date;
 	totalpoints: number;
 };
