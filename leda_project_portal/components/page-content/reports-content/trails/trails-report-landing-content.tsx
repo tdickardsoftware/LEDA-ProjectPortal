@@ -17,14 +17,20 @@ import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import ReportDisplay from "@/components/page-content/reports-content/report-display";
-import { TrailsHistoryOfWins, TrailsTripEligible, TrailsMembershipHistory, TrailsPointsList, TrailsSavePointsLetter } from "@/lib/definitions";
+import {
+	TrailsHistoryOfWins,
+	TrailsTripEligible,
+	TrailsMembershipHistory,
+	TrailsPointsList,
+	TrailsSavePointsLetter,
+} from "@/lib/definitions";
 import { trailsRoute } from "@/lib/apiRoutes";
 import {
 	historyOfWinsColumns,
 	tripEligibleColumns,
 	membershipHistoryColumns,
 	pointsListColumns,
-	savePointsLetterColumns
+	savePointsLetterColumns,
 } from "@/lib/trails-report-definitions";
 import TrailsTripEligibleReport from "./react-pdf/trails-trip-eligible-report";
 import TrailsHistoryOfWinsReport from "./react-pdf/trails-history-of-wins-report";
@@ -63,24 +69,79 @@ export default function TrailsReportLandingContent() {
 
 		switch (selectedReport) {
 			case `${trailsRoute}/reports/historyOfWins`:
-				document = <TrailsHistoryOfWinsReport data={reportData as TrailsHistoryOfWins[]} />;
-				fileName = `historyOfWins-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`;
+				document = (
+					<TrailsHistoryOfWinsReport
+						data={reportData as TrailsHistoryOfWins[]}
+					/>
+				);
+				fileName = `historyOfWins-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
 				break;
 			case `${trailsRoute}/reports/eligibleForTrip`:
-				document = <TrailsTripEligibleReport data={reportData as TrailsTripEligible[]} />;
-				fileName = `eligibleForTrip-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`;
+				document = (
+					<TrailsTripEligibleReport
+						data={reportData as TrailsTripEligible[]}
+					/>
+				);
+				fileName = `eligibleForTrip-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
 				break;
 			case `${trailsRoute}/reports/membershipList`:
-				document = <TrailsMembershipHistoryReport data={reportData as TrailsMembershipHistory[]} />;
-				fileName = `membershipHistory-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`;
+				document = (
+					<TrailsMembershipHistoryReport
+						data={reportData as TrailsMembershipHistory[]}
+					/>
+				);
+				fileName = `membershipHistory-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
 				break;
 			case `${trailsRoute}/reports/pointsList`:
-				document = <TrailsPointsListReport data={reportData as TrailsPointsList[]} />;
-				fileName = `pointsList-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`;
+				document = (
+					<TrailsPointsListReport
+						data={reportData as TrailsPointsList[]}
+					/>
+				);
+				fileName = `pointsList-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
 				break;
 			case `${trailsRoute}/reports/savePointsLetter`:
-				document = <TrailsSavePointsLetterReport data={reportData as TrailsSavePointsLetter[]} />;
-				fileName = `savePointsLetter-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`;
+				document = (
+					<TrailsSavePointsLetterReport
+						data={reportData as TrailsSavePointsLetter[]}
+					/>
+				);
+				fileName = `savePointsLetter-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
 				break;
 			default:
 				return null;
@@ -96,16 +157,43 @@ export default function TrailsReportLandingContent() {
 					<>
 						{loading ? (
 							<>
-								<svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-									<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-									<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								<svg
+									className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+								>
+									<circle
+										className="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										strokeWidth="4"
+									></circle>
+									<path
+										className="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+									></path>
 								</svg>
 								Generating PDF...
 							</>
 						) : (
 							<>
-								<svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-									<path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+								<svg
+									className="mr-2 h-4 w-4"
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+									strokeWidth={1.5}
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+									/>
 								</svg>
 								Download PDF
 							</>
@@ -191,7 +279,8 @@ export default function TrailsReportLandingContent() {
 						Report Selected
 					</h2>
 					<p className="text-gray-600">
-						You have selected: <span className="font-medium">{selectedReport}</span>
+						You have selected:{" "}
+						<span className="font-medium">{selectedReport}</span>
 					</p>
 					<p className="text-sm text-gray-500 mt-2">
 						Report functionality will be implemented here.

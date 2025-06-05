@@ -127,7 +127,8 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 											: ""
 									}`}
 									onClick={() =>
-										column.sortable && handleSort(column.key)
+										column.sortable &&
+										handleSort(column.key)
 									}
 								>
 									<div className="flex items-center gap-2">

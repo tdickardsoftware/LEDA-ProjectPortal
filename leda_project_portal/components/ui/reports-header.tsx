@@ -1,81 +1,83 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image as PDFImage } from '@react-pdf/renderer';
+import React from "react";
+import { View, Text, StyleSheet, Image as PDFImage } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    alignItems: 'flex-start',
-  },
-  logoContainer: {
-    width: 60,
-    height: 60,
-    marginRight: 20,
-    border: '1 solid black',
-    padding: 3,
-  },
-  logo: {
-    width: '100%',
-    height: '100%',
-  },
-  headerText: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  organizationName: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  address: {
-    fontSize: 9,
-    marginBottom: 1,
-  },
-  title: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 15,
-    marginTop: 5,
-  },
-  dateContainer: {
-    position: 'relative',
-    top: 0,
-    right: 0,
-  },
-  dateLabel: {
-    fontSize: 8,
-    fontWeight: 'bold',
-  },
-  dateValue: {
-    fontSize: 8,
-  },
+	header: {
+		flexDirection: "row",
+		marginBottom: 20,
+		alignItems: "flex-start",
+	},
+	logoContainer: {
+		width: 60,
+		height: 60,
+		marginRight: 20,
+		border: "1 solid black",
+		padding: 3,
+	},
+	logo: {
+		width: "100%",
+		height: "100%",
+	},
+	headerText: {
+		flex: 1,
+		alignItems: "center",
+	},
+	organizationName: {
+		fontSize: 11,
+		fontWeight: "bold",
+		marginBottom: 2,
+	},
+	address: {
+		fontSize: 9,
+		marginBottom: 1,
+	},
+	title: {
+		fontSize: 12,
+		fontWeight: "bold",
+		textAlign: "center",
+		marginBottom: 15,
+		marginTop: 5,
+	},
+	dateContainer: {
+		position: "relative",
+		top: 0,
+		right: 0,
+	},
+	dateLabel: {
+		fontSize: 8,
+		fontWeight: "bold",
+	},
+	dateValue: {
+		fontSize: 8,
+	},
 });
 
 interface ReportsHeaderProps {
-  title: string;
-  reportDate: string;
+	title: string;
+	reportDate: string;
 }
 
-export const ReportsHeader: React.FC<ReportsHeaderProps> = ({ title, reportDate }) => (
-  <View style={styles.header} fixed>
-    <View style={styles.logoContainer}>
-      <PDFImage 
-        style={styles.logo}
-        src="/leda-reports-logo.png"
-      />
-    </View>
-    <View style={styles.headerText}>
-      <Text style={styles.organizationName}>Lake Erie Dart Association, Inc.</Text>
-      <Text style={styles.address}>7537 Mentor Ave. Suite #107</Text>
-      <Text style={styles.address}>Mentor, OH 44060</Text>
-      <Text style={styles.title}>{title}</Text>
-    </View>
-    <View style={styles.dateContainer}>
-      <Text style={styles.dateLabel}>DATE</Text>
-      <Text style={styles.dateValue}>{reportDate}</Text>
-    </View>
-  </View>
+export const ReportsHeader: React.FC<ReportsHeaderProps> = ({
+	title,
+	reportDate,
+}) => (
+	<View style={styles.header} fixed>
+		<View style={styles.logoContainer}>
+			<PDFImage style={styles.logo} src="/leda-reports-logo.png" />
+		</View>
+		<View style={styles.headerText}>
+			<Text style={styles.organizationName}>
+				Lake Erie Dart Association, Inc.
+			</Text>
+			<Text style={styles.address}>7537 Mentor Ave. Suite #107</Text>
+			<Text style={styles.address}>Mentor, OH 44060</Text>
+			<Text style={styles.title}>{title}</Text>
+		</View>
+		<View style={styles.dateContainer}>
+			<Text style={styles.dateLabel}>DATE</Text>
+			<Text style={styles.dateValue}>{reportDate}</Text>
+		</View>
+	</View>
 );
 
 export default ReportsHeader;

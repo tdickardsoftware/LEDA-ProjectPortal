@@ -1,4 +1,10 @@
-import { TrailsHistoryOfWins, TrailsTripEligible, TrailsMembershipHistory, TrailsPointsList, TrailsSavePointsLetter } from "./definitions";
+import {
+	TrailsHistoryOfWins,
+	TrailsTripEligible,
+	TrailsMembershipHistory,
+	TrailsPointsList,
+	TrailsSavePointsLetter,
+} from "./definitions";
 
 // Column definitions for historyOfWins report
 export const historyOfWinsColumns = [
@@ -143,13 +149,14 @@ export const pointsListColumns = [
 	{
 		key: "trailsDate",
 		header: "Trails Date",
-		accessor: (row: TrailsPointsList) => new Date(row.trailsDate).toLocaleDateString(),
+		accessor: (row: TrailsPointsList) =>
+			new Date(row.trailsDate).toLocaleDateString(),
 		sortable: true,
 	},
 	{
 		key: "paidDues",
 		header: "Paid Dues",
-		accessor: (row: TrailsPointsList) => row.paidDues ? "Yes" : "No",
+		accessor: (row: TrailsPointsList) => (row.paidDues ? "Yes" : "No"),
 		sortable: true,
 	},
 ];
@@ -171,7 +178,8 @@ export const savePointsLetterColumns = [
 	{
 		key: "lastTrailsDate",
 		header: "Last Trails Date",
-		accessor: (row: TrailsSavePointsLetter) => new Date(row.lastTrailsDate).toLocaleDateString(),
+		accessor: (row: TrailsSavePointsLetter) =>
+			new Date(row.lastTrailsDate).toLocaleDateString(),
 		sortable: true,
 	},
 	{

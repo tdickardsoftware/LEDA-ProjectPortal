@@ -23,17 +23,29 @@ interface ReportSelectorProps {
 	disabled?: boolean;
 	handleSelect: (value: string) => void;
 	selectedReport: string;
-    type: string;
+	type: string;
 }
 
 // Static report data organized by type
 const reportsByType: Record<string, { value: string; label: string }[]> = {
 	trails: [
-		{ value: `${trailsRoute}/reports/eligibleForTrip`, label: "Eligible For Trip" },
-		{ value: `${trailsRoute}/reports/historyOfWins`, label: "History of Wins" },
-		{ value: `${trailsRoute}/reports/membershipList`, label: "Membership List" },
-        { value: `${trailsRoute}/reports/pointsList`, label: "Points List"},
-		{ value: `${trailsRoute}/reports/savePointsLetter`, label: "Save Points Letter" },
+		{
+			value: `${trailsRoute}/reports/eligibleForTrip`,
+			label: "Eligible For Trip",
+		},
+		{
+			value: `${trailsRoute}/reports/historyOfWins`,
+			label: "History of Wins",
+		},
+		{
+			value: `${trailsRoute}/reports/membershipList`,
+			label: "Membership List",
+		},
+		{ value: `${trailsRoute}/reports/pointsList`, label: "Points List" },
+		{
+			value: `${trailsRoute}/reports/savePointsLetter`,
+			label: "Save Points Letter",
+		},
 	],
 };
 
@@ -42,7 +54,7 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 	disabled,
 	handleSelect,
 	selectedReport,
-    type,
+	type,
 }) => {
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
@@ -59,7 +71,10 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild className="bg-white border-gray-200">
+					<PopoverTrigger
+						asChild
+						className="bg-white border-gray-200"
+					>
 						<Button
 							variant="outline"
 							role="combobox"
@@ -69,7 +84,8 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 						>
 							{selectedReport // Use the selectedReport prop to display the selected report label
 								? reports.find(
-										(report) => report.value === selectedReport
+										(report) =>
+											report.value === selectedReport
 								  )?.label
 								: "Select a report..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -98,7 +114,8 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 											<Check
 												className={cn(
 													"mr-2 h-4 w-4",
-													report.value === selectedReport
+													report.value ===
+														selectedReport
 														? "opacity-100"
 														: "opacity-0"
 												)}
