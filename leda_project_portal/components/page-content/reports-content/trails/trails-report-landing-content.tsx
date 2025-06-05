@@ -11,10 +11,11 @@
  * specifically on report selection functionality.
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import ReportDisplay from "@/components/page-content/reports-content/report-display";
 import { TrailsHistoryOfWins, TrailsTripEligible, TrailsMembershipHistory, TrailsPointsList, TrailsSavePointsLetter } from "@/lib/definitions";
 import { trailsRoute } from "@/lib/apiRoutes";
@@ -25,15 +26,24 @@ import {
 	pointsListColumns,
 	savePointsLetterColumns
 } from "@/lib/trails-report-definitions";
+import TrailsTripEligibleReport from "./react-pdf/trails-trip-eligible-report";
 
 export default function TrailsReportLandingContent() {
 	// State declarations
 	const [selectedReport, setSelectedReport] = useState<string>("");
+	const [reportData, setReportData] = useState<unknown[]>([]);
 
 	// Event handlers
 	const handleReportSelect = (value: string) => {
-		setSelectedReport(value);
+		if (value != selectedReport) {
+			setSelectedReport(value);
+			setReportData([]); // Clear previous data when selecting new report
+		}
 	};
+
+	const handleDataFetch = useCallback((data: unknown[]) => {
+		setReportData(data);
+	}, []);
 
 	// Function to render report content based on selection
 	const renderReportContent = () => {
@@ -53,17 +63,30 @@ export default function TrailsReportLandingContent() {
 					apiRoute={selectedReport}
 					columns={historyOfWinsColumns}
 					className="h-full"
+					onDataFetch={handleDataFetch}
 				/>
 			);
 		}
 
 		if (selectedReport === `${trailsRoute}/reports/eligibleForTrip`) {
 			return (
-				<ReportDisplay<TrailsTripEligible>
-					apiRoute={selectedReport}
-					columns={tripEligibleColumns}
-					className="h-full"
-				/>
+				<>
+					<div className="mb-4">
+						<PDFDownloadLink
+							document={<TrailsTripEligibleReport data={reportData as TrailsTripEligible[]} />}
+							fileName={`eligibleForTrip-${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '')}.pdf`}
+							className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+						>
+							{({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF')}
+						</PDFDownloadLink>
+					</div>
+					<ReportDisplay<TrailsTripEligible>
+						apiRoute={selectedReport}
+						columns={tripEligibleColumns}
+						className="h-full"
+						onDataFetch={handleDataFetch}
+					/>
+				</>
 			);
 		}
 
@@ -73,6 +96,7 @@ export default function TrailsReportLandingContent() {
 					apiRoute={selectedReport}
 					columns={membershipHistoryColumns}
 					className="h-full"
+					onDataFetch={handleDataFetch}
 				/>
 			);
 		}
@@ -83,6 +107,7 @@ export default function TrailsReportLandingContent() {
 					apiRoute={selectedReport}
 					columns={pointsListColumns}
 					className="h-full"
+					onDataFetch={handleDataFetch}
 				/>
 			);
 		}
@@ -93,6 +118,7 @@ export default function TrailsReportLandingContent() {
 					apiRoute={selectedReport}
 					columns={savePointsLetterColumns}
 					className="h-full"
+					onDataFetch={handleDataFetch}
 				/>
 			);
 		}

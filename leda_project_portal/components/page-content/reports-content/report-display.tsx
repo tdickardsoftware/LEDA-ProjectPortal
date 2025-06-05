@@ -23,12 +23,14 @@ interface ReportDisplayProps<T> {
 	apiRoute: string;
 	columns: ColumnDef<T>[];
 	className?: string;
+	onDataFetch?: (data: T[]) => void;
 }
 
 export default function ReportDisplay<T extends Record<string, unknown>>({
 	apiRoute,
 	columns,
 	className = "",
+	onDataFetch,
 }: ReportDisplayProps<T>) {
 	const [data, setData] = useState<T[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -46,13 +48,19 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			const result = await response.json();
-			setData(result.data || result);
+			const fetchedData = result.data || result;
+			setData(fetchedData);
+
+			// Call the callback if provided
+			if (onDataFetch) {
+				onDataFetch(fetchedData);
+			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "An error occurred");
 		} finally {
 			setLoading(false);
 		}
-	}, [apiRoute]);
+	}, [apiRoute, onDataFetch]); // Remove onDataFetch from dependencies
 
 	useEffect(() => {
 		fetchData();
