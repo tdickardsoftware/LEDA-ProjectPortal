@@ -327,3 +327,57 @@ export type PlaceTeamHistoryView = {
 	placeId: number;
 	placeName: string;
 };
+//
+// Define type to identify the shape of our data from postgres for a trails history of wins
+//
+export type TrailsHistoryOfWins = {
+	ledaId: number;
+	fullName: string;
+	singlesPlace1: number;
+	singlesPlace2: number;
+	singlesPlace3: number;
+	singlesPlace4: number;
+	doublesPlace1: number;
+	doublesPlace2: number;
+	doublesPlace3: number;
+	doublesPlace4: number;
+}
+//
+// Define type to identify the shape of our data from postgres for a trails history of wins
+//
+export type TrailsTripEligible = {
+	ledaId: number;
+	fullName: string;
+	addressFull: string;
+	totalpoints: number;
+}
+//
+// Define type to identify the shape of our data from postgres for a trails membership history
+//
+export type TrailsMembershipHistory = {
+	ledaId: number;
+	fullName: string;
+}
+//
+// Define type to identify the shape of our data from postgres for a trails points list
+//
+export type TrailsPointsList = {
+	ledaId: number;
+	previousTotalPoints: number;
+	totalPoints: number;
+	changeBy: number;
+	trailsDate: Date;
+	fullname: string;
+	paidDues: boolean;
+}
+//
+// Define type to identify the shape of our data from postgres for a trails save points letter
+//
+export type TrailsSavePointsLetter = {
+	ledaId: number;
+	fullName: string;
+	addressFirstLine: string;
+	addressSecondLine: string;
+	lastTrailsDate: Date;
+	totalpoints: number;
+};

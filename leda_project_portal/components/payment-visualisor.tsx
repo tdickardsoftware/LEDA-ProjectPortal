@@ -167,7 +167,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 				// Filter by selected date if not "all"
 				if (selectedDate !== "all") {
 					data = data.filter((payment: PaymentHistory) => {
-						const paymentDate = payment.date || "";
+						const paymentDate = String(payment.date || "");
 						if (!paymentDate) return false;
 						const paymentUTC = new Date(paymentDate + (paymentDate.endsWith("Z") ? "" : "T00:00:00Z"));
 						const selectedUTC = new Date(selectedDate + "T00:00:00Z");
@@ -185,8 +185,8 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 
 				// Sort data by date in descending order (newest dates first)
 				data.sort((a: PaymentHistory, b: PaymentHistory) => {
-					const dateA = new Date((a.date || "") + ((a.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
-					const dateB = new Date((b.date || "") + ((b.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
+					const dateA = new Date(String(a.date || "") + (String(a.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
+					const dateB = new Date(String(b.date || "") + (String(b.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
 					return dateB.getTime() - dateA.getTime();
 				});
 
@@ -430,7 +430,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 										<span>
 											{payment.date
 												? new Date(
-														payment.date + (payment.date.endsWith("Z") ? "" : "T00:00:00Z")
+														String(payment.date) + (String(payment.date).endsWith("Z") ? "" : "T00:00:00Z")
 												  ).toLocaleDateString("en-US", { timeZone: "UTC" })
 												: "N/A"}
 										</span>

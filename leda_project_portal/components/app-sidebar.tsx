@@ -208,28 +208,6 @@ const data = {
 				{
 					title: "Trails",
 					url: "/Portal/Reports/Trails",
-					items: [
-						{
-							title: "Eligible for Trip",
-							url: "/Portal/Reports/Trails/Eligible-For-Trip",
-						},
-						{
-							title: "History of Wins",
-							url: "/Portal/Reports/Trails/History-Of-Wins",
-						},
-						{
-							title: "Membership List",
-							url: "/Portal/Reports/Trails/Membership-List",
-						},
-						{
-							title: "Points List",
-							url: "/Portal/Reports/Trails/Points-List",
-						},
-						{
-							title: "Save Points Letter",
-							url: "/Portal/Reports/Trails/Save-Points-Letter",
-						},
-					],
 				},
 			],
 		},
