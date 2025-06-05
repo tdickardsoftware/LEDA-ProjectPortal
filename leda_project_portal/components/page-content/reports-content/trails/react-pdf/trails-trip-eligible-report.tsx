@@ -1,6 +1,8 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Image as PDFImage } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { TrailsTripEligible } from '@/lib/definitions';
+import ReportsHeader from '@/components/ui/reports-header';
+import ReportsFooter from '@/components/ui/reports-footer';
 
 // Define styles for the PDF document
 const styles = StyleSheet.create({
@@ -146,26 +148,7 @@ export const TrailsTripEligibleReport: React.FC<TrailsTripEligibleReportProps> =
     <Document>
       <Page size="A4" style={styles.page} wrap>
         {/* Header Section */}
-        <View style={styles.header} fixed>
-          <View style={styles.logoContainer}>
-            <PDFImage 
-              style={styles.logo}
-              src="/leda-reports-logo.png"
-            />
-          </View>
-          
-          <View style={styles.headerText}>
-            <Text style={styles.organizationName}>Lake Erie Dart Association, Inc.</Text>
-            <Text style={styles.address}>7537 Mentor Ave. Suite #107</Text>
-            <Text style={styles.address}>Mentor, OH 44060</Text>
-            <Text style={styles.title}>Trails Trip Eligible List</Text>
-          </View>
-          
-          <View style={styles.dateContainer}>
-            <Text style={styles.dateLabel}>DATE</Text>
-            <Text style={styles.dateValue}>{reportDate}</Text>
-          </View>
-        </View>
+        <ReportsHeader title="Trails Trip Eligible List" reportDate={reportDate} />
 
         {/* Data Table */}
         <View style={styles.table}>
@@ -197,11 +180,7 @@ export const TrailsTripEligibleReport: React.FC<TrailsTripEligibleReportProps> =
         </View>
 
         {/* Footer Section */}
-        <View style={styles.footer} fixed>
-          <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => 
-            `Page ${pageNumber} of ${totalPages}`
-          } />
-        </View>
+        <ReportsFooter />
       </Page>
     </Document>
   );
