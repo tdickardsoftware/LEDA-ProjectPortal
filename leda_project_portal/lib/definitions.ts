@@ -381,3 +381,14 @@ export type TrailsSavePointsLetter = {
 	lastTrailsDate: Date;
 	totalpoints: number;
 };
+//
+// Define type to identify the shape of our data from postgres for the folder label report
+//
+export type CaptainsMtgFolderLabels = {
+	teamName: string;
+	placeName: string;
+	captainFullName: string;
+	divisionLetter: string;
+	subdivisionNumber: string;
+	teamLetter: string;
+}

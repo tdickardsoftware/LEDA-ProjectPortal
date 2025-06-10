@@ -47,6 +47,12 @@ const reportsByType: Record<string, { value: string; label: string }[]> = {
 			label: "Save Points Letter",
 		},
 	],
+	captainsMeeting: [
+		{
+			value: "/api/activities/roster/reportsFolderLabels",
+			label: "Folder Labels",
+		},
+	],
 };
 
 // ReportSelector component definition

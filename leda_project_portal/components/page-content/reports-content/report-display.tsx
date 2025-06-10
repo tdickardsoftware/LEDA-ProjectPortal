@@ -10,7 +10,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ColumnDef<T> {
 	key: string;
@@ -37,6 +37,8 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	const [error, setError] = useState<string | null>(null);
 	const [sortColumn, setSortColumn] = useState<string | null>(null);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+	const [currentPage, setCurrentPage] = useState(1);
+	const [itemsPerPage] = useState(10);
 
 	const fetchData = useCallback(async () => {
 		setLoading(true);
@@ -91,6 +93,19 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 			return 0;
 		});
 	}, [data, sortColumn, sortDirection]);
+
+	const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+	const startIndex = (currentPage - 1) * itemsPerPage;
+	const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
+
+	const handlePageChange = (page: number) => {
+		setCurrentPage(page);
+	};
+
+	// Reset to first page when data changes
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [data]);
 
 	if (loading) {
 		return (
@@ -147,7 +162,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{sortedData.length === 0 ? (
+						{paginatedData.length === 0 ? (
 							<TableRow>
 								<TableCell
 									colSpan={columns.length}
@@ -157,9 +172,9 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 								</TableCell>
 							</TableRow>
 						) : (
-							sortedData.map((row, index) => (
+							paginatedData.map((row, index) => (
 								<TableRow
-									key={index}
+									key={startIndex + index}
 									className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
 								>
 									{columns.map((column) => (
@@ -175,6 +190,56 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 						)}
 					</TableBody>
 				</Table>
+				
+				{totalPages > 1 && (
+					<div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50/50">
+						<div className="text-sm text-gray-600">
+							Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} results
+						</div>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handlePageChange(currentPage - 1)}
+								disabled={currentPage === 1}
+								className="h-8 w-8 p-0"
+							>
+								<ChevronLeft className="h-4 w-4" />
+							</Button>
+							
+							{Array.from({ length: totalPages }, (_, i) => i + 1)
+								.filter(page => {
+									// Show first page, last page, current page, and pages around current
+									return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+								})
+								.map((page, index, visiblePages) => (
+									<React.Fragment key={page}>
+										{index > 0 && visiblePages[index - 1] < page - 1 && (
+											<span className="px-2 text-sm text-gray-500">...</span>
+										)}
+										<Button
+											variant={currentPage === page ? "default" : "outline"}
+											size="sm"
+											onClick={() => handlePageChange(page)}
+											className="h-8 w-8 p-0"
+										>
+											{page}
+										</Button>
+									</React.Fragment>
+								))}
+							
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handlePageChange(currentPage + 1)}
+								disabled={currentPage === totalPages}
+								className="h-8 w-8 p-0"
+							>
+								<ChevronRight className="h-4 w-4" />
+							</Button>
+						</div>
+					</div>
+				)}
 			</div>
 		</div>
 	);

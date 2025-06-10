@@ -4,6 +4,7 @@ import {
 	TrailsMembershipHistory,
 	TrailsPointsList,
 	TrailsSavePointsLetter,
+	CaptainsMtgFolderLabels,
 } from "./definitions";
 
 // Column definitions for historyOfWins report
@@ -188,4 +189,44 @@ export const savePointsLetterColumns = [
 		accessor: (row: TrailsSavePointsLetter) => row.totalpoints,
 		sortable: true,
 	},
+];
+
+//Column definition for folder labels report
+export const folderLabelsColumns = [
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: CaptainsMtgFolderLabels) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "placeName",
+		header: "Place Name",
+		accessor: (row: CaptainsMtgFolderLabels) => row.placeName,
+		sortable: true,
+	},
+	{
+		key: "captainFullName",
+		header: "Captain Full Name",
+		accessor: (row: CaptainsMtgFolderLabels) => row.captainFullName,
+		sortable: true,
+	},
+	{
+		key: "divisionLetter",
+		header: "Division Letter",
+		accessor: (row: CaptainsMtgFolderLabels) => row.divisionLetter,
+		sortable: true,
+	},
+	{
+		key: "subdivisionNumber",
+		header: "Subdivision Number",
+		accessor: (row: CaptainsMtgFolderLabels) => row.subdivisionNumber,
+		sortable: true,
+	},
+	{
+		key: "teamLetter",
+		header: "Team Letter",
+		accessor: (row: CaptainsMtgFolderLabels) => row.teamLetter,
+		sortable: true,
+	}
 ];
