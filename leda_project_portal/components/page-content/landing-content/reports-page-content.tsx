@@ -18,7 +18,7 @@ export default function ReportsPageContent() {
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
 						<CardTitle className="text-lg font-semibold">
-							Captains Meeting *WORK IN PROGRESS*
+							Captains Meeting
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
@@ -96,7 +96,7 @@ export default function ReportsPageContent() {
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
 						<CardTitle className="text-lg font-semibold">
-							Trails *WORK IN PROGRESS*
+							Trails
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
