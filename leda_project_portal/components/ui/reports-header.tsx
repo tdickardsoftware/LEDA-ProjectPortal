@@ -49,17 +49,25 @@ const styles = StyleSheet.create({
 	},
 	dateValue: {
 		fontSize: 8,
+		marginBottom: 4,
+	},
+	pageInfo: {
+		fontSize: 8,
 	},
 });
 
 interface ReportsHeaderProps {
 	title: string;
 	reportDate: string;
+	subtitle?: string;
+	showPageNumbers?: boolean;
 }
 
 export const ReportsHeader: React.FC<ReportsHeaderProps> = ({
 	title,
 	reportDate,
+	subtitle,
+	showPageNumbers = false,
 }) => (
 	<View style={styles.header} fixed>
 		<View style={styles.logoContainer}>
@@ -72,10 +80,23 @@ export const ReportsHeader: React.FC<ReportsHeaderProps> = ({
 			<Text style={styles.address}>7537 Mentor Ave. Suite #107</Text>
 			<Text style={styles.address}>Mentor, OH 44060</Text>
 			<Text style={styles.title}>{title}</Text>
+			{subtitle && (
+				<Text style={{ fontSize: 9, textAlign: "center", marginBottom: 5 }}>
+					{subtitle}
+				</Text>
+			)}
 		</View>
 		<View style={styles.dateContainer}>
 			<Text style={styles.dateLabel}>DATE</Text>
 			<Text style={styles.dateValue}>{reportDate}</Text>
+			{showPageNumbers && (
+				<Text
+					style={styles.pageInfo}
+					render={({ pageNumber, totalPages }) =>
+						`Page: ${pageNumber} of ${totalPages}`
+					}
+				/>
+			)}
 		</View>
 	</View>
 );

@@ -22,8 +22,10 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CaptainsMtgFolderLabels } from "@/lib/definitions";
-import { folderLabelsColumns } from "@/lib/trails-report-definitions";
+import { folderLabelsColumns, teamReportColumns } from "@/lib/trails-report-definitions";
 import CaptainsMeetingFolderLabelsReport from "./react-pdf/captains-meeting-folder-labels-report";
+import { TeamReportTeamPlaceInfo } from "@/lib/definitions";
+import CaptainsMeetingTeamReport from "./react-pdf/captains-meeting-team-report";
 
 export default function CaptainsMeetingReportLandingContent() {
 	// State declarations
@@ -54,88 +56,48 @@ export default function CaptainsMeetingReportLandingContent() {
 		setDataFetched(true);
 	}, []);
 
-	// Function to render report content based on selection
-	const renderReportContent = () => {
-		if (!seasonCode) {
-			return (
-				<div className="flex h-full items-center justify-center">
-					<p className="text-gray-500 text-center">
-						Select a season code to continue...
-					</p>
-				</div>
-			);
-		}
-
-		if (!selectedReport) {
-			return (
-				<div className="flex h-full items-center justify-center">
-					<p className="text-gray-500 text-center">
-						Select a report to continue...
-					</p>
-				</div>
-			);
-		}
-
-        if (selectedReport.includes("reportsFolderLabels")) {
-            return (
-                <ReportDisplay<CaptainsMtgFolderLabels>
-                    apiRoute={selectedReport + `?seasonCode=${seasonCode}`}
-                    columns={folderLabelsColumns}
-                    className="h-full"
-                    onDataFetch={handleDataFetch}
-                />
-            );
-        }
-
-		// Default fallback for other reports
-		return (
-			<div className="flex h-full items-center justify-center">
-				<div className="text-center">
-					<h2 className="text-2xl font-semibold mb-4">
-						Report Selected
-					</h2>
-					<p className="text-gray-600">
-						Season: <span className="font-medium">{seasonCode}</span>
-					</p>
-					<p className="text-gray-600">
-						Report: <span className="font-medium">{selectedReport}</span>
-					</p>
-					<p className="text-sm text-gray-500 mt-2">
-						Report functionality will be implemented here.
-					</p>
-				</div>
-			</div>
-		);
-	};
-
 	// Function to render PDF download button based on selection
 	const renderPDFDownload = () => {
-		if (!selectedReport || !dataFetched) {
+		if (!selectedReport || !dataFetched || !reportData.length) {
 			return null;
 		}
 
 		let document: JSX.Element;
 		let fileName: string;
 
-		switch (selectedReport) {
-			case `/api/activities/roster/reportsFolderLabels`:
-				document = (
-					<CaptainsMeetingFolderLabelsReport
-						data={reportData as CaptainsMtgFolderLabels[]}
-						seasonCode={seasonCode}
-					/>
-				);
-				fileName = `captainsMeetingFolderLabels-${seasonCode}-${new Date()
-					.toLocaleDateString("en-US", {
-						timeZone: "America/New_York",
-						month: "2-digit",
-						day: "2-digit",
-						year: "numeric",
-					})
-					.replace(/\//g, "")}.pdf`;
-				break;
-			default:
-				return null;
+		if (selectedReport.includes("reportsFolderLabels")) {
+			document = (
+				<CaptainsMeetingFolderLabelsReport
+					data={reportData as CaptainsMtgFolderLabels[]}
+					seasonCode={seasonCode}
+				/>
+			);
+			fileName = `captainsMeetingFolderLabels-${seasonCode}-${new Date()
+				.toLocaleDateString("en-US", {
+					timeZone: "America/New_York",
+					month: "2-digit",
+					day: "2-digit",
+					year: "numeric",
+				})
+				.replace(/\//g, "")}.pdf`;
+		} else if (selectedReport.includes("teamReport")) {
+			document = (
+				<CaptainsMeetingTeamReport
+					data={reportData as TeamReportTeamPlaceInfo[]}
+					reportDate={new Date().toLocaleDateString("en-US")}
+				/>
+			);
+			const teamCount = Array.isArray(reportData) ? reportData.length : 1;
+			fileName = `teamReport-${teamCount}Teams-${seasonCode}-${new Date()
+				.toLocaleDateString("en-US", {
+					timeZone: "America/New_York",
+					month: "2-digit",
+					day: "2-digit",
+					year: "numeric",
+				})
+				.replace(/\//g, "")}.pdf`;
+		} else {
+			return null;
 		}
 
 		return (
@@ -192,6 +154,71 @@ export default function CaptainsMeetingReportLandingContent() {
 					</>
 				)}
 			</PDFDownloadLink>
+		);
+	};
+
+	// Function to render report content based on selection
+	const renderReportContent = () => {
+		if (!seasonCode) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<p className="text-gray-500 text-center">
+						Select a season code to continue...
+					</p>
+				</div>
+			);
+		}
+
+		if (!selectedReport) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<p className="text-gray-500 text-center">
+						Select a report to continue...
+					</p>
+				</div>
+			);
+		}
+
+		if (selectedReport.includes("reportsFolderLabels")) {
+			return (
+				<ReportDisplay<CaptainsMtgFolderLabels>
+					apiRoute={selectedReport + `?seasonCode=${seasonCode}`}
+					columns={folderLabelsColumns}
+					className="h-full"
+					onDataFetch={handleDataFetch}
+				/>
+			);
+		}
+
+		if (selectedReport.includes("teamReport")) {
+			return (
+				<ReportDisplay<TeamReportTeamPlaceInfo>
+					apiRoute={selectedReport + `?seasonCode=${seasonCode}`}
+					columns={teamReportColumns}
+					className="h-full"
+					onDataFetch={handleDataFetch}
+				/>
+			);
+		}
+
+		// Default fallback for other reports
+		return (
+			<div className="flex h-full items-center justify-center">
+				<div className="text-center">
+					<h2 className="text-2xl font-semibold mb-4">
+						Report Selected
+					</h2>
+					<p className="text-gray-600">
+						Season: <span className="font-medium">{seasonCode}</span>
+					</p>
+					<p className="text-gray-600">
+						Report: <span className="font-medium">{selectedReport}</span>
+					</p>
+					<p className="text-sm text-gray-500 mt-2">
+						Report functionality will be implemented here.
+					</p>
+				</div>
+			</div>
 		);
 	};
 

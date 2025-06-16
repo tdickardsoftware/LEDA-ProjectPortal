@@ -392,3 +392,34 @@ export type CaptainsMtgFolderLabels = {
 	subdivisionNumber: string;
 	teamLetter: string;
 }
+//
+// Define type to identify the shape of our data from postgres for the team report - specifically on the team member info portion
+//
+export type TeamReportTeamMemberInfo = {
+	teamId: number;
+	playerId: number;
+	isCaptain: string;
+	fullName: string;
+	phoneNumber: string;
+	needForm: string;
+	datesDuesPaid: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the team report - specifically on the team/place info portion
+//
+export type TeamReportTeamPlaceInfo = {
+	teamId: number;
+	teamName: string;
+	placeId: number;
+	divisionName: string;
+	subdivisionNumber: string;
+	placeName: string;
+	phoneNumber: string;
+	addressFirstLine: string;
+	addressSecondLine: string;
+	seasonCode: string;
+	teamLetter: string;
+	paidStatus: boolean;
+	desc: string;
+	playerArray: TeamReportTeamMemberInfo[];
+}
