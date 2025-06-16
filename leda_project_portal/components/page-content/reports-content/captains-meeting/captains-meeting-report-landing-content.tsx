@@ -87,8 +87,7 @@ export default function CaptainsMeetingReportLandingContent() {
 					reportDate={new Date().toLocaleDateString("en-US")}
 				/>
 			);
-			const teamCount = Array.isArray(reportData) ? reportData.length : 1;
-			fileName = `teamReport-${teamCount}Teams-${seasonCode}-${new Date()
+			fileName = `teamReport-${seasonCode}-${new Date()
 				.toLocaleDateString("en-US", {
 					timeZone: "America/New_York",
 					month: "2-digit",
