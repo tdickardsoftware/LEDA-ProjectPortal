@@ -13,12 +13,12 @@ export default async function handler(
 		const data = req.body as RosterUpserter;
 		try {
 			const query = `
-                INSERT INTO public.leda_roster_info ("seasonCode", "teamInfomation")
-                SELECT $2, "teamInfomation"
+                INSERT INTO public.leda_roster_info ("seasonCode", "teamInformation")
+                SELECT $2, "teamInformation"
                 FROM public.leda_roster_info
                 WHERE "seasonCode" = $1
                 ON CONFLICT ("seasonCode")
-                DO UPDATE SET "teamInfomation" = EXCLUDED."teamInfomation";
+                DO UPDATE SET "teamInformation" = EXCLUDED."teamInformation";
             `;
 			const values = [data.sourceSeasonCode, data.targetSeasonCode];
 			const result = await queryPost(query, values);

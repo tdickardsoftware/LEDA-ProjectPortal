@@ -68,11 +68,12 @@ interface MatchupDisplayProps {
 	getPlaceNameById: (placeId: string) => string;
 	onEdit: () => void;
 	onDelete: () => void;
+	viewMode?: boolean;
 }
 
 // Memoized matchup display component
 const MatchupDisplay = memo<MatchupDisplayProps>(
-	({ matchup, teamData, teams, getPlaceNameById, onEdit, onDelete }) => {
+	({ matchup, teamData, teams, getPlaceNameById, onEdit, onDelete, viewMode = false }) => {
 		const getTeamNameById = useCallback(
 			(teamId: string): string => {
 				const team = Object.values(teams).find((team) => team.teamId === teamId);
@@ -101,7 +102,7 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 
 		return (
 			<div className="text-sm relative group">
-				<div className="transition-all duration-200 group-hover:blur-sm">
+				<div className={viewMode ? "" : "transition-all duration-200 group-hover:blur-sm"}>
 					<div className="border border-gray-300 p-2 rounded-md text-center">
 						<div>{matchup.home ? "Home" : "Away"}</div>
 						<div>VS</div>
@@ -110,26 +111,28 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 						<div>{"@ " + placeName}</div>
 					</div>
 				</div>
-				<div className="absolute inset-0 hidden group-hover:flex items-center justify-center gap-4">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
-						title="Edit matchup"
-						onClick={onEdit}
-					>
-						<Pencil className="h-4 w-4 text-blue-600" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
-						title="Remove matchup"
-						onClick={onDelete}
-					>
-						<X className="h-4 w-4 text-red-600" />
-					</Button>
-				</div>
+				{!viewMode && (
+					<div className="absolute inset-0 hidden group-hover:flex items-center justify-center gap-4">
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+							title="Edit matchup"
+							onClick={onEdit}
+						>
+							<Pencil className="h-4 w-4 text-blue-600" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+							title="Remove matchup"
+							onClick={onDelete}
+						>
+							<X className="h-4 w-4 text-red-600" />
+						</Button>
+					</div>
+				)}
 			</div>
 		);
 	}
@@ -503,6 +506,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 																handleEditMatchupClick(key, gameTitle, matchup)
 															}
 															onDelete={() => handleDeleteMatchup(key, gameTitle)}
+															viewMode={viewMode}
 														/>
 													) : viewMode ? (
 														<div className="text-sm text-muted-foreground py-2">

@@ -81,7 +81,7 @@ export function useScheduleData() {
 			// Handle roster data
 			if (rosterResult.status === 'fulfilled' && rosterResult.value.status === 200) {
 				const rosterData: RosterApiResponse = await rosterResult.value.json();
-				const fetchedData = structuredClone(rosterData.teamInfomation);
+				const fetchedData = structuredClone(rosterData.teamInformation);
 				setDivisionsData(fetchedData);
 
 				// Handle game dates

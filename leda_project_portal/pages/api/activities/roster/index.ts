@@ -13,7 +13,7 @@ export default async function handler(
 				const seasonCode = req.query.seasonCode;
 				console.log(seasonCode);
 				const result = await query<Roster>(
-					`SELECT "seasonCode", "teamInfomation" FROM public.leda_roster_info WHERE "seasonCode" = $1`,
+					`SELECT "seasonCode", "teamInformation" FROM public.leda_roster_info WHERE "seasonCode" = $1`,
 					[seasonCode as string]
 				);
 				if (result.rows.length !== 0) {
@@ -33,7 +33,7 @@ export default async function handler(
 		} else {
 			try {
 				const result = await query<Roster>(
-					`SELECT "seasonCode", "teamInfomation" FROM public.leda_roster_info`
+					`SELECT "seasonCode", "teamInformation" FROM public.leda_roster_info`
 				);
 				res.status(200).json(result);
 			} catch (error) {
@@ -46,7 +46,7 @@ export default async function handler(
 	} else if (req.method === "POST") {
 		try {
 			const data = req.body as Roster;
-			const query = `INSERT INTO public.leda_roster_info ("seasonCode", "teamInfomation") VALUES ($1, $2);`;
+			const query = `INSERT INTO public.leda_roster_info ("seasonCode", "teamInformation") VALUES ($1, $2);`;
 			const values = [data.seasonCode, data.teamInformation];
 			const result = await queryPost(query, values);
 			res.status(201).json(result);
@@ -59,7 +59,7 @@ export default async function handler(
 	} else if (req.method === "PUT") {
 		try {
 			const data = req.body as Roster;
-			const query = `UPDATE public.leda_roster_info SET "teamInfomation" = $2 WHERE "seasonCode" = $1;`;
+			const query = `UPDATE public.leda_roster_info SET "teamInformation" = $2 WHERE "seasonCode" = $1;`;
 			const values = [data.seasonCode, data.teamInformation];
 			const result = await queryPost(query, values);
 			res.status(200).json(result);

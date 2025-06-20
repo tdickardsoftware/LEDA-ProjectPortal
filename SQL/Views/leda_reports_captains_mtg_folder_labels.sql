@@ -27,7 +27,7 @@ CREATE OR REPLACE VIEW public.leda_reports_captains_mtg_folder_labels
                     subdivisions.value AS subdivision_value,
                     lri."seasonCode" AS season_code
                    FROM leda_roster_info lri,
-                    LATERAL json_each(lri."teamInfomation") divisions(key, value),
+                    LATERAL json_each(lri."teamInformation") divisions(key, value),
                     LATERAL json_each(divisions.value -> 'subdivisions'::text) subdivisions(key, value)) subdivisions_expanded,
             LATERAL json_each(subdivisions_expanded.subdivision_value) teams(key, value)) teams_final
      LEFT JOIN leda_place_info lpi ON ((teams_final.team_info ->> 'placeId'::text)::integer) = lpi."ledaId"

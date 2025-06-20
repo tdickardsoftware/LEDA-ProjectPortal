@@ -9,7 +9,7 @@ export default async function handler(
 	if (req.method === "GET") {
 		try {
 			const result = await query<Roster>(
-				`SELECT "seasonCode" FROM public.leda_roster_info where "teamInfomation" is not null`
+				`SELECT "seasonCode" FROM public.leda_roster_info where "teamInformation" is not null`
 			);
 			res.status(200).json(result.rows);
 		} catch (error) {

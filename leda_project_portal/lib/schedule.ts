@@ -55,7 +55,7 @@ export interface SeasonApiResponse {
 }
 
 export interface RosterApiResponse {
-	teamInfomation: DivisionsData;
+	teamInformation: DivisionsData;
 }
 
 export interface ScheduleApiResponse {
