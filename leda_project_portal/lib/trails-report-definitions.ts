@@ -4,6 +4,8 @@ import {
 	TrailsMembershipHistory,
 	TrailsPointsList,
 	TrailsSavePointsLetter,
+	CaptainsMtgFolderLabels,
+	TeamReportTeamPlaceInfo,
 } from "./definitions";
 
 // Column definitions for historyOfWins report
@@ -186,6 +188,95 @@ export const savePointsLetterColumns = [
 		key: "totalpoints",
 		header: "Total Points",
 		accessor: (row: TrailsSavePointsLetter) => row.totalpoints,
+		sortable: true,
+	},
+];
+
+//Column definition for folder labels report
+export const folderLabelsColumns = [
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: CaptainsMtgFolderLabels) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "placeName",
+		header: "Place Name",
+		accessor: (row: CaptainsMtgFolderLabels) => row.placeName,
+		sortable: true,
+	},
+	{
+		key: "captainFullName",
+		header: "Captain Full Name",
+		accessor: (row: CaptainsMtgFolderLabels) => row.captainFullName,
+		sortable: true,
+	},
+	{
+		key: "divisionLetter",
+		header: "Division Letter",
+		accessor: (row: CaptainsMtgFolderLabels) => row.divisionLetter,
+		sortable: true,
+	},
+	{
+		key: "subdivisionNumber",
+		header: "Subdivision Number",
+		accessor: (row: CaptainsMtgFolderLabels) => row.subdivisionNumber,
+		sortable: true,
+	},
+	{
+		key: "teamLetter",
+		header: "Team Letter",
+		accessor: (row: CaptainsMtgFolderLabels) => row.teamLetter,
+		sortable: true,
+	},
+];
+
+// Column definitions for team report
+export const teamReportColumns = [
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: TeamReportTeamPlaceInfo) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "divisionName",
+		header: "Division",
+		accessor: (row: TeamReportTeamPlaceInfo) => row.divisionName,
+		sortable: true,
+	},
+	{
+		key: "subdivisionNumber",
+		header: "Subdivision",
+		accessor: (row: TeamReportTeamPlaceInfo) => row.subdivisionNumber,
+		sortable: true,
+	},
+	{
+		key: "teamLetter",
+		header: "Team Letter",
+		accessor: (row: TeamReportTeamPlaceInfo) => row.teamLetter,
+		sortable: true,
+	},
+	{
+		key: "placeName",
+		header: "Bar Name",
+		accessor: (row: TeamReportTeamPlaceInfo) => row.placeName,
+		sortable: true,
+	},
+	{
+		key: "paidStatus",
+		header: "Paid",
+		accessor: (row: TeamReportTeamPlaceInfo) => (row.paidStatus ? "Yes" : "No"),
+		sortable: true,
+	},
+	{
+		key: "playerArray",
+		header: "Players",
+		accessor: (row: TeamReportTeamPlaceInfo) =>
+			Array.isArray(row.playerArray)
+				? row.playerArray.map((p: { fullName: string }) => p.fullName).join(", ")
+				: "",
 		sortable: true,
 	},
 ];

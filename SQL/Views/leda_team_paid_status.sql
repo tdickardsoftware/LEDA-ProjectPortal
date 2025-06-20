@@ -21,7 +21,7 @@ CREATE OR REPLACE VIEW public.leda_team_paid_status
     to_date(s.dates ->> 'Date1'::text, 'MM/DD/YYYY'::text) AS date1
    FROM leda_roster_info r
      JOIN maint.leda_maint_seasons s ON s."seasonCode" = r."seasonCode",
-    LATERAL jsonb_each(r."teamInfomation"::jsonb) divs(division, divdata),
+    LATERAL jsonb_each(r."teamInformation"::jsonb) divs(division, divdata),
     LATERAL jsonb_each(divs.divdata -> 'subdivisions'::text) subs(subdivision, subdata),
     LATERAL jsonb_each(subs.subdata) teams(letter, value)
   WHERE teams.value ? 'teamId'::text

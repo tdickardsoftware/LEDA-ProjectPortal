@@ -12,7 +12,7 @@ CREATE OR REPLACE VIEW public.leda_team_league_history
             team.value ->> 'teamId'::text AS "ledaId",
             (upper("left"(division.key, 1)) || regexp_replace(subdivision.key, '[^0-9]'::text, ''::text, 'g'::text)) || team.key AS "teamLabel"
            FROM leda_roster_info lri,
-            LATERAL json_each(lri."teamInfomation") division(key, value),
+            LATERAL json_each(lri."teamInformation") division(key, value),
             LATERAL json_each(division.value -> 'subdivisions'::text) subdivision(key, value),
             LATERAL json_each(subdivision.value) team(key, value)
         )

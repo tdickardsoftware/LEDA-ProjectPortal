@@ -178,7 +178,7 @@ export default function RostersContent({
 						const roster = data;
 						// Update state with the fetched data
 						const fetchedData = JSON.parse(
-							JSON.stringify(roster.teamInfomation)
+							JSON.stringify(roster.teamInformation)
 						);
 
 						// Extract divisions and team IDs

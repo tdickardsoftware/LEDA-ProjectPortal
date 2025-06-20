@@ -276,7 +276,7 @@ export default function PayoutsContent() {
 					if (data) {
 						const roster = data;
 						const fetchedData = JSON.parse(
-							JSON.stringify(roster.teamInfomation)
+							JSON.stringify(roster.teamInformation)
 						);
 						setDivisionsData(fetchedData);
 
