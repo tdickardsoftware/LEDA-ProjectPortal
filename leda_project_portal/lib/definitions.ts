@@ -423,3 +423,21 @@ export type TeamReportTeamPlaceInfo = {
 	desc: string;
 	playerArray: TeamReportTeamMemberInfo[];
 }
+//
+// Define type to identify the shape of our data from postgres for the captains meeting schedule place captain season info
+//
+export type CaptainsMtgSchedulePlaceCaptainSeasonInfo = {
+	seasonCode: string;
+	desc: string;
+	teamId: number;
+	placeId: number;
+	division: string;
+	subdivision: string;
+	placeName: string;
+	addressFirstLine: string;
+	addressSecondLine: string;
+	placePhoneNumber: string;
+	captainId: number;
+	captainFullName: string;
+	captainPhoneNumber: string;
+};

@@ -27,6 +27,9 @@ import CaptainsMeetingFolderLabelsReport from "./react-pdf/captains-meeting-fold
 import { TeamReportTeamPlaceInfo } from "@/lib/definitions";
 import CaptainsMeetingTeamReport from "./react-pdf/captains-meeting-team-report";
 import CaptainsMeetingScheduleContent from "./captains-meeting-schedule-content";
+import CaptainsMeetingScheduleReport from "./react-pdf/captains-meeting-schedule-report";
+import { DivisionsData, ScheduleData } from "@/lib/schedule";
+import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
 
 export default function CaptainsMeetingReportLandingContent() {
 	// State declarations
@@ -35,6 +38,13 @@ export default function CaptainsMeetingReportLandingContent() {
 	const [reportData, setReportData] = useState<unknown[]>([]);
 	const [dataFetched, setDataFetched] = useState<boolean>(false);
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
+	const [scheduleData, setScheduleData] = useState<{
+		divisionsData: DivisionsData;
+		matchData: ScheduleData;
+		gameDates: Record<string, string>;
+		placesData: Record<string, string>;
+		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
+	} | null>(null);
 
 	// Event handlers
 	const handleSeasonCodeSelect = useCallback((value: string) => {
@@ -57,16 +67,58 @@ export default function CaptainsMeetingReportLandingContent() {
 		setDataFetched(true);
 	}, []);
 
+	const handleScheduleDataReady = useCallback((data: {
+		divisionsData: DivisionsData;
+		matchData: ScheduleData;
+		gameDates: Record<string, string>;
+		placesData: Record<string, string>;
+		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
+	}) => {
+		setScheduleData(data);
+		setDataFetched(true);
+	}, []);
+
 	// Function to render PDF download button based on selection
 	const renderPDFDownload = () => {
-		if (!selectedReport || !dataFetched || !reportData.length) {
+		if (!selectedReport) {
 			return null;
+		}
+
+		// For schedule reports, check if schedule data is complete
+		if (selectedReport.includes("schedule")) {
+			if (!scheduleData || !scheduleData.seasonInfo || scheduleData.seasonInfo.length === 0) {
+				return null;
+			}
+		} else {
+			// For other reports, check if regular data is fetched
+			if (!dataFetched || !reportData.length) {
+				return null;
+			}
 		}
 
 		let document: JSX.Element;
 		let fileName: string;
 
-		if (selectedReport.includes("reportsFolderLabels")) {
+		if (selectedReport.includes("schedule") && scheduleData) {
+			document = (
+				<CaptainsMeetingScheduleReport
+					divisionsData={scheduleData.divisionsData}
+					matchData={scheduleData.matchData}
+					gameDates={scheduleData.gameDates}
+					seasonCode={seasonCode}
+					placesData={scheduleData.placesData}
+					seasonInfo={scheduleData.seasonInfo}
+				/>
+			);
+			fileName = `schedule-${seasonCode}-${new Date()
+				.toLocaleDateString("en-US", {
+					timeZone: "America/New_York",
+					month: "2-digit",
+					day: "2-digit",
+					year: "numeric",
+				})
+				.replace(/\//g, "")}.pdf`;
+		} else if (selectedReport.includes("reportsFolderLabels") && reportData.length) {
 			document = (
 				<CaptainsMeetingFolderLabelsReport
 					data={reportData as CaptainsMtgFolderLabels[]}
@@ -81,7 +133,7 @@ export default function CaptainsMeetingReportLandingContent() {
 					year: "numeric",
 				})
 				.replace(/\//g, "")}.pdf`;
-		} else if (selectedReport.includes("teamReport")) {
+		} else if (selectedReport.includes("teamReport") && reportData.length) {
 			document = (
 				<CaptainsMeetingTeamReport
 					data={reportData as TeamReportTeamPlaceInfo[]}
@@ -183,6 +235,7 @@ export default function CaptainsMeetingReportLandingContent() {
 			return (
 				<CaptainsMeetingScheduleContent
 					seasonCode={seasonCode}
+					onDataReady={handleScheduleDataReady}
 				/>
 			);
 		}
@@ -260,7 +313,8 @@ export default function CaptainsMeetingReportLandingContent() {
 						/>
 					</div>
 				</FolderTabMed>
-				{selectedReport && dataFetched && (
+				{((selectedReport.includes("schedule") && scheduleData && scheduleData.seasonInfo.length > 0) ||
+				  (selectedReport && !selectedReport.includes("schedule") && dataFetched)) && (
 					<FolderTabMed title="Download PDF" className="w-fit">
 						{renderPDFDownload()}
 					</FolderTabMed>

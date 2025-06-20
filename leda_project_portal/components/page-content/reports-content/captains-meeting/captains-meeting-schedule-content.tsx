@@ -16,9 +16,17 @@ import {
 	ScheduleApiResponse 
 } from '@/lib/schedule';
 import { rosterRoute, scheduleRoute, seasonRoute } from '@/lib/apiRoutes';
+import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
 
 interface CaptainsMeetingScheduleContentProps {
 	seasonCode: string;
+	onDataReady?: (data: {
+		divisionsData: DivisionsData;
+		matchData: ScheduleData;
+		gameDates: Record<string, string>;
+		placesData: Record<string, string>;
+		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
+	}) => void;
 }
 
 interface DivisionAccordionProps {
@@ -91,6 +99,7 @@ DivisionAccordion.displayName = "DivisionAccordion";
 
 export default function CaptainsMeetingScheduleContent({
 	seasonCode,
+	onDataReady,
 }: CaptainsMeetingScheduleContentProps) {
 	const [divisionsData, setDivisionsData] = useState<DivisionsData>({});
 	const [loading, setLoading] = useState(false);
@@ -142,7 +151,7 @@ export default function CaptainsMeetingScheduleContent({
 
 			try {
 				// Parallel API calls for better performance
-				const [rosterResult, gameDatesResult, matchDataResult] = await Promise.allSettled([
+				const [rosterResult, gameDatesResult, matchDataResult, seasonInfoResult] = await Promise.allSettled([
 					fetch(`${rosterRoute}?seasonCode=${seasonCode}`, {
 						method: 'GET',
 						headers: { 'Content-Type': 'application/json' },
@@ -154,6 +163,10 @@ export default function CaptainsMeetingScheduleContent({
 					fetch(`${scheduleRoute}?seasonCode=${seasonCode}`, {
 						method: 'GET',
 						headers: { 'Content-Type': 'application/json' },
+					}),
+					fetch(`${scheduleRoute}/placeCaptainSeasonInfo?seasonCode=${seasonCode}`, {
+						method: 'GET',
+						headers: { 'Content-Type': 'application/json' },
 					})
 				]);
 
@@ -163,23 +176,52 @@ export default function CaptainsMeetingScheduleContent({
 					const fetchedData = structuredClone(rosterData.teamInformation);
 					setDivisionsData(fetchedData);
 
+					let processedMatchData: ScheduleData;
+					let seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[] = [];
+
+					// Handle season info
+					if (seasonInfoResult.status === 'fulfilled' && seasonInfoResult.value.status === 200) {
+						seasonInfo = await seasonInfoResult.value.json();
+					}
+
+					// Extract places data from seasonInfo, not roster data
+					const places: Record<string, string> = {};
+					seasonInfo.forEach((info) => {
+						if (info.placeId && info.placeName) {
+							places[info.placeId.toString()] = info.placeName;
+						}
+					});
+
 					// Handle game dates
+					let gameDatesData: SeasonApiResponse | null = null;
 					if (gameDatesResult.status === 'fulfilled' && gameDatesResult.value.status === 200) {
-						const gameDatesData: SeasonApiResponse = await gameDatesResult.value.json();
-						setGameDates(gameDatesData.dates || {});
+						gameDatesData = await gameDatesResult.value.json();
+						setGameDates(gameDatesData?.dates || {});
 					}
 
 					// Handle match data
 					if (matchDataResult.status === 'fulfilled' && matchDataResult.value.status === 200) {
 						const existingMatchData: ScheduleApiResponse = await matchDataResult.value.json();
-						const processedMatchData = ensureSubdivisionIsolation(
+						processedMatchData = ensureSubdivisionIsolation(
 							structuredClone(existingMatchData.scheduleData)
 						);
 						setMatchData(processedMatchData);
 					} else {
 						// Initialize empty match data structure
 						const newMatchData = initializeEmptyMatchData(fetchedData);
+						processedMatchData = newMatchData;
 						setMatchData(newMatchData);
+					}
+
+					// Notify parent component when data is ready
+					if (onDataReady) {
+						onDataReady({
+							divisionsData: fetchedData,
+							matchData: processedMatchData,
+							gameDates: gameDatesData?.dates || {},
+							placesData: places,
+							seasonInfo,
+						});
 					}
 				} else {
 					setDivisionsData({});
@@ -193,7 +235,7 @@ export default function CaptainsMeetingScheduleContent({
 		};
 
 		fetchScheduleData();
-	}, [seasonCode, ensureSubdivisionIsolation, initializeEmptyMatchData]);
+	}, [seasonCode, ensureSubdivisionIsolation, initializeEmptyMatchData, onDataReady]);
 
 	if (loading) {
 		return <Spinner />;
@@ -235,3 +277,4 @@ export default function CaptainsMeetingScheduleContent({
 		</div>
 	);
 }
+
