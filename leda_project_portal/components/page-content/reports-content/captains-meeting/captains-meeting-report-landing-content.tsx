@@ -26,6 +26,7 @@ import { folderLabelsColumns, teamReportColumns } from "@/lib/trails-report-defi
 import CaptainsMeetingFolderLabelsReport from "./react-pdf/captains-meeting-folder-labels-report";
 import { TeamReportTeamPlaceInfo } from "@/lib/definitions";
 import CaptainsMeetingTeamReport from "./react-pdf/captains-meeting-team-report";
+import CaptainsMeetingScheduleContent from "./captains-meeting-schedule-content";
 
 export default function CaptainsMeetingReportLandingContent() {
 	// State declarations
@@ -175,6 +176,14 @@ export default function CaptainsMeetingReportLandingContent() {
 						Select a report to continue...
 					</p>
 				</div>
+			);
+		}
+
+		if (selectedReport.includes("schedule")) {
+			return (
+				<CaptainsMeetingScheduleContent
+					seasonCode={seasonCode}
+				/>
 			);
 		}
 

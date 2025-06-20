@@ -16,7 +16,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { teamRoute, trailsRoute } from "@/lib/apiRoutes";
+import { scheduleRoute, teamRoute, trailsRoute } from "@/lib/apiRoutes";
 
 // Define the parameters for the ReportSelector component
 interface ReportSelectorProps {
@@ -55,6 +55,10 @@ const reportsByType: Record<string, { value: string; label: string }[]> = {
 		{
 			value: `${teamRoute}/teamReport`,
 			label: "Team Report",
+		}, 
+		{
+			value: `${scheduleRoute}`,
+			label: "Schedules"
 		}
 	],
 };
