@@ -110,66 +110,10 @@ const data = {
 				{
 					title: "Captains Meeting",
 					url: "/Portal/Reports/Captains-Meeting",
-					items: [
-						{
-							title: "Folder Labels",
-							url: "/Portal/Reports/Captains-Meeting/Folder-Labels",
-						},
-						{
-							title: "Schedules",
-							url: "/Portal/Reports/Captains-Meeting/Schedules",
-						},
-						{
-							title: "Team Report",
-							url: "/Portal/Reports/Captains-Meeting/Team-Report",
-						},
-					],
 				},
 				{
 					title: "League Play",
 					url: "/Portal/Reports/League-Play",
-					items: [
-						{
-							title: "Bar Affiliation Fee Not Paid",
-							url: "/Portal/Reports/League-Play/Bar-Affiliation-Fee-Not-Paid",
-						},
-						{
-							title: "Mentions - Best of Division",
-							url: "/Portal/Reports/League-Play/Mentions-Best-Of-Division",
-						},
-						{
-							title: "Mentions - For Plaques",
-							url: "/Portal/Reports/League-Play/Mentions-For-Plaques",
-						},
-						{
-							title: "Mentions - Weekly League",
-							url: "/Portal/Reports/League-Play/Mentions-Weekly-League",
-						},
-						{
-							title: "Players No Form",
-							url: "/Portal/Reports/League-Play/Players-No-Form",
-						},
-						{
-							title: "Players Not Paid",
-							url: "/Portal/Reports/League-Play/Players-Not-Paid",
-						},
-						{
-							title: "Team Roster Fee Not Paid",
-							url: "/Portal/Reports/League-Play/Team-Roster-Fee-Not-Paid",
-						},
-						{
-							title: "Ton 80's Weekly League",
-							url: "/Portal/Reports/League-Play/Ton-80-Weekly-League",
-						},
-						{
-							title: "Top Darter",
-							url: "/Portal/Reports/League-Play/Top-Darter",
-						},
-						{
-							title: "Weekly Scoresheets",
-							url: "/Portal/Reports/League-Play/Weekly-Scoresheets",
-						},
-					],
 				},
 				{
 					title: "Lists",
