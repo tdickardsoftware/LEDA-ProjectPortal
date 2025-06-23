@@ -31,7 +31,7 @@ import {
 	membershipHistoryColumns,
 	pointsListColumns,
 	savePointsLetterColumns,
-} from "@/lib/trails-report-definitions";
+} from "@/lib/report-definitions";
 import TrailsTripEligibleReport from "./react-pdf/trails-trip-eligible-report";
 import TrailsHistoryOfWinsReport from "./react-pdf/trails-history-of-wins-report";
 import TrailsMembershipHistoryReport from "./react-pdf/trails-membership-history-report";

@@ -22,7 +22,7 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CaptainsMtgFolderLabels } from "@/lib/definitions";
-import { folderLabelsColumns, teamReportColumns } from "@/lib/trails-report-definitions";
+import { folderLabelsColumns, teamReportColumns } from "@/lib/report-definitions";
 import CaptainsMeetingFolderLabelsReport from "./react-pdf/captains-meeting-folder-labels-report";
 import { TeamReportTeamPlaceInfo } from "@/lib/definitions";
 import CaptainsMeetingTeamReport from "./react-pdf/captains-meeting-team-report";

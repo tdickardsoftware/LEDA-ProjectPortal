@@ -441,3 +441,12 @@ export type CaptainsMtgSchedulePlaceCaptainSeasonInfo = {
 	captainFullName: string;
 	captainPhoneNumber: string;
 };
+//
+// Define type to identify the shape of our data from postgres for the league play players no form report
+//
+export type PlayerNoForm= {
+	seasonCode: string;
+	ledaId: number;
+	formOnFile: boolean;
+	fullName: string;
+}
