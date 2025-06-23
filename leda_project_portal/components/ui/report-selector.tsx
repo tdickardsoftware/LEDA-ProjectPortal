@@ -18,16 +18,11 @@ import {
 } from "@/components/ui/popover";
 import { scheduleRoute, teamRoute, trailsRoute } from "@/lib/apiRoutes";
 
-// Define the parameters for the ReportSelector component
-interface ReportSelectorProps {
-	disabled?: boolean;
-	handleSelect: (value: string) => void;
-	selectedReport: string;
-	type: string;
-}
-
-// Static report data organized by type
-const reportsByType: Record<string, { value: string; label: string }[]> = {
+// Static report data organized by type, now with requiresWeek flag
+const reportsByType: Record<
+	string,
+	{ value: string; label: string; requiresWeek?: boolean }[]
+> = {
 	trails: [
 		{
 			value: `${trailsRoute}/reports/eligibleForTrip`,
@@ -55,13 +50,29 @@ const reportsByType: Record<string, { value: string; label: string }[]> = {
 		{
 			value: `${teamRoute}/teamReport`,
 			label: "Team Report",
-		}, 
+		},
 		{
 			value: `${scheduleRoute}`,
-			label: "Schedules"
-		}
+			label: "Schedules",
+		},
+	],
+	leaguePlay: [
+		{
+			value: "/api/leaguePlay/someReport",
+			label: "Some League Play Report",
+			requiresWeek: true, // Example: set to true for a report that needs week selection
+		},
+		// ...add more leaguePlay reports as needed...
 	],
 };
+
+// Update props to allow passing requiresWeek up
+interface ReportSelectorProps {
+	disabled?: boolean;
+	handleSelect: (value: string, requiresWeek?: boolean) => void;
+	selectedReport: string;
+	type: string;
+}
 
 // ReportSelector component definition
 const ReportSelector: React.FC<ReportSelectorProps> = ({
@@ -73,11 +84,11 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
 
-	// Get reports for the specified type
 	const reports = reportsByType[type] || [];
 
 	const handleSelectReport = (value: string) => {
-		handleSelect(value); // Update the parent component's state
+		const report = reports.find((r) => r.value === value);
+		handleSelect(value, report?.requiresWeek ?? false); // Pass requiresWeek up
 		setOpen(false);
 	};
 
