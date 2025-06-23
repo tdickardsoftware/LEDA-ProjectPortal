@@ -450,3 +450,11 @@ export type PlayerNoForm= {
 	formOnFile: boolean;
 	fullName: string;
 }
+//
+// Define type to identify the shape of our data from postgres for the league play bar affiliation fee not paid report
+//
+export type BarAffiliationFeeNotPaid = {
+	seasonCode: string;
+	ledaId: number;
+	name: string;
+}
