@@ -475,3 +475,14 @@ export type TeamFeeNotPaid = {
 	teamName: string;
 	name: string;
 }
+//
+// Define type to identify the shape of our data from postgres for the league play top darter report
+//
+export type TopDarter = {
+	seasonCode: string;
+	ledaId: number;
+	fullName: string;
+	teamLedaId: number;
+	totalPoints: number;
+	divisionInfo: string;
+}
