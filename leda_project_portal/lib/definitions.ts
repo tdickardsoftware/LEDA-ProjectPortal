@@ -563,3 +563,20 @@ export type MentionBestOfDivision = {
 	mentionBasis: string;
 	mentionCount: number;
 }
+//
+// Define type to identify the shape of our data from postgres for the league play weekly scoresheets report
+//
+export type LeaguePlayWeeklyScoresheets = {
+	seasonCode: string;
+	teamLedaId: number;
+	teamName: string;
+	weekNum: number;
+	divisionInfo: string;
+	division: string;
+	subdivision: string;
+	teamLetter: string;
+	prevTotalPoints: number;
+	totalPoints: number;
+	pointsScored: number;
+	penaltyPoints: number;
+};
