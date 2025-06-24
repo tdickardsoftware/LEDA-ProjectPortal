@@ -498,3 +498,37 @@ export type Ton80 = {
 	t71Cumulative: number;
 	t80Cumulative: number;
 }
+//
+// Define type to identify the shape of our data from postgres for the league play mentions report - player info
+//
+export type LeaguePlayMentionsPlayerMention = {
+	weekNum: number;
+	mentionCode: string;
+	mentionDesc: string;
+	count: number;
+};
+
+export type LeaguePlayMentionsPlayerInfo = {
+	ledaId: number;
+	fullName: string;
+	isCaptain: boolean;
+	mentionsCount: number;
+	mentions: LeaguePlayMentionsPlayerMention[];
+};
+
+// Updated: LeaguePlayMentionsTeamInfo now includes players
+export type LeaguePlayMentionsTeamInfo = {
+	teamId: number;
+	teamName: string;
+	divisionInfo: string;
+	placeId: number;
+	name: string;
+	seasonCode: string;
+	players: LeaguePlayMentionsPlayerInfo[];
+};
+
+// New: Division grouping for the report
+export type LeaguePlayMentionsDivisionInfo = {
+	divisionInfo: string;
+	teams: LeaguePlayMentionsTeamInfo[];
+};
