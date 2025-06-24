@@ -466,3 +466,12 @@ export type PlayerNotPaid = {
 	ledaId: number;
 	fullName: string;
 }
+//
+// Define type to identify the shape of our data from postgres for the league play team fee not paid report
+//
+export type TeamFeeNotPaid = {
+	seasonCode: string;
+	divisionInfo:string;
+	teamName: string;
+	name: string;
+}
