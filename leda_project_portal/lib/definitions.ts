@@ -499,7 +499,7 @@ export type Ton80 = {
 	t80Cumulative: number;
 }
 //
-// Define type to identify the shape of our data from postgres for the league play mentions report - player info
+// Define type to identify the shape of our data from postgres for the league play mentions report - player mention info
 //
 export type LeaguePlayMentionsPlayerMention = {
 	weekNum: number;
@@ -507,7 +507,9 @@ export type LeaguePlayMentionsPlayerMention = {
 	mentionDesc: string;
 	count: number;
 };
-
+//
+// Define type to identify the shape of our data from postgres for the league play mentions report - player info
+//
 export type LeaguePlayMentionsPlayerInfo = {
 	ledaId: number;
 	fullName: string;
@@ -515,8 +517,9 @@ export type LeaguePlayMentionsPlayerInfo = {
 	mentionsCount: number;
 	mentions: LeaguePlayMentionsPlayerMention[];
 };
-
-// Updated: LeaguePlayMentionsTeamInfo now includes players
+//
+// Define type to identify the shape of our data from postgres for the league play mentions report - team info
+//
 export type LeaguePlayMentionsTeamInfo = {
 	teamId: number;
 	teamName: string;
@@ -526,9 +529,22 @@ export type LeaguePlayMentionsTeamInfo = {
 	seasonCode: string;
 	players: LeaguePlayMentionsPlayerInfo[];
 };
-
-// New: Division grouping for the report
+//
+// Define type to identify the shape of our data from postgres for the league play mentions report - division info
+//
 export type LeaguePlayMentionsDivisionInfo = {
 	divisionInfo: string;
 	teams: LeaguePlayMentionsTeamInfo[];
 };
+//
+// Define type to identify the shape of our data from postgres for the league play mentions plaque report
+//
+export type MentionPlaque = {
+	ledaId: number;
+	fullName: string;
+	divisionInfo: string;
+	name: string;
+	mentionsCount: number;
+	count: number;
+	mentionDesc: string;
+}
