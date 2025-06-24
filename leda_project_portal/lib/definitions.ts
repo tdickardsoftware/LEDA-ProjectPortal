@@ -548,3 +548,18 @@ export type MentionPlaque = {
 	count: number;
 	mentionDesc: string;
 }
+//
+// Define type to identify the shape of our data from postgres for the league play mentions best of division report
+//
+export type MentionBestOfDivision = {
+	ledaId: number;
+	fullName: string;
+	teamId: number;
+	teamName: string;
+	division: string;
+	seasonCode: string;
+	mentionCode: string;
+	mentionDesc: string;
+	mentionBasis: string;
+	mentionCount: number;
+}
