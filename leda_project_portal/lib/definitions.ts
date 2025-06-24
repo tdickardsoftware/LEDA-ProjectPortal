@@ -486,3 +486,15 @@ export type TopDarter = {
 	totalPoints: number;
 	divisionInfo: string;
 }
+//
+// Define type to identify the shape of our data from postgres for the league play ton 80 report
+//
+export type Ton80 = {
+	ledaId: number;
+	fullName: string;
+	teamId: number;
+	seasonCode: string;
+	weekNum: number;
+	t71Cumulative: number;
+	t80Cumulative: number;
+}
