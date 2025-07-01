@@ -455,7 +455,7 @@ export type PlayerNoForm= {
 //
 export type BarAffiliationFeeNotPaid = {
 	seasonCode: string;
-	ledaId: number;
+	ledaId: string;
 	name: string;
 }
 //
@@ -540,28 +540,28 @@ export type LeaguePlayMentionsDivisionInfo = {
 // Define type to identify the shape of our data from postgres for the league play mentions plaque report
 //
 export type MentionPlaque = {
-	ledaId: number;
+	seasonCode: string;
+	ledaId: string;
 	fullName: string;
 	divisionInfo: string;
-	name: string;
-	mentionsCount: number;
-	count: number;
-	mentionDesc: string;
+	teamName: string;
+	mentionsCount: string;
+	mentions: { mentionDesc: string; count: number }[]; // <-- updated
 }
 //
 // Define type to identify the shape of our data from postgres for the league play mentions best of division report
 //
 export type MentionBestOfDivision = {
-	ledaId: number;
+	ledaId: string;
 	fullName: string;
-	teamId: number;
+	teamId: string;
 	teamName: string;
 	division: string;
 	seasonCode: string;
 	mentionCode: string;
 	mentionDesc: string;
 	mentionBasis: string;
-	mentionCount: number;
+	mentionCount: string;
 }
 //
 // Define type to identify the shape of our data from postgres for the league play weekly scoresheets report

@@ -11,11 +11,11 @@ export default async function handler(
 	// Handle GET requests
 	if (req.method === "GET") {
 		try {
-            if (req.query.seasonCode && req.query.minimumMentions && req.query.teamId) {
+            if (req.query.seasonCode && req.query.minimumMentions) {
 			// Execute the database query to fetch season code information
 			const result = await query<MentionPlaque>(
-				'SELECT "ledaId", "fullName", "divisionInfo", "name", "mentionsCount", "count", "mentionDesc" FROM public.leda_reports_league_play_mentions WHERE "seasonCode" = $1 AND "mentionsCount" >= $2 AND "teamId" = $3',
-                [req.query.seasonCode as string, req.query.minimumMentions as string, req.query.teamId as string]
+				'SELECT "seasonCode", "ledaId", "fullName", "divisionInfo", "teamName", "mentionsCount", mentions FROM public.leda_reports_league_play_mentions_for_plaque WHERE "seasonCode" = $1 AND "mentionsCount" >= $2',
+                [req.query.seasonCode as string, req.query.minimumMentions as string]
 			);
 			// Respond with the query result
 			res.status(200).json(result.rows);

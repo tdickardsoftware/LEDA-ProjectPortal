@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
@@ -9,27 +9,57 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import WeekSelector from "@/components/ui/week-selector";
+import { Input } from "@/components/ui/input";
+import ReportDisplay from "../report-display";
+import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionPlaque } from "@/lib/definitions";
+import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionPlaqueColumns } from "@/lib/report-definitions";
 
 export default function LeaguePlayReportLandingContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
     const [selectedReport, setSelectedReport] = useState<string>("");
     const [currentSeason, setCurrentSeason] = useState<boolean>(true);
     const [requiresWeek, setRequiresWeek] = useState<boolean>(false);
+    const [reportData, setReportData] = useState<unknown[]>([]);
+    const [dataFetched, setDataFetched] = useState<boolean>(false);
+    const [needsMinimumPoints, setNeedsMinimumPoints] = useState<boolean>(false);
+    const [minimumPoints, setMinimumPoints] = useState<number | undefined>(0);
     const [selectedWeek, setSelectedWeek] = useState<string>("");
+    const [minimumPointsInput, setMinimumPointsInput] = useState<string>("0");
 
     const handleSeasonCodeSelect = useCallback((value: string) => {
         setSeasonCode(value);
     }, []);
 
-    const handleReportSelect = (value: string, requiresWeekFlag?: boolean) => {
+    const handleReportSelect = (value: string, requiresWeekFlag?: boolean, minimumPointsFlag?: boolean) => {
         setSelectedReport(value);
         setRequiresWeek(!!requiresWeekFlag);
+        setNeedsMinimumPoints(!!minimumPointsFlag);
         setSelectedWeek(""); // Reset week when report changes
     };
+
+    const handleDataFetch = useCallback((data: unknown[]) => {
+		setReportData(data);
+		setDataFetched(true);
+	}, []);
+    // Debounce minimumPoints input
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (minimumPointsInput === "") {
+                setMinimumPoints(undefined);
+            } else {
+                const value = parseFloat(minimumPointsInput);
+                setMinimumPoints(isNaN(value) ? undefined : value);
+            }
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [minimumPointsInput]);
 
     // Placeholder PDF document for download link
     const renderPDFDownload = () => {
         if (!selectedReport || !seasonCode) return null;
+        if (!dataFetched || !reportData.length) {
+				return null;
+        }
 
         // Replace with actual PDF document/component as needed
         const document = <div />;
@@ -99,44 +129,159 @@ export default function LeaguePlayReportLandingContent() {
         );
     };
 
+    const renderReportContent = () => {
+        if (!seasonCode) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<p className="text-gray-500 text-center">
+						Select a season code to continue...
+					</p>
+				</div>
+			);
+		}
+
+        if (!selectedReport) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<p className="text-gray-500 text-center">
+						Select a report to continue...
+					</p>
+				</div>
+			);
+		}
+
+        if (requiresWeek && !selectedWeek) {
+            return (
+                <div className="flex h-full items-center justify-center">
+                    <p className="text-gray-500 text-center">
+                        Select a week to continue...
+                    </p>
+                </div>
+            );
+        }
+
+        if (needsMinimumPoints && minimumPoints === undefined) {
+            return (
+                <div className="flex h-full items-center justify-center">
+                    <p className="text-gray-500 text-center">
+                        Enter minimum points to continue...
+                    </p>
+                </div>
+            );
+        }
+
+        if (selectedReport.includes("barAffiliationFeeNotPaid")) {
+            return (
+                <ReportDisplay<BarAffiliationFeeNotPaid>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}`}
+                    columns={leaguePlayBarAffiliationFeeNotPaidColumns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
+        }
+
+        if (selectedReport.includes("mentionBestOfDivision")) {
+            return (
+                <ReportDisplay<MentionBestOfDivision>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}`}
+                    columns={mentionBestOfDivisionColumns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
+        }
+
+        if (selectedReport.includes("mentionPlaque")) {
+            return (
+                <ReportDisplay<MentionPlaque>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}&minimumMentions=${minimumPoints}`}
+                    columns={mentionPlaqueColumns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
+        }
+    }
+
     return (
         <div className="flex flex-col h-full">
             <div className="flex justify-between">
                 <FolderTabMed title="Report Selection" className="w-fit">
                     <div className="flex gap-6">
-                        <div className="flex gap-4">
-                            <SeasonCodeSelector
-                                disabled={currentSeason}
-                                handleSelect={handleSeasonCodeSelect}
-                                useCurrentSeason={currentSeason}
-                                seasonCode={seasonCode}
-                            />
-                            <div className="flex items-center gap-4">
-                                <Label>Current Season?</Label>
-                                <Checkbox
-                                    checked={currentSeason}
-                                    onCheckedChange={() =>
-                                        setCurrentSeason(!currentSeason)
-                                    }
-                                />
+                        <div className="flex gap-4 flex-row">
+                            <div className="flex flex-col gap-1">
+                                <Label htmlFor="season-code-selector">Season</Label>
+                                <div className="flex gap-4">
+                                    <SeasonCodeSelector
+                                        disabled={currentSeason}
+                                        handleSelect={handleSeasonCodeSelect}
+                                        useCurrentSeason={currentSeason}
+                                        seasonCode={seasonCode}
+                                    />
+                                    <div className="flex items-center gap-4">
+                                        <Label htmlFor="current-season-checkbox">Current Season?</Label>
+                                        <Checkbox
+                                            id="current-season-checkbox"
+                                            checked={currentSeason}
+                                            onCheckedChange={() =>
+                                                setCurrentSeason(!currentSeason)
+                                            }
+                                        />
+                                    </div>
+                                </div>
                             </div>
+                            <div className="flex flex-col gap-1">
+                                <Label htmlFor="report-selector">Report</Label>
+                                {/* Always render ReportSelector if needsMinimumPoints is true */}
+                                {(needsMinimumPoints && seasonCode) ||
+                                (!needsMinimumPoints && (
+                                    (!requiresWeek && seasonCode) ||
+                                    (requiresWeek && selectedWeek && seasonCode)
+                                ))
+                                ? (
+                                    <ReportSelector
+                                        handleSelect={handleReportSelect}
+                                        selectedReport={selectedReport}
+                                        type="leaguePlay"
+                                        disabled={!seasonCode}
+                                    />
+                                ) : null}
+                            </div>
+                            {requiresWeek && (
+                                <div className="flex flex-col gap-1">
+                                    <Label htmlFor="week-selector">Week</Label>
+                                    <WeekSelector
+                                        handleSelect={setSelectedWeek}
+                                        seasonCode={seasonCode}
+                                        disabled={!seasonCode}
+                                    />
+                                </div>
+                            )}
+                            {needsMinimumPoints ? (
+                                <div className="flex flex-col gap-1">
+                                    <Label htmlFor="minimum-points-input">
+                                        {selectedReport.includes("mentionPlaque") ? "Minimum Mentions" : "Minimum Points"}
+                                    </Label>
+                                    <Input
+                                        id="minimum-points-input"
+                                        placeholder=""
+                                        type="number"
+                                        value={minimumPointsInput}
+                                        onChange={(e) => {
+                                            setMinimumPointsInput(e.target.value);
+                                        }}
+                                        className="bg-white border-gray-200 w-24"
+                                    />
+                                </div>
+                            ) : null}
                         </div>
-                        <ReportSelector
-                            handleSelect={handleReportSelect}
-                            selectedReport={selectedReport}
-                            type="leaguePlay"
-                            disabled={!seasonCode}
-                        />
-                        {requiresWeek && (
-                            <WeekSelector
-                                handleSelect={setSelectedWeek}
-                                seasonCode={seasonCode}
-                                disabled={!seasonCode}
-                            />
-                        )}
                     </div>
                 </FolderTabMed>
-                {selectedReport && seasonCode && (!requiresWeek || (requiresWeek && selectedWeek)) && (
+                {/* Only render download link if all required fields are filled */}
+                {selectedReport && seasonCode &&
+                    (!requiresWeek || (requiresWeek && selectedWeek)) &&
+                    (!needsMinimumPoints || (needsMinimumPoints && minimumPoints !== undefined) && dataFetched) && (
                     <FolderTabMed title="Download PDF" className="w-fit">
                         {renderPDFDownload()}
                     </FolderTabMed>
@@ -149,16 +294,10 @@ export default function LeaguePlayReportLandingContent() {
                 />
             </div>
             <div className="flex flex-1 overflow-hidden">
-                <div className="flex-1 p-4 overflow-auto">
-                    <div className="flex h-full items-center justify-center">
-                        <div className="text-center">
-                            <h2 className="text-2xl font-semibold mb-4">
-                                Select a season and report to continue...
-                            </h2>
-                        </div>
-                    </div>
-                </div>
-            </div>
+				<div className="flex-1 p-4 overflow-auto">
+					{renderReportContent()}
+				</div>
+			</div>
         </div>
     );
 }

@@ -280,3 +280,143 @@ export const teamReportColumns = [
 		sortable: true,
 	},
 ];
+
+// Column definitions for leaguePlayBarAffiliationFeeNotPaid report
+export const leaguePlayBarAffiliationFeeNotPaidColumns = [
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "ledaId",
+		header: "Place LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "name",
+		header: "Bar Name",
+		accessor: (row: { name: string }) => row.name,
+		sortable: true,
+	},
+];
+
+// Column definitions for mentionBestOfDivision report
+export const mentionBestOfDivisionColumns = [
+	{
+		key: "ledaId",
+		header: "Player LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Player Full Namme ",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "teamId",
+		header: "Team LEDA ID",
+		accessor: (row: { teamId: string }) => row.teamId,
+		sortable: true,
+	},
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: { teamName: string }) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "division",
+		header: "Division",
+		accessor: (row: { division: string }) => row.division,
+		sortable: true,
+	},
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "mentionCode",
+		header: "Mention Code",
+		accessor: (row: { mentionCode: string }) => row.mentionCode,
+		sortable: true,
+	},
+	{
+		key: "mentionDesc",
+		header: "Mention Description",
+		accessor: (row: { mentionDesc: string }) => row.mentionDesc,
+		sortable: true,
+	},
+	{
+		key: "mentionBasis",
+		header: "Mention Basis",
+		accessor: (row: { mentionBasis: string }) => row.mentionBasis,
+		sortable: true,
+	},
+	{
+		key: "mentionCount",
+		header: "Mention Count",
+		accessor: (row: { mentionCount: string }) => row.mentionCount,
+		sortable: true,
+	},
+]
+
+// Column definitions for mentionPlaque report
+export const mentionPlaqueColumns = [
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "ledaId",
+		header: "Player LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Player Full Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "divisionInfo",
+		header: "Division Info",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	},
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: { teamName: string }) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "mentionsCount",
+		header: "Mentions Count",
+		accessor: (row: { mentionsCount: string }) => row.mentionsCount,
+		sortable: true,
+	},
+	{
+		key: "mentions",
+		header: "Mentions",
+		accessor: (row: { mentions: { mentionDesc: string; count: number }[] }) =>
+			Array.isArray(row.mentions)
+				? row.mentions
+						.map(
+							(m: { mentionDesc: string; count: number }) =>
+								`${m.mentionDesc} - ${m.count}`
+						)
+						.join(", ")
+				: "",
+		sortable: true,
+	},
+];

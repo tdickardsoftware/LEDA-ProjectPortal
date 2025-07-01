@@ -11,10 +11,10 @@ export default function Page() {
         <main>
             <div className="mb-6 py-2 ">
 				<h1 className="text-4xl font-bold antialiased">
-					Captains Meeting Reports
+					League Play Reports
 				</h1>
 				<p className="text-muted-foreground mt-2 mb-4">
-					View and export all captains meeting report information. This section allows you to generate and manage reports related to captains meeting, including detailed statistics and insights.
+					View and export all league play report information. This section allows you to generate and manage reports related to league play, including detailed statistics and insights.
 				</p>
 				<Separator />
                 <LeaguePlayReportLandingContent />
