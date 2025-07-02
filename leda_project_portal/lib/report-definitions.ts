@@ -538,3 +538,31 @@ export const ton80Columns = [
 		sortable: true,
 	},
 ];
+
+// Column definitions for players no form report
+export const playerNoFormColumns = [
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "ledaId",
+		header: "Player LEDA ID",
+		accessor: (row: { ledaId: number }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Full Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "formOnFile",
+		header: "Form On File",
+		accessor: (row: { formOnFile: boolean }) => (row.formOnFile ? "Yes" : "No"),
+		sortable: true,
+	},
+];

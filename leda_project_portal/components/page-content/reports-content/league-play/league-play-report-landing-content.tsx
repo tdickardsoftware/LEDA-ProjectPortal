@@ -11,8 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import WeekSelector from "@/components/ui/week-selector";
 import { Input } from "@/components/ui/input";
 import ReportDisplay from "../report-display";
-import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80 } from "@/lib/definitions";
-import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns } from "@/lib/report-definitions";
+import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80, PlayerNoForm } from "@/lib/definitions";
+import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns, playerNoFormColumns } from "@/lib/report-definitions";
 
 export default function LeaguePlayReportLandingContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
@@ -221,6 +221,17 @@ export default function LeaguePlayReportLandingContent() {
                 <ReportDisplay<Ton80>
                     apiRoute={selectedReport + `?seasonCode=${seasonCode}&weekNum=${weekNum}`}
                     columns={ton80Columns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
+        }
+
+        if (selectedReport.includes("playerNoForm")) {
+            return (
+                <ReportDisplay<PlayerNoForm>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}`}
+                    columns={playerNoFormColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
                 />
