@@ -545,15 +545,15 @@ export type MentionLeaguePlay = {
 //
 export type LeaguePlayWeeklyScoresheets = {
 	seasonCode: string;
-	teamLedaId: number;
+	teamLedaId: string;
 	teamName: string;
-	weekNum: number;
+	weekNum: string;
 	divisionInfo: string;
 	division: string;
 	subdivision: string;
 	teamLetter: string;
-	prevTotalPoints: number;
-	totalPoints: number;
-	pointsScored: number;
-	penaltyPoints: number;
+	prevTotalPoints: string;
+	totalPoints: string;
+	pointsScored: string;
+	penaltyPoints: string;
 };

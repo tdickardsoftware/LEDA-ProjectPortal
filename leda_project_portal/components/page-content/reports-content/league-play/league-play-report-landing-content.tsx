@@ -11,8 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import WeekSelector from "@/components/ui/week-selector";
 import { Input } from "@/components/ui/input";
 import ReportDisplay from "../report-display";
-import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80, PlayerNoForm, PlayerNotPaid, TeamFeeNotPaid, TopDarter } from "@/lib/definitions";
-import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns, playerNoFormColumns, playerNotPaidColumns, teamFeeNotPaidColumns, topDarterColumns } from "@/lib/report-definitions";
+import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80, PlayerNoForm, PlayerNotPaid, TeamFeeNotPaid, TopDarter, LeaguePlayWeeklyScoresheets } from "@/lib/definitions";
+import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns, playerNoFormColumns, playerNotPaidColumns, teamFeeNotPaidColumns, topDarterColumns, weeklyScoresheetsColumns } from "@/lib/report-definitions";
 
 export default function LeaguePlayReportLandingContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
@@ -270,6 +270,19 @@ export default function LeaguePlayReportLandingContent() {
                 />
             );
         }
+
+        if (selectedReport.includes("weeklyScoresheets")) {
+            // Extract just the week number (X) from selectedWeek, which is always in the format "DateX"
+            const weekNum = selectedWeek.replace(/^Date/, "");
+            return (
+                <ReportDisplay<LeaguePlayWeeklyScoresheets>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}&weekNum=${weekNum}`}
+                    columns={weeklyScoresheetsColumns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
+        }
     }
 
     return (
@@ -324,6 +337,7 @@ export default function LeaguePlayReportLandingContent() {
                                         handleSelect={setSelectedWeek}
                                         seasonCode={seasonCode}
                                         disabled={!seasonCode}
+                                        useFinishedWeeksOnly={true}
                                     />
                                 </div>
                             )}

@@ -656,3 +656,79 @@ export const topDarterColumns = [
 		sortable: true,
 	},
 ];
+
+// Column definitions for weekly scoresheets report
+export const weeklyScoresheetsColumns = [
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "teamLedaId",
+		header: "Team LEDA ID",
+		accessor: (row: { teamLedaId: string }) => row.teamLedaId,
+		sortable: true,
+	},
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: { teamName: string }) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "weekNum",
+		header: "Week Number",
+		accessor: (row: { weekNum: string }) => row.weekNum,
+		sortable: true,
+	},
+	{
+		key: "divisionInfo",
+		header: "Division Info",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	},
+	{
+		key: "division",
+		header: "Division",
+		accessor: (row: { division: string }) => row.division,
+		sortable: true,
+	},
+	{
+		key: "subdivision",
+		header: "Subdivision",
+		accessor: (row: { subdivision: string }) => row.subdivision,
+		sortable: true,
+	},
+	{
+		key: "teamLetter",
+		header: "Team Letter",
+		accessor: (row: { teamLetter: string }) => row.teamLetter,
+		sortable: true,
+	},
+	{
+		key: "prevTotalPoints",
+		header: "Previous Total Points",
+		accessor: (row: { prevTotalPoints: string }) => row.prevTotalPoints,
+		sortable: true,
+	},
+	{
+		key: "totalPoints",
+		header: "Total Points",
+		accessor: (row: { totalPoints: string }) => row.totalPoints,
+		sortable: true,
+	},
+	{
+		key: "pointsScored",
+		header: "Points Scored",
+		accessor: (row: { pointsScored: string }) => row.pointsScored,
+		sortable: true,
+	},
+	{
+		key: "penaltyPoints",
+		header: "Penalty Points",
+		accessor: (row: { penaltyPoints: string }) => row.penaltyPoints,
+		sortable: true,
+	},
+];
