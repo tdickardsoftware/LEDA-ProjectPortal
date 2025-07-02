@@ -207,7 +207,7 @@ export type TeamPoints = {
 	totalPoints: number;
 };
 //
-// Define type to indentify the shape of our data from postgres for weekly player scores
+// Define type to identify the shape of our data from postgres for weekly player scores
 //
 export type PlayerPoints = {
 	seasonCode: string;

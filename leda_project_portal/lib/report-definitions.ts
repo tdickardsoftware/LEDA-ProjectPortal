@@ -313,7 +313,7 @@ export const mentionBestOfDivisionColumns = [
 	},
 	{
 		key: "fullName",
-		header: "Player Full Namme ",
+		header: "Player Full Name ",
 		accessor: (row: { fullName: string }) => row.fullName,
 		sortable: true,
 	},
@@ -563,6 +563,96 @@ export const playerNoFormColumns = [
 		key: "formOnFile",
 		header: "Form On File",
 		accessor: (row: { formOnFile: boolean }) => (row.formOnFile ? "Yes" : "No"),
+		sortable: true,
+	},
+];
+
+// Column definitions for player not paid report
+export const playerNotPaidColumns = [
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "ledaId",
+		header: "Player LEDA ID",
+		accessor: (row: { ledaId: number }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Full Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+];
+
+// Column definitions for team fee not paid report
+export const teamFeeNotPaidColumns = [
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "divisionInfo",
+		header: "Division Info",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	},
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: { teamName: string }) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "name",
+		header: "Place Name",
+		accessor: (row: { name: string }) => row.name,
+		sortable: true,
+	},
+];
+
+// Column definitions for top darter report
+export const topDarterColumns = [
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "ledaId",
+		header: "Player LEDA ID",
+		accessor: (row: { ledaId: number }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Full Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "teamLedaId",
+		header: "Team LEDA ID",
+		accessor: (row: { teamLedaId: number }) => row.teamLedaId,
+		sortable: true,
+	},
+	{
+		key: "totalPoints",
+		header: "Total Points",
+		accessor: (row: { totalPoints: number }) => row.totalPoints,
+		sortable: true,
+	},
+	{
+		key: "divisionInfo",
+		header: "Division Info",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
 		sortable: true,
 	},
 ];

@@ -11,8 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import WeekSelector from "@/components/ui/week-selector";
 import { Input } from "@/components/ui/input";
 import ReportDisplay from "../report-display";
-import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80, PlayerNoForm } from "@/lib/definitions";
-import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns, playerNoFormColumns } from "@/lib/report-definitions";
+import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80, PlayerNoForm, PlayerNotPaid, TeamFeeNotPaid, TopDarter } from "@/lib/definitions";
+import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns, playerNoFormColumns, playerNotPaidColumns, teamFeeNotPaidColumns, topDarterColumns } from "@/lib/report-definitions";
 
 export default function LeaguePlayReportLandingContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
@@ -236,8 +236,40 @@ export default function LeaguePlayReportLandingContent() {
                     onDataFetch={handleDataFetch}
                 />
             );
+        }
+
+        if (selectedReport.includes("playerNotPaid")) {
+            return (
+                <ReportDisplay<PlayerNotPaid>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}`}
+                    columns={playerNotPaidColumns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
         }       
 
+        if (selectedReport.includes("teamFeeNotPaid")) {
+            return (
+                <ReportDisplay<TeamFeeNotPaid>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}`}
+                    columns={teamFeeNotPaidColumns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
+        }
+
+        if (selectedReport.includes("topDarter")) {
+            return (
+                <ReportDisplay<TopDarter>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}&minimumPoints=${minimumPoints}`}
+                    columns={topDarterColumns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
+        }
     }
 
     return (
