@@ -415,8 +415,81 @@ export const mentionPlaqueColumns = [
 							(m: { mentionDesc: string; count: number }) =>
 								`${m.mentionDesc} - ${m.count}`
 						)
-						.join(", ")
+						.join("\n")
 				: "",
 		sortable: true,
 	},
 ];
+
+// Column definitions for mentionLeaguePlay report
+export const mentionLeaguePlayColumns = [
+	{
+		key: "ledaId",
+		header: "Player LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Player Full Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "isCaptain",
+		header: "Is Captain",
+		accessor: (row: { isCaptain: boolean }) => (row.isCaptain ? "Yes" : "No"),
+		sortable: true,
+	},
+	{
+		key: "teamId",
+		header: "Team LEDA ID",
+		accessor: (row: { teamId: string }) => row.teamId,
+		sortable: true,
+	},
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: { teamName: string }) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "placeName",
+		header: "Place Name",
+		accessor: (row: { placeName: string }) => row.placeName,
+		sortable: true,
+	},
+	{
+		key: "divisionInfo",
+		header: "Division Info",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	},
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "mentionsCount",
+		header: "Mentions Count",
+		accessor: (row: { mentionsCount: string }) => row.mentionsCount,
+		sortable: true,
+	},
+	{
+		key: "mentions",
+		header: "Mentions",
+		accessor: (row: { mentions: { weekNum: string; mentionCode: string; mentionDesc: string; count: string; }[] }) =>
+			Array.isArray(row.mentions)
+				? row.mentions
+						.map(
+							(m: { weekNum: string; mentionCode: string; mentionDesc: string; count: string; }) =>
+								`Week # ${m.weekNum} - ${m.mentionCode} (${m.mentionDesc}) - Count: ${m.count}`
+						)
+						.join("\n")
+				: "",
+		sortable: true,
+	},
+
+]

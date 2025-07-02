@@ -180,7 +180,11 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 									{columns.map((column) => (
 										<TableCell
 											key={column.key}
-											className="px-6 py-4 text-sm text-gray-900"
+											className={`px-6 py-4 text-sm text-gray-900${
+												column.key === "mentions"
+													? " whitespace-pre-line"
+													: ""
+											}`}
 										>
 											{column.accessor(row)}
 										</TableCell>

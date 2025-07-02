@@ -11,8 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import WeekSelector from "@/components/ui/week-selector";
 import { Input } from "@/components/ui/input";
 import ReportDisplay from "../report-display";
-import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionPlaque } from "@/lib/definitions";
-import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionPlaqueColumns } from "@/lib/report-definitions";
+import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque } from "@/lib/definitions";
+import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns } from "@/lib/report-definitions";
 
 export default function LeaguePlayReportLandingContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
@@ -202,6 +202,18 @@ export default function LeaguePlayReportLandingContent() {
                 />
             );
         }
+
+        if (selectedReport.includes("mentionLeaguePlay")) {
+            return (
+                <ReportDisplay<MentionLeaguePlay>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}`}
+                    columns={mentionLeaguePlayColumns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
+        }
+
     }
 
     return (
@@ -236,6 +248,7 @@ export default function LeaguePlayReportLandingContent() {
                                 {/* Always render ReportSelector if needsMinimumPoints is true */}
                                 {(needsMinimumPoints && seasonCode) ||
                                 (!needsMinimumPoints && (
+                                    (requiresWeek && seasonCode) ||
                                     (!requiresWeek && seasonCode) ||
                                     (requiresWeek && selectedWeek && seasonCode)
                                 ))
