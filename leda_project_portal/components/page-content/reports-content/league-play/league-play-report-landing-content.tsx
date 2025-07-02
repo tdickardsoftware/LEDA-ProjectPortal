@@ -11,8 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import WeekSelector from "@/components/ui/week-selector";
 import { Input } from "@/components/ui/input";
 import ReportDisplay from "../report-display";
-import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque } from "@/lib/definitions";
-import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns } from "@/lib/report-definitions";
+import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80 } from "@/lib/definitions";
+import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns } from "@/lib/report-definitions";
 
 export default function LeaguePlayReportLandingContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
@@ -213,6 +213,19 @@ export default function LeaguePlayReportLandingContent() {
                 />
             );
         }
+
+        if (selectedReport.includes("ton80")) {
+            // Extract just the week number (X) from selectedWeek, which is always in the format "DateX"
+            const weekNum = selectedWeek.replace(/^Date/, "");
+            return (
+                <ReportDisplay<Ton80>
+                    apiRoute={selectedReport + `?seasonCode=${seasonCode}&weekNum=${weekNum}`}
+                    columns={ton80Columns}
+                    className="h-full"
+                    onDataFetch={handleDataFetch}
+                />
+            );
+        }       
 
     }
 

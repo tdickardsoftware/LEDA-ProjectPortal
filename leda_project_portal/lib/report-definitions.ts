@@ -491,5 +491,50 @@ export const mentionLeaguePlayColumns = [
 				: "",
 		sortable: true,
 	},
+];
 
-]
+// Column definitions for ton80 report
+export const ton80Columns = [
+	{
+		key: "ledaId",
+		header: "Player LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Player Full Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "teamId",
+		header: "Team LEDA ID", 
+		accessor: (row: { teamId: string }) => row.teamId,
+		sortable: true,
+	},
+	{
+		key: "seasonCode",
+		header: "Season Code",
+		accessor: (row: { seasonCode: string }) => row.seasonCode,
+		sortable: true,
+	},
+	{
+		key: "weekNum",
+		header: "Week Number",
+		accessor: (row: { weekNum: string }) => row.weekNum,
+		sortable: true,
+	},
+	{
+		key: "t71Cumulative",
+		header: "T71 Cumulative",
+		accessor: (row: { t71Cumulative: string }) => row.t71Cumulative,
+		sortable: true,
+	},
+	{
+		key: "t80Cumulative",
+		header: "T80 Cumulative",
+		accessor: (row: { t80Cumulative: string }) => row.t80Cumulative,
+		sortable: true,
+	},
+];
