@@ -14,7 +14,7 @@ export default async function handler(
             if (req.query.seasonCode && req.query.minimumPoints) {
 			// Execute the database query to fetch season code information
 			const result = await query<TopDarter>(
-				'SELECT "seasonCode", "ledaId", "fullName", "teamLedaId", "totalPoints", "divisionInfo" FROM public.leda_reports_league_play_top_darter WHERE "seasonCode" = $1 AND "totalPoints" >= $2',
+				'SELECT "seasonCode", "ledaId", "fullName", "teamLedaId", "totalPoints", "divisionInfo" FROM public.leda_reports_league_play_top_darter WHERE "seasonCode" = $1 AND "totalPoints" >= $2 ORDER BY "divisionInfo" ASC',
                 [req.query.seasonCode as string, req.query.minimumPoints as string]
 			);
 			// Respond with the query result

@@ -6,7 +6,11 @@ CREATE OR REPLACE VIEW public.leda_reports_league_play_top_darter
  AS
  SELECT DISTINCT ON (lwp."seasonCode", lwp."ledaId", lwp."teamLedaId") lwp."seasonCode",
     lwp."ledaId",
-    concat_ws(' '::text, NULLIF(lpi."firstName", ''::text), NULLIF(lpi."middleInitial"::text, ''::text), NULLIF(lpi."lastName", ''::text)) AS "fullName",
+    concat_ws(' '::text, NULLIF(lpi."lastName", ''::text),
+        CASE
+            WHEN NULLIF(lpi."firstName", ''::text) IS NOT NULL THEN "left"(lpi."firstName", 1)
+            ELSE NULL::text
+        END) AS "fullName",
     lwp."teamLedaId",
     lwp."totalPoints",
     lrt."divisionInfo"
