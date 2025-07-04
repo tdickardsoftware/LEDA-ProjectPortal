@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, JSX } from "react";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
@@ -13,6 +13,9 @@ import { Input } from "@/components/ui/input";
 import ReportDisplay from "../report-display";
 import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80, PlayerNoForm, PlayerNotPaid, TeamFeeNotPaid, TopDarter, LeaguePlayWeeklyScoresheets } from "@/lib/definitions";
 import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns, playerNoFormColumns, playerNotPaidColumns, teamFeeNotPaidColumns, topDarterColumns, weeklyScoresheetsColumns } from "@/lib/report-definitions";
+import LeaguePlayBarAffiliationFeeNotPaidReport from "./react-pdf/league-play-bar-affiliation-fee-not-paid";
+import { seasonRoute } from "@/lib/apiRoutes";
+
 
 export default function LeaguePlayReportLandingContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
@@ -25,9 +28,18 @@ export default function LeaguePlayReportLandingContent() {
     const [minimumPoints, setMinimumPoints] = useState<number | undefined>(0);
     const [selectedWeek, setSelectedWeek] = useState<string>("");
     const [minimumPointsInput, setMinimumPointsInput] = useState<string>("0");
+    const [seasonCodeDesc, setSeasonCodeDesc] = useState<string>("");
 
-    const handleSeasonCodeSelect = useCallback((value: string) => {
+    const handleSeasonCodeSelect = useCallback(async (value: string) => {
         setSeasonCode(value);
+        try {
+            const season = await (await fetch(`${seasonRoute}?seasonCode=${value}`)).json();
+            setSeasonCodeDesc(season?.desc || "");
+        } catch (err) {
+            setSeasonCodeDesc("");
+            // Optionally log or show an error
+            console.error("Failed to fetch season description", err);
+        }
     }, []);
 
     const handleReportSelect = (value: string, requiresWeekFlag?: boolean, minimumPointsFlag?: boolean) => {
@@ -57,13 +69,18 @@ export default function LeaguePlayReportLandingContent() {
     // Placeholder PDF document for download link
     const renderPDFDownload = () => {
         if (!selectedReport || !seasonCode) return null;
-        if (!dataFetched || !reportData.length) {
-				return null;
-        }
+        if (!dataFetched || !reportData.length) return null;
 
-        // Replace with actual PDF document/component as needed
-        const document = <div />;
-        const fileName = `leaguePlayReport-${seasonCode}-${new Date()
+        let document: JSX.Element;
+        let fileName: string;
+        if (selectedReport.includes("barAffiliationFeeNotPaid")) {
+            document = (
+                <LeaguePlayBarAffiliationFeeNotPaidReport
+                    data={reportData as BarAffiliationFeeNotPaid[]}
+                    desc={seasonCodeDesc}
+                />
+            );
+            fileName = `barAffiliationFeeNotPaid-${seasonCode}-${new Date()
             .toLocaleDateString("en-US", {
                 timeZone: "America/New_York",
                 month: "2-digit",
@@ -71,7 +88,10 @@ export default function LeaguePlayReportLandingContent() {
                 year: "numeric",
             })
             .replace(/\//g, "")}.pdf`;
-
+        } else {
+            // Do not render the download link for unsupported reports
+            return null;
+        }
         return (
             <PDFDownloadLink
                 document={document}
@@ -362,7 +382,7 @@ export default function LeaguePlayReportLandingContent() {
                     </div>
                 </FolderTabMed>
                 {/* Only render download link if all required fields are filled */}
-                {selectedReport && seasonCode &&
+                {selectedReport && seasonCode && seasonCodeDesc&&
                     (!requiresWeek || (requiresWeek && selectedWeek)) &&
                     (!needsMinimumPoints || (needsMinimumPoints && minimumPoints !== undefined) && dataFetched) && (
                     <FolderTabMed title="Download PDF" className="w-fit">
