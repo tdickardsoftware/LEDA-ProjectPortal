@@ -19,6 +19,7 @@ import LeaguePlayMentionPlaqueReport from "./react-pdf/league-play-mention-plaqu
 import LeaguePlayMentionLeaguePlayReport from "./react-pdf/league-play-mention-league-play-report";
 import LeaguePlayPlayerNoFormReport from "./react-pdf/league-play-player-no-form-report";
 import LeaguePlayPlayerNotPaidReport from "./react-pdf/league-play-player-not-paid-report";
+import LeaguePlayTeamFeeNotPaidReport from "./react-pdf/league-play-team-fee-not-paid-report";
 import { seasonRoute } from "@/lib/apiRoutes";
 
 
@@ -168,6 +169,21 @@ export default function LeaguePlayReportLandingContent() {
                 year: "numeric",
             })
             .replace(/\//g, "")}.pdf`;
+        } else if (selectedReport.includes("teamFeeNotPaid")) {
+            document = (
+                <LeaguePlayTeamFeeNotPaidReport
+                    data={reportData as TeamFeeNotPaid[]}
+                    desc={seasonCodeDesc}
+                />
+            );
+            fileName = `teamFeeNotPaid-${seasonCode}-${new Date()
+                .toLocaleDateString("en-US", {
+                    timeZone: "America/New_York",
+                    month: "2-digit",
+                    day: "2-digit",
+                    year: "numeric",
+                })
+                .replace(/\//g, "")}.pdf`;
         } else {
             // Do not render the download link for unsupported reports
             return null;

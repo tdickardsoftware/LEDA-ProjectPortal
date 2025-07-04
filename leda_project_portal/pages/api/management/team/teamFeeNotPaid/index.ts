@@ -14,7 +14,7 @@ export default async function handler(
             if (req.query.seasonCode) {
 			// Execute the database query to fetch season code information
 			const result = await query<TeamFeeNotPaid>(
-				'SELECT "seasonCode", "divisionInfo", "teamName", name FROM public.leda_reports_league_play_team_fee_not_paid WHERE "seasonCode" = $1',
+				'SELECT "seasonCode", "divisionInfo", "teamName", name FROM public.leda_reports_league_play_team_fee_not_paid WHERE "seasonCode" = $1 ORDER BY "divisionInfo" ASC',
                 [req.query.seasonCode as string]
 			);
 			// Respond with the query result
