@@ -14,6 +14,7 @@ import ReportDisplay from "../report-display";
 import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80, PlayerNoForm, PlayerNotPaid, TeamFeeNotPaid, TopDarter, LeaguePlayWeeklyScoresheets } from "@/lib/definitions";
 import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns, playerNoFormColumns, playerNotPaidColumns, teamFeeNotPaidColumns, topDarterColumns, weeklyScoresheetsColumns } from "@/lib/report-definitions";
 import LeaguePlayBarAffiliationFeeNotPaidReport from "./react-pdf/league-play-bar-affiliation-fee-not-paid";
+import LeaguePlayMentionBestOfDivisionReport from "./react-pdf/league-play-mention-best-of-division-report";
 import { seasonRoute } from "@/lib/apiRoutes";
 
 
@@ -81,6 +82,20 @@ export default function LeaguePlayReportLandingContent() {
                 />
             );
             fileName = `barAffiliationFeeNotPaid-${seasonCode}-${new Date()
+            .toLocaleDateString("en-US", {
+                timeZone: "America/New_York",
+                month: "2-digit",
+                day: "2-digit",
+                year: "numeric",
+            })
+            .replace(/\//g, "")}.pdf`;
+        } else if (selectedReport.includes("mentionBestOfDivision")) {
+            document = (
+                <LeaguePlayMentionBestOfDivisionReport
+                    data={reportData as MentionBestOfDivision[]}
+                />
+            );
+            fileName = `mentionBestOfDivision-${seasonCode}-${new Date()
             .toLocaleDateString("en-US", {
                 timeZone: "America/New_York",
                 month: "2-digit",
