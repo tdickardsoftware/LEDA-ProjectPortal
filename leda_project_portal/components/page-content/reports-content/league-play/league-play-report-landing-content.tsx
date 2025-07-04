@@ -18,6 +18,7 @@ import LeaguePlayMentionBestOfDivisionReport from "./react-pdf/league-play-menti
 import LeaguePlayMentionPlaqueReport from "./react-pdf/league-play-mention-plaque-report";
 import LeaguePlayMentionLeaguePlayReport from "./react-pdf/league-play-mention-league-play-report";
 import LeaguePlayPlayerNoFormReport from "./react-pdf/league-play-player-no-form-report";
+import LeaguePlayPlayerNotPaidReport from "./react-pdf/league-play-player-not-paid-report";
 import { seasonRoute } from "@/lib/apiRoutes";
 
 
@@ -141,9 +142,25 @@ export default function LeaguePlayReportLandingContent() {
             document = (
                 <LeaguePlayPlayerNoFormReport
                     data={reportData as PlayerNoForm[]}
+                    desc={seasonCodeDesc}
                 />
             );
             fileName = `playerNoForm-${seasonCode}-${new Date()
+            .toLocaleDateString("en-US", {
+                timeZone: "America/New_York",
+                month: "2-digit",
+                day: "2-digit",
+                year: "numeric",
+            })
+            .replace(/\//g, "")}.pdf`;
+        } else if (selectedReport.includes("playerNotPaid")) {
+            document = (
+                <LeaguePlayPlayerNotPaidReport
+                    data={reportData as PlayerNotPaid[]}
+                    desc={seasonCodeDesc}
+                />
+            );
+            fileName = `playerNotPaid-${seasonCode}-${new Date()
             .toLocaleDateString("en-US", {
                 timeZone: "America/New_York",
                 month: "2-digit",

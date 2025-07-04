@@ -1,6 +1,6 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import { PlayerNoForm } from "@/lib/definitions";
+import { PlayerNotPaid } from "@/lib/definitions";
 import ReportsHeader from "@/components/ui/reports-header";
 import ReportsFooter from "@/components/ui/reports-footer";
 
@@ -40,18 +40,15 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	seasonCodeColumn: {
-		width: "20%",
+		width: "25%",
 		fontWeight: "bold",
 	},
 	ledaIdColumn: {
-		width: "20%",
+		width: "25%",
 		fontWeight: "bold",
 	},
 	fullNameColumn: {
-		width: "40%",
-	},
-	formOnFileColumn: {
-		width: "20%",
+		width: "50%",
 	},
 	lastCell: {
 		borderRight: 0,
@@ -62,15 +59,15 @@ const styles = StyleSheet.create({
 	},
 });
 
-interface PlayerNoFormReportProps {
-	data: PlayerNoForm[];
-    desc: string;
+interface PlayerNotPaidReportProps {
+	data: PlayerNotPaid[];
+	desc: string;
 	reportDate?: string;
 }
 
-const LeaguePlayPlayerNoFormReport: React.FC<PlayerNoFormReportProps> = ({
+const LeaguePlayPlayerNotPaidReport: React.FC<PlayerNotPaidReportProps> = ({
 	data,
-    desc,
+	desc,
 	reportDate = new Date()
 		.toLocaleDateString("en-US", {
 			month: "2-digit",
@@ -85,20 +82,17 @@ const LeaguePlayPlayerNoFormReport: React.FC<PlayerNoFormReportProps> = ({
 	<Document>
 		<Page size="A4" style={styles.page} wrap>
 			<ReportsHeader
-				title="Players No Form On File"
-                subtitle={desc}
+				title="Players Not Paid"
 				reportDate={reportDate}
+				subtitle={desc}
 			/>
 			<View style={styles.table}>
 				<View style={styles.tableHeader}>
 					<Text style={[styles.cell, styles.ledaIdColumn, styles.tableHeaderText]}>
 						Player LEDA ID
 					</Text>
-					<Text style={[styles.cell, styles.fullNameColumn, styles.tableHeaderText]}>
+					<Text style={[styles.cell, styles.fullNameColumn, styles.tableHeaderText, styles.lastCell]}>
 						Full Name
-					</Text>
-					<Text style={[styles.cell, styles.formOnFileColumn, styles.tableHeaderText, styles.lastCell]}>
-						Form On File
 					</Text>
 				</View>
 				{data.map((row, idx) => (
@@ -106,11 +100,8 @@ const LeaguePlayPlayerNoFormReport: React.FC<PlayerNoFormReportProps> = ({
 						<Text style={[styles.cell, styles.ledaIdColumn]}>
 							{row.ledaId}
 						</Text>
-						<Text style={[styles.cell, styles.fullNameColumn]}>
+						<Text style={[styles.cell, styles.fullNameColumn, styles.lastCell]}>
 							{row.fullName}
-						</Text>
-						<Text style={[styles.cell, styles.formOnFileColumn, styles.lastCell]}>
-							{row.formOnFile ? "Yes" : "No"}
 						</Text>
 					</View>
 				))}
@@ -120,4 +111,4 @@ const LeaguePlayPlayerNoFormReport: React.FC<PlayerNoFormReportProps> = ({
 	</Document>
 );
 
-export default LeaguePlayPlayerNoFormReport;
+export default LeaguePlayPlayerNotPaidReport;
