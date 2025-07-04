@@ -16,18 +16,13 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { scheduleRoute, teamRoute, trailsRoute } from "@/lib/apiRoutes";
+import { mentionRoute, placeRoute, playerRoute, scheduleRoute, teamRoute, trailsRoute, weeklyScoresheetsRoute } from "@/lib/apiRoutes";
 
-// Define the parameters for the ReportSelector component
-interface ReportSelectorProps {
-	disabled?: boolean;
-	handleSelect: (value: string) => void;
-	selectedReport: string;
-	type: string;
-}
-
-// Static report data organized by type
-const reportsByType: Record<string, { value: string; label: string }[]> = {
+// Static report data organized by type, now with requiresWeek flag
+const reportsByType: Record<
+	string,
+	{ value: string; label: string; requiresWeek?: boolean; minimumPoints?: boolean }[]
+> = {
 	trails: [
 		{
 			value: `${trailsRoute}/reports/eligibleForTrip`,
@@ -41,7 +36,10 @@ const reportsByType: Record<string, { value: string; label: string }[]> = {
 			value: `${trailsRoute}/reports/membershipList`,
 			label: "Membership List",
 		},
-		{ value: `${trailsRoute}/reports/pointsList`, label: "Points List" },
+		{ 
+			value: `${trailsRoute}/reports/pointsList`, 
+			label: "Points List" 
+		},
 		{
 			value: `${trailsRoute}/reports/savePointsLetter`,
 			label: "Save Points Letter",
@@ -55,13 +53,67 @@ const reportsByType: Record<string, { value: string; label: string }[]> = {
 		{
 			value: `${teamRoute}/teamReport`,
 			label: "Team Report",
-		}, 
+		},
 		{
 			value: `${scheduleRoute}`,
-			label: "Schedules"
+			label: "Schedules",
+		},
+	],
+	leaguePlay: [
+		{
+			value: `${placeRoute}/barAffiliationFeeNotPaid`,
+			label: "Bar - Affiliation Fee Not Paid",
+		},
+		{
+			value: `${mentionRoute}/mentionBestOfDivision`,
+			label: "Mentions - Best of Division"
+		},
+		{
+			value: `${mentionRoute}/mentionPlaque`,
+			label: "Mentions - For Plaques",
+			minimumPoints: true
+		},
+		{
+			value: `${mentionRoute}/mentionLeaguePlay`,
+			label: "Mentions - League Play"
+		},
+		{
+			value: `${mentionRoute}/ton80`,
+			label: "Mentions - Ton 80 Weekly League",
+			requiresWeek: true,
+		},
+		{
+			value: `${playerRoute}/playerNoForm`,
+			label: "Players - No Form",
+		},
+		{
+			value: `${playerRoute}/playerNotPaid`,
+			label: "Players - Not Paid",
+		},
+		{
+			value: `${teamRoute}/teamFeeNotPaid`,
+			label: "Teams - Roster Fee Not Paid",
+		},
+		{
+			value: `${weeklyScoresheetsRoute}/topDarter`,
+			label: "Scoresheets - Top Darter Report",
+			minimumPoints: true,
+		},
+		{
+			value: `${weeklyScoresheetsRoute}/weeklyScoresheets`,
+			label: "Scoresheets - Weekly Scoresheets",
+			requiresWeek: true,
 		}
 	],
 };
+
+// Update props to allow passing requiresWeek up
+interface ReportSelectorProps {
+	disabled?: boolean;
+	handleSelect: (value: string, requiresWeek?: boolean, minimumPoints?: boolean) => void;
+	selectedReport: string;
+	type: string;
+}
 
 // ReportSelector component definition
 const ReportSelector: React.FC<ReportSelectorProps> = ({
@@ -73,11 +125,11 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
 
-	// Get reports for the specified type
 	const reports = reportsByType[type] || [];
 
 	const handleSelectReport = (value: string) => {
-		handleSelect(value); // Update the parent component's state
+		const report = reports.find((r) => r.value === value);
+		handleSelect(value, report?.requiresWeek ?? false, report?.minimumPoints ?? false); // Pass requiresWeek and minimumPoints up
 		setOpen(false);
 	};
 
@@ -93,16 +145,18 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
-							className="w-[200px] justify-between"
+							className="w-[200px] pr-8 relative flex items-center justify-between"
 							disabled={disabled} // Disable the button if the prop is true
 						>
-							{selectedReport // Use the selectedReport prop to display the selected report label
-								? reports.find(
-										(report) =>
-											report.value === selectedReport
-								  )?.label
-								: "Select a report..."}
-							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+							<span className="truncate block w-full text-left">
+								{selectedReport
+									? reports.find(
+											(report) =>
+												report.value === selectedReport
+										)?.label
+									: "Select a report..."}
+							</span>
+							<ChevronsUpDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 shrink-0 opacity-50 pointer-events-none" />
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent

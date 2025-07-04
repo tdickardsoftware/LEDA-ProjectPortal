@@ -207,7 +207,7 @@ export type TeamPoints = {
 	totalPoints: number;
 };
 //
-// Define type to indentify the shape of our data from postgres for weekly player scores
+// Define type to identify the shape of our data from postgres for weekly player scores
 //
 export type PlayerPoints = {
 	seasonCode: string;
@@ -440,4 +440,123 @@ export type CaptainsMtgSchedulePlaceCaptainSeasonInfo = {
 	captainId: number;
 	captainFullName: string;
 	captainPhoneNumber: string;
+};
+//
+// Define type to identify the shape of our data from postgres for the league play players no form report
+//
+export type PlayerNoForm= {
+	seasonCode: string;
+	ledaId: number;
+	formOnFile: boolean;
+	fullName: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the league play bar affiliation fee not paid report
+//
+export type BarAffiliationFeeNotPaid = {
+	seasonCode: string;
+	ledaId: string;
+	name: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the league play player not paid report
+//
+export type PlayerNotPaid = {
+	seasonCode: string;
+	ledaId: number;
+	fullName: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the league play team fee not paid report
+//
+export type TeamFeeNotPaid = {
+	seasonCode: string;
+	divisionInfo:string;
+	teamName: string;
+	name: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the league play top darter report
+//
+export type TopDarter = {
+	seasonCode: string;
+	ledaId: number;
+	fullName: string;
+	teamLedaId: number;
+	totalPoints: number;
+	divisionInfo: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the league play ton 80 report
+//
+export type Ton80 = {
+	ledaId: string;
+	fullName: string;
+	teamId: string;
+	seasonCode: string;
+	weekNum: string;
+	t71Cumulative: string;
+	t80Cumulative: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the league play mentions plaque report
+//
+export type MentionPlaque = {
+	seasonCode: string;
+	ledaId: string;
+	fullName: string;
+	division: string;
+	divisionInfo: string;
+	teamName: string;
+	mentionsCount: string;
+	mentions: { mentionDesc: string; count: number }[]; // <-- updated
+}
+//
+// Define type to identify the shape of our data from postgres for the league play mentions best of division report
+//
+export type MentionBestOfDivision = {
+	ledaId: string;
+	fullName: string;
+	teamId: string;
+	teamName: string;
+	division: string;
+	seasonCode: string;
+	mentionCode: string;
+	mentionDesc: string;
+	mentionBasis: string;
+	mentionCount: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the league play mentions report
+//
+export type MentionLeaguePlay = {
+	ledaId: string;
+	fullName: string;
+	isCaptain: boolean;
+	teamId: string;
+	teamName: string;
+	placeName: string;
+	divisionInfo: string;
+	seasonCode: string;
+	mentionsCount: string;
+	mentions: { weekNum: string; mentionCode: string; mentionDesc: string; count: string;}[]
+}
+//
+// Define type to identify the shape of our data from postgres for the league play weekly scoresheets report
+//
+export type LeaguePlayWeeklyScoresheets = {
+	seasonCode: string;
+	teamLedaId: string;
+	teamName: string;
+	placeName: string;
+	weekNum: string;
+	divisionInfo: string;
+	division: string;
+	subdivision: string;
+	teamLetter: string;
+	prevTotalPoints: string;
+	totalPoints: string;
+	pointsScored: string;
+	penaltyPoints: string;
+	previousPenaltyPoints: string;
 };

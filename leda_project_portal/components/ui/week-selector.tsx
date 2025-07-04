@@ -1,3 +1,4 @@
+// TODO - Implement the ability to customly select the weeks available in submitted scoresheets
 "use client";
 import React, { useEffect, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -23,6 +24,7 @@ interface WeekSelectorProps {
 	handleSelect: (value: string) => void;
 	seasonCode: string;
 	disabled: boolean;
+	useFinishedWeeksOnly?: boolean; // <-- new prop
 }
 
 // SeasonCodeSelector component definition
@@ -30,6 +32,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 	handleSelect,
 	seasonCode,
 	disabled,
+	useFinishedWeeksOnly = false, // <-- default false
 }) => {
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
@@ -41,7 +44,6 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 	const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
 	const [selectedWeekLabel, setSelectedWeekLabel] =
 		useState<string>("Select a Week...");
-
 	const handleSelectWeek = (value: string, label: string) => {
 		setSelectedWeek(value);
 		setSelectedWeekLabel(label); // Update the button's label
@@ -51,7 +53,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 
 	useEffect(() => {
 		async function loadSeasonCodes() {
-			if (!seasonCode) return; // Skip if no seasonCode is provided
+			if (!seasonCode) return;
 			try {
 				const response = await fetch(
 					seasonRoute + `?seasonCode=${seasonCode}`
@@ -59,24 +61,37 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 				const data = await response.json();
 				const dates = data.dates;
 
-				const formattedDates = Object.entries(dates).map(
+				let formattedDates = Object.entries(dates).map(
 					([key, value]) => {
 						// Extract the week number from the key (e.g., "Date1" -> "1")
 						const weekNumber = key.replace("Date", "");
 						return {
 							value: key,
 							label: `Week ${weekNumber} - ${value}`,
+							weekNumber: Number(weekNumber),
 						};
 					}
 				);
 
+				if (useFinishedWeeksOnly) {
+					// Fetch count of finished weeks
+					const finishedResp = await fetch(
+						`/api/activities/scoresheets?seasonCode=${seasonCode}&countOfFinishedWeeks=true`
+					);
+					const finishedData = await finishedResp.json();
+					const count = Number(finishedData.count || finishedData.count_finished_weeks || Object.values(finishedData)[0]);
+					// Only include weeks up to the finished count
+					formattedDates = formattedDates.filter(
+						(w) => w.weekNumber <= count
+					);
+				}
 				setSeasonCodes(formattedDates);
 			} catch (error) {
 				console.error("Failed to fetch season codes", error);
 			}
 		}
 		loadSeasonCodes();
-	}, [seasonCode]);
+	}, [seasonCode, useFinishedWeeksOnly]);
 
 	useEffect(() => {
 		// Reset the selected week when the season code changes
@@ -88,7 +103,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild disabled={disabled}>
+					<PopoverTrigger asChild disabled={disabled} className="bg-white border-gray-200">
 						<Button
 							variant="outline"
 							role="combobox"
@@ -102,7 +117,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="w-[200px] p-0 bg-white"
+						className="w-[200px] p-0 bg-white border-gray-200"
 						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
