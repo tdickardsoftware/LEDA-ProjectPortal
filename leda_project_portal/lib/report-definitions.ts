@@ -684,6 +684,12 @@ export const weeklyScoresheetsColumns = [
 		sortable: true,
 	},
 	{
+		key: "placeName",
+		header: "Place Name",
+		accessor: (row: { placeName: string }) => row.placeName,
+		sortable: true,
+	},
+	{
 		key: "weekNum",
 		header: "Week Number",
 		accessor: (row: { weekNum: string }) => row.weekNum,
@@ -735,6 +741,12 @@ export const weeklyScoresheetsColumns = [
 		key: "penaltyPoints",
 		header: "Penalty Points",
 		accessor: (row: { penaltyPoints: string }) => row.penaltyPoints,
+		sortable: true,
+	},
+	{
+		key: "previousPenaltyPoints",
+		header: "Previous Penalty Points",
+		accessor: (row: { previousPenaltyPoints: string }) => row.previousPenaltyPoints,
 		sortable: true,
 	},
 ];

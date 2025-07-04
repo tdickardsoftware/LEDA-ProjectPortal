@@ -14,7 +14,7 @@ export default async function handler(
             if (req.query.seasonCode && req.query.weekNum ) {
 			// Execute the database query to fetch season code information
 			const result = await query<LeaguePlayWeeklyScoresheets>(
-				'SELECT "seasonCode", "teamLedaId", "teamName", "weekNum", "divisionInfo", division, subdivision, "teamLetter", "prevTotalPoints", "totalPoints", "pointsScored", "penaltyPoints"  FROM public.leda_reports_league_play_weekly_scoresheets WHERE "seasonCode" = $1 AND "weekNum" = $2 ORDER BY "teamLetter" ASC',
+				'SELECT "seasonCode", "teamLedaId", "teamName", "placeName", "weekNum", "divisionInfo", division, subdivision, "teamLetter", "prevTotalPoints", "totalPoints", "pointsScored", "penaltyPoints", "previousPenaltyPoints"  FROM public.leda_reports_league_play_weekly_scoresheets WHERE "seasonCode" = $1 AND "weekNum" = $2 ORDER BY "teamLetter" ASC',
                 [req.query.seasonCode as string, req.query.weekNum as string]
 			);
 			// Respond with the query result

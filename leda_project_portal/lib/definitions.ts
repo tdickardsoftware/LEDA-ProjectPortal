@@ -548,6 +548,7 @@ export type LeaguePlayWeeklyScoresheets = {
 	seasonCode: string;
 	teamLedaId: string;
 	teamName: string;
+	placeName: string;
 	weekNum: string;
 	divisionInfo: string;
 	division: string;
@@ -557,4 +558,5 @@ export type LeaguePlayWeeklyScoresheets = {
 	totalPoints: string;
 	pointsScored: string;
 	penaltyPoints: string;
+	previousPenaltyPoints: string;
 };
