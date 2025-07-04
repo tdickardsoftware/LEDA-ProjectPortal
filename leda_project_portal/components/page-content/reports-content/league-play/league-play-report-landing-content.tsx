@@ -22,6 +22,7 @@ import LeaguePlayPlayerNotPaidReport from "./react-pdf/league-play-player-not-pa
 import LeaguePlayTeamFeeNotPaidReport from "./react-pdf/league-play-team-fee-not-paid-report";
 import LeaguePlayTopDarterReport from "./react-pdf/league-play-top-darter-report";
 import LeaguePlayWeeklyScoresheetsReport from "./react-pdf/league-play-weekly-scoresheets-report";
+import LeaguePlayTon80Report from "./react-pdf/league-play-ton80-report";
 import { seasonRoute } from "@/lib/apiRoutes";
 
 
@@ -244,6 +245,24 @@ export default function LeaguePlayReportLandingContent() {
                 />
             );
             fileName = `weeklyScoresheets-${seasonCode}-week${weekNum}-${new Date()
+                .toLocaleDateString("en-US", {
+                    timeZone: "America/New_York",
+                    month: "2-digit",
+                    day: "2-digit",
+                    year: "numeric",
+                })
+                .replace(/\//g, "")}.pdf`;
+        } else if (selectedReport.includes("ton80")) {
+            // Extract weekNum from selectedWeek ("DateX" -> "X")
+            const weekNum = selectedWeek.replace(/^Date/, "");
+            document = (
+                <LeaguePlayTon80Report
+                    data={reportData as Ton80[]}
+                    desc={seasonCodeDesc}
+                    weekNum={weekNum}
+                />
+            );
+            fileName = `ton80-${seasonCode}-week${weekNum}-${new Date()
                 .toLocaleDateString("en-US", {
                     timeZone: "America/New_York",
                     month: "2-digit",
