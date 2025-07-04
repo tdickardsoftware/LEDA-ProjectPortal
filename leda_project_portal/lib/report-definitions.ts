@@ -388,6 +388,12 @@ export const mentionPlaqueColumns = [
 		sortable: true,
 	},
 	{
+		key: "division",
+		header: "Division",
+		accessor: (row: { division: string }) => row.division,
+		sortable: true,
+	},
+	{
 		key: "divisionInfo",
 		header: "Division Info",
 		accessor: (row: { divisionInfo: string }) => row.divisionInfo,

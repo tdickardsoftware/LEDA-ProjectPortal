@@ -505,6 +505,7 @@ export type MentionPlaque = {
 	seasonCode: string;
 	ledaId: string;
 	fullName: string;
+	division: string;
 	divisionInfo: string;
 	teamName: string;
 	mentionsCount: string;

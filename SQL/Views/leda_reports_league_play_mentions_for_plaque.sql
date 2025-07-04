@@ -7,12 +7,13 @@ CREATE OR REPLACE VIEW public.leda_reports_league_play_mentions_for_plaque
  SELECT "seasonCode",
     "ledaId",
     "fullName",
+    division,
     "divisionInfo",
     "teamName",
     "mentionsCount",
     json_agg(json_build_object('mentionDesc', "mentionDesc", 'count', count)) AS mentions
    FROM leda_reports_league_play_mentions
-  GROUP BY "seasonCode", "ledaId", "fullName", "divisionInfo", "teamName", "mentionsCount"
+  GROUP BY "seasonCode", "ledaId", "fullName", division, "divisionInfo", "teamName", "mentionsCount"
   ORDER BY "ledaId";
 
 ALTER TABLE public.leda_reports_league_play_mentions_for_plaque
