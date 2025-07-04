@@ -17,6 +17,7 @@ import LeaguePlayBarAffiliationFeeNotPaidReport from "./react-pdf/league-play-ba
 import LeaguePlayMentionBestOfDivisionReport from "./react-pdf/league-play-mention-best-of-division-report";
 import LeaguePlayMentionPlaqueReport from "./react-pdf/league-play-mention-plaque-report";
 import LeaguePlayMentionLeaguePlayReport from "./react-pdf/league-play-mention-league-play-report";
+import LeaguePlayPlayerNoFormReport from "./react-pdf/league-play-player-no-form-report";
 import { seasonRoute } from "@/lib/apiRoutes";
 
 
@@ -129,6 +130,20 @@ export default function LeaguePlayReportLandingContent() {
                 />
             );
             fileName = `mentionLeaguePlay-${seasonCode}-${new Date()
+            .toLocaleDateString("en-US", {
+                timeZone: "America/New_York",
+                month: "2-digit",
+                day: "2-digit",
+                year: "numeric",
+            })
+            .replace(/\//g, "")}.pdf`;
+        } else if (selectedReport.includes("playerNoForm")) {
+            document = (
+                <LeaguePlayPlayerNoFormReport
+                    data={reportData as PlayerNoForm[]}
+                />
+            );
+            fileName = `playerNoForm-${seasonCode}-${new Date()
             .toLocaleDateString("en-US", {
                 timeZone: "America/New_York",
                 month: "2-digit",
