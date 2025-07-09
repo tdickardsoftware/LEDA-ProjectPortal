@@ -105,6 +105,32 @@ const reportsByType: Record<
 			requiresWeek: true,
 		}
 	],
+	lists: [
+		{
+			value: `**REPLACE**`,
+			label: "Captains List"
+		},
+		{
+			value: `**REPLACE**`,
+			label: "Election List"
+		},
+		{
+			value: `**REPLACE**`,
+			label: "Mailing Labels"
+		},
+		{
+			value: `**REPLACE**`,
+			label: "Members List"
+		},
+		{
+			value: `**REPLACE**`,
+			label: "Places List"
+		},
+		{
+			value: `**REPLACE**`,
+			label: "Team List"
+		}
+	]
 };
 
 // Update props to allow passing requiresWeek up

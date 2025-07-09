@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import ReportDisplay from "@/components/page-content/reports-content/report-display";
+import ReportDisplay from "@/components/ui/report-display";
 import {
 	TrailsHistoryOfWins,
 	TrailsTripEligible,

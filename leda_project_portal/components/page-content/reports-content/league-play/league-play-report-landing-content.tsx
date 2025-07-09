@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import WeekSelector from "@/components/ui/week-selector";
 import { Input } from "@/components/ui/input";
-import ReportDisplay from "../report-display";
+import ReportDisplay from "../../../ui/report-display";
 import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80, PlayerNoForm, PlayerNotPaid, TeamFeeNotPaid, TopDarter, LeaguePlayWeeklyScoresheets } from "@/lib/definitions";
 import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns, playerNoFormColumns, playerNotPaidColumns, teamFeeNotPaidColumns, topDarterColumns, weeklyScoresheetsColumns } from "@/lib/report-definitions";
 import LeaguePlayBarAffiliationFeeNotPaidReport from "./react-pdf/league-play-bar-affiliation-fee-not-paid";
