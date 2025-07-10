@@ -107,11 +107,11 @@ const reportsByType: Record<
 	],
 	lists: [
 		{
-			value: `**REPLACE**`,
+			value: `${playerRoute}/captainsReport`,
 			label: "Captains List"
 		},
 		{
-			value: `**REPLACE**`,
+			value: `${playerRoute}/electionList`,
 			label: "Election List"
 		},
 		{
@@ -119,15 +119,15 @@ const reportsByType: Record<
 			label: "Mailing Labels"
 		},
 		{
-			value: `**REPLACE**`,
+			value: `${playerRoute}/membershipList`,
 			label: "Members List"
 		},
 		{
-			value: `**REPLACE**`,
+			value: `${placeRoute}/placesReport`,
 			label: "Places List"
 		},
 		{
-			value: `**REPLACE**`,
+			value: `${teamRoute}/teamsReportLists`,
 			label: "Team List"
 		}
 	]
