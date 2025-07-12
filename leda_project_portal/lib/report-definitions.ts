@@ -750,3 +750,43 @@ export const weeklyScoresheetsColumns = [
 		sortable: true,
 	},
 ];
+
+// Column definitions for captains report
+export const captainsReportColumns = [
+	{
+		key: "Name",
+		header: "Previous fullName Points",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "ledaId",
+		header: "LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "phoneNumber",
+		header: "Phone Number",
+		accessor: (row: { phoneNumber: string }) => row.phoneNumber,
+		sortable: true,
+	},
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: { teamName: string }) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "Division",
+		header: "Division",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	},
+	{
+		key: "placeName",
+		header: "Place Name",
+		accessor: (row: { placeName: string }) => row.placeName,
+		sortable: true,
+	},
+]

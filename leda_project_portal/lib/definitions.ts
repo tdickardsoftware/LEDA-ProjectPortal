@@ -569,6 +569,7 @@ export type ListsCaptains = {
 	seasonCode: string;
 	teamName: string;
 	placeName: string;
+	division: string;
 	divisionInfo: string;
 	phoneNumber: string;
 }
@@ -621,4 +622,11 @@ export type ListsTeams = {
 	placePhoneNumber: string;
 	captainFullName: string;
 	captainPhoneNumber: string;
+}
+//
+// Define type to identify the shape of our data from postgres for divisions in a roster
+//
+export type RosterDivision = {
+	seasonCode: string;
+	division: string;
 }
