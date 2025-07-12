@@ -21,7 +21,7 @@ import { mentionRoute, placeRoute, playerRoute, scheduleRoute, teamRoute, trails
 // Static report data organized by type, now with requiresWeek flag
 const reportsByType: Record<
 	string,
-	{ value: string; label: string; requiresWeek?: boolean; minimumPoints?: boolean; divisionSelector?: boolean }[]
+	{ value: string; label: string; requiresWeek?: boolean; minimumPoints?: boolean; divisionSelector?: boolean; fiscalYear?: boolean }[]
 > = {
 	trails: [
 		{
@@ -113,7 +113,8 @@ const reportsByType: Record<
 		},
 		{
 			value: `${playerRoute}/electionList`,
-			label: "Election List"
+			label: "Election List",
+			fiscalYear: true,
 		},
 		{
 			value: `**REPLACE**`,
@@ -137,7 +138,7 @@ const reportsByType: Record<
 // Update props to allow passing requiresWeek up
 interface ReportSelectorProps {
 	disabled?: boolean;
-	handleSelect: (value: string, requiresWeek?: boolean, minimumPoints?: boolean, divisionSelector?: boolean) => void;
+	handleSelect: (value: string, requiresWeek?: boolean, minimumPoints?: boolean, divisionSelector?: boolean, fiscalYear?: boolean) => void;
 	selectedReport: string;
 	type: string;
 }
@@ -156,7 +157,7 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 
 	const handleSelectReport = (value: string) => {
 		const report = reports.find((r) => r.value === value);
-		handleSelect(value, report?.requiresWeek ?? false, report?.minimumPoints ?? false, report?.divisionSelector ?? false); // Pass requiresWeek and minimumPoints up
+		handleSelect(value, report?.requiresWeek ?? false, report?.minimumPoints ?? false, report?.divisionSelector ?? false, report?.fiscalYear ?? false); // Pass requiresWeek and minimumPoints up
 		setOpen(false);
 	};
 

@@ -754,8 +754,8 @@ export const weeklyScoresheetsColumns = [
 // Column definitions for captains report
 export const captainsReportColumns = [
 	{
-		key: "Name",
-		header: "Previous fullName Points",
+		key: "fullName",
+		header: "Full Name",
 		accessor: (row: { fullName: string }) => row.fullName,
 		sortable: true,
 	},
@@ -787,6 +787,16 @@ export const captainsReportColumns = [
 		key: "placeName",
 		header: "Place Name",
 		accessor: (row: { placeName: string }) => row.placeName,
+		sortable: true,
+	},
+]
+
+// Column definitions for lists election list
+export const electionListColumns = [
+	{
+		key: "fullName",
+		header: "Full Name",
+		accessor: (row: { fullName: string }) => row.fullName,
 		sortable: true,
 	},
 ]

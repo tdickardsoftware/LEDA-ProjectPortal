@@ -578,6 +578,7 @@ export type ListsCaptains = {
 //
 export type ListsElectionList = {
 	fullName: string;
+	badStanding: boolean;
 }
 //
 // Define type to identify the shape of our data from postgres for the lists membership report
@@ -629,4 +630,10 @@ export type ListsTeams = {
 export type RosterDivision = {
 	seasonCode: string;
 	division: string;
+}
+//
+// Define type to identify the shape of our data from postgres for fiscal years
+//
+export type FiscalYear = {
+	fiscalYear: string;
 }

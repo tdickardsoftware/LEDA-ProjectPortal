@@ -9,11 +9,13 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Checkbox } from "@/components/ui/checkbox";
 import ReportDivisionSelector from "@/components/ui/report-division-selector";
 import { seasonRoute, rosterRoute } from "@/lib/apiRoutes";
-import { ListsCaptains, RosterDivision } from "@/lib/definitions";
+import { ListsCaptains, ListsElectionList, RosterDivision } from "@/lib/definitions";
 import ReportDisplay from "@/components/ui/report-display";
-import { captainsReportColumns } from "@/lib/report-definitions";
+import { captainsReportColumns, electionListColumns } from "@/lib/report-definitions";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import ListsReportCaptainsReport from "./react-pdf/lists-report-captains-report";
+import ListsReportElectionListReport from "./react-pdf/lists-report-election-list-report";
+import FiscalYearSelector from "@/components/ui/fiscal-year-selector";
 
 export default function ListsReportLandingContent() {
 	const [selectedReport, setSelectedReport] = useState<string>("");
@@ -26,6 +28,14 @@ export default function ListsReportLandingContent() {
 	const [allDivisionsString, setAllDivisionsString] = useState<string>("");
 	const [reportData, setReportData] = useState<unknown[]>([]);
 	const [dataFetched, setDataFetched] = useState<boolean>(false);
+	const [needsFiscalYearSelector, setNeedsFiscalYearSelector] = useState<boolean>(false);
+	const [fiscalYear, setFiscalYear] = useState<string>("");
+	const [goodStanding, setGoodStanding] = useState<boolean>(true);
+	const [badStanding, setBadStanding] = useState<boolean>(false);
+
+	const handleFiscalYearSelect = useCallback((value: string) => {
+		setFiscalYear(value);
+	}, []);
 
 	const handleSeasonCodeSelect = useCallback(
 		async (value: string) => {
@@ -35,6 +45,7 @@ export default function ListsReportLandingContent() {
 					await fetch(`${seasonRoute}?seasonCode=${value}`)
 				).json();
 				setSeasonCodeDesc(season?.desc || "");
+				setFiscalYear(season?.fiscalYear || "");
 			} catch (err) {
 				setSeasonCodeDesc("");
 				// Optionally log or show an error
@@ -79,10 +90,12 @@ export default function ListsReportLandingContent() {
 		value: string,
 		requiresWeek?: boolean,
 		minimumPoints?: boolean,
-		divisionSelector?: boolean
+		divisionSelector?: boolean,
+		fiscalYear?: boolean
 	) => {
 		setSelectedReport(value);
 		setNeedsDivisionSelector(!!divisionSelector);
+		setNeedsFiscalYearSelector(!!fiscalYear);
 	};
 
 	const handleDataFetch = useCallback((data: unknown[]) => {
@@ -134,6 +147,17 @@ export default function ListsReportLandingContent() {
 				<ReportDisplay<ListsCaptains>
 					apiRoute={selectedReport + `?seasonCode=${seasonCode}&divisions=${effectiveDivisionsString}`}
 					columns={captainsReportColumns}
+					className="h-full"
+					onDataFetch={handleDataFetch}
+				/>
+			);
+		}
+
+		if (selectedReport.includes("electionList")) {
+			return (
+				<ReportDisplay<ListsElectionList>
+					apiRoute={selectedReport + `?fiscalYear=${fiscalYear}&includeBadStanding=${badStanding}&includeGoodStanding=${goodStanding}`}
+					columns={electionListColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
 				/>
@@ -204,6 +228,21 @@ export default function ListsReportLandingContent() {
 				/>
 			);
 			fileName = `captains-list-${seasonCode}-${new Date()
+				.toLocaleDateString("en-US", {
+					timeZone: "America/New_York",
+					month: "2-digit",
+					day: "2-digit",
+					year: "numeric",
+				})
+				.replace(/\//g, "")}.pdf`;
+		} else if (selectedReport.includes("electionList")) {
+			document = (
+				<ListsReportElectionListReport
+					data={reportData as ListsElectionList[]}
+					desc={`Fiscal Year: ${fiscalYear}`}
+				/>
+			);
+			fileName = `election-list-${fiscalYear}-${new Date()
 				.toLocaleDateString("en-US", {
 					timeZone: "America/New_York",
 					month: "2-digit",
@@ -301,6 +340,16 @@ export default function ListsReportLandingContent() {
 									</div>
 								</div>
 							</div>
+							{needsFiscalYearSelector && (
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="fiscal-year-selector">Fiscal Year</Label>
+									<FiscalYearSelector
+										disabled={currentSeason}
+										handleSelect={handleFiscalYearSelect}
+										fiscalYear={fiscalYear}
+									/>
+								</div>
+							)}
 							<div className="flex flex-col gap-1">
 								<Label htmlFor="report-selector">Report</Label>
 								<ReportSelector
@@ -309,6 +358,26 @@ export default function ListsReportLandingContent() {
 									type="lists"
 									disabled={!seasonCode}
 								/>
+								{needsFiscalYearSelector && (
+									<div className="flex flex-row gap-6 mt-2">
+										<div className="flex items-center gap-2">
+											<Checkbox
+												id="good-standing-checkbox"
+												checked={goodStanding}
+												onCheckedChange={() => setGoodStanding(!goodStanding)}
+											/>
+											<Label htmlFor="good-standing-checkbox">Good Standing</Label>
+										</div>
+										<div className="flex items-center gap-2">
+											<Checkbox
+												id="bad-standing-checkbox"
+												checked={badStanding}
+												onCheckedChange={() => setBadStanding(!badStanding)}
+											/>
+											<Label htmlFor="bad-standing-checkbox">Bad Standing</Label>
+										</div>
+									</div>
+								)}
 							</div>
 							{needsDivisionSelector && (
 								<div className="flex flex-col gap-1 justify-end">
@@ -338,10 +407,11 @@ export default function ListsReportLandingContent() {
 						</div>
 					</div>
 				</FolderTabMed>
-				{/* Only render download link if all required fields are filled */}
+				{/* Only render download link if all required fields are filled and there is data */}
 				{selectedReport && seasonCode && seasonCodeDesc &&
 					dataFetched &&
-					selectedReport.includes("captainReport") && (
+					reportData.length > 0 &&
+					(selectedReport.includes("captainReport") || selectedReport.includes("electionList")) && (
 					<FolderTabMed title="Download PDF" className="w-fit">
 						{renderPDFDownload()}
 					</FolderTabMed>
