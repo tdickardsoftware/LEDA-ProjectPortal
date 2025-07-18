@@ -21,7 +21,7 @@ import { mentionRoute, placeRoute, playerRoute, scheduleRoute, teamRoute, trails
 // Static report data organized by type, now with requiresWeek flag
 const reportsByType: Record<
 	string,
-	{ value: string; label: string; requiresWeek?: boolean; minimumPoints?: boolean; divisionSelector?: boolean; fiscalYear?: boolean }[]
+	{ value: string; label: string; requiresWeek?: boolean; minimumPoints?: boolean; divisionSelector?: boolean; fiscalYear?: boolean; needSeasonCode?: boolean }[]
 > = {
 	trails: [
 		{
@@ -122,15 +122,21 @@ const reportsByType: Record<
 		},
 		{
 			value: `${playerRoute}/membershipList`,
-			label: "Members List"
+			label: "Members List",
+			needSeasonCode: false,
+			divisionSelector: true,
 		},
 		{
 			value: `${placeRoute}/placesReport`,
-			label: "Places List"
+			label: "Places List",
+			needSeasonCode: false,
+			divisionSelector: true,
 		},
 		{
 			value: `${teamRoute}/teamsReportLists`,
-			label: "Team List"
+			label: "Team List",
+			needSeasonCode: false,
+			divisionSelector: true,
 		}
 	]
 };
@@ -138,7 +144,7 @@ const reportsByType: Record<
 // Update props to allow passing requiresWeek up
 interface ReportSelectorProps {
 	disabled?: boolean;
-	handleSelect: (value: string, requiresWeek?: boolean, minimumPoints?: boolean, divisionSelector?: boolean, fiscalYear?: boolean) => void;
+	handleSelect: (value: string, requiresWeek?: boolean, minimumPoints?: boolean, divisionSelector?: boolean, fiscalYear?: boolean, needSeasonCode?: boolean) => void;
 	selectedReport: string;
 	type: string;
 }
@@ -157,7 +163,7 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 
 	const handleSelectReport = (value: string) => {
 		const report = reports.find((r) => r.value === value);
-		handleSelect(value, report?.requiresWeek ?? false, report?.minimumPoints ?? false, report?.divisionSelector ?? false, report?.fiscalYear ?? false); // Pass requiresWeek and minimumPoints up
+		handleSelect(value, report?.requiresWeek ?? false, report?.minimumPoints ?? false, report?.divisionSelector ?? false, report?.fiscalYear ?? false, report?.needSeasonCode ?? true); // Pass requiresWeek and minimumPoints up
 		setOpen(false);
 	};
 

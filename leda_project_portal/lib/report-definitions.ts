@@ -800,3 +800,125 @@ export const electionListColumns = [
 		sortable: true,
 	},
 ]
+
+// Column Definitions for the lists membership list filter by season
+export const membershipListColumnsFilterBySeason = [
+	{
+		key: "playerId",
+		header: "LEDA ID",
+		accessor: (row: { playerId: string }) => row.playerId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "phoneNumber",
+		header: "Phone Number",
+		accessor: (row: { phoneNumber: string }) => row.phoneNumber,
+		sortable: true,
+	},
+	{
+		key: "email",
+		header: "Email",
+		accessor: (row: { email: string }) => row.email,
+		sortable: true,
+	},
+	{
+		key: "addressOne",
+		header: "Address Line 1",
+		accessor: (row: { addressOne: string }) => row.addressOne,
+		sortable: true,
+	},
+	{
+		key: "addressTwo",
+		header: "Address Line 2",
+		accessor: (row: { addressTwo: string }) => row.addressTwo,
+		sortable: true,
+	},
+	{
+		key: "city",
+		header: "City",
+		accessor: (row: { city: string }) => row.city,
+		sortable: true,
+	},
+	{
+		key: "state",
+		header: "State",
+		accessor: (row: { state: string }) => row.state,
+		sortable: true,
+	},
+	{
+		key: "zip",
+		header: "Zip Code",
+		accessor: (row: { zip: string }) => row.zip,
+		sortable: true,
+	},
+	{
+		key: "divisionInfo",
+		header: "Division Info",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	}
+]
+
+// Column Definitions for the lists membership list filter by join date
+export const membershipListColumnsFilterByJoinDate = [
+	{
+		key: "playerId",
+		header: "LEDA ID",
+		accessor: (row: { playerId: string }) => row.playerId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "phoneNumber",
+		header: "Phone Number",
+		accessor: (row: { phoneNumber: string }) => row.phoneNumber,
+		sortable: true,
+	},
+	{
+		key: "email",
+		header: "Email",
+		accessor: (row: { email: string }) => row.email,
+		sortable: true,
+	},
+	{
+		key: "addressOne",
+		header: "Address Line 1",
+		accessor: (row: { addressOne: string }) => row.addressOne,
+		sortable: true,
+	},
+	{
+		key: "addressTwo",
+		header: "Address Line 2",
+		accessor: (row: { addressTwo: string }) => row.addressTwo,
+		sortable: true,
+	},
+	{
+		key: "city",
+		header: "City",
+		accessor: (row: { city: string }) => row.city,
+		sortable: true,
+	},
+	{
+		key: "state",
+		header: "State",
+		accessor: (row: { state: string }) => row.state,
+		sortable: true,
+	},
+	{
+		key: "zip",
+		header: "Zip Code",
+		accessor: (row: { zip: string }) => row.zip,
+		sortable: true,
+	}
+]

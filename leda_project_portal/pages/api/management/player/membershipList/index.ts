@@ -11,34 +11,70 @@ export default async function handler(
     // Handle GET requests
     if (req.method === "GET") {
         try {
-            if (req.query.seasonCode && req.query.divisions) {
-                // Execute the database query to fetch season code information
-                const divisions = Array.isArray(req.query.divisions)
-                    ? req.query.divisions
-                    : [req.query.divisions as string];
-
-                const placeholders = divisions.map((_, i) => `$${i + 2}`).join(", ");
+            if (req.query.seasonCode && req.query.divisions && req.query.minSubdivision && req.query.maxSubdivision) {
+                // Format the divisions string for SQL IN clause
+                const divisionsString = req.query.divisions as string;
+                // Split by comma, trim whitespace, and wrap each value in single quotes
+                const formattedDivisions = divisionsString
+                    .split(",")
+                    .map((division) => `'${division.trim()}'`)
+                    .join(",");
 
                 const result = await query<ListsMembership>(
-                    `SELECT "playerId", "fullName", "phoneNumber", email, "addressOne", "addressTwo", city, state, zip, "divisionInfo" FROM public.leda_reports_lists_member_list WHERE "seasonCode" = $1 AND "division" IN (${placeholders})`,
-                    [req.query.seasonCode as string, ...divisions]
+                    `SELECT "playerId", "fullName", "phoneNumber", email, "addressOne", "addressTwo", city, state, zip, "divisionInfo" FROM public.leda_reports_lists_member_list WHERE "seasonCode" = $1 AND "division" IN (${formattedDivisions}) AND "subdivision" BETWEEN $2 AND $3`,
+                    [req.query.seasonCode as string, req.query.minSubdivision as string, req.query.maxSubdivision as string]
                 );
                 // Respond with the query result
                 res.status(200).json(result.rows);
-            } else if (req.query.establishedDate && req.query.divisions) {
-                // If establishDate is provided, fetch membership list based on it
-                // Execute the database query to fetch season code information
-                const divisions = Array.isArray(req.query.divisions)
-                    ? req.query.divisions
-                    : [req.query.divisions as string];
+            } else if (req.query.establishedDate && req.query.goodStanding && req.query.badStanding && req.query.lifetimeMember) {
+                // Parse date string to a format Postgres can compare (YYYY-MM-DD)
+                let establishedDate = req.query.establishedDate as string;
+                if (establishedDate.includes("T")) {
+                    establishedDate = establishedDate.split("T")[0];
+                }
+                if (!establishedDate) {
+                    res.status(400).json({ error: "establishedDate is required" });
+                    return;
+                }
 
-                const placeholders = divisions.map((_, i) => `$${i + 2}`).join(", ");
-                
-                const result = await query<ListsMembership>(
-                    `SELECT "playerId", "fullName", "phoneNumber", email, "addressOne", "addressTwo", city, state, zip, "divisionInfo" FROM public.leda_reports_lists_member_list WHERE "establishedDate" >= $1 AND "division" IN (${placeholders})`,
-                    [req.query.establishDate as string, ...divisions]
-                );
-                // Respond with the query result
+                // Convert query params to boolean
+                const goodStanding = req.query.goodStanding === "true";
+                const badStanding = req.query.badStanding === "true";
+                const lifetimeMember = req.query.lifetimeMember === "true";
+
+                let result;
+                let baseQuery = `
+                    SELECT DISTINCT "playerId", "fullName", "phoneNumber", email, "addressOne", "addressTwo", city, state, zip
+                    FROM public.leda_reports_lists_member_list
+                    WHERE "establishedDate" >= $1
+                `;
+                // By default, exclude lifetime members unless requested
+                if (!lifetimeMember) {
+                    baseQuery += ` AND "lifetimeMember" = false`;
+                }
+
+                if (goodStanding && badStanding) {
+                    // No standing filter, include all
+                    result = await query<ListsMembership>(
+                        baseQuery,
+                        [establishedDate]
+                    );
+                } else if (goodStanding) {
+                    result = await query<ListsMembership>(
+                        baseQuery + ` AND "badStanding" = false`,
+                        [establishedDate]
+                    );
+                } else if (badStanding) {
+                    result = await query<ListsMembership>(
+                        baseQuery + ` AND "badStanding" = true`,
+                        [establishedDate]
+                    );
+                } else {
+                    // Neither selected, return empty array
+                    res.status(200).json([]);
+                    return;
+                }
+
                 res.status(200).json(result.rows);
             } else {
                 // If no season code is provided, return an error
