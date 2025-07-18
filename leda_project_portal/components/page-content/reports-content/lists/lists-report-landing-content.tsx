@@ -9,9 +9,9 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Checkbox } from "@/components/ui/checkbox";
 import ReportDivisionSelector from "@/components/ui/report-division-selector";
 import { seasonRoute, rosterRoute } from "@/lib/apiRoutes";
-import { ListsCaptains, ListsElectionList, ListsMembership, RosterDivision } from "@/lib/definitions";
+import { ListsCaptains, ListsElectionList, ListsMembership, ListsPlaces, RosterDivision } from "@/lib/definitions";
 import ReportDisplay from "@/components/ui/report-display";
-import { captainsReportColumns, electionListColumns, membershipListColumnsFilterByJoinDate, membershipListColumnsFilterBySeason } from "@/lib/report-definitions";
+import { captainsReportColumns, electionListColumns, membershipListColumnsFilterByJoinDate, membershipListColumnsFilterBySeason, placesListColumns } from "@/lib/report-definitions";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import ListsReportCaptainsReport from "./react-pdf/lists-report-captains-report";
 import ListsReportElectionListReport from "./react-pdf/lists-report-election-list-report";
@@ -87,7 +87,7 @@ export default function ListsReportLandingContent() {
 	const [badStanding, setBadStanding] = useState<boolean>(false);
 	const [lifeMember, setLifeMember] = useState<boolean>(false);
 	const [needSeasonCode, setNeedSeasonCode] = useState<boolean>(true);
-	const [filterBySeason, setFilterBySeason] = useState<boolean>(false);
+	const [filterBySeason, setFilterBySeason] = useState<boolean>(true);
 	const [filterByJoinDate, setFilterByJoinDate] = useState<boolean>(false);
 	const [joinDate, setJoinDate] = useState<Date | null>(null);
 	const [subdivisionMin, setSubdivisionMin] = useState<number | undefined>(1);
@@ -118,8 +118,9 @@ export default function ListsReportLandingContent() {
 	// Fetch all divisions when seasonCode changes or when allDivisions is toggled to true
 	useEffect(() => {
 		const fetchAllDivisions = async () => {
-			if (!seasonCode || !needsDivisionSelector || !allDivisions || !filterBySeason) return;
-			
+			// Fetch if either needsDivisionSelector or filterBySeason is true
+			if (!seasonCode || !allDivisions || (!needsDivisionSelector && !filterBySeason)) return;
+
 			try {
 				const response = await fetch(
 					`${rosterRoute}/rosterDivision?seasonCode=${seasonCode}`
@@ -164,7 +165,7 @@ export default function ListsReportLandingContent() {
 			setReportData([]); // Clear previous report data only if report changes
 			setDataFetched(false); // Reset dataFetched so PDFDownloadLink is not rendered
 			setFilterByJoinDate(false);
-			setFilterBySeason(false);
+			setFilterBySeason(true);
 		}
 	};
 
@@ -239,7 +240,7 @@ export default function ListsReportLandingContent() {
 			);
 		}
 
-		if (selectedReport.includes("membershipList")) {
+		if (selectedReport.includes("membershipList")) {	
 			// Only render the ReportDisplay for join date if joinDate is set (not null/undefined)
 			if (filterByJoinDate && !joinDate) {
 				return (
@@ -282,6 +283,57 @@ export default function ListsReportLandingContent() {
 								`?establishedDate=${encodeURIComponent(joinDate.toISOString())}&goodStanding=${goodStanding}&badStanding=${badStanding}&lifetimeMember=${lifeMember}`
 							}
 							columns={membershipListColumnsFilterByJoinDate}
+							className="h-full"
+							onDataFetch={handleDataFetch}
+						/>
+					)}
+				</>
+			);
+		}
+
+		if (selectedReport.includes("placesReport")) {	
+			// Only render the ReportDisplay for join date if joinDate is set (not null/undefined)
+			if (filterByJoinDate && !joinDate) {
+				return (
+					<div className="flex h-full items-center justify-center">
+						<p className="text-gray-500 text-center">
+							Please select a join date to continue...
+						</p>
+					</div>
+				);
+			}
+			return (
+				<>
+					{filterBySeason && (
+						// Only render if divisions are filled out
+						(needsDivisionSelector
+							? (allDivisions || selectedDivisions)
+							: true
+						) ? (
+							<ReportDisplay<ListsPlaces>
+								apiRoute={
+									selectedReport +
+									`?seasonCode=${seasonCode}`
+								}
+								columns={placesListColumns}
+								className="h-full"
+								onDataFetch={handleDataFetch}
+							/>
+						) : (
+							<div className="flex h-full items-center justify-center">
+								<p className="text-gray-500 text-center">
+									Please select at least one division to continue...
+								</p>
+							</div>
+						)
+					)}
+					{filterByJoinDate && joinDate && (
+						<ReportDisplay<ListsPlaces>
+							apiRoute={
+								selectedReport +
+								`?establishedDate=${encodeURIComponent(joinDate.toISOString())}&goodStanding=${goodStanding}&badStanding=${badStanding}&lifetimeMember=${lifeMember}`
+							}
+							columns={placesListColumns}
 							className="h-full"
 							onDataFetch={handleDataFetch}
 						/>
@@ -535,7 +587,7 @@ export default function ListsReportLandingContent() {
 									</div>
 								)}
 							</div>
-							{(needsDivisionSelector && !filterBySeason && !filterByJoinDate)&& (
+							{(needsDivisionSelector && (!selectedReport.includes("membershipList") || !selectedReport.includes("placesReport") || !selectedReport.includes("teamsReportLists"))) && (
 								<div className="flex items-center gap-4">
 									<Label htmlFor="all-divisions-checkbox">
 										All Divisions?
@@ -558,7 +610,7 @@ export default function ListsReportLandingContent() {
 									)}
 								</div>
 							)}
-							{filterBySeason && (
+							{(filterBySeason && (selectedReport.includes("membershipList") || selectedReport.includes("placesReport") || selectedReport.includes("teamsReportLists"))) && (
 								<>
 									<div className="flex flex-col gap-1">
 										<Label htmlFor="season-code-selector">Season</Label>
@@ -583,44 +635,46 @@ export default function ListsReportLandingContent() {
 											</div>
 										</div>
 									</div>
-									<div className="flex flex-col gap-1">
-										<div className="flex items-center gap-4">
-											<Checkbox
-												id="all-divisions-checkbox"
-												checked={allDivisions}
-												onCheckedChange={() =>
-													setAllDivisions(!allDivisions)
-												}
-											/>
-											<Label htmlFor="all-divisions-checkbox">
-												All Divisions?
-											</Label>
+									{!selectedReport.includes("placesReport") && (
+										<div className="flex flex-col gap-1">
+											<div className="flex items-center gap-4">
+												<Checkbox
+													id="all-divisions-checkbox"
+													checked={allDivisions}
+													onCheckedChange={() =>
+														setAllDivisions(!allDivisions)
+													}
+												/>
+												<Label htmlFor="all-divisions-checkbox">
+													All Divisions?
+												</Label>
+											</div>
+											<div className="flex items-center gap-4">
+												{!allDivisions && seasonCode && (
+													<div className="mt-2">
+														<ReportDivisionSelector
+															seasonCode={seasonCode}
+															onDivisionsChange={handleDivisionsChange}
+															disabled={!seasonCode}
+														/>
+													</div>
+												)}
+											</div>
+											<div className="flex items-center gap-4 mt-2">
+												<SubdivisionRangeSelector
+													min={subdivisionMin ?? 1}
+													max={subdivisionMax ?? 99}
+													onChange={(min, max) => {
+														setSubdivisionMin(min);
+														setSubdivisionMax(max);
+													}}
+												/>
+											</div>
 										</div>
-										<div className="flex items-center gap-4">
-											{!allDivisions && seasonCode && (
-												<div className="mt-2">
-													<ReportDivisionSelector
-														seasonCode={seasonCode}
-														onDivisionsChange={handleDivisionsChange}
-														disabled={!seasonCode}
-													/>
-												</div>
-											)}
-										</div>
-										<div className="flex items-center gap-4 mt-2">
-											<SubdivisionRangeSelector
-												min={subdivisionMin ?? 1}
-												max={subdivisionMax ?? 99}
-												onChange={(min, max) => {
-													setSubdivisionMin(min);
-													setSubdivisionMax(max);
-												}}
-											/>
-										</div>
-									</div>
+									)}
 								</>
 							)}
-							{filterByJoinDate && (
+							{(filterByJoinDate && (selectedReport.includes("membershipList") || selectedReport.includes("placesReport") || selectedReport.includes("teamsReportLists"))) && (
 								<>
 									<div className="flex flex-col gap-1">
 										<Label htmlFor="join-date-selector">Join Date</Label>

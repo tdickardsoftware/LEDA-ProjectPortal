@@ -124,19 +124,16 @@ const reportsByType: Record<
 			value: `${playerRoute}/membershipList`,
 			label: "Members List",
 			needSeasonCode: false,
-			divisionSelector: true,
 		},
 		{
 			value: `${placeRoute}/placesReport`,
 			label: "Places List",
 			needSeasonCode: false,
-			divisionSelector: true,
 		},
 		{
 			value: `${teamRoute}/teamsReportLists`,
 			label: "Team List",
 			needSeasonCode: false,
-			divisionSelector: true,
 		}
 	]
 };

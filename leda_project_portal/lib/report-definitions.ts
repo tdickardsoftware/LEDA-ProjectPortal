@@ -922,3 +922,67 @@ export const membershipListColumnsFilterByJoinDate = [
 		sortable: true,
 	}
 ]
+
+// Column Definitions for the lists places list
+export const placesListColumns = [
+	{
+		key: "ledaId",
+		header: "LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "name",
+		header: "Place Name",
+		accessor: (row: { name: string }) => row.name,
+		sortable: true,
+	},
+	{
+		key: "phoneNumber",
+		header: "Phone Number",
+		accessor: (row: { phoneNumber: string }) => row.phoneNumber,
+		sortable: true,
+	},
+	{
+		key:"contact",
+		header: "Contact Name",
+		accessor: (row: { contact: string }) => row.contact,
+		sortable: true,
+	},
+	{
+		key: "email",
+		header: "Email",
+		accessor: (row: { email: string }) => row.email,
+		sortable: true,
+	},
+	{
+		key: "addressOne",
+		header: "Address Line 1",
+		accessor: (row: { addressOne: string }) => row.addressOne,
+		sortable: true,
+	},
+	{
+		key: "addressTwo",
+		header: "Address Line 2",
+		accessor: (row: { addressTwo: string }) => row.addressTwo,
+		sortable: true,
+	},
+	{
+		key: "city",
+		header: "City",
+		accessor: (row: { city: string }) => row.city,
+		sortable: true,
+	},
+	{
+		key: "state",
+		header: "State",
+		accessor: (row: { state: string }) => row.state,
+		sortable: true,
+	},
+	{
+		key: "zip",
+		header: "Zip Code",
+		accessor: (row: { zip: string }) => row.zip,
+		sortable: true,
+	},
+]
