@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, memo, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Accordion,
 	AccordionItem,
@@ -97,14 +98,118 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 
 DivisionAccordion.displayName = "DivisionAccordion";
 
+// Custom hooks for API calls
+const useRosterData = (seasonCode: string) => {
+	return useQuery({
+		queryKey: ['roster', seasonCode],
+		queryFn: async () => {
+			const response = await fetch(`${rosterRoute}?seasonCode=${seasonCode}`, {
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			});
+			if (!response.ok) {
+				throw new Error('Failed to fetch roster data');
+			}
+			const data: RosterApiResponse = await response.json();
+			return data;
+		},
+		enabled: !!seasonCode,
+		staleTime: 60 * 1000, // 1 minute
+	});
+};
+
+const useSeasonData = (seasonCode: string) => {
+	return useQuery({
+		queryKey: ['season', seasonCode],
+		queryFn: async () => {
+			const response = await fetch(`${seasonRoute}?seasonCode=${seasonCode}`, {
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			});
+			if (!response.ok) {
+				throw new Error('Failed to fetch season data');
+			}
+			const data: SeasonApiResponse = await response.json();
+			return data;
+		},
+		enabled: !!seasonCode,
+		staleTime: 60 * 1000, // 1 minute
+	});
+};
+
+const useScheduleData = (seasonCode: string) => {
+	return useQuery({
+		queryKey: ['schedule', seasonCode],
+		queryFn: async () => {
+			const response = await fetch(`${scheduleRoute}?seasonCode=${seasonCode}`, {
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			});
+			if (!response.ok) {
+				throw new Error('Failed to fetch schedule data');
+			}
+			const data: ScheduleApiResponse = await response.json();
+			return data;
+		},
+		enabled: !!seasonCode,
+		staleTime: 60 * 1000, // 1 minute
+	});
+};
+
+const useSeasonInfo = (seasonCode: string) => {
+	return useQuery({
+		queryKey: ['seasonInfo', seasonCode],
+		queryFn: async () => {
+			const response = await fetch(`${scheduleRoute}/placeCaptainSeasonInfo?seasonCode=${seasonCode}`, {
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			});
+			if (!response.ok) {	
+				throw new Error('Failed to fetch season info');
+			}
+			const data: CaptainsMtgSchedulePlaceCaptainSeasonInfo[] = await response.json();
+			return data;
+		},
+		enabled: !!seasonCode,
+		staleTime: 60 * 1000, // 1 minute
+	});
+};
+
 export default function CaptainsMeetingScheduleContent({
 	seasonCode,
 	onDataReady,
 }: CaptainsMeetingScheduleContentProps) {
 	const [divisionsData, setDivisionsData] = useState<DivisionsData>({});
-	const [loading, setLoading] = useState(false);
 	const [gameDates, setGameDates] = useState<Record<string, string>>({});
 	const [matchData, setMatchData] = useState<ScheduleData>({});
+
+	// TanStack Query hooks
+	const { 
+		data: rosterData, 
+		error: rosterError,
+		isLoading: isRosterLoading 
+	} = useRosterData(seasonCode);
+
+	const { 
+		data: seasonData, 
+		error: seasonError,
+		isLoading: isSeasonLoading 
+	} = useSeasonData(seasonCode);
+
+	const { 
+		data: scheduleData, 
+		error: scheduleError,
+		isLoading: isScheduleLoading 
+	} = useScheduleData(seasonCode);
+
+	const { 
+		data: seasonInfo = [], 
+		error: seasonInfoError,
+		isLoading: isSeasonInfoLoading 
+	} = useSeasonInfo(seasonCode);
+
+	const isLoading = isRosterLoading || isSeasonLoading || isScheduleLoading || isSeasonInfoLoading;
+	const hasError = rosterError || seasonError || scheduleError || seasonInfoError;
 
 	const ensureSubdivisionIsolation = useCallback((matchData: ScheduleData): ScheduleData => {
 		const clonedData = structuredClone(matchData);
@@ -143,102 +248,78 @@ export default function CaptainsMeetingScheduleContent({
 		return newMatchData;
 	}, []);
 
+	// Process data when queries complete
 	useEffect(() => {
-		if (!seasonCode) return;
+		if (!seasonCode || isLoading || hasError) return;
 
-		const fetchScheduleData = async () => {
-			setLoading(true);
+		try {
+			if (rosterData?.teamInformation) {
+				const fetchedData = structuredClone(rosterData.teamInformation);
+				setDivisionsData(fetchedData);
 
-			try {
-				// Parallel API calls for better performance
-				const [rosterResult, gameDatesResult, matchDataResult, seasonInfoResult] = await Promise.allSettled([
-					fetch(`${rosterRoute}?seasonCode=${seasonCode}`, {
-						method: 'GET',
-						headers: { 'Content-Type': 'application/json' },
-					}),
-					fetch(`${seasonRoute}?seasonCode=${seasonCode}`, {
-						method: 'GET',
-						headers: { 'Content-Type': 'application/json' },
-					}),
-					fetch(`${scheduleRoute}?seasonCode=${seasonCode}`, {
-						method: 'GET',
-						headers: { 'Content-Type': 'application/json' },
-					}),
-					fetch(`${scheduleRoute}/placeCaptainSeasonInfo?seasonCode=${seasonCode}`, {
-						method: 'GET',
-						headers: { 'Content-Type': 'application/json' },
-					})
-				]);
+				// Process game dates
+				const gameDatesData = seasonData?.dates || {};
+				setGameDates(gameDatesData);
 
-				// Handle roster data
-				if (rosterResult.status === 'fulfilled' && rosterResult.value.status === 200) {
-					const rosterData: RosterApiResponse = await rosterResult.value.json();
-					const fetchedData = structuredClone(rosterData.teamInformation);
-					setDivisionsData(fetchedData);
-
-					let processedMatchData: ScheduleData;
-					let seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[] = [];
-
-					// Handle season info
-					if (seasonInfoResult.status === 'fulfilled' && seasonInfoResult.value.status === 200) {
-						seasonInfo = await seasonInfoResult.value.json();
-					}
-
-					// Extract places data from seasonInfo, not roster data
-					const places: Record<string, string> = {};
-					seasonInfo.forEach((info) => {
-						if (info.placeId && info.placeName) {
-							places[info.placeId.toString()] = info.placeName;
-						}
-					});
-
-					// Handle game dates
-					let gameDatesData: SeasonApiResponse | null = null;
-					if (gameDatesResult.status === 'fulfilled' && gameDatesResult.value.status === 200) {
-						gameDatesData = await gameDatesResult.value.json();
-						setGameDates(gameDatesData?.dates || {});
-					}
-
-					// Handle match data
-					if (matchDataResult.status === 'fulfilled' && matchDataResult.value.status === 200) {
-						const existingMatchData: ScheduleApiResponse = await matchDataResult.value.json();
-						processedMatchData = ensureSubdivisionIsolation(
-							structuredClone(existingMatchData.scheduleData)
-						);
-						setMatchData(processedMatchData);
-					} else {
-						// Initialize empty match data structure
-						const newMatchData = initializeEmptyMatchData(fetchedData);
-						processedMatchData = newMatchData;
-						setMatchData(newMatchData);
-					}
-
-					// Notify parent component when data is ready
-					if (onDataReady) {
-						onDataReady({
-							divisionsData: fetchedData,
-							matchData: processedMatchData,
-							gameDates: gameDatesData?.dates || {},
-							placesData: places,
-							seasonInfo,
-						});
-					}
+				// Process match data
+				let processedMatchData: ScheduleData;
+				if (scheduleData?.scheduleData) {
+					processedMatchData = ensureSubdivisionIsolation(
+						structuredClone(scheduleData.scheduleData)
+					);
 				} else {
-					setDivisionsData({});
+					// Initialize empty match data structure
+					processedMatchData = initializeEmptyMatchData(fetchedData);
 				}
-			} catch (error) {
-				console.error('Error fetching season data:', error);
-				setDivisionsData({});
-			} finally {
-				setLoading(false);
+				setMatchData(processedMatchData);
+
+				// Extract places data from seasonInfo
+				const places: Record<string, string> = {};
+				seasonInfo.forEach((info) => {
+					if (info.placeId && info.placeName) {
+						places[info.placeId.toString()] = info.placeName;
+					}
+				});
+
+				// Notify parent component when data is ready
+				if (onDataReady) {
+					onDataReady({
+						divisionsData: fetchedData,
+						matchData: processedMatchData,
+						gameDates: gameDatesData,
+						placesData: places,
+						seasonInfo,
+					});
+				}
 			}
-		};
+		} catch (error) {
+			console.error('Error processing schedule data:', error);
+			setDivisionsData({});
+		}
+	}, [
+		seasonCode, 
+		rosterData, 
+		seasonData, 
+		scheduleData, 
+		seasonInfo, 
+		isLoading, 
+		hasError,
+		ensureSubdivisionIsolation, 
+		initializeEmptyMatchData, 
+		onDataReady
+	]);
 
-		fetchScheduleData();
-	}, [seasonCode, ensureSubdivisionIsolation, initializeEmptyMatchData, onDataReady]);
-
-	if (loading) {
+	if (isLoading) {
 		return <Spinner />;
+	}
+
+	if (hasError) {
+		return (
+			<div className="flex flex-col items-center justify-center h-64">
+				<p className="text-red-500">Error loading schedule data</p>
+				<p className="text-sm text-gray-400">Please try again later</p>
+			</div>
+		);
 	}
 
 	if (!seasonCode) {

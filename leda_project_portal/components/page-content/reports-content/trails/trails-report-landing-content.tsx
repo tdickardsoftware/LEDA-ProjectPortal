@@ -61,7 +61,7 @@ export default function TrailsReportLandingContent() {
 
 	// Function to render PDF download button based on selection
 	const renderPDFDownload = () => {
-		if (!selectedReport || !dataFetched) {
+		if (!selectedReport || !dataFetched || !reportData.length) {
 			return (
 				<div className="flex items-center justify-center h-full px-4 py-2">
 					<svg
@@ -330,7 +330,7 @@ export default function TrailsReportLandingContent() {
 						</div>
 					</div>
 				</FolderTabMed>
-				{selectedReport && (
+				{selectedReport && dataFetched && reportData.length > 0 && (
 					<FolderTabMed title="Download PDF" className="w-fit">
 						{renderPDFDownload()}
 					</FolderTabMed>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, JSX } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
@@ -25,9 +26,38 @@ import ListsReportPlacesListSeasonReport from "./react-pdf/lists-report-places-l
 import ListsReportTeamsListJoinDateReport from "./react-pdf/lists-report-teams-list-join-date-report";
 import ListsReportTeamsListSeasonReport from "./react-pdf/lists-report-teams-list-season-report";
 
-// TO DO
-// [ ] - Implement that for join date implement good standing and bad standing filtering, also add honorary members filtering
-// [ ] - For  Season Filtering, add subdivision filtering and division filtering
+// Custom hooks for API calls
+const useSeasonData = (seasonCode: string) => {
+	return useQuery({
+		queryKey: ['season', seasonCode],
+		queryFn: async () => {
+			const response = await fetch(`${seasonRoute}?seasonCode=${seasonCode}`);
+			if (!response.ok) {
+				throw new Error('Failed to fetch season data');
+			}
+			return response.json();
+		},
+		enabled: !!seasonCode,
+		staleTime: 60 * 1000, // 1 minute
+	});
+};
+
+const useRosterDivisions = (seasonCode: string, enabled: boolean) => {
+	return useQuery({
+		queryKey: ['rosterDivisions', seasonCode],
+		queryFn: async () => {
+			const response = await fetch(`${rosterRoute}/rosterDivision?seasonCode=${seasonCode}`);
+			if (!response.ok) {
+				throw new Error('Failed to fetch roster divisions');
+			}
+			const data: RosterDivision[] = await response.json();
+			return data;
+		},
+		enabled: !!seasonCode && enabled,
+		staleTime: 60 * 1000, // 1 minute
+	});
+};
+
 // SubdivisionRangeSelector component
 function SubdivisionRangeSelector({
 	min,
@@ -81,11 +111,9 @@ export default function ListsReportLandingContent() {
 	const [selectedReport, setSelectedReport] = useState<string>("");
 	const [seasonCode, setSeasonCode] = useState<string>("");
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
-	const [seasonCodeDesc, setSeasonCodeDesc] = useState<string>("");
 	const [needsDivisionSelector, setNeedsDivisionSelector] = useState<boolean>(false);
 	const [allDivisions, setAllDivisions] = useState<boolean>(true);
 	const [selectedDivisions, setSelectedDivisions] = useState<string>("");
-	const [allDivisionsString, setAllDivisionsString] = useState<string>("");
 	const [reportData, setReportData] = useState<unknown[]>([]);
 	const [dataFetched, setDataFetched] = useState<boolean>(false);
 	const [needsFiscalYearSelector, setNeedsFiscalYearSelector] = useState<boolean>(false);
@@ -100,59 +128,41 @@ export default function ListsReportLandingContent() {
 	const [subdivisionMin, setSubdivisionMin] = useState<number | undefined>(1);
 	const [subdivisionMax, setSubdivisionMax] = useState<number | undefined>(99);
 
+	// TanStack Query hooks
+	const { 
+		data: seasonData, 
+		error: seasonError,
+		isLoading: isSeasonLoading 
+	} = useSeasonData(seasonCode);
+
+	const { 
+		data: rosterDivisions = [], 
+		error: divisionsError,
+		isLoading: isDivisionsLoading 
+	} = useRosterDivisions(
+		seasonCode, 
+		allDivisions && (needsDivisionSelector || filterBySeason)
+	);
+
+	// Update season description and fiscal year when season data changes
+	useEffect(() => {
+		if (seasonData) {
+			setFiscalYear(seasonData?.fiscalYear || "");
+		}
+	}, [seasonData]);
+
+	// Calculate all divisions string from query result
+	const allDivisionsString = rosterDivisions.length > 0 
+		? rosterDivisions.map(d => d.division).join(", ")
+		: "";
+
 	const handleFiscalYearSelect = useCallback((value: string) => {
 		setFiscalYear(value);
 	}, []);
 
-	const handleSeasonCodeSelect = useCallback(
-		async (value: string) => {
-			setSeasonCode(value);
-			try {
-				const season = await (
-					await fetch(`${seasonRoute}?seasonCode=${value}`)
-				).json();
-				setSeasonCodeDesc(season?.desc || "");
-				setFiscalYear(season?.fiscalYear || "");
-			} catch (err) {
-				setSeasonCodeDesc("");
-				// Optionally log or show an error
-				console.error("Failed to fetch season description", err);
-			}
-		},
-		[]
-	);
-
-	// Fetch all divisions when seasonCode changes or when allDivisions is toggled to true
-	useEffect(() => {
-		const fetchAllDivisions = async () => {
-			// Fetch if either needsDivisionSelector or filterBySeason is true
-			if (!seasonCode || !allDivisions || (!needsDivisionSelector && !filterBySeason)) return;
-
-			try {
-				const response = await fetch(
-					`${rosterRoute}/rosterDivision?seasonCode=${seasonCode}`
-				);
-				if (response.ok) {
-					const data: RosterDivision[] = await response.json();
-					if (data && data.length > 0) {
-						const allDivisionsStr = data.map(d => d.division).join(", ");
-						console.log(allDivisionsStr)
-						setAllDivisionsString(allDivisionsStr);
-					} else {
-						setAllDivisionsString("");
-					}
-				} else {
-					console.error("Failed to fetch all divisions");
-					setAllDivisionsString("");
-				}
-			} catch (error) {
-				console.error("Error fetching all divisions:", error);
-				setAllDivisionsString("");
-			}
-		};
-
-		fetchAllDivisions();
-	}, [seasonCode, needsDivisionSelector, allDivisions, filterBySeason]);
+	const handleSeasonCodeSelect = useCallback((value: string) => {
+		setSeasonCode(value);
+	}, []);
 
 	const handleReportSelect = (
 		value: string,
@@ -189,6 +199,48 @@ export default function ListsReportLandingContent() {
 	const effectiveDivisionsString = allDivisions ? allDivisionsString : selectedDivisions;
 
 	const renderReportContent = () => {
+		// Show loading state for season data when needed
+		if (!filterByJoinDate && needSeasonCode && isSeasonLoading) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<div className="flex items-center gap-2">
+						<svg
+							className="animate-spin h-5 w-5 text-gray-500"
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+						>
+							<circle
+								className="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								strokeWidth="4"
+							></circle>
+							<path
+								className="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+						<p className="text-gray-500">Loading season data...</p>
+					</div>
+				</div>
+			);
+		}
+
+		// Show error state for season data
+		if (!filterByJoinDate && needSeasonCode && seasonError) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<p className="text-red-500 text-center">
+						Error loading season data. Please try again.
+					</p>
+				</div>
+			);
+		}
+
 		// Only require seasonCode if not filtering by join date
 		if (!filterByJoinDate && !seasonCode) {
 			return (
@@ -205,6 +257,58 @@ export default function ListsReportLandingContent() {
 				<div className="flex h-full items-center justify-center">
 					<p className="text-gray-500 text-center">
 						Select a report to continue...
+					</p>
+				</div>
+			);
+		}
+
+		// Show loading state for divisions
+		if (
+			needsDivisionSelector &&
+			seasonCode &&
+			allDivisions &&
+			isDivisionsLoading
+		) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<div className="flex items-center gap-2">
+						<svg
+							className="animate-spin h-5 w-5 text-gray-500"
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+						>
+							<circle
+								className="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								strokeWidth="4"
+							></circle>
+							<path
+								className="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+						<p className="text-gray-500">Loading divisions...</p>
+					</div>
+				</div>
+			);
+		}
+
+		// Show error state for divisions
+		if (
+			needsDivisionSelector &&
+			seasonCode &&
+			allDivisions &&
+			divisionsError
+		) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<p className="text-red-500 text-center">
+						Error loading divisions. Please try again.
 					</p>
 				</div>
 			);
@@ -460,6 +564,8 @@ export default function ListsReportLandingContent() {
 	};
 
 	const renderPDFDownload = () => {
+		const seasonCodeDesc = seasonData?.desc || "";
+		
 		if (
 			!selectedReport ||
 			(
@@ -467,6 +573,7 @@ export default function ListsReportLandingContent() {
 				(filterByJoinDate && !joinDate)
 			)
 		) return null;
+
 		if (!dataFetched) {
 			return (
 				<div className="flex items-center justify-center h-full px-4 py-2">
@@ -988,7 +1095,7 @@ export default function ListsReportLandingContent() {
 					(
 						(
 							// For season filter, require seasonCode and seasonCodeDesc
-							filterBySeason && seasonCode && seasonCodeDesc
+							filterBySeason && seasonCode && seasonData?.desc
 						) ||
 						(
 							// For join date filter, require joinDate

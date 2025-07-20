@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback, JSX } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
@@ -30,6 +31,23 @@ import CaptainsMeetingScheduleContent from "./captains-meeting-schedule-content"
 import CaptainsMeetingScheduleReport from "./react-pdf/captains-meeting-schedule-report";
 import { DivisionsData, ScheduleData } from "@/lib/schedule";
 import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
+import { seasonRoute } from "@/lib/apiRoutes";
+
+// Custom hook for season data
+const useSeasonData = (seasonCode: string) => {
+	return useQuery({
+		queryKey: ['season', seasonCode],
+		queryFn: async () => {
+			const response = await fetch(`${seasonRoute}?seasonCode=${seasonCode}`);
+			if (!response.ok) {
+				throw new Error('Failed to fetch season data');
+			}
+			return response.json();
+		},
+		enabled: !!seasonCode,
+		staleTime: 60 * 1000, // 1 minute
+	});
+};
 
 export default function CaptainsMeetingReportLandingContent() {
 	// State declarations
@@ -45,6 +63,12 @@ export default function CaptainsMeetingReportLandingContent() {
 		placesData: Record<string, string>;
 		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
 	} | null>(null);
+
+	// TanStack Query hook
+	const { 
+		error: seasonError,
+		isLoading: isSeasonLoading 
+	} = useSeasonData(seasonCode);
 
 	// Event handlers
 	const handleSeasonCodeSelect = useCallback((value: string) => {
@@ -259,6 +283,48 @@ export default function CaptainsMeetingReportLandingContent() {
 
 	// Function to render report content based on selection
 	const renderReportContent = () => {
+		// Show loading state for season data when needed
+		if (seasonCode && isSeasonLoading) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<div className="flex items-center gap-2">
+						<svg
+							className="animate-spin h-5 w-5 text-gray-500"
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+						>
+							<circle
+								className="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								strokeWidth="4"
+							></circle>
+							<path
+								className="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+						<p className="text-gray-500">Loading season data...</p>
+					</div>
+				</div>
+			);
+		}
+
+		// Show error state for season data
+		if (seasonCode && seasonError) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<p className="text-red-500 text-center">
+						Error loading season data. Please try again.
+					</p>
+				</div>
+			);
+		}
+
 		if (!seasonCode) {
 			return (
 				<div className="flex h-full items-center justify-center">
