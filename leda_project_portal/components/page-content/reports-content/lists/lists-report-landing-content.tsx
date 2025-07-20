@@ -20,6 +20,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Input } from "@/components/ui/input";
 import ListsReportMembershipListJoinDateReport from "./react-pdf/lists-report-membership-list-join-date-report";
 import ListsReportMembershipListSeasonReport from "./react-pdf/lists-report-membership-list-season-report";
+import ListsReportPlacesListJoinDateReport from "./react-pdf/lists-report-places-list-join-date-report";
+import ListsReportPlacesListSeasonReport from "./react-pdf/lists-report-places-list-season-report";
 
 // TO DO
 // [ ] - Implement that for join date implement good standing and bad standing filtering, also add honorary members filtering
@@ -542,7 +544,7 @@ export default function ListsReportLandingContent() {
 						}
 					/>
 				);
-				fileName = `membership-list-join-date-${joinDate ? joinDate.toISOString().split("T")[0] : "unknown"}-${new Date()
+				fileName = `membership-list-established-date-${joinDate ? joinDate.toISOString().split("T")[0] : "unknown"}-${new Date()
 					.toLocaleDateString("en-US", {
 						timeZone: "America/New_York",
 						month: "2-digit",
@@ -558,6 +560,47 @@ export default function ListsReportLandingContent() {
 					/>
 				);
 				fileName = `membership-list-season-${seasonCode}-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
+			}
+		} else if (selectedReport.includes("placesReport")) {
+			if (filterByJoinDate) {
+				document = (
+					<ListsReportPlacesListJoinDateReport
+						data={reportData as ListsPlaces[]}
+						desc={
+							joinDate
+								? `Established Date: ${joinDate.toLocaleDateString("en-US", {
+										timeZone: "America/New_York",
+										month: "2-digit",
+										day: "2-digit",
+										year: "numeric",
+								  })}`
+								: ""
+						}
+					/>
+				);
+				fileName = `places-list-established-date-${joinDate ? joinDate.toISOString().split("T")[0] : "unknown"}-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
+			} else {
+				document = (
+					<ListsReportPlacesListSeasonReport
+						data={reportData as ListsPlaces[]}
+						desc={seasonCodeDesc}
+					/>
+				);
+				fileName = `places-list-season-${seasonCode}-${new Date()
 					.toLocaleDateString("en-US", {
 						timeZone: "America/New_York",
 						month: "2-digit",
