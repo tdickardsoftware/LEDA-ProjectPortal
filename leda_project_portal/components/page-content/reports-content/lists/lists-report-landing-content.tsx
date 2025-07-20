@@ -18,6 +18,9 @@ import ListsReportElectionListReport from "./react-pdf/lists-report-election-lis
 import FiscalYearSelector from "@/components/ui/fiscal-year-selector";
 import "react-datepicker/dist/react-datepicker.css";
 import { Input } from "@/components/ui/input";
+import ListsReportMembershipListJoinDateReport from "./react-pdf/lists-report-membership-list-join-date-report";
+import ListsReportMembershipListSeasonReport from "./react-pdf/lists-report-membership-list-season-report";
+
 // TO DO
 // [ ] - Implement that for join date implement good standing and bad standing filtering, also add honorary members filtering
 // [ ] - For  Season Filtering, add subdivision filtering and division filtering
@@ -453,7 +456,13 @@ export default function ListsReportLandingContent() {
 	};
 
 	const renderPDFDownload = () => {
-		if (!selectedReport || !seasonCode) return null;
+		if (
+			!selectedReport ||
+			(
+				(filterBySeason && (!seasonCode || !seasonCodeDesc)) ||
+				(filterByJoinDate && !joinDate)
+			)
+		) return null;
 		if (!dataFetched) {
 			return (
 				<div className="flex items-center justify-center h-full px-4 py-2">
@@ -516,6 +525,47 @@ export default function ListsReportLandingContent() {
 					year: "numeric",
 				})
 				.replace(/\//g, "")}.pdf`;
+		} else if (selectedReport.includes("membershipList")) {
+			if (filterByJoinDate) {
+				document = (
+					<ListsReportMembershipListJoinDateReport
+						data={reportData as ListsMembership[]}
+						desc={
+							joinDate
+								? `Established Date: ${joinDate.toLocaleDateString("en-US", {
+										timeZone: "America/New_York",
+										month: "2-digit",
+										day: "2-digit",
+										year: "numeric",
+								  })}`
+								: ""
+						}
+					/>
+				);
+				fileName = `membership-list-join-date-${joinDate ? joinDate.toISOString().split("T")[0] : "unknown"}-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
+			} else {
+				document = (
+					<ListsReportMembershipListSeasonReport
+						data={reportData as ListsMembership[]}
+						desc={seasonCodeDesc}
+					/>
+				);
+				fileName = `membership-list-season-${seasonCode}-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
+			}
 		}
 
 		if (!document) return null;
@@ -846,14 +896,23 @@ export default function ListsReportLandingContent() {
 					</div>
 				</FolderTabMed>
 				{/* Only render download link if all required fields are filled and there is data */}
-				{selectedReport && seasonCode && seasonCodeDesc &&
+				{selectedReport &&
 					dataFetched &&
 					reportData.length > 0 &&
-					(selectedReport.includes("captainReport") || selectedReport.includes("electionList")) && (
-					<FolderTabMed title="Download PDF" className="w-fit">
-						{renderPDFDownload()}
-					</FolderTabMed>
-				)}
+					(
+						(
+							// For season filter, require seasonCode and seasonCodeDesc
+							filterBySeason && seasonCode && seasonCodeDesc
+						) ||
+						(
+							// For join date filter, require joinDate
+							filterByJoinDate && joinDate
+						)
+					) && (
+						<FolderTabMed title="Download PDF" className="w-fit">
+							{renderPDFDownload()}
+						</FolderTabMed>
+					)}
 			</div>
 			<div className="mt-4">
 				<Separator
