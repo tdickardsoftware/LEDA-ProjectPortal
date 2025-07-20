@@ -22,6 +22,8 @@ import ListsReportMembershipListJoinDateReport from "./react-pdf/lists-report-me
 import ListsReportMembershipListSeasonReport from "./react-pdf/lists-report-membership-list-season-report";
 import ListsReportPlacesListJoinDateReport from "./react-pdf/lists-report-places-list-join-date-report";
 import ListsReportPlacesListSeasonReport from "./react-pdf/lists-report-places-list-season-report";
+import ListsReportTeamsListJoinDateReport from "./react-pdf/lists-report-teams-list-join-date-report";
+import ListsReportTeamsListSeasonReport from "./react-pdf/lists-report-teams-list-season-report";
 
 // TO DO
 // [ ] - Implement that for join date implement good standing and bad standing filtering, also add honorary members filtering
@@ -601,6 +603,47 @@ export default function ListsReportLandingContent() {
 					/>
 				);
 				fileName = `places-list-season-${seasonCode}-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
+			}
+		} else if (selectedReport.includes("teamReportLists")) {
+			if (filterByJoinDate) {
+				document = (
+					<ListsReportTeamsListJoinDateReport
+						data={reportData as ListsTeams[]}
+						desc={
+							joinDate
+								? `Established Date: ${joinDate.toLocaleDateString("en-US", {
+										timeZone: "America/New_York",
+										month: "2-digit",
+										day: "2-digit",
+										year: "numeric",
+								  })}`
+								: ""
+						}
+					/>
+				);
+				fileName = `teams-list-established-date-${joinDate ? joinDate.toISOString().split("T")[0] : "unknown"}-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
+			} else {
+				document = (
+					<ListsReportTeamsListSeasonReport
+						data={reportData as ListsTeams[]}
+						desc={seasonCodeDesc}
+					/>
+				);
+				fileName = `teams-list-season-${seasonCode}-${new Date()
 					.toLocaleDateString("en-US", {
 						timeZone: "America/New_York",
 						month: "2-digit",
