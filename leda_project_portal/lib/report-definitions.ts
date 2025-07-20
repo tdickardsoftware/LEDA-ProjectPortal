@@ -986,3 +986,61 @@ export const placesListColumns = [
 		sortable: true,
 	},
 ]
+
+// Column Definitions for the lists teams list
+export const teamsListColumns = [
+	{
+		key: "teamId",
+		header: "Team LEDA ID",
+		accessor: (row: { teamId: string }) => row.teamId,
+		sortable: true,
+	},
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: { teamName: string }) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "placeName",
+		header: "Place Name",
+		accessor: (row: { placeName: string }) => row.placeName,
+		sortable: true,
+	},
+	{
+		key: "addressFirstLine",
+		header: "Place Address Line 1",
+		accessor: (row: { addressFirstLine: string }) => row.addressFirstLine,
+		sortable: true,
+	},
+	{
+		key: "addressSecondLine",
+		header: "Place Address Line 2",
+		accessor: (row: { addressSecondLine: string }) => row.addressSecondLine,
+		sortable: true,
+	},
+	{
+		key: "placePhoneNumber",
+		header: "Place Phone Number",
+		accessor: (row: { placePhoneNumber: string }) => row.placePhoneNumber,
+		sortable: true,
+	},
+	{
+		key: "captainFullName",
+		header: "Captain Full Name",
+		accessor: (row: { captainFullName: string }) => row.captainFullName,
+		sortable: true,
+	},
+	{
+		key: "captainPhoneNumber",
+		header: "Captain Phone Number",
+		accessor: (row: { captainPhoneNumber: string }) => row.captainPhoneNumber,
+		sortable: true,
+	},
+	{
+		key: "divisionInfo",
+		header: "Division Info",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	}
+]

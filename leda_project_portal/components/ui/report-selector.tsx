@@ -131,7 +131,7 @@ const reportsByType: Record<
 			needSeasonCode: false,
 		},
 		{
-			value: `${teamRoute}/teamsReportLists`,
+			value: `${teamRoute}/teamReportLists`,
 			label: "Team List",
 			needSeasonCode: false,
 		}

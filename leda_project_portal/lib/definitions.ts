@@ -616,13 +616,13 @@ export type ListsPlaces = {
 export type ListsTeams = {
 	teamId: string;
 	teamName: string;
-	divisionInfo: string;
 	placeName: string;
 	addressFirstLine: string;
 	addressSecondLine: string;
 	placePhoneNumber: string;
 	captainFullName: string;
 	captainPhoneNumber: string;
+	divisionInfo: string;
 }
 //
 // Define type to identify the shape of our data from postgres for divisions in a roster

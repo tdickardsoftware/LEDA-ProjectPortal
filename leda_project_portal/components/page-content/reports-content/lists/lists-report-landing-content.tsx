@@ -9,9 +9,9 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Checkbox } from "@/components/ui/checkbox";
 import ReportDivisionSelector from "@/components/ui/report-division-selector";
 import { seasonRoute, rosterRoute } from "@/lib/apiRoutes";
-import { ListsCaptains, ListsElectionList, ListsMembership, ListsPlaces, RosterDivision } from "@/lib/definitions";
+import { ListsCaptains, ListsElectionList, ListsMembership, ListsPlaces, ListsTeams, RosterDivision } from "@/lib/definitions";
 import ReportDisplay from "@/components/ui/report-display";
-import { captainsReportColumns, electionListColumns, membershipListColumnsFilterByJoinDate, membershipListColumnsFilterBySeason, placesListColumns } from "@/lib/report-definitions";
+import { captainsReportColumns, electionListColumns, membershipListColumnsFilterByJoinDate, membershipListColumnsFilterBySeason, placesListColumns, teamsListColumns } from "@/lib/report-definitions";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import ListsReportCaptainsReport from "./react-pdf/lists-report-captains-report";
 import ListsReportElectionListReport from "./react-pdf/lists-report-election-list-report";
@@ -203,6 +203,22 @@ export default function ListsReportLandingContent() {
 			);
 		}
 
+		// If divisions are required but there are no divisions available, show a message
+		if (
+			needsDivisionSelector &&
+			seasonCode &&
+			allDivisions &&
+			(allDivisionsString.trim() === "" || !allDivisionsString)
+		) {
+			return (
+				<div className="flex h-full items-center justify-center">
+					<p className="text-gray-500 text-center">
+						No divisions available for the selected season.
+					</p>
+				</div>
+			);
+		}
+
 		// Require divisions if needed before fetching report data
 		if (needsDivisionSelector && !allDivisions && !selectedDivisions) {
 			return (
@@ -253,39 +269,49 @@ export default function ListsReportLandingContent() {
 			}
 			return (
 				<>
-					{filterBySeason && (
-						// Only render if divisions are filled out
-						(needsDivisionSelector
-							? (allDivisions || selectedDivisions)
-							: true
-						) ? (
-							<ReportDisplay<ListsMembership>
-								apiRoute={
-									selectedReport +
-									`?seasonCode=${seasonCode}&divisions=${effectiveDivisionsString}&minSubdivision=${subdivisionMin ?? 1}&maxSubdivision=${subdivisionMax ?? 99}`
-								}
-								columns={membershipListColumnsFilterBySeason}
-								className="h-full"
-								onDataFetch={handleDataFetch}
-							/>
-						) : (
-							<div className="flex h-full items-center justify-center">
-								<p className="text-gray-500 text-center">
-									Please select at least one division to continue...
-								</p>
-							</div>
-						)
-					)}
-					{filterByJoinDate && joinDate && (
-						<ReportDisplay<ListsMembership>
-							apiRoute={
-								selectedReport +
-								`?establishedDate=${encodeURIComponent(joinDate.toISOString())}&goodStanding=${goodStanding}&badStanding=${badStanding}&lifetimeMember=${lifeMember}`
-							}
-							columns={membershipListColumnsFilterByJoinDate}
-							className="h-full"
-							onDataFetch={handleDataFetch}
-						/>
+					{allDivisionsString.trim() !== "" ? (
+						<>
+							{filterBySeason && (
+								// Only render if divisions are filled out
+								(needsDivisionSelector
+									? (allDivisions || selectedDivisions)
+									: true
+								) ? (
+									<ReportDisplay<ListsMembership>
+										apiRoute={
+											selectedReport +
+											`?seasonCode=${seasonCode}&divisions=${effectiveDivisionsString}&minSubdivision=${subdivisionMin ?? 1}&maxSubdivision=${subdivisionMax ?? 99}`
+										}
+										columns={membershipListColumnsFilterBySeason}
+										className="h-full"
+										onDataFetch={handleDataFetch}
+									/>
+								) : (
+									<div className="flex h-full items-center justify-center">
+										<p className="text-gray-500 text-center">
+											Please select at least one division to continue...
+										</p>
+									</div>
+								)
+							)}
+							{filterByJoinDate && joinDate && (
+								<ReportDisplay<ListsMembership>
+									apiRoute={
+										selectedReport +
+										`?establishedDate=${encodeURIComponent(joinDate.toISOString())}&goodStanding=${goodStanding}&badStanding=${badStanding}&lifetimeMember=${lifeMember}`
+									}
+									columns={membershipListColumnsFilterByJoinDate}
+									className="h-full"
+									onDataFetch={handleDataFetch}
+								/>
+							)}
+						</>
+					) : (
+						<div className="flex h-full items-center justify-center">
+							<p className="text-red-500 text-center">
+								No divisions available for the selected season.
+							</p>
+						</div>
 					)}
 				</>
 			);
@@ -331,12 +357,74 @@ export default function ListsReportLandingContent() {
 						<ReportDisplay<ListsPlaces>
 							apiRoute={
 								selectedReport +
-								`?establishedDate=${encodeURIComponent(joinDate.toISOString())}&goodStanding=${goodStanding}&badStanding=${badStanding}&lifetimeMember=${lifeMember}`
+								`?establishedDate=${encodeURIComponent(joinDate.toISOString())}&goodStanding=${goodStanding}&badStanding=${badStanding}`
 							}
 							columns={placesListColumns}
 							className="h-full"
 							onDataFetch={handleDataFetch}
 						/>
+					)}
+				</>
+			);
+		}
+
+		if (selectedReport.includes("teamReportLists")) {	
+			// Only render the ReportDisplay for join date if joinDate is set (not null/undefined)
+			if (filterByJoinDate && !joinDate) {
+				return (
+					<div className="flex h-full items-center justify-center">
+						<p className="text-gray-500 text-center">
+							Please select a join date to continue...
+						</p>
+					</div>
+				);
+			}
+			
+			return (
+				<>
+					{allDivisionsString.trim() !== "" ? (
+						<>
+							{filterBySeason && (
+								// Only render if divisions are filled out
+								(needsDivisionSelector
+									? (allDivisions || selectedDivisions)
+									: true
+								) ? (
+									<ReportDisplay<ListsTeams>
+										apiRoute={
+											selectedReport +
+											`?seasonCode=${seasonCode}&divisions=${effectiveDivisionsString}&minSubdivision=${subdivisionMin ?? 1}&maxSubdivision=${subdivisionMax ?? 99}`
+										}
+										columns={teamsListColumns}
+										className="h-full"
+										onDataFetch={handleDataFetch}
+									/>
+								) : (
+									<div className="flex h-full items-center justify-center">
+										<p className="text-gray-500 text-center">
+											Please select at least one division to continue...
+										</p>
+									</div>
+								)
+							)}
+							{filterByJoinDate && joinDate && (
+								<ReportDisplay<ListsTeams>
+									apiRoute={
+										selectedReport +
+										`?establishedDate=${encodeURIComponent(joinDate.toISOString())}`
+									}
+									columns={teamsListColumns}
+									className="h-full"
+									onDataFetch={handleDataFetch}
+								/>
+							)}
+						</>
+					) : (
+						<div className="flex h-full items-center justify-center">
+							<p className="text-red-500 text-center">
+								No divisions available for the selected season.
+							</p>
+						</div>
 					)}
 				</>
 			);
@@ -536,7 +624,7 @@ export default function ListsReportLandingContent() {
 									handleSelect={handleReportSelect}
 									selectedReport={selectedReport}
 									type="lists"
-									disabled={!seasonCode}
+									disabled={needSeasonCode ? !seasonCode : false}
 								/>
 								{needsFiscalYearSelector && (
 									<div className="flex flex-row gap-6 mt-2">
@@ -582,12 +670,12 @@ export default function ListsReportLandingContent() {
 													setSeasonCode(""); // Clear season code when switching to join date filter
 												}}
 											/>
-											<Label htmlFor="filter-by-join-date-checkbox">Filter By Join Date</Label>
+											<Label htmlFor="filter-by-join-date-checkbox">Filter By Established Date</Label>
 										</div>
 									</div>
 								)}
 							</div>
-							{(needsDivisionSelector && (!selectedReport.includes("membershipList") || !selectedReport.includes("placesReport") || !selectedReport.includes("teamsReportLists"))) && (
+							{(needsDivisionSelector && (!selectedReport.includes("membershipList") || !selectedReport.includes("placesReport") || !selectedReport.includes("teamReportLists"))) && (
 								<div className="flex items-center gap-4">
 									<Label htmlFor="all-divisions-checkbox">
 										All Divisions?
@@ -610,7 +698,7 @@ export default function ListsReportLandingContent() {
 									)}
 								</div>
 							)}
-							{(filterBySeason && (selectedReport.includes("membershipList") || selectedReport.includes("placesReport") || selectedReport.includes("teamsReportLists"))) && (
+							{(filterBySeason && (selectedReport.includes("membershipList") || selectedReport.includes("placesReport") || selectedReport.includes("teamReportLists"))) && (
 								<>
 									<div className="flex flex-col gap-1">
 										<Label htmlFor="season-code-selector">Season</Label>
@@ -674,7 +762,7 @@ export default function ListsReportLandingContent() {
 									)}
 								</>
 							)}
-							{(filterByJoinDate && (selectedReport.includes("membershipList") || selectedReport.includes("placesReport") || selectedReport.includes("teamsReportLists"))) && (
+							{(filterByJoinDate && (selectedReport.includes("membershipList") || selectedReport.includes("placesReport") || selectedReport.includes("teamReportLists"))) && (
 								<>
 									<div className="flex flex-col gap-1">
 										<Label htmlFor="join-date-selector">Join Date</Label>
@@ -718,32 +806,36 @@ export default function ListsReportLandingContent() {
 									<div className="flex flex-col gap-1">
 										<div className="flex flex-col gap-1">
 											<div className="flex flex-col gap-2">
-												<div className="flex items-center gap-2">
-													<Checkbox
-														id="good-standing-checkbox"
-														checked={goodStanding}
-														onCheckedChange={() => setGoodStanding(!goodStanding)}
-													/>
-													<Label htmlFor="good-standing-checkbox">Good Standing</Label>
-												</div>
-												<div className="flex items-center gap-2">
-													<Checkbox
-														id="bad-standing-checkbox"
-														checked={badStanding}
-														onCheckedChange={() => setBadStanding(!badStanding)}
-													/>
-													<Label htmlFor="bad-standing-checkbox">Bad Standing</Label>
-												</div>
-												{selectedReport.includes("membershipList") && (
-													<div className="flex items-center gap-2">
-														<Checkbox
-															id="life-time-member-checkbox"
-															checked={lifeMember}
-															onCheckedChange={() => setLifeMember(!lifeMember)}
-														/>
-														<Label htmlFor="life-time-member-checkbox">Life Time Member</Label>
-													</div>
-												)}
+												{!selectedReport.includes("teamReportLists") && (
+													<>
+														<div className="flex items-center gap-2">
+															<Checkbox
+																id="good-standing-checkbox"
+																checked={goodStanding}
+																onCheckedChange={() => setGoodStanding(!goodStanding)}
+															/>
+															<Label htmlFor="good-standing-checkbox">Good Standing</Label>
+														</div>
+														<div className="flex items-center gap-2">
+															<Checkbox
+																id="bad-standing-checkbox"
+																checked={badStanding}
+																onCheckedChange={() => setBadStanding(!badStanding)}
+															/>
+															<Label htmlFor="bad-standing-checkbox">Bad Standing</Label>
+														</div>
+														{selectedReport.includes("membershipList") && (
+															<div className="flex items-center gap-2">
+																<Checkbox
+																	id="life-time-member-checkbox"
+																	checked={lifeMember}
+																	onCheckedChange={() => setLifeMember(!lifeMember)}
+																/>
+																<Label htmlFor="life-time-member-checkbox">Life Time Member</Label>
+															</div>
+														)}
+													</>
+												)} 
 											</div>
 										</div>
 									</div>

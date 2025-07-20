@@ -70,7 +70,7 @@ export default function ReportsPageContent() {
 				<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 					<CardHeader>
 						<CardTitle className="text-lg font-semibold">
-							Lists *WORK IN PROGRESS*
+							Lists
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
