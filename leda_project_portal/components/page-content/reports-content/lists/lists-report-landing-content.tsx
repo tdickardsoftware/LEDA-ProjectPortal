@@ -10,9 +10,9 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Checkbox } from "@/components/ui/checkbox";
 import ReportDivisionSelector from "@/components/ui/report-division-selector";
 import { seasonRoute, rosterRoute } from "@/lib/apiRoutes";
-import { ListsCaptains, ListsElectionList, ListsMembership, ListsPlaces, ListsTeams, RosterDivision } from "@/lib/definitions";
+import { ListsCaptains, ListsElectionList, ListsMembership, ListsPlaces, ListsTeams, MailingList, RosterDivision } from "@/lib/definitions";
 import ReportDisplay from "@/components/ui/report-display";
-import { captainsReportColumns, electionListColumns, membershipListColumnsFilterByJoinDate, membershipListColumnsFilterBySeason, placesListColumns, teamsListColumns } from "@/lib/report-definitions";
+import { captainsReportColumns, electionListColumns, mailingLabelsColumns, membershipListColumnsFilterByJoinDate, membershipListColumnsFilterBySeason, placesListColumns, teamsListColumns } from "@/lib/report-definitions";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import ListsReportCaptainsReport from "./react-pdf/lists-report-captains-report";
 import ListsReportElectionListReport from "./react-pdf/lists-report-election-list-report";
@@ -541,6 +541,16 @@ export default function ListsReportLandingContent() {
 			);
 		}
 
+		if (selectedReport.includes("mailingLabels")) {
+			return (
+				<ReportDisplay<MailingList>
+					apiRoute={selectedReport}
+					columns={mailingLabelsColumns}
+					className="h-full"
+					onDataFetch={handleDataFetch}
+				/>
+			);
+		}
 		// Here you can use effectiveDivisionsString when making API calls for reports
 		// that need division information
 		
@@ -889,7 +899,7 @@ export default function ListsReportLandingContent() {
 										</div>
 									</div>
 								)}
-								{!needSeasonCode && (
+								{(!needSeasonCode && !selectedReport.includes("mailingLabels")) && (
 									<div className="flex flex-row gap-6 mt-2">
 										<div className="flex items-center gap-2">
 											<Checkbox

@@ -117,8 +117,9 @@ const reportsByType: Record<
 			fiscalYear: true,
 		},
 		{
-			value: `**REPLACE**`,
-			label: "Mailing Labels"
+			value: `/api/reports/mailingLabels`,
+			label: "Mailing Labels",
+			needSeasonCode: false,
 		},
 		{
 			value: `${playerRoute}/membershipList`,

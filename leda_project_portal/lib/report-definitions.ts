@@ -1044,3 +1044,31 @@ export const teamsListColumns = [
 		sortable: true,
 	}
 ]
+
+// Column Definitions for the lists mailing labels
+export const mailingLabelsColumns = [
+	{
+		key: "ledaId",
+		header: "LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "name",
+		header: "Name",
+		accessor: (row: { name: string }) => row.name,
+		sortable: true,
+	},
+	{
+		key: "addressLineOne",
+		header: "Address",
+		accessor: (row: { addressLineOne: string }) => row.addressLineOne,
+		sortable: true,
+	},
+	{
+		key: "addressLineTwo",
+		header: "City, State, and Zip",
+		accessor: (row: { addressLineTwo: string }) => row.addressLineTwo,
+		sortable: true,
+	}
+];

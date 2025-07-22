@@ -637,3 +637,12 @@ export type RosterDivision = {
 export type FiscalYear = {
 	fiscalYear: string;
 }
+//
+// Define type to identify the shape of our data from postgres for mailing lists
+//
+export type MailingList = {
+	ledaId: string;
+	name: string;
+	addressLineOne: string;
+	addressLineTwo: string;
+};
