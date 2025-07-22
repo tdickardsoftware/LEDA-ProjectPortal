@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -11,7 +11,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 interface ColumnDef<T> {
 	key: string;
@@ -25,6 +25,7 @@ interface ReportDisplayProps<T> {
 	columns: ColumnDef<T>[];
 	className?: string;
 	onDataFetch?: (data: T[]) => void;
+	mailingLabelsImported?: boolean;
 }
 
 export default function ReportDisplay<T extends Record<string, unknown>>({
@@ -32,11 +33,13 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	columns,
 	className = "",
 	onDataFetch,
+	mailingLabelsImported,
 }: ReportDisplayProps<T>) {
 	const [sortColumn, setSortColumn] = useState<string | null>(null);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(10);
+	const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
 	// TanStack Query hook
 	const {
@@ -61,6 +64,13 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 		staleTime: 60 * 1000, // 1 minute
 		retry: 1,
 	});
+
+	// Refetch when mailingLabelsImported is true
+	useEffect(() => {
+		if (mailingLabelsImported) {
+			refetch();
+		}
+	}, [mailingLabelsImported, refetch]);
 
 	// Call onDataFetch callback when data changes
 	useEffect(() => {
@@ -107,6 +117,35 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	useEffect(() => {
 		setCurrentPage(1);
 	}, [fetchedData]);
+
+	// Only enable delete for mailing labels
+	const isMailingLabelsTable = apiRoute.includes("mailingLabels");
+
+	const deleteMutation = useMutation({
+		mutationFn: async (row: unknown) => {
+			const labelRow = row as {
+				ledaId: string;
+				name: string;
+				addressLineOne: string;
+				addressLineTwo: string;
+			};
+			const res = await fetch(apiRoute, {
+				method: "DELETE",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					ledaId: labelRow.ledaId,
+					name: labelRow.name,
+					addressLineOne: labelRow.addressLineOne,
+					addressLineTwo: labelRow.addressLineTwo,
+				}),
+			});
+			if (!res.ok) throw new Error("Delete failed");
+			return res.json();
+		},
+		onSuccess: () => {
+			refetch();
+		},
+	});
 
 	if (loading) {
 		return (
@@ -162,13 +201,18 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 									</div>
 								</TableHead>
 							))}
+							{isMailingLabelsTable && (
+								<TableHead className="px-2 py-4 text-center text-sm font-semibold text-gray-900">
+									Actions
+								</TableHead>
+							)}
 						</TableRow>
 					</TableHeader>
 					<TableBody>
 						{paginatedData.length === 0 ? (
 							<TableRow>
 								<TableCell
-									colSpan={columns.length}
+									colSpan={columns.length + (isMailingLabelsTable ? 1 : 0)}
 									className="px-6 py-12 text-center text-gray-500"
 								>
 									No data available
@@ -179,6 +223,8 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 								<TableRow
 									key={startIndex + index}
 									className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+									onMouseEnter={() => setHoveredRow(index)}
+									onMouseLeave={() => setHoveredRow(null)}
 								>
 									{columns.map((column) => (
 										<TableCell
@@ -192,6 +238,25 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 											{column.accessor(row)}
 										</TableCell>
 									))}
+									{isMailingLabelsTable && (
+										<TableCell className="px-2 py-4 text-center">
+											{hoveredRow === index && (
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => {
+														if (window.confirm("Are you sure you want to delete this mailing label?")) {
+															deleteMutation.mutate(row);
+														}
+													}}
+													disabled={deleteMutation.status === "pending"}
+													title="Delete"
+												>
+													<Trash2 className="h-4 w-4 text-red-500" />
+												</Button>
+											)}
+										</TableCell>
+									)}
 								</TableRow>
 							))
 						)}

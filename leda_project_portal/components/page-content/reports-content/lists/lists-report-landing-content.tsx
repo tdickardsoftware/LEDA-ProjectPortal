@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, JSX } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
@@ -25,6 +25,9 @@ import ListsReportPlacesListJoinDateReport from "./react-pdf/lists-report-places
 import ListsReportPlacesListSeasonReport from "./react-pdf/lists-report-places-list-season-report";
 import ListsReportTeamsListJoinDateReport from "./react-pdf/lists-report-teams-list-join-date-report";
 import ListsReportTeamsListSeasonReport from "./react-pdf/lists-report-teams-list-season-report";
+import MailingLabelsImportDialog from "./mailing-labels-import-dialog";
+import { Button } from "@/components/ui/button";
+import { Import as ImportIcon } from "lucide-react";
 
 // Custom hooks for API calls
 const useSeasonData = (seasonCode: string) => {
@@ -127,6 +130,9 @@ export default function ListsReportLandingContent() {
 	const [joinDate, setJoinDate] = useState<Date | null>(null);
 	const [subdivisionMin, setSubdivisionMin] = useState<number | undefined>(1);
 	const [subdivisionMax, setSubdivisionMax] = useState<number | undefined>(99);
+	const [importDialogOpen, setImportDialogOpen] = useState(false);
+	const [mailingLabelsImported, setMailingLabelsImported] = useState(false);
+	const queryClient = useQueryClient();
 
 	// TanStack Query hooks
 	const { 
@@ -547,7 +553,12 @@ export default function ListsReportLandingContent() {
 					apiRoute={selectedReport}
 					columns={mailingLabelsColumns}
 					className="h-full"
-					onDataFetch={handleDataFetch}
+					onDataFetch={data => {
+						setReportData(data);
+						setDataFetched(true);
+						if (mailingLabelsImported) setMailingLabelsImported(false);
+					}}
+					mailingLabelsImported={mailingLabelsImported}
 				/>
 			);
 		}
@@ -830,6 +841,11 @@ export default function ListsReportLandingContent() {
 		);
 	};
 
+	const handleImportSuccess = () => {
+		setMailingLabelsImported(true);
+		queryClient.invalidateQueries({ queryKey: [selectedReport] });
+	};
+
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex justify-between">
@@ -873,12 +889,32 @@ export default function ListsReportLandingContent() {
 							)}
 							<div className="flex flex-col gap-1">
 								<Label htmlFor="report-selector">Report</Label>
-								<ReportSelector
-									handleSelect={handleReportSelect}
-									selectedReport={selectedReport}
-									type="lists"
-									disabled={needSeasonCode ? !seasonCode : false}
-								/>
+								<div className="flex items-center gap-2">
+									<ReportSelector
+										handleSelect={handleReportSelect}
+										selectedReport={selectedReport}
+										type="lists"
+										disabled={needSeasonCode ? !seasonCode : false}
+									/>
+									{selectedReport.includes("mailingLabels") && (
+										<>
+											<Button
+												variant="outline"
+												size="default"
+												className="hover:bg-gray-100 border-gray-300 text-gray-700"
+												onClick={() => setImportDialogOpen(true)}
+											>
+												<ImportIcon className="mr-2 h-4 w-4" />
+												Import
+											</Button>
+											<MailingLabelsImportDialog
+												open={importDialogOpen}
+												onOpenChange={setImportDialogOpen}
+												onImportSuccess={handleImportSuccess}
+											/>
+										</>
+									)}
+								</div>
 								{needsFiscalYearSelector && (
 									<div className="flex flex-row gap-6 mt-2">
 										<div className="flex items-center gap-2">

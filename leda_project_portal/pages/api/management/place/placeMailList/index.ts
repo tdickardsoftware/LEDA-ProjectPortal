@@ -9,8 +9,8 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
-    // Handle GET requests
-    if (req.method === "GET") {
+    // Handle POST requests
+    if (req.method === "POST") {
         try {
             // Execute the database query to fetch mailing label information
             const result = await query<MailingList>(
@@ -19,10 +19,11 @@ export default async function handler(
             
             for (const row of result.rows) {
                 queryPost(
-                    'INSERT INTO public.leda_mailing_labels ("ledaId", name, "addressLineOne", "addressLineTwo") VALUES ($1, $2, $3, $4) ON CONFLICT ("ledaId") DO NOTHING',
+                    'INSERT INTO public.leda_mailing_labels ("ledaId", name, "addressLineOne", "addressLineTwo") VALUES ($1, $2, $3, $4) ON CONFLICT ("ledaId", "name", "addressLineOne", "addressLineTwo") DO NOTHING',
                     [row.ledaId, row.name, row.addressLineOne, row.addressLineTwo]
                 );
             }
+            return res.status(200).json({ message: "Mailing labels imported successfully" });
         } catch (error) {
             // Handle any errors that occur during the query
             res.status(500).json({
