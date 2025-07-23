@@ -34,15 +34,11 @@ export default async function handler(
     } else if (req.method === "GET") {
         if (req.query.alreadySelected) {
             try {
+                console.log("alreadySelected", req.query.alreadySelected);
                 // Format the already selected string for SQL IN clause
                 const selectedString = req.query.alreadySelected as string;
-                // Split by comma, trim whitespace, and wrap each value in single quotes
-                const formattedSelectedString = selectedString
-                    .split(",")
-                    .map((id) => `'${id.trim()}'`)
-                    .join(",");
 
-                const result = await query<MailingList>(`SELECT "ledaId", "name", concat(COALESCE("addressOne", ''::text), ' ', COALESCE("addressTwo", ''::text)) AS "addressLineOne", concat(COALESCE(city, ''::text), ', ', COALESCE(state, ''::text), ' ', COALESCE(zip, ''::text::character varying)) AS "addressLineTwo", "PLAYER" as "type" FROM leda_player_info WHERE "ledaId" IN (${formattedSelectedString})`)
+                const result = await query<MailingList>(`SELECT "ledaId", concat(COALESCE("lastName", ''::text), ', ', COALESCE("firstName", ''::text), ' ', COALESCE("middleInitial", ''::character varying)) AS "name", concat(COALESCE("addressOne", ''::text), ' ', COALESCE("addressTwo", ''::text)) AS "addressLineOne", concat(COALESCE(city, ''::text), ', ', COALESCE(state, ''::text), ' ', COALESCE(zip, ''::text::character varying)) AS "addressLineTwo", 'PLAYER' as "type" FROM leda_player_info WHERE "ledaId" NOT IN (${selectedString})`)
 
                 return res.status(200).json(result.rows);
             } catch (error) {

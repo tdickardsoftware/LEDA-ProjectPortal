@@ -24,6 +24,42 @@ export default async function handler(
                 error,
             });
         }
+    } else if (req.method === "POST") {
+        try {
+            const mailingLabels: MailingList[] = req.body;
+            if (!Array.isArray(mailingLabels) || mailingLabels.length === 0) {
+                return res.status(400).json({ error: "Request body must be a non-empty array of mailing labels" });
+            }
+
+            const values = mailingLabels.map(label => [
+                label.ledaId,
+                label.name,
+                label.addressLineOne,
+                label.addressLineTwo,
+                label.type
+            ]);
+
+            const placeholders = values
+                .map((_, i) => `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`)
+                .join(", ");
+
+            const flatValues = values.flat();
+
+            await query(
+                `INSERT INTO public.leda_mailing_labels ("ledaId", name, "addressLineOne", "addressLineTwo", "type")
+                 VALUES ${placeholders}
+                 ON CONFLICT ("ledaId", name, "addressLineOne", "addressLineTwo", "type") DO NOTHING`,
+                flatValues
+            );
+
+            res.status(200).json({ success: true });
+        } catch (error) {
+            // Handle any errors that occur during the query
+            res.status(500).json({
+                message: "Failed to import mailing labels",
+                error,
+            });
+        }
     } else if (req.method === "DELETE") {
         try {
             const { ledaId, name, addressLineOne, addressLineTwo } = req.body;

@@ -42,7 +42,7 @@ export default async function handler(
                     .map((id) => `'${id.trim()}'`)
                     .join(",");
 
-                const result = await query<MailingList>(`SELECT "ledaId", "name", concat(COALESCE("addressOne", ''::text), ' ', COALESCE("addressTwo", ''::text)) AS "addressLineOne", concat(COALESCE(city, ''::text), ', ', COALESCE(state, ''::text), ' ', COALESCE(zip, ''::text::character varying)) AS "addressLineTwo", "PLACE" as "type" FROM leda_place_info WHERE "ledaId" IN (${formattedSelectedString})`)
+                const result = await query<MailingList>(`SELECT "ledaId", "name", concat(COALESCE("addressOne", ''::text), ' ', COALESCE("addressTwo", ''::text)) AS "addressLineOne", concat(COALESCE(city, ''::text), ', ', COALESCE(state, ''::text), ' ', COALESCE(zip, ''::text::character varying)) AS "addressLineTwo", 'PLACE' as "type" FROM leda_place_info WHERE "ledaId" NOT IN (${formattedSelectedString})`)
 
                 return res.status(200).json(result.rows);
             } catch (error) {
@@ -54,7 +54,7 @@ export default async function handler(
             }
         } else {
             try {
-                const result = await query<MailingList>(`SELECT "ledaId", "name", concat(COALESCE("addressOne", ''::text), ' ', COALESCE("addressTwo", ''::text)) AS "addressLineOne", concat(COALESCE(city, ''::text), ', ', COALESCE(state, ''::text), ' ', COALESCE(zip, ''::text::character varying)) AS "addressLineTwo", "PLACE" as "type" FROM leda_place_info`)
+                const result = await query<MailingList>(`SELECT "ledaId", "name", concat(COALESCE("addressOne", ''::text), ' ', COALESCE("addressTwo", ''::text)) AS "addressLineOne", concat(COALESCE(city, ''::text), ', ', COALESCE(state, ''::text), ' ', COALESCE(zip, ''::text::character varying)) AS "addressLineTwo", 'PLACE' as "type" FROM leda_place_info`)
 
                 return res.status(200).json(result.rows);
             } catch (error) {

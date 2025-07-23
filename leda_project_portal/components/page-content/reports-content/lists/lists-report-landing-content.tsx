@@ -26,6 +26,7 @@ import ListsReportPlacesListSeasonReport from "./react-pdf/lists-report-places-l
 import ListsReportTeamsListJoinDateReport from "./react-pdf/lists-report-teams-list-join-date-report";
 import ListsReportTeamsListSeasonReport from "./react-pdf/lists-report-teams-list-season-report";
 import MailingLabelsImportDialog from "./mailing-labels-import-dialog";
+import MailingLabelsAddDialog from "./mailing-labels-add-dialog";
 import { Button } from "@/components/ui/button";
 import { Import as ImportIcon } from "lucide-react";
 
@@ -846,6 +847,26 @@ export default function ListsReportLandingContent() {
 		queryClient.invalidateQueries({ queryKey: [selectedReport] });
 	};
 
+	// Get player and place ledaIds from reportData if mailingLabels
+	type MailingLabelRow = {
+		ledaId: string;
+		type: string;
+		// ...other fields...
+	};
+
+	const playerLedaIds: string[] =
+		selectedReport.includes("mailingLabels") && Array.isArray(reportData)
+			? (reportData as MailingLabelRow[])
+					.filter((row) => row.type === "PLAYER")
+					.map((row) => row.ledaId)
+			: [];
+	const placeLedaIds: string[] =
+		selectedReport.includes("mailingLabels") && Array.isArray(reportData)
+			? (reportData as MailingLabelRow[])
+					.filter((row) => row.type === "PLACE")
+					.map((row) => row.ledaId)
+			: [];
+
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex justify-between">
@@ -911,6 +932,11 @@ export default function ListsReportLandingContent() {
 												open={importDialogOpen}
 												onOpenChange={setImportDialogOpen}
 												onImportSuccess={handleImportSuccess}
+											/>
+											<MailingLabelsAddDialog
+												playerLedaIds={playerLedaIds}
+												placeLedaIds={placeLedaIds}
+												onAddSuccess={() => setMailingLabelsImported(true)}
 											/>
 										</>
 									)}
