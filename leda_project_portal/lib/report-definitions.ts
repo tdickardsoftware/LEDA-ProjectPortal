@@ -750,3 +750,331 @@ export const weeklyScoresheetsColumns = [
 		sortable: true,
 	},
 ];
+
+// Column definitions for captains report
+export const captainsReportColumns = [
+	{
+		key: "fullName",
+		header: "Full Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "ledaId",
+		header: "LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "phoneNumber",
+		header: "Phone Number",
+		accessor: (row: { phoneNumber: string }) => row.phoneNumber,
+		sortable: true,
+	},
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: { teamName: string }) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "Division",
+		header: "Division",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	},
+	{
+		key: "placeName",
+		header: "Place Name",
+		accessor: (row: { placeName: string }) => row.placeName,
+		sortable: true,
+	},
+]
+
+// Column definitions for lists election list
+export const electionListColumns = [
+	{
+		key: "fullName",
+		header: "Full Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+]
+
+// Column Definitions for the lists membership list filter by season
+export const membershipListColumnsFilterBySeason = [
+	{
+		key: "playerId",
+		header: "LEDA ID",
+		accessor: (row: { playerId: string }) => row.playerId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "phoneNumber",
+		header: "Phone Number",
+		accessor: (row: { phoneNumber: string }) => row.phoneNumber,
+		sortable: true,
+	},
+	{
+		key: "email",
+		header: "Email",
+		accessor: (row: { email: string }) => row.email,
+		sortable: true,
+	},
+	{
+		key: "addressOne",
+		header: "Address Line 1",
+		accessor: (row: { addressOne: string }) => row.addressOne,
+		sortable: true,
+	},
+	{
+		key: "addressTwo",
+		header: "Address Line 2",
+		accessor: (row: { addressTwo: string }) => row.addressTwo,
+		sortable: true,
+	},
+	{
+		key: "city",
+		header: "City",
+		accessor: (row: { city: string }) => row.city,
+		sortable: true,
+	},
+	{
+		key: "state",
+		header: "State",
+		accessor: (row: { state: string }) => row.state,
+		sortable: true,
+	},
+	{
+		key: "zip",
+		header: "Zip Code",
+		accessor: (row: { zip: string }) => row.zip,
+		sortable: true,
+	},
+	{
+		key: "divisionInfo",
+		header: "Division Info",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	}
+]
+
+// Column Definitions for the lists membership list filter by join date
+export const membershipListColumnsFilterByJoinDate = [
+	{
+		key: "playerId",
+		header: "LEDA ID",
+		accessor: (row: { playerId: string }) => row.playerId,
+		sortable: true,
+	},
+	{
+		key: "fullName",
+		header: "Name",
+		accessor: (row: { fullName: string }) => row.fullName,
+		sortable: true,
+	},
+	{
+		key: "phoneNumber",
+		header: "Phone Number",
+		accessor: (row: { phoneNumber: string }) => row.phoneNumber,
+		sortable: true,
+	},
+	{
+		key: "email",
+		header: "Email",
+		accessor: (row: { email: string }) => row.email,
+		sortable: true,
+	},
+	{
+		key: "addressOne",
+		header: "Address Line 1",
+		accessor: (row: { addressOne: string }) => row.addressOne,
+		sortable: true,
+	},
+	{
+		key: "addressTwo",
+		header: "Address Line 2",
+		accessor: (row: { addressTwo: string }) => row.addressTwo,
+		sortable: true,
+	},
+	{
+		key: "city",
+		header: "City",
+		accessor: (row: { city: string }) => row.city,
+		sortable: true,
+	},
+	{
+		key: "state",
+		header: "State",
+		accessor: (row: { state: string }) => row.state,
+		sortable: true,
+	},
+	{
+		key: "zip",
+		header: "Zip Code",
+		accessor: (row: { zip: string }) => row.zip,
+		sortable: true,
+	}
+]
+
+// Column Definitions for the lists places list
+export const placesListColumns = [
+	{
+		key: "ledaId",
+		header: "LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "name",
+		header: "Place Name",
+		accessor: (row: { name: string }) => row.name,
+		sortable: true,
+	},
+	{
+		key: "phoneNumber",
+		header: "Phone Number",
+		accessor: (row: { phoneNumber: string }) => row.phoneNumber,
+		sortable: true,
+	},
+	{
+		key:"contact",
+		header: "Contact Name",
+		accessor: (row: { contact: string }) => row.contact,
+		sortable: true,
+	},
+	{
+		key: "email",
+		header: "Email",
+		accessor: (row: { email: string }) => row.email,
+		sortable: true,
+	},
+	{
+		key: "addressOne",
+		header: "Address Line 1",
+		accessor: (row: { addressOne: string }) => row.addressOne,
+		sortable: true,
+	},
+	{
+		key: "addressTwo",
+		header: "Address Line 2",
+		accessor: (row: { addressTwo: string }) => row.addressTwo,
+		sortable: true,
+	},
+	{
+		key: "city",
+		header: "City",
+		accessor: (row: { city: string }) => row.city,
+		sortable: true,
+	},
+	{
+		key: "state",
+		header: "State",
+		accessor: (row: { state: string }) => row.state,
+		sortable: true,
+	},
+	{
+		key: "zip",
+		header: "Zip Code",
+		accessor: (row: { zip: string }) => row.zip,
+		sortable: true,
+	},
+]
+
+// Column Definitions for the lists teams list
+export const teamsListColumns = [
+	{
+		key: "teamId",
+		header: "Team LEDA ID",
+		accessor: (row: { teamId: string }) => row.teamId,
+		sortable: true,
+	},
+	{
+		key: "teamName",
+		header: "Team Name",
+		accessor: (row: { teamName: string }) => row.teamName,
+		sortable: true,
+	},
+	{
+		key: "placeName",
+		header: "Place Name",
+		accessor: (row: { placeName: string }) => row.placeName,
+		sortable: true,
+	},
+	{
+		key: "addressFirstLine",
+		header: "Place Address Line 1",
+		accessor: (row: { addressFirstLine: string }) => row.addressFirstLine,
+		sortable: true,
+	},
+	{
+		key: "addressSecondLine",
+		header: "Place Address Line 2",
+		accessor: (row: { addressSecondLine: string }) => row.addressSecondLine,
+		sortable: true,
+	},
+	{
+		key: "placePhoneNumber",
+		header: "Place Phone Number",
+		accessor: (row: { placePhoneNumber: string }) => row.placePhoneNumber,
+		sortable: true,
+	},
+	{
+		key: "captainFullName",
+		header: "Captain Full Name",
+		accessor: (row: { captainFullName: string }) => row.captainFullName,
+		sortable: true,
+	},
+	{
+		key: "captainPhoneNumber",
+		header: "Captain Phone Number",
+		accessor: (row: { captainPhoneNumber: string }) => row.captainPhoneNumber,
+		sortable: true,
+	},
+	{
+		key: "divisionInfo",
+		header: "Division Info",
+		accessor: (row: { divisionInfo: string }) => row.divisionInfo,
+		sortable: true,
+	}
+]
+
+// Column Definitions for the lists mailing labels
+export const mailingLabelsColumns = [
+	{
+		key: "ledaId",
+		header: "LEDA ID",
+		accessor: (row: { ledaId: string }) => row.ledaId,
+		sortable: true,
+	},
+	{
+		key: "name",
+		header: "Name",
+		accessor: (row: { name: string }) => row.name,
+		sortable: true,
+	},
+	{
+		key: "addressLineOne",
+		header: "Address",
+		accessor: (row: { addressLineOne: string }) => row.addressLineOne,
+		sortable: true,
+	},
+	{
+		key: "addressLineTwo",
+		header: "City, State, and Zip",
+		accessor: (row: { addressLineTwo: string }) => row.addressLineTwo,
+		sortable: true,
+	},
+	{
+		key: "type",
+		header: "Type",
+		accessor: (row: { type: string }) => row.type,
+		sortable: true,
+	}
+];

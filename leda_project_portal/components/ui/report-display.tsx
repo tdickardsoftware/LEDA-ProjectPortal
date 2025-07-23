@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -10,7 +11,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 interface ColumnDef<T> {
 	key: string;
@@ -24,6 +25,8 @@ interface ReportDisplayProps<T> {
 	columns: ColumnDef<T>[];
 	className?: string;
 	onDataFetch?: (data: T[]) => void;
+	mailingLabelsImported?: boolean;
+	dataOverride?: T[];
 }
 
 export default function ReportDisplay<T extends Record<string, unknown>>({
@@ -31,42 +34,52 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	columns,
 	className = "",
 	onDataFetch,
+	mailingLabelsImported,
+	dataOverride,
 }: ReportDisplayProps<T>) {
-	const [data, setData] = useState<T[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [sortColumn, setSortColumn] = useState<string | null>(null);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(10);
+	const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
-	const fetchData = useCallback(async () => {
-		setLoading(true);
-		setError(null);
-
-		try {
+	// TanStack Query hook
+	const {
+		data: fetchedData = [],
+		error,
+		isLoading: loading,
+		refetch,
+	} = useQuery<T[]>({
+		queryKey: ["reportData", apiRoute],
+		queryFn: async () => {
+			if (!apiRoute) {
+				return [];
+			}
 			const response = await fetch(apiRoute);
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			const result = await response.json();
-			const fetchedData = result.data || result;
-			setData(fetchedData);
+			return result.data || result;
+		},
+		enabled: !!apiRoute,
+		staleTime: 60 * 1000, // 1 minute
+		retry: 1,
+	});
 
-			// Call the callback if provided
-			if (onDataFetch) {
-				onDataFetch(fetchedData);
-			}
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "An error occurred");
-		} finally {
-			setLoading(false);
-		}
-	}, [apiRoute, onDataFetch]); // Remove onDataFetch from dependencies
-
+	// Refetch when mailingLabelsImported is true
 	useEffect(() => {
-		fetchData();
-	}, [fetchData]);
+		if (mailingLabelsImported) {
+			refetch();
+		}
+	}, [mailingLabelsImported, refetch]);
+
+	// Call onDataFetch callback when data changes
+	useEffect(() => {
+		if (fetchedData.length > 0 && onDataFetch) {
+			onDataFetch(fetchedData);
+		}
+	}, [fetchedData, onDataFetch]);
 
 	const handleSort = (columnKey: string) => {
 		if (sortColumn === columnKey) {
@@ -78,9 +91,10 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	};
 
 	const sortedData = React.useMemo(() => {
-		if (!sortColumn) return data;
+		if (dataOverride) return dataOverride;
+		if (!sortColumn) return fetchedData;
 
-		return [...data].sort((a, b) => {
+		return [...fetchedData].sort((a, b) => {
 			const aValue = a[sortColumn];
 			const bValue = b[sortColumn];
 
@@ -92,7 +106,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 			if (aStr > bStr) return sortDirection === "asc" ? 1 : -1;
 			return 0;
 		});
-	}, [data, sortColumn, sortDirection]);
+	}, [fetchedData, sortColumn, sortDirection, dataOverride]);
 
 	const totalPages = Math.ceil(sortedData.length / itemsPerPage);
 	const startIndex = (currentPage - 1) * itemsPerPage;
@@ -105,7 +119,36 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	// Reset to first page when data changes
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [data]);
+	}, [fetchedData]);
+
+	// Only enable delete for mailing labels
+	const isMailingLabelsTable = apiRoute.includes("mailingLabels");
+
+	const deleteMutation = useMutation({
+		mutationFn: async (row: unknown) => {
+			const labelRow = row as {
+				ledaId: string;
+				name: string;
+				addressLineOne: string;
+				addressLineTwo: string;
+			};
+			const res = await fetch(apiRoute, {
+				method: "DELETE",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					ledaId: labelRow.ledaId,
+					name: labelRow.name,
+					addressLineOne: labelRow.addressLineOne,
+					addressLineTwo: labelRow.addressLineTwo,
+				}),
+			});
+			if (!res.ok) throw new Error("Delete failed");
+			return res.json();
+		},
+		onSuccess: () => {
+			refetch();
+		},
+	});
 
 	if (loading) {
 		return (
@@ -119,8 +162,10 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	if (error) {
 		return (
 			<div className="flex flex-col items-center justify-center p-8 text-center">
-				<p className="text-red-600 mb-4">Error: {error}</p>
-				<Button onClick={fetchData} variant="outline">
+				<p className="text-red-600 mb-4">
+					Error: {error instanceof Error ? error.message : "An error occurred"}
+				</p>
+				<Button onClick={() => refetch()} variant="outline">
 					Retry
 				</Button>
 			</div>
@@ -159,13 +204,18 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 									</div>
 								</TableHead>
 							))}
+							{isMailingLabelsTable && (
+								<TableHead className="px-2 py-4 text-center text-sm font-semibold text-gray-900">
+									Actions
+								</TableHead>
+							)}
 						</TableRow>
 					</TableHeader>
 					<TableBody>
 						{paginatedData.length === 0 ? (
 							<TableRow>
 								<TableCell
-									colSpan={columns.length}
+									colSpan={columns.length + (isMailingLabelsTable ? 1 : 0)}
 									className="px-6 py-12 text-center text-gray-500"
 								>
 									No data available
@@ -176,6 +226,8 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 								<TableRow
 									key={startIndex + index}
 									className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+									onMouseEnter={() => setHoveredRow(index)}
+									onMouseLeave={() => setHoveredRow(null)}
 								>
 									{columns.map((column) => (
 										<TableCell
@@ -189,16 +241,38 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 											{column.accessor(row)}
 										</TableCell>
 									))}
+									{isMailingLabelsTable && (
+										<TableCell className="px-2 py-4 text-center">
+											{hoveredRow === index && (
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => {
+														if (window.confirm("Are you sure you want to delete this mailing label?")) {
+															deleteMutation.mutate(row);
+														}
+													}}
+													disabled={deleteMutation.status === "pending"}
+													title="Delete"
+												>
+													<Trash2 className="h-4 w-4 text-red-500" />
+												</Button>
+											)}
+										</TableCell>
+									)}
 								</TableRow>
 							))
 						)}
 					</TableBody>
 				</Table>
-				
+
 				{totalPages > 1 && (
 					<div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50/50">
 						<div className="text-sm text-gray-600">
-							Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} results
+							Showing{" "}
+							{startIndex + 1} to{" "}
+							{Math.min(startIndex + itemsPerPage, sortedData.length)} of{" "}
+							{sortedData.length} results
 						</div>
 						<div className="flex items-center gap-2">
 							<Button
@@ -210,17 +284,24 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 							>
 								<ChevronLeft className="h-4 w-4" />
 							</Button>
-							
+
 							{Array.from({ length: totalPages }, (_, i) => i + 1)
-								.filter(page => {
+								.filter((page) => {
 									// Show first page, last page, current page, and pages around current
-									return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+									return (
+										page === 1 ||
+										page === totalPages ||
+										Math.abs(page - currentPage) <= 1
+									);
 								})
 								.map((page, index, visiblePages) => (
 									<React.Fragment key={page}>
-										{index > 0 && visiblePages[index - 1] < page - 1 && (
-											<span className="px-2 text-sm text-gray-500">...</span>
-										)}
+										{index > 0 &&
+											visiblePages[index - 1] < page - 1 && (
+												<span className="px-2 text-sm text-gray-500">
+													...
+												</span>
+											)}
 										<Button
 											variant={currentPage === page ? "default" : "outline"}
 											size="sm"
@@ -231,7 +312,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 										</Button>
 									</React.Fragment>
 								))}
-							
+
 							<Button
 								variant="outline"
 								size="sm"

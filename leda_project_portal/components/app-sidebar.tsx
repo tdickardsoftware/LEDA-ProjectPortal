@@ -118,36 +118,6 @@ const data = {
 				{
 					title: "Lists",
 					url: "/Portal/Reports/Lists",
-					items: [
-						{
-							title: "Captains",
-							url: "/Portal/Reports/Lists/Captains",
-						},
-						{
-							title: "Election List",
-							url: "/Portal/Reports/Lists/Election-List",
-						},
-						{
-							title: "Mailing Labels",
-							url: "/Portal/Reports/Lists/Mailing-Labels",
-						},
-						{
-							title: "Members",
-							url: "/Portal/Reports/Lists/Members",
-						},
-						{
-							title: "Places",
-							url: "/Portal/Reports/Lists/Places",
-						},
-						{
-							title: "Season Members",
-							url: "/Portal/Reports/Lists/Season-Members",
-						},
-						{
-							title: "Teams",
-							url: "/Portal/Reports/Lists/Teams",
-						},
-					],
 				},
 				{
 					title: "Trails",
@@ -156,7 +126,7 @@ const data = {
 			],
 		},
 		{
-			title: "Activites",
+			title: "Activities",
 			url: "/Portal/Activities",
 			icon: ListCheck,
 			items: [

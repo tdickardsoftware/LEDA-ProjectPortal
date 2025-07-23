@@ -560,3 +560,90 @@ export type LeaguePlayWeeklyScoresheets = {
 	penaltyPoints: string;
 	previousPenaltyPoints: string;
 };
+//
+// Define type to identify the shape of our data from postgres for the lists captains report
+//
+export type ListsCaptains = {
+	ledaId: string;
+	fullName: string;
+	seasonCode: string;
+	teamName: string;
+	placeName: string;
+	division: string;
+	divisionInfo: string;
+	phoneNumber: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the lists election list report
+//
+export type ListsElectionList = {
+	fullName: string;
+	badStanding: boolean;
+}
+//
+// Define type to identify the shape of our data from postgres for the lists membership report
+//
+export type ListsMembership = {
+	playerId: string;
+	fullName: string;
+	phoneNumber: string;
+	email: string;
+	addressOne: string;
+	addressTwo: string;
+	city: string;
+	state: string;
+	zip: string;
+	divisionInfo: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the lists places report
+//
+export type ListsPlaces = {
+	ledaId: string;
+	name: string;
+	email: string;
+	addressOne: string;
+	addressTwo: string;
+	city: string;
+	state: string;
+	zip: string;
+	phoneNumber: string;
+	contact: string;
+}
+//
+// Define type to identify the shape of our data from postgres for the lists teams report
+//
+export type ListsTeams = {
+	teamId: string;
+	teamName: string;
+	placeName: string;
+	addressFirstLine: string;
+	addressSecondLine: string;
+	placePhoneNumber: string;
+	captainFullName: string;
+	captainPhoneNumber: string;
+	divisionInfo: string;
+}
+//
+// Define type to identify the shape of our data from postgres for divisions in a roster
+//
+export type RosterDivision = {
+	seasonCode: string;
+	division: string;
+}
+//
+// Define type to identify the shape of our data from postgres for fiscal years
+//
+export type FiscalYear = {
+	fiscalYear: string;
+}
+//
+// Define type to identify the shape of our data from postgres for mailing lists
+//
+export type MailingList = {
+	ledaId: string;
+	name: string;
+	addressLineOne: string;
+	addressLineTwo: string;
+	type: string;
+};

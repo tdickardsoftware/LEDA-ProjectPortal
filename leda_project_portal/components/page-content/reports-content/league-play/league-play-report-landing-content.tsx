@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, JSX } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
@@ -10,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import WeekSelector from "@/components/ui/week-selector";
 import { Input } from "@/components/ui/input";
-import ReportDisplay from "../report-display";
+import ReportDisplay from "../../../ui/report-display";
 import { BarAffiliationFeeNotPaid, MentionBestOfDivision, MentionLeaguePlay, MentionPlaque, Ton80, PlayerNoForm, PlayerNotPaid, TeamFeeNotPaid, TopDarter, LeaguePlayWeeklyScoresheets } from "@/lib/definitions";
 import { leaguePlayBarAffiliationFeeNotPaidColumns, mentionBestOfDivisionColumns, mentionLeaguePlayColumns, mentionPlaqueColumns, ton80Columns, playerNoFormColumns, playerNotPaidColumns, teamFeeNotPaidColumns, topDarterColumns, weeklyScoresheetsColumns } from "@/lib/report-definitions";
 import LeaguePlayBarAffiliationFeeNotPaidReport from "./react-pdf/league-play-bar-affiliation-fee-not-paid";
@@ -25,6 +26,21 @@ import LeaguePlayWeeklyScoresheetsReport from "./react-pdf/league-play-weekly-sc
 import LeaguePlayTon80Report from "./react-pdf/league-play-ton80-report";
 import { seasonRoute } from "@/lib/apiRoutes";
 
+// Custom hook for season data
+const useSeasonData = (seasonCode: string) => {
+	return useQuery({
+		queryKey: ['season', seasonCode],
+		queryFn: async () => {
+			const response = await fetch(`${seasonRoute}?seasonCode=${seasonCode}`);
+			if (!response.ok) {
+				throw new Error('Failed to fetch season data');
+			}
+			return response.json();
+		},
+		enabled: !!seasonCode,
+		staleTime: 60 * 1000, // 5 minutes
+	});
+};
 
 export default function LeaguePlayReportLandingContent() {
     const [seasonCode, setSeasonCode] = useState<string>("");
@@ -37,18 +53,19 @@ export default function LeaguePlayReportLandingContent() {
     const [minimumPoints, setMinimumPoints] = useState<number | undefined>(0);
     const [selectedWeek, setSelectedWeek] = useState<string>("");
     const [minimumPointsInput, setMinimumPointsInput] = useState<string>("0");
-    const [seasonCodeDesc, setSeasonCodeDesc] = useState<string>("");
 
-    const handleSeasonCodeSelect = useCallback(async (value: string) => {
+    // TanStack Query hook
+    const { 
+        data: seasonData, 
+        error: seasonError,
+        isLoading: isSeasonLoading 
+    } = useSeasonData(seasonCode);
+
+    // Get season description from query result
+    const seasonCodeDesc = seasonData?.desc || "";
+
+    const handleSeasonCodeSelect = useCallback((value: string) => {
         setSeasonCode(value);
-        try {
-            const season = await (await fetch(`${seasonRoute}?seasonCode=${value}`)).json();
-            setSeasonCodeDesc(season?.desc || "");
-        } catch (err) {
-            setSeasonCodeDesc("");
-            // Optionally log or show an error
-            console.error("Failed to fetch season description", err);
-        }
     }, []);
 
     const handleReportSelect = (value: string, requiresWeekFlag?: boolean, minimumPointsFlag?: boolean) => {
@@ -62,6 +79,7 @@ export default function LeaguePlayReportLandingContent() {
 		setReportData(data);
 		setDataFetched(true);
 	}, []);
+
     // Debounce minimumPoints input
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -332,6 +350,48 @@ export default function LeaguePlayReportLandingContent() {
     };
 
     const renderReportContent = () => {
+        // Show loading state for season data when needed
+        if (seasonCode && isSeasonLoading) {
+            return (
+                <div className="flex h-full items-center justify-center">
+                    <div className="flex items-center gap-2">
+                        <svg
+                            className="animate-spin h-5 w-5 text-gray-500"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                            ></circle>
+                            <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                        </svg>
+                        <p className="text-gray-500">Loading season data...</p>
+                    </div>
+                </div>
+            );
+        }
+
+        // Show error state for season data
+        if (seasonCode && seasonError) {
+            return (
+                <div className="flex h-full items-center justify-center">
+                    <p className="text-red-500 text-center">
+                        Error loading season data. Please try again.
+                    </p>
+                </div>
+            );
+        }
+
         if (!seasonCode) {
 			return (
 				<div className="flex h-full items-center justify-center">
@@ -564,7 +624,7 @@ export default function LeaguePlayReportLandingContent() {
                     </div>
                 </FolderTabMed>
                 {/* Only render download link if all required fields are filled */}
-                {selectedReport && seasonCode && seasonCodeDesc&&
+                {selectedReport && seasonCode && seasonCodeDesc &&
                     (!requiresWeek || (requiresWeek && selectedWeek)) &&
                     (!needsMinimumPoints || (needsMinimumPoints && minimumPoints !== undefined) && dataFetched) && (
                     <FolderTabMed title="Download PDF" className="w-fit">
