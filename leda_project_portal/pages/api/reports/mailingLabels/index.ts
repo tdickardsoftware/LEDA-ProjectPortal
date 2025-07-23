@@ -13,7 +13,7 @@ export default async function handler(
         try {
             // Execute the database query to fetch mailing label information
             const result = await query<MailingList>(
-                'SELECT "ledaId", name, "addressLineOne", "addressLineTwo" FROM public.leda_mailing_labels'
+                'SELECT "ledaId", name, "addressLineOne", "addressLineTwo", "type" FROM public.leda_mailing_labels'
             );
             // Respond with the query result
             res.status(200).json(result.rows);

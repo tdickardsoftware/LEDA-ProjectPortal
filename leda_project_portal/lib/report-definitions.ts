@@ -1070,5 +1070,11 @@ export const mailingLabelsColumns = [
 		header: "City, State, and Zip",
 		accessor: (row: { addressLineTwo: string }) => row.addressLineTwo,
 		sortable: true,
+	},
+	{
+		key: "type",
+		header: "Type",
+		accessor: (row: { type: string }) => row.type,
+		sortable: true,
 	}
 ];

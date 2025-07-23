@@ -645,4 +645,5 @@ export type MailingList = {
 	name: string;
 	addressLineOne: string;
 	addressLineTwo: string;
+	type: string;
 };
