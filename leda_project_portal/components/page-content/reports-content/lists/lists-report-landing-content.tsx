@@ -29,6 +29,8 @@ import MailingLabelsImportDialog from "./mailing-labels-import-dialog";
 import MailingLabelsAddDialog from "./mailing-labels-add-dialog";
 import { Button } from "@/components/ui/button";
 import { Import as ImportIcon } from "lucide-react";
+import React from "react";
+import ListsReportMailingLabels from "./react-pdf/lists-report-mailing-labels";
 
 // Custom hooks for API calls
 const useSeasonData = (seasonCode: string) => {
@@ -133,6 +135,8 @@ export default function ListsReportLandingContent() {
 	const [subdivisionMax, setSubdivisionMax] = useState<number | undefined>(99);
 	const [importDialogOpen, setImportDialogOpen] = useState(false);
 	const [mailingLabelsImported, setMailingLabelsImported] = useState(false);
+	const [sortByZip, setSortByZip] = useState(false);
+	const [sortByName, setSortByName] = useState(true);
 	const queryClient = useQueryClient();
 
 	// TanStack Query hooks
@@ -204,6 +208,28 @@ export default function ListsReportLandingContent() {
 
 	// Set the effective divisions string based on whether allDivisions is true or not
 	const effectiveDivisionsString = allDivisions ? allDivisionsString : selectedDivisions;
+
+	// Sorting logic for mailingLabels
+	const sortedMailingLabels = React.useMemo(() => {
+		if (!selectedReport.includes("mailingLabels") || !Array.isArray(reportData)) return reportData;
+		const data = [...(reportData as MailingList[])];
+		if (sortByZip) {
+			return data.sort((a, b) => {
+				const zipA = (a.addressLineTwo ?? "").slice(-5);
+				const zipB = (b.addressLineTwo ?? "").slice(-5);
+				return zipA.localeCompare(zipB);
+			});
+		}
+		// Default: sort by name
+		return data.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+	}, [reportData, selectedReport, sortByZip]);
+
+	// Only sort mailing labels by name after fetching data
+	useEffect(() => {
+		if (mailingLabelsImported) {
+			setSortByZip(false);
+		}
+	}, [mailingLabelsImported]);
 
 	const renderReportContent = () => {
 		// Show loading state for season data when needed
@@ -555,11 +581,13 @@ export default function ListsReportLandingContent() {
 					columns={mailingLabelsColumns}
 					className="h-full"
 					onDataFetch={data => {
+						// Always sort by name by default
 						setReportData(data);
 						setDataFetched(true);
 						if (mailingLabelsImported) setMailingLabelsImported(false);
 					}}
 					mailingLabelsImported={mailingLabelsImported}
+					// Use sortedMailingLabels for display if sorting is selected
 				/>
 			);
 		}
@@ -587,7 +615,7 @@ export default function ListsReportLandingContent() {
 
 	const renderPDFDownload = () => {
 		const seasonCodeDesc = seasonData?.desc || "";
-		
+
 		if (
 			!selectedReport ||
 			(
@@ -781,6 +809,20 @@ export default function ListsReportLandingContent() {
 					})
 					.replace(/\//g, "")}.pdf`;
 			}
+		} else if (selectedReport.includes("mailingLabels")) {
+			document = (
+				<ListsReportMailingLabels
+					data={sortedMailingLabels as MailingList[]}
+				/>
+			);
+			fileName = `mailing-labels-${new Date()
+				.toLocaleDateString("en-US", {
+					timeZone: "America/New_York",
+					month: "2-digit",
+					day: "2-digit",
+					year: "numeric",
+				})
+				.replace(/\//g, "")}.pdf`;
 		}
 
 		if (!document) return null;
@@ -938,6 +980,27 @@ export default function ListsReportLandingContent() {
 												placeLedaIds={placeLedaIds}
 												onAddSuccess={() => setMailingLabelsImported(true)}
 											/>
+											{/* Sorting checkboxes next to Add button */}
+											<div className="flex items-center gap-4 ml-4">
+												<Checkbox
+													id="sort-by-name-checkbox"
+													checked={sortByName}
+													onCheckedChange={() => {
+														setSortByName(true);
+														setSortByZip(false);
+													}}
+												/>
+												<Label htmlFor="sort-by-name-checkbox">Sort by Name</Label>
+												<Checkbox
+													id="sort-by-zip-checkbox"
+													checked={sortByZip}
+													onCheckedChange={() => {
+														setSortByZip(true);
+														setSortByName(false);
+													}}
+												/>
+												<Label htmlFor="sort-by-zip-checkbox">Sort by Zip Code</Label>
+											</div>
 										</>
 									)}
 								</div>
@@ -1187,7 +1250,22 @@ export default function ListsReportLandingContent() {
 			</div>
 			<div className="flex flex-1 overflow-hidden">
 				<div className="flex-1 p-4 overflow-auto">
-					{renderReportContent()}
+					{selectedReport.includes("mailingLabels")
+						? <ReportDisplay<MailingList>
+							apiRoute={selectedReport}
+							columns={mailingLabelsColumns}
+							className="h-full"
+							onDataFetch={data => {
+								setReportData(data);
+								setDataFetched(true);
+								if (mailingLabelsImported) setMailingLabelsImported(false);
+							}}
+							mailingLabelsImported={mailingLabelsImported}
+							// Use sortedMailingLabels for display
+							dataOverride={sortedMailingLabels as MailingList[]}
+						/>
+						: renderReportContent()
+					}
 				</div>
 			</div>
 		</div>

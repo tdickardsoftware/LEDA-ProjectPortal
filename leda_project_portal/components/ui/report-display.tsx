@@ -26,6 +26,7 @@ interface ReportDisplayProps<T> {
 	className?: string;
 	onDataFetch?: (data: T[]) => void;
 	mailingLabelsImported?: boolean;
+	dataOverride?: T[];
 }
 
 export default function ReportDisplay<T extends Record<string, unknown>>({
@@ -34,6 +35,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	className = "",
 	onDataFetch,
 	mailingLabelsImported,
+	dataOverride,
 }: ReportDisplayProps<T>) {
 	const [sortColumn, setSortColumn] = useState<string | null>(null);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -89,6 +91,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	};
 
 	const sortedData = React.useMemo(() => {
+		if (dataOverride) return dataOverride;
 		if (!sortColumn) return fetchedData;
 
 		return [...fetchedData].sort((a, b) => {
@@ -103,7 +106,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 			if (aStr > bStr) return sortDirection === "asc" ? 1 : -1;
 			return 0;
 		});
-	}, [fetchedData, sortColumn, sortDirection]);
+	}, [fetchedData, sortColumn, sortDirection, dataOverride]);
 
 	const totalPages = Math.ceil(sortedData.length / itemsPerPage);
 	const startIndex = (currentPage - 1) * itemsPerPage;
