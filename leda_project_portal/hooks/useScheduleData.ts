@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
 	ScheduleData, 
 	DivisionsData, 
@@ -8,19 +9,44 @@ import {
 } from '@/lib/schedule';
 import { rosterRoute, scheduleRoute, seasonRoute } from '@/lib/apiRoutes';
 
+// Helper fetchers
+const fetchRoster = async (seasonCode: string) => {
+	const res = await fetch(`${rosterRoute}?seasonCode=${seasonCode}`, {
+		method: 'GET',
+		headers: { 'Content-Type': 'application/json' },
+	});
+	if (!res.ok) throw new Error('Failed to fetch roster');
+	return res.json() as Promise<RosterApiResponse>;
+};
+
+const fetchGameDates = async (seasonCode: string) => {
+	const res = await fetch(`${seasonRoute}?seasonCode=${seasonCode}`, {
+		method: 'GET',
+		headers: { 'Content-Type': 'application/json' },
+	});
+	if (!res.ok) throw new Error('Failed to fetch game dates');
+	return res.json() as Promise<SeasonApiResponse>;
+};
+
+const fetchSchedule = async (seasonCode: string) => {
+	const res = await fetch(`${scheduleRoute}?seasonCode=${seasonCode}`, {
+		method: 'GET',
+		headers: { 'Content-Type': 'application/json' },
+	});
+	if (!res.ok) throw new Error('Failed to fetch schedule');
+	return res.json() as Promise<ScheduleApiResponse>;
+};
+
 export function useScheduleData() {
 	const [seasonCode, setSeasonCode] = useState<string | null>(null);
-	const [divisionsData, setDivisionsData] = useState<DivisionsData>({});
-	const [loading, setLoading] = useState(false);
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
-	const [gameDates, setGameDates] = useState<Record<string, string>>({});
-	const [matchData, setMatchData] = useState<ScheduleData>({});
 	const [updatedMatchData, setUpdatedMatchData] = useState<ScheduleData>({});
 	const [enableSaveButton, setEnableSaveButton] = useState<boolean>(false);
 
+	const queryClient = useQueryClient();
+
 	const ensureSubdivisionIsolation = useCallback((matchData: ScheduleData): ScheduleData => {
 		const clonedData = structuredClone(matchData);
-		
 		Object.entries(clonedData).forEach(([division, subdivisions]) => {
 			Object.entries(subdivisions).forEach(([subdivision, teams]) => {
 				const subdivisionId = `${division}-${subdivision}`;
@@ -31,13 +57,11 @@ export function useScheduleData() {
 				});
 			});
 		});
-		
 		return clonedData;
 	}, []);
 
 	const initializeEmptyMatchData = useCallback((divisionsData: DivisionsData): ScheduleData => {
 		const newMatchData: ScheduleData = {};
-		
 		Object.entries(divisionsData).forEach(([division, divisionData]) => {
 			newMatchData[division] = {};
 			Object.entries(divisionData.subdivisions).forEach(([subdivision, teams]) => {
@@ -51,89 +75,82 @@ export function useScheduleData() {
 				});
 			});
 		});
-		
 		return newMatchData;
 	}, []);
 
-	const handleSeasonCodeSelect = useCallback(async (value: string) => {
-		if (value === seasonCode) return;
-		
-		setSeasonCode(value);
-		setLoading(true);
+	// Queries
+	const {
+		data: rosterData,
+		isLoading: rosterLoading,
+	} = useQuery({
+		queryKey: ['roster', seasonCode],
+		queryFn: () => seasonCode ? fetchRoster(seasonCode) : Promise.reject(),
+		enabled: !!seasonCode,
+	});
 
-		try {
-			// Parallel API calls for better performance
-			const [rosterResult, gameDatesResult, matchDataResult] = await Promise.allSettled([
-				fetch(`${rosterRoute}?seasonCode=${value}`, {
-					method: 'GET',
-					headers: { 'Content-Type': 'application/json' },
-				}),
-				fetch(`${seasonRoute}?seasonCode=${value}`, {
-					method: 'GET',
-					headers: { 'Content-Type': 'application/json' },
-				}),
-				fetch(`${scheduleRoute}?seasonCode=${value}`, {
-					method: 'GET',
-					headers: { 'Content-Type': 'application/json' },
-				})
-			]);
+	const {
+		data: gameDatesData,
+		isLoading: gameDatesLoading,
+	} = useQuery({
+		queryKey: ['gameDates', seasonCode],
+		queryFn: () => seasonCode ? fetchGameDates(seasonCode) : Promise.reject(),
+		enabled: !!seasonCode,
+	});
 
-			// Handle roster data
-			if (rosterResult.status === 'fulfilled' && rosterResult.value.status === 200) {
-				const rosterData: RosterApiResponse = await rosterResult.value.json();
-				const fetchedData = structuredClone(rosterData.teamInformation);
-				setDivisionsData(fetchedData);
+	const {
+		data: scheduleData,
+		isLoading: scheduleLoading,
+	} = useQuery({
+		queryKey: ['schedule', seasonCode],
+		queryFn: () => seasonCode ? fetchSchedule(seasonCode) : Promise.reject(),
+		enabled: !!seasonCode,
+	});
 
-				// Handle game dates
-				if (gameDatesResult.status === 'fulfilled' && gameDatesResult.value.status === 200) {
-					const gameDatesData: SeasonApiResponse = await gameDatesResult.value.json();
-					setGameDates(gameDatesData.dates || {});
-				}
+	// Derived data
+	const divisionsData: DivisionsData = rosterData?.teamInformation || {};
+	const gameDates: Record<string, string> = gameDatesData?.dates || {};
+	let matchData: ScheduleData = {};
 
-				// Handle match data
-				if (matchDataResult.status === 'fulfilled' && matchDataResult.value.status === 200) {
-					const existingMatchData: ScheduleApiResponse = await matchDataResult.value.json();
-					const processedMatchData = ensureSubdivisionIsolation(
-						structuredClone(existingMatchData.scheduleData)
-					);
-					setMatchData(processedMatchData);
-				} else {
-					// Initialize empty match data structure
-					const newMatchData = initializeEmptyMatchData(fetchedData);
-					setMatchData(newMatchData);
-				}
-			} else {
-				setDivisionsData({});
-			}
-		} catch (error) {
-			console.error('Error fetching season data:', error);
-			setDivisionsData({});
-		} finally {
-			setLoading(false);
-		}
-	}, [seasonCode, ensureSubdivisionIsolation, initializeEmptyMatchData]);
+	if (scheduleData?.scheduleData) {
+		matchData = ensureSubdivisionIsolation(structuredClone(scheduleData.scheduleData));
+	} else if (divisionsData && Object.keys(divisionsData).length > 0) {
+		matchData = initializeEmptyMatchData(divisionsData);
+	}
 
-	const handleSaveData = useCallback(async (updatedMatchData: ScheduleData) => {
-		if (!seasonCode) return;
+	const loading = rosterLoading || gameDatesLoading || scheduleLoading;
 
-		try {
-			const processedMatchData = ensureSubdivisionIsolation(updatedMatchData);
-			setMatchData(processedMatchData);
-
+	// Save mutation
+	const saveMutation = useMutation({
+		mutationFn: async (data: { seasonCode: string, scheduleData: ScheduleData }) => {
+			const processedMatchData = ensureSubdivisionIsolation(data.scheduleData);
 			await fetch(scheduleRoute, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					seasonCode,
+					seasonCode: data.seasonCode,
 					scheduleData: processedMatchData,
 				}),
 			});
-			
+			return processedMatchData;
+		},
+		onSuccess: () => {
 			setEnableSaveButton(false);
-		} catch (error) {
+			queryClient.invalidateQueries({ queryKey: ['schedule', seasonCode] });
+		},
+		onError: (error) => {
 			console.error('Error saving schedule data:', error);
 		}
-	}, [seasonCode, ensureSubdivisionIsolation]);
+	});
+
+	const handleSeasonCodeSelect = useCallback((value: string) => {
+		if (value === seasonCode) return;
+		setSeasonCode(value);
+	}, [seasonCode]);
+
+	const handleSaveData = useCallback(async (updatedMatchData: ScheduleData) => {
+		if (!seasonCode) return;
+		saveMutation.mutate({ seasonCode, scheduleData: updatedMatchData });
+	}, [seasonCode, saveMutation]);
 
 	return {
 		seasonCode,
@@ -149,5 +166,7 @@ export function useScheduleData() {
 		setEnableSaveButton,
 		handleSeasonCodeSelect,
 		handleSaveData,
+		// Optionally expose errors if needed:
+		// errors: { rosterError, gameDatesError, scheduleError }
 	};
 }
