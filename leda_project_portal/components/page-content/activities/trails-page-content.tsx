@@ -6,8 +6,8 @@ import { columns } from "@/schemas/activities/trails_dates";
 import { fetchTrailsDateData, fetchTrailsDates } from "@/lib/getData";
 import { trailsDateRoute, trailsRoute } from "@/lib/apiRoutes";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
-import { TrailsDate, TrailsDateData } from "@/lib/definitions";
+import {  useEffect, useState } from "react";
+import { TrailsDateData } from "@/lib/definitions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Accordion,
@@ -15,40 +15,36 @@ import {
 	AccordionTrigger,
 	AccordionContent,
 } from "@/components/ui/accordion";
-import { Pencil, X } from "lucide-react";
+import { Pencil, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TrailsDateEditForm from "@/components/forms/activities/trails-date-edit-form";
 import { Spinner } from "@/components/ui/skeleton";
-//import { Input } from "@/components/ui/input"
 import TrailsDateAddForm from "@/components/forms/activities/trails-date-add-form";
 import { Separator } from "@/components/ui/separator";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Calendar } from "lucide-react";
+import {
+	useQuery,
+	useMutation,
+	useQueryClient
+} from "@tanstack/react-query";
+
 //
 // Component export
 //
 export default function TrailsPageContent() {
-	// Fixed typo: TrainsPageContent -> TrailsPageContent
-	//
+	// QueryClient setup
+	const queryClient = useQueryClient();
+	
 	// States
-	//
-	// set trails date data (i.e. all of the trails dates in the table)
-	const [data, setData] = useState<TrailsDate[]>([]);
-	// Set the selected trails dates
 	const [trailsDate, setTrailsDate] = useState<string | null>("");
-	// Set the data pertaining to that trails date
-	const [trailsDateData, setTrailsDateData] = useState<TrailsDateData[]>([]);
-	// Boolean to determine if you are editing the data
 	const [editStates, setEditStates] = useState<{ [key: string]: boolean }>(
 		{}
 	);
-	// Boolean to determine if you need to load
-	const [loadingTrailsDateData, setLoadingTrailsDateData] =
-		useState<boolean>(false);
-	// Boolean to determine if you are adding a player
 	const [addPlayer, setAddPlayer] = useState<boolean>(false);
-	// The trails date for when you are adding an entry
+	
+	// Helper function to get Eastern Time
 	const getEasternTime = (date = new Date()) => {
 		return new Date(
 			date.toLocaleString("en-US", {
@@ -60,53 +56,137 @@ export default function TrailsPageContent() {
 	const [addTrailsDate, setAddTrailsDate] = useState<string | null>(
 		format(getEasternTime(), "MM-dd-yyyy")
 	);
+
+	// Queries
+	const { 
+		data = [], 
+		isLoading: isLoadingTrailsDates 
+	} = useQuery({
+		queryKey: ['trailsDates'],
+		queryFn: async () => {
+			const result = await fetchTrailsDates();
+			return result.map((item) => ({
+				...item,
+				trailsDate: format(new Date(item.trailsDate), "MM-dd-yyyy"),
+			}));
+		}
+	});
+
+	// Auto-select current date if it exists
+
+	useEffect(() => {
+		if (data && data.length > 0) {
+			const currentDate = format(getEasternTime(), "MM-dd-yyyy");
+			const currentTrailsDate = data.find(
+				(item) => item.trailsDate === currentDate
+			);
+			if (currentTrailsDate && !trailsDate) {
+				setTrailsDate(currentDate);
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [data]);
+
+	const {
+		data: trailsDateData = [],
+		isLoading: loadingTrailsDateData,
+		refetch: refetchTrailsDateData
+	} = useQuery({
+		queryKey: ['trailsDateData', trailsDate],
+		queryFn: () => trailsDate ? fetchTrailsDateData(trailsDate) : Promise.resolve([]),
+		enabled: !!trailsDate,
+	});
+
+	// Mutations
+	const addPlayerMutation = useMutation({
+		mutationFn: async (values: TrailsDateData) => {
+			if (trailsDate !== null) {
+				values.trailsDate = trailsDate;
+			}
+			return fetch(trailsRoute, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['trailsDateData', trailsDate] });
+			setAddPlayer(false);
+		}
+	});
+
+	const deletePlayerMutation = useMutation({
+		mutationFn: async (value: TrailsDateData) => {
+			return fetch(trailsRoute, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(value),
+			});
+		},
+		onSuccess: async (_, variables) => {
+			await queryClient.invalidateQueries({ queryKey: ['trailsDateData', variables.trailsDate] });
+			const result = await getData(variables.trailsDate);
+			if (result.length === 0) {
+				window.location.reload();
+			}
+		}
+	});
+
+	const addTrailsDateMutation = useMutation({
+		mutationFn: async (values: TrailsDateData[]) => {
+			for (const value of values) {
+				value.trailsDate = addTrailsDate as string;
+				await fetch(trailsRoute, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(value),
+				});
+			}
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['trailsDates'] });
+			window.location.reload();
+		}
+	});
+
 	//
 	// Function Name: handleAddPlayer
 	// Description: this function handles adding a player to a trails date (DOES NOT ADD TO DB)
 	//
 	const handleAddPlayer = (values: TrailsDateData) => {
 		setAddPlayer(false);
-		setTrailsDateData((prevData) => [...prevData, values]);
-		console.log(trailsDateData);
-		console.log(values);
+		queryClient.setQueryData(['trailsDateData', trailsDate], 
+			(oldData: TrailsDateData[] | undefined) => [...(oldData || []), values]);
 	};
 	//
 	// Function Name: handleAddPlayerDB
 	// Description: this function handles adding a player to a trails date and saving it to the database
 	//
-	const handleAddPlayerDB = async (values: TrailsDateData) => {
-		if (trailsDate !== null) {
-			values.trailsDate = trailsDate;
-		}
-		setLoadingTrailsDateData(true);
-		await fetch(trailsRoute, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(values),
-		});
-		setLoadingTrailsDateData(false);
-		handleRefresh();
-		setAddPlayer(false);
+	const handleAddPlayerDB = (values: TrailsDateData) => {
+		addPlayerMutation.mutate(values);
 	};
 	//
 	// Function Name: handleEditAddPlayer
 	// Description: enable the editing of a player during the add process of a trails date
 	//
 	const handleEditAddPlayer = (values: TrailsDateData, index?: number) => {
-		setTrailsDateData((prevData) => {
-			if (index !== undefined) {
-				handleEditToggle(index.toString());
-			}
-			const updatedData = [...prevData];
-			if (index !== undefined) {
-				updatedData[index] = values;
-			} else {
-				updatedData.push(values);
-			}
-			return updatedData;
-		});
+		queryClient.setQueryData(['trailsDateData', trailsDate], 
+			(oldData: TrailsDateData[] | undefined) => {
+				const updatedData = [...(oldData || [])];
+				if (index !== undefined) {
+					handleEditToggle(index.toString());
+					updatedData[index] = values;
+				} else {
+					updatedData.push(values);
+				}
+				return updatedData;
+			});
 	};
 	//
 	// Function Name: goBack
@@ -129,22 +209,14 @@ export default function TrailsPageContent() {
 	// Function Name: handleSetTrailsDate
 	// Description: this function handles setting the trails date and loading the data for that date
 	//
-	const handleSetTrailsDate = async (value: string) => {
+	const handleSetTrailsDate = (value: string) => {
 		const parsedValue = JSON.parse(value)[0];
 		if (!parsedValue) {
-			if (trailsDate !== null) {
-				setTrailsDate(null); // Set to null if no row is selected
-				setTrailsDateData([]); // Clear trailsDateData if no row is selected
-			}
+			setTrailsDate(null);
 			return;
 		}
 		if (parsedValue.trailsDate !== trailsDate) {
 			setTrailsDate(parsedValue.trailsDate);
-			setTrailsDateData([]); // Clear trailsDateData when a new row is selected
-			setLoadingTrailsDateData(true);
-			const fetchData = await fetchTrailsDateData(parsedValue.trailsDate);
-			setLoadingTrailsDateData(false);
-			setTrailsDateData(fetchData);
 		}
 	};
 	//
@@ -152,12 +224,7 @@ export default function TrailsPageContent() {
 	// Description: this function handles refreshing the data for a selected trails date
 	//
 	const handleRefresh = async (index?: string) => {
-		if (trailsDate) {
-			setLoadingTrailsDateData(true);
-			const fetchData = await fetchTrailsDateData(trailsDate);
-			setLoadingTrailsDateData(false);
-			setTrailsDateData(fetchData);
-		}
+		await refetchTrailsDateData();
 		if (index !== undefined) {
 			handleEditToggle(index);
 		}
@@ -177,12 +244,12 @@ export default function TrailsPageContent() {
 	// Description: this function handles deleting a player from the trails date data locally, before it is saved to the database
 	//
 	const handleAddDelete = (index: number) => {
-		const updatedTrailsDateData = [...trailsDateData];
-		updatedTrailsDateData.splice(index, 1);
-		setTrailsDateData(updatedTrailsDateData);
-		if (updatedTrailsDateData.length === 0) {
-			handleRefresh();
-		}
+		queryClient.setQueryData(['trailsDateData', trailsDate], 
+			(oldData: TrailsDateData[] | undefined) => {
+				const updatedData = [...(oldData || [])];
+				updatedData.splice(index, 1);
+				return updatedData;
+			});
 	};
 	//
 	// Function Name: getData
@@ -196,62 +263,16 @@ export default function TrailsPageContent() {
 	// Function Name: handleDelete
 	// Description: this function handles deleting a player from the trails date data and saving it to the db
 	//
-	const handleDelete = async (value: TrailsDateData) => {
-		await fetch(trailsRoute, {
-			method: "DELETE",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(value),
-		});
-		await handleRefresh();
-		console.log(trailsDateData.length);
-		if ((await getData(value.trailsDate)).length === 0) {
-			window.location.reload();
-		}
+	const handleDelete = (value: TrailsDateData) => {
+		deletePlayerMutation.mutate(value);
 	};
 	//
 	// Function Name: handleSubmit
 	// Description: this function handles submitting the data for the trails date
 	//
-	const handleSubmit = async (values: TrailsDateData[]) => {
-		for (const value of values) {
-			value.trailsDate = addTrailsDate as string;
-			await fetch(trailsRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(value),
-			});
-		}
-		window.location.reload();
+	const handleSubmit = (values: TrailsDateData[]) => {
+		addTrailsDateMutation.mutate(values);
 	};
-	//
-	// UseEffect
-	// Description: this useEffect fetches the data for the trails dates
-	//
-	useEffect(() => {
-		async function fetchData() {
-			const result = await fetchTrailsDates();
-			const formattedResult = result.map((item) => ({
-				...item,
-				trailsDate: format(new Date(item.trailsDate), "MM-dd-yyyy"),
-			}));
-			setData(formattedResult);
-
-			const currentDate = format(getEasternTime(), "MM-dd-yyyy");
-			const currentTrailsDate = formattedResult.find(
-				(item) => item.trailsDate === currentDate
-			);
-			if (currentTrailsDate) {
-				setTrailsDate(currentDate);
-				const fetchData = await fetchTrailsDateData(currentDate);
-				setTrailsDateData(fetchData);
-			}
-		}
-		fetchData();
-	}, []);
 
 	const CustomDatePickerInput = ({
 		value,
@@ -263,7 +284,7 @@ export default function TrailsPageContent() {
 		<Button
 			variant="outline"
 			onClick={onClick}
-			className="w-full flex items-center justify-between text-left px-4 py-2 border border-gray-300 rounded-lg"
+			className="flex items-center justify-between text-left px-4 py-2 border border-gray-300 rounded-lg" // removed w-full
 		>
 			<span>{value || "Select a date"}</span>
 			<Calendar className="text-gray-500" />
@@ -271,20 +292,24 @@ export default function TrailsPageContent() {
 	);
 
 	return (
-		<div className="flex gap-20">
-			<DataTable
-				columns={columns}
-				data={data}
-				pageName="Prior Trails Dates"
-				apiEndpoint={trailsDateRoute}
-				singleRowSelection={true}
-				passValueToParent={handleSetTrailsDate}
-				defaultSelectedRow={data.findIndex(
-					(item) => item.trailsDate === trailsDate
-				)}
-			/>
+		<div className="flex gap-20 w-fit">
+			{isLoadingTrailsDates ? (
+				<Spinner />
+			) : (
+				<DataTable
+					columns={columns}
+					data={data}
+					pageName="Prior Trails Dates"
+					apiEndpoint={trailsDateRoute}
+					singleRowSelection={true}
+					passValueToParent={handleSetTrailsDate}
+					defaultSelectedRow={data.findIndex(
+						(item) => item.trailsDate === trailsDate
+					)}
+				/>
+			)}
 
-			<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] max-h-[80vh] overflow-y-auto">
+			<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[40vw] max-h-[80vh] overflow-y-auto">
 				{trailsDate && (
 					<>
 						<CardHeader>
@@ -440,50 +465,50 @@ export default function TrailsPageContent() {
 				{!trailsDate && (
 					<>
 						<CardHeader>
-							<CardTitle className="text-lg font-semibold">
+							<CardTitle className="text-lg font-semibold text-center">
 								Add a Trails Date
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<DatePicker
-								selected={
-									addTrailsDate
-										? new Date(addTrailsDate)
-										: null
-								}
-								onChange={handleDateSelect}
-								excludeDates={data.map(
-									(item) => new Date(item.trailsDate)
-								)}
-								dateFormat="yyyy-MM-dd"
-								customInput={
-									<CustomDatePickerInput
-										value={addTrailsDate || ""}
-										onClick={() => {}}
-									/>
-								}
-								className="w-full rounded-lg border border-gray-300 p-2"
-							/>
-							{!addPlayer && (
-								<div className="flex justify-end pt-4">
+							<div className="flex flex-row justify-center items-center gap-8">
+								<DatePicker
+									selected={
+										addTrailsDate
+											? new Date(addTrailsDate)
+											: null
+									}
+									onChange={handleDateSelect}
+									excludeDates={data.map(
+										(item) => new Date(item.trailsDate)
+									)}
+									dateFormat="yyyy-MM-dd"
+									customInput={
+										<CustomDatePickerInput
+											value={addTrailsDate || ""}
+											onClick={() => {}}
+										/>
+									}
+								/>
+								{!addPlayer && (
 									<Button
 										variant={"outline"}
-										className="hover:bg-gray-100 border-gray-300 text-gray-700"
+										className="hover:bg-gray-100 border-gray-300 text-gray-700 flex items-center gap-1"
 										onClick={() => setAddPlayer(!addPlayer)}
 									>
+										<Plus className="w-4 h-4" />
 										Add Player
 									</Button>
-								</div>
-							)}
+								)}
+							</div>
 							{addPlayer && (
-								<>
+								<div className="flex justify-center pt-4">
 									<TrailsDateAddForm
 										handleFormSubmit={handleAddPlayer}
 										trailsDate={addTrailsDate}
 										goBack={goBack}
 										trailsDateData={trailsDateData}
 									/>
-								</>
+								</div>
 							)}
 							<Separator
 								orientation="horizontal"
