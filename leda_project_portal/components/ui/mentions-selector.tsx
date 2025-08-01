@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import {
 	FormControl,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
@@ -105,10 +106,31 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 	const formContext = useFormContext<FormValues>();
 	const [localValue, setLocalValue] = useState(propValue || "");
 	const [open, setOpen] = useState(false);
-	const [memberTypes, setMemberTypes] = useState<
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		{ value: any; label: string }[]
-	>([]);
+
+	const { data: memberTypes = [] } = useQuery({
+		queryKey: ["mentions"],
+		queryFn: async () => {
+			const response = await fetch(mentionRoute);
+			const data = await response.json();
+			return data.map(
+				(item: {
+					mentionCode: string;
+					desc: string;
+					points: string;
+					mentionBasis: string;
+				}) => ({
+					value: item,
+					label:
+						item.mentionCode +
+						" - " +
+						item.desc +
+						" - " +
+						item.points +
+						"pts",
+				})
+			);
+		},
+	});
 
 	// Determine value source (form context or props)
 	const currentValue = formContext
@@ -126,45 +148,13 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 		}
 	};
 
-	// Fetch penalties from API on component mount
-	useEffect(() => {
-		async function loadMentions() {
-			try {
-				const response = await fetch(mentionRoute);
-				const data = await response.json();
-				setMemberTypes(
-					data.map(
-						(item: {
-							mentionCode: string;
-							desc: string;
-							points: string;
-							mentionBasis: string;
-						}) => ({
-							value: item, // Store the raw object as value
-							label:
-								item.mentionCode +
-								" - " +
-								item.desc +
-								" - " +
-								item.points +
-								"pts",
-						})
-					)
-				);
-			} catch (error) {
-				console.error("Failed to fetch mentions", error);
-			}
-		}
-		loadMentions();
-	}, []);
-
 	// Find the selected mention in the dropdown options
 	const getSelectedMention = () => {
 		// If currentValue exists, try to find an exact match first
 		if (currentValue) {
 			// Try exact match
 			const exactMatch = memberTypes.find(
-				(type) =>
+				(type: { value: { mentionCode: string; desc: string; points: string; mentionBasis: string }; label: string }) =>
 					JSON.stringify(type.value) === JSON.stringify(currentValue)
 			);
 			if (exactMatch) return exactMatch.label;
@@ -176,7 +166,10 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 				"mentionCode" in currentValue
 			) {
 				const codeMatch = memberTypes.find(
-					(type) =>
+					(type: {
+						value: { mentionCode: string; desc: string; points: string; mentionBasis: string };
+						label: string;
+					}) =>
 						type.value.mentionCode === currentValue.mentionCode
 				);
 				if (codeMatch) return codeMatch.label;
@@ -207,48 +200,60 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 							<CommandEmpty>No mention found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{memberTypes.map((type) => (
-										<CommandItem
-											key={type.label}
-											value={type.label}
-											onSelect={() => {
-												handleValueChange(type.value); // Pass the object directly
-												console.log(
-													"Selected:",
-													type.value
-												);
-												handleMentionChange?.(
-													type.value
-												); // Call the optional change handler
-												setOpen(false);
-											}}
-											className="hover:bg-gray-200"
-										>
-											<Check
-												className={cn(
-													"mr-2 h-4 w-4",
-													// Check if current value matches this option
-													currentValue &&
-														(JSON.stringify(
-															type.value
-														) ===
-															JSON.stringify(
-																currentValue
-															) ||
-															(typeof currentValue ===
-																"object" &&
-																"mentionCode" in
-																	currentValue &&
+									{memberTypes.map(
+										(
+											type: {
+												value: {
+													mentionCode: string;
+													desc: string;
+													points: string;
+													mentionBasis: string;
+												};
+												label: string;
+											}
+										) => (
+											<CommandItem
+												key={type.label}
+												value={type.label}
+												onSelect={() => {
+													handleValueChange(type.value); // Pass the object directly
+													console.log(
+														"Selected:",
+														type.value
+													);
+													handleMentionChange?.(
+														type.value
+													); // Call the optional change handler
+													setOpen(false);
+												}}
+												className="hover:bg-gray-200"
+											>
+												<Check
+													className={cn(
+														"mr-2 h-4 w-4",
+														// Check if current value matches this option
+														currentValue &&
+															(JSON.stringify(
 																type.value
-																	.mentionCode ===
-																	currentValue.mentionCode))
-														? "opacity-100"
-														: "opacity-0"
-												)}
-											/>
-											{type.label}
-										</CommandItem>
-									))}
+															) ===
+																JSON.stringify(
+																	currentValue
+																) ||
+																(typeof currentValue ===
+																	"object" &&
+																	"mentionCode" in
+																		currentValue &&
+																	type.value
+																		.mentionCode ===
+																		currentValue.mentionCode))
+															? "opacity-100"
+															: "opacity-0"
+													)}
+												/>
+												{type.label}
+											</CommandItem>
+										)
+									)}
 								</CommandList>
 							</CommandGroup>
 						</Command>

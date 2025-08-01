@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
@@ -64,37 +65,23 @@ export default function PlayerTypeSelector({
 }
 
 const PlayerTypeSelectorContent: React.FC = () => {
-	// Use form context to get watch and setValue functions
 	const { watch, setValue } = useFormContext<FormValues>();
-	// Watch the memberType field value
 	const memberType = watch("memberType");
-	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
-	// State to store the fetched member types
-	const [memberTypes, setMemberTypes] = useState<
-		{ value: string; label: string }[]
-	>([]);
 
-	// Fetch member types from the API endpoint
-	useEffect(() => {
-		async function loadMemberTypes() {
-			try {
-				const response = await fetch(peopleTypeRoute);
-				const data = await response.json();
-				setMemberTypes(
-					data.map(
-						(type: { peopleTypeCode: string; desc: string }) => ({
-							value: type.peopleTypeCode,
-							label: type.peopleTypeCode + " - " + type.desc,
-						})
-					)
-				);
-			} catch (error) {
-				console.error("Failed to fetch player types", error);
-			}
-		}
-		loadMemberTypes();
-	}, []);
+	const { data: memberTypes = [] } = useQuery({
+		queryKey: ["playerTypes"],
+		queryFn: async () => {
+			const response = await fetch(peopleTypeRoute);
+			const data = await response.json();
+			return data.map(
+				(type: { peopleTypeCode: string; desc: string }) => ({
+					value: type.peopleTypeCode,
+					label: type.peopleTypeCode + " - " + type.desc,
+				})
+			);
+		},
+	});
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -109,7 +96,7 @@ const PlayerTypeSelectorContent: React.FC = () => {
 						>
 							{memberType
 								? memberTypes.find(
-										(type) => type.value === memberType
+										(type: { value: string; label: string }) => type.value === memberType
 								  )?.label
 								: "Select a member type..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -121,7 +108,7 @@ const PlayerTypeSelectorContent: React.FC = () => {
 							<CommandEmpty>No player type found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{memberTypes.map((type) => (
+									{memberTypes.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
@@ -64,33 +65,21 @@ export default function PlaceSelector({
 }
 
 const DivisionSelectorContent = () => {
-	// Use form context to get watch and setValue functions
 	const { watch, setValue } = useFormContext<FormValues>();
-	// Watch the memberType field value
 	const placeId = watch("placeId");
-	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
-	// State to store the fetched member types
-	const [teams, setTeams] = useState<{ value: string; label: string }[]>([]);
 
-	// Fetch member types from the API endpoint
-	useEffect(() => {
-		async function loadPlaces() {
-			try {
-				const response = await fetch(placeRoute);
-				const data = await response.json();
-				setTeams(
-					data.map((type: { ledaId: string; name: string }) => ({
-						value: type.ledaId,
-						label: type.ledaId + " - " + type.name,
-					}))
-				);
-			} catch (error) {
-				console.error("Failed to fetch places", error);
-			}
-		}
-		loadPlaces();
-	}, []);
+	const { data: teams = [] } = useQuery({
+		queryKey: ["places"],
+		queryFn: async () => {
+			const response = await fetch(placeRoute);
+			const data = await response.json();
+			return data.map((type: { ledaId: string; name: string }) => ({
+				value: type.ledaId,
+				label: type.ledaId + " - " + type.name,
+			}));
+		},
+	});
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -104,7 +93,7 @@ const DivisionSelectorContent = () => {
 							className="w-[200px] justify-between"
 						>
 							{placeId
-								? teams.find((type) => type.value === placeId)
+								? teams.find((type: { value: string; label: string }) => type.value === placeId)
 										?.label
 								: "Select a Place"}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -116,7 +105,7 @@ const DivisionSelectorContent = () => {
 							<CommandEmpty>No place found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{teams.map((type) => (
+									{teams.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}

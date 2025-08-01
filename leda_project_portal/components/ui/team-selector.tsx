@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
@@ -77,39 +78,26 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 }) => {
 	// Use form context to get watch and setValue functions
 	const { watch, setValue } = useFormContext<FormValues>();
-	// Watch the memberType field value
 	const teamLedaId = watch("teamLedaId");
-	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
-	// State to store the fetched member types
-	const [teams, setTeams] = useState<
-		{ value: string; label: string; name: string }[]
-	>([]);
 
-	// Fetch member types from the API endpoint
-	useEffect(() => {
-		async function loadTeams() {
-			try {
-				const response = await fetch(teamRoute);
-				const data = await response.json();
-				setTeams(
-					data
-						.filter(
-							(type: { ledaId: string }) =>
-								!selectedTeams.includes(type.ledaId)
-						)
-						.map((type: { ledaId: string; teamName: string }) => ({
-							value: type.ledaId,
-							label: type.ledaId + " - " + type.teamName,
-							name: type.teamName,
-						}))
-				);
-			} catch (error) {
-				console.error("Failed to fetch teams", error);
-			}
-		}
-		loadTeams();
-	}, [selectedTeams]);
+	const { data: teams = [] } = useQuery({
+		queryKey: ["teams", selectedTeams],
+		queryFn: async () => {
+			const response = await fetch(teamRoute);
+			const data = await response.json();
+			return data
+				.filter(
+					(type: { ledaId: string }) =>
+						!selectedTeams.includes(type.ledaId)
+				)
+				.map((type: { ledaId: string; teamName: string }) => ({
+					value: type.ledaId,
+					label: type.ledaId + " - " + type.teamName,
+					name: type.teamName,
+				}));
+		},
+	});
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -124,7 +112,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 						>
 							{teamLedaId
 								? teams.find(
-										(type) => type.value === teamLedaId
+										(type: { value: string; label: string; name: string }) => type.value === teamLedaId
 								  )?.label
 								: "Select a Team"}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -136,7 +124,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 							<CommandEmpty>No teams found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{teams.map((type) => (
+									{teams.map((type: { value: string; label: string; name: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}

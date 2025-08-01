@@ -1,6 +1,6 @@
 // Import necessary modules and components
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Update the interface to be more generic
 interface FormValues {
@@ -92,68 +93,48 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 	excludeCode,
 	exclusive,
 }) => {
-	// Use form context to get watch and setValue functions
 	const { watch, setValue } = useFormContext<FormValues>();
-	// Watch the memberType field value
-	const seasonCode = watch(name); // Use the dynamic name prop
-	// State to manage the popover open/close status
+	const seasonCode = watch(name);
 	const [open, setOpen] = useState(false);
-	// State to store the fetched season codes
-	const [seasonCodes, setSeasonCodes] = useState<
-		{ value: string; label: string }[]
-	>([]);
-	const [loading, setLoading] = useState(true);
 
-	// Fetch season codes from the API endpoint
-	useEffect(() => {
-		async function loadSeasonCodes() {
-			try {
-				const response = await fetch(seasonCodeRoute);
-				const data = await response.json();
-				let codes = data.map(
-					(type: { seasonCode: string; desc: string }) => ({
-						value: type.seasonCode,
-						label: type.seasonCode + " - " + type.desc,
-					})
+	const { data: seasonCodes = [], isLoading: loading } = useQuery({
+		queryKey: ["seasonCodes", excludeCode, exclusive],
+		queryFn: async () => {
+			const response = await fetch(seasonCodeRoute);
+			const data = await response.json();
+			let codes = data.map(
+				(type: { seasonCode: string; desc: string }) => ({
+					value: type.seasonCode,
+					label: type.seasonCode + " - " + type.desc,
+				})
+			);
+
+			let filterList: string[] = [];
+			if (exclusive) {
+				const response = await fetch(rosterRoute + "/rostersWithData");
+				const rosterData = await response.json();
+				filterList = rosterData.map(
+					(item: { seasonCode: string }) => item.seasonCode
 				);
-
-				let filterList: string[] = [];
-				if (exclusive) {
-					const response = await fetch(
-						rosterRoute + "/rostersWithData"
-					);
-					console.log(response);
-					const rosterData = await response.json();
-					filterList = rosterData.map(
-						(item: { seasonCode: string }) => item.seasonCode
-					);
-					console.log(filterList);
-				}
-
-				// Filter the season codes if filterList is provided
-				if (filterList.length > 0) {
-					codes = codes.filter(
-						(code: { value: string; label: string }) =>
-							filterList.includes(code.value)
-					);
-				}
-
-				// Exclude the season code if excludeCode is provided
-				if (excludeCode) {
-					codes = codes.filter(
-						(code: { value: string; label: string }) =>
-							code.value !== excludeCode
-					);
-				}
-
-				setSeasonCodes(codes);
-			} catch (error) {
-				console.error("Failed to fetch season codes", error);
 			}
-		}
-		loadSeasonCodes();
-		setLoading(false);
-	}, [excludeCode, exclusive]);
+
+			if (filterList.length > 0) {
+				codes = codes.filter(
+					(code: { value: string; label: string }) =>
+						filterList.includes(code.value)
+				);
+			}
+
+			if (excludeCode) {
+				codes = codes.filter(
+					(code: { value: string; label: string }) =>
+						code.value !== excludeCode
+				);
+			}
+
+			return codes;
+		},
+	});
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -165,11 +146,11 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 							role="combobox"
 							aria-expanded={open}
 							className="w-[200px] justify-between"
-							disabled={disabled} // Disable the button if the prop is true
+							disabled={disabled}
 						>
 							{seasonCode
 								? seasonCodes.find(
-										(type) => type.value === seasonCode
+										(type: { value: string; label: string }) => type.value === seasonCode
 								  )?.label
 								: "Select a season code..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -184,12 +165,12 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 							<CommandEmpty>No season code found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{seasonCodes.map((type) => (
+									{seasonCodes.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}
 											onSelect={() => {
-												setValue(name, type.value); // Use the dynamic name prop
+												setValue(name, type.value);
 												setOpen(false);
 											}}
 											className="hover:bg-gray-200"

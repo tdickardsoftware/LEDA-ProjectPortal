@@ -19,6 +19,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { rosterRoute } from "@/lib/apiRoutes";
 import { RosterDivision } from "@/lib/definitions";
+import { useQuery } from "@tanstack/react-query";
 
 interface ReportDivisionSelectorProps {
     seasonCode: string;
@@ -32,40 +33,27 @@ export default function ReportDivisionSelector({
     disabled = false,
 }: ReportDivisionSelectorProps) {
     const [open, setOpen] = useState(false);
-    const [divisions, setDivisions] = useState<RosterDivision[]>([]);
     const [selectedDivisions, setSelectedDivisions] = useState<string[]>([]);
-    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const fetchDivisions = async () => {
-            if (!seasonCode) return;
-            
-            setLoading(true);
-            try {
-                const response = await fetch(
-                    `${rosterRoute}/rosterDivision?seasonCode=${seasonCode}`
-                );
-                if (response.ok) {
-                    const data = await response.json();
-                    setDivisions(data || []);
-                } else {
-                    console.error("Failed to fetch divisions");
-                }
-            } catch (error) {
-                console.error("Error fetching divisions:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDivisions();
-    }, [seasonCode]);
+    const { data: divisions = [], isLoading: loading } = useQuery({
+        queryKey: ["reportDivisions", seasonCode],
+        queryFn: async () => {
+            if (!seasonCode) return [];
+            const response = await fetch(
+                `${rosterRoute}/rosterDivision?seasonCode=${seasonCode}`
+            );
+            if (!response.ok) throw new Error("Failed to fetch divisions");
+            const data = await response.json();
+            return data || [];
+        },
+        enabled: !!seasonCode,
+    });
 
     useEffect(() => {
         // Update parent component with comma-separated string of selected divisions
         const divisionsString = selectedDivisions
             .map(divCode => {
-                const division = divisions.find(d => d.division === divCode);
+                const division = divisions.find((d: RosterDivision) => d.division === divCode);
                 return division?.division || divCode;
             })
             .join(", ");
@@ -91,7 +79,7 @@ export default function ReportDivisionSelector({
     const selectedDivisionsText = selectedDivisions.length > 0
         ? selectedDivisions
             .map(divCode => {
-                const division = divisions.find(d => d.division === divCode);
+                const division = divisions.find((d: RosterDivision) => d.division === divCode);
                 return division?.division || divCode;
             })
             .join(", ")
@@ -119,7 +107,7 @@ export default function ReportDivisionSelector({
                     </CommandEmpty>
                     <CommandGroup>
                         <CommandList>
-                            {divisions.map((division) => (
+                            {divisions.map((division: RosterDivision) => (
                                 <CommandItem
                                     key={division.division}
                                     value={division.division}

@@ -35,7 +35,7 @@ export function PopoverMultiSelect({
 	setSelected: (items: MailingList[]) => void;
 	type: string;
 }) {
-	const { data = [], isLoading } = useQuery<Item[]>({
+	const { data = [], isLoading } = useQuery({
 		queryKey: [apiRoute],
 		queryFn: async () => {
 			const res = await fetch(apiRoute);
@@ -50,7 +50,7 @@ export function PopoverMultiSelect({
 	const selectedIds = selected.map((item) => item.ledaId);
 
 	const handleToggle = (id: string) => {
-		const item = data.find((i) => i.ledaId === id);
+		const item = data.find((i: Item) => i.ledaId === id);
 		if (!item) return;
 		const exists = selectedIds.includes(id);
 		let newSelected: MailingList[];
@@ -96,7 +96,7 @@ export function PopoverMultiSelect({
 						) : data.length === 0 ? (
 							<div className="text-sm text-gray-500 p-2">No data available to select.</div>
 						) : (
-							data.map((item) => (
+							data.map((item: Item) => (
 								<div
 									key={item.ledaId}
 									className="flex items-center px-3 py-2 cursor-pointer hover:bg-gray-100"

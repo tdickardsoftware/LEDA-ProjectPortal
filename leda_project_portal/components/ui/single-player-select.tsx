@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { TrailsDateData } from "@/lib/definitions";
+import { useQuery } from "@tanstack/react-query";
 
 interface FormValues {
 	ledaId: number;
@@ -82,38 +83,27 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({
 }) => {
 	const formContext = useFormContext<FormValues>();
 	const currentValue = formContext ? formContext.watch("ledaId") : "";
-
 	const [open, setOpen] = useState(false);
-	const [players, setPlayers] = useState<{ value: string; label: string }[]>(
-		[]
-	);
 
-	useEffect(() => {
-		async function loadPlayers() {
-			try {
-				const response = await fetch(playerRoute);
-				const data = await response.json();
-				const filteredData = data.filter(
-					(type: { ledaId: string }) =>
-						!trailsDateData.some(
-							(trail) =>
-								Number(trail.ledaId) === Number(type.ledaId)
-						)
-				);
-				setPlayers(
-					filteredData.map(
-						(type: { ledaId: string; fullName: string }) => ({
-							value: type.ledaId,
-							label: type.ledaId + " - " + type.fullName,
-						})
+	const { data: players = [] } = useQuery({
+		queryKey: ["players", trailsDateData],
+		queryFn: async () => {
+			const response = await fetch(playerRoute);
+			const data = await response.json();
+			const filteredData = data.filter(
+				(type: { ledaId: string }) =>
+					!trailsDateData.some(
+						(trail) => Number(trail.ledaId) === Number(type.ledaId)
 					)
-				);
-			} catch (error) {
-				console.error("Failed to fetch players", error);
-			}
-		}
-		loadPlayers();
-	}, [trailsDateData]);
+			);
+			return filteredData.map(
+				(type: { ledaId: string; fullName: string }) => ({
+					value: type.ledaId,
+					label: type.ledaId + " - " + type.fullName,
+				})
+			);
+		},
+	});
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -128,7 +118,7 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({
 						>
 							{currentValue
 								? players.find(
-										(type) =>
+										(type: { value: string; label: string }) =>
 											Number(type.value) === currentValue
 								  )?.label
 								: "Select a player..."}
@@ -141,7 +131,7 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({
 							<CommandEmpty>No player found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{players.map((type) => (
+									{players.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}

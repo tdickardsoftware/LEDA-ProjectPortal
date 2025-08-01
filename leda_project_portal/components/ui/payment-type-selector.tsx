@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,11 +26,17 @@ import {
 	FormControl,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
-	type: JSON; // Changed from paymentTypeData to type to match form context
+	type?: PaymentType; // Changed from JSON to PaymentType to match usage
 }
+
+type PaymentType = {
+	paymentType: string;
+	desc: string;
+};
 
 interface PaymentTypeSelectorProps {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,13 +51,10 @@ interface PaymentTypeSelectorProps {
 }
 
 interface PaymentTypeSelectorContentProps {
-	value?: JSON; // Current value (for uncontrolled mode)
-	onChange?: (value: JSON) => void; // Change handler (for uncontrolled mode)
-	disabled?: boolean; // Optional disabled state
-	handlePaymentTypeChange?: (value: {
-		paymentType: string;
-		desc: string;
-	}) => void; // Optional change handler
+	value?: PaymentType;
+	onChange?: (value: PaymentType) => void;
+	disabled?: boolean;
+	handlePaymentTypeChange?: (value: PaymentType) => void;
 }
 
 /**
@@ -101,12 +104,25 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 	handlePaymentTypeChange,
 }) => {
 	const formContext = useFormContext<FormValues>();
-	const [localValue, setLocalValue] = useState(propValue || "");
+	const [localValue, setLocalValue] = useState<PaymentType | "">(
+		propValue || ""
+	);
 	const [open, setOpen] = useState(false);
-	const [paymentTypes, setPaymentTypes] = useState<
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		{ value: any; label: string }[]
-	>([]);
+
+	const { data: paymentTypes = [] } = useQuery<{
+		value: PaymentType;
+		label: string;
+	}[]>({
+		queryKey: ["paymentTypes"],
+		queryFn: async () => {
+			const response = await fetch(paymentTypeRoute);
+			const data: PaymentType[] = await response.json();
+			return data.map((item) => ({
+				value: item,
+				label: item.paymentType + " - " + item.desc,
+			}));
+		},
+	});
 
 	// Determine value source (form context or props)
 	// Hardcoded to "type" instead of "paymentTypeData"
@@ -114,7 +130,7 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 
 	// Handle value changes in either mode
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const handleValueChange = (newValue: any) => {
+	const handleValueChange = (newValue: PaymentType) => {
 		if (formContext) {
 			formContext.setValue("type", newValue); // Hardcoded to "type"
 		} else {
@@ -122,25 +138,6 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 			onChange?.(newValue);
 		}
 	};
-
-	// Fetch payment types from API on component mount
-	useEffect(() => {
-		async function loadPaymentTypes() {
-			try {
-				const response = await fetch(paymentTypeRoute);
-				const data = await response.json();
-				setPaymentTypes(
-					data.map((item: { paymentType: string; desc: string }) => ({
-						value: item, // Store the raw object as value
-						label: item.paymentType + " - " + item.desc,
-					}))
-				);
-			} catch (error) {
-				console.error("Failed to fetch payment types", error);
-			}
-		}
-		loadPaymentTypes();
-	}, []);
 
 	// Find the selected payment type in the dropdown options
 	const getSelectedPaymentType = () => {
@@ -217,11 +214,14 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 															) ||
 															(typeof currentValue ===
 																"object" &&
+																currentValue !==
+																	null &&
 																"paymentType" in
 																	currentValue &&
 																type.value
 																	.paymentType ===
-																	currentValue.paymentType))
+																	(currentValue as PaymentType)
+																		.paymentType))
 														? "opacity-100"
 														: "opacity-0"
 												)}

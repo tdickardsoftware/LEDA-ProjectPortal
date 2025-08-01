@@ -49,7 +49,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 		error,
 		isLoading: loading,
 		refetch,
-	} = useQuery<T[]>({
+	} = useQuery({
 		queryKey: ["reportData", apiRoute],
 		queryFn: async () => {
 			if (!apiRoute) {
@@ -63,7 +63,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 			return result.data || result;
 		},
 		enabled: !!apiRoute,
-		staleTime: 60 * 1000, // 1 minute
+		staleTime: 60 * 1000,
 		retry: 1,
 	});
 
@@ -222,7 +222,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 								</TableCell>
 							</TableRow>
 						) : (
-							paginatedData.map((row, index) => (
+							paginatedData.map((row: T, index: number) => (
 								<TableRow
 									key={startIndex + index}
 									className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import {
 	FormControl,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
@@ -78,11 +79,21 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 	const formContext = useFormContext<FormValues>();
 	const [localValue, setLocalValue] = useState(propValue || "");
 	const [open, setOpen] = useState(false);
-	const [memberTypes, setMemberTypes] = useState<
-		{ value: string; label: string }[]
-	>([]);
 
-	// Use form context if available, otherwise use props
+	const { data: memberTypes = [] } = useQuery({
+		queryKey: ["placeTypes"],
+		queryFn: async () => {
+			const response = await fetch(placeTypeRoute);
+			const data = await response.json();
+			return data.map(
+				(type: { placeTypeCode: string; desc: string }) => ({
+					value: type.placeTypeCode,
+					label: type.placeTypeCode + " - " + type.desc,
+				})
+			);
+		},
+	});
+
 	const currentValue = formContext
 		? formContext.watch("placeType")
 		: localValue;
@@ -95,26 +106,6 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 			onChange?.(newValue);
 		}
 	};
-
-	useEffect(() => {
-		async function loadPlaceTypes() {
-			try {
-				const response = await fetch(placeTypeRoute);
-				const data = await response.json();
-				setMemberTypes(
-					data.map(
-						(type: { placeTypeCode: string; desc: string }) => ({
-							value: type.placeTypeCode,
-							label: type.placeTypeCode + " - " + type.desc,
-						})
-					)
-				);
-			} catch (error) {
-				console.error("Failed to fetch place types", error);
-			}
-		}
-		loadPlaceTypes();
-	}, []);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -129,7 +120,7 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 						>
 							{currentValue
 								? memberTypes.find(
-										(type) => type.value === currentValue
+										(type: { value: string; label: string }) => type.value === currentValue
 								  )?.label
 								: "Select a place type..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -141,7 +132,7 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 							<CommandEmpty>No place type found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{memberTypes.map((type) => (
+									{memberTypes.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}

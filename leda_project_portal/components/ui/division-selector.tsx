@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
@@ -80,31 +81,22 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 	const divisionName = watch("divisionName");
 	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
-	// State to store the fetched member types
-	const [divisions, setDivisions] = useState<{ value: string }[]>([]);
 
-	// Fetch member types from the API endpoint
-	useEffect(() => {
-		async function loadDivisions() {
-			try {
-				const response = await fetch(divisionRoute);
-				const data = await response.json();
-				setDivisions(
-					data
-						.filter(
-							(type: { divisionName: string }) =>
-								!selectedDivisions.includes(type.divisionName)
-						)
-						.map((type: { divisionName: string }) => ({
-							value: type.divisionName,
-						}))
-				);
-			} catch (error) {
-				console.error("Failed to fetch member types", error);
-			}
-		}
-		loadDivisions();
-	}, [selectedDivisions]);
+	const { data: divisions = [] } = useQuery({
+		queryKey: ["divisions", selectedDivisions],
+		queryFn: async () => {
+			const response = await fetch(divisionRoute);
+			const data = await response.json();
+			return data
+				.filter(
+					(type: { divisionName: string }) =>
+						!selectedDivisions.includes(type.divisionName)
+				)
+				.map((type: { divisionName: string }) => ({
+					value: type.divisionName,
+				}));
+		},
+	});
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -119,7 +111,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 						>
 							{divisionName
 								? divisions.find(
-										(type) => type.value === divisionName
+										(type: { value: string }) => type.value === divisionName
 								  )?.value
 								: "Select division"}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -131,7 +123,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 							<CommandEmpty>No division found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{divisions.map((type) => (
+									{divisions.map((type: { value: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}

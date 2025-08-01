@@ -12,7 +12,7 @@
  * The component can be used in both controlled mode (with React Hook Form)
  * or uncontrolled mode (with direct value/onChange props).
  */
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,6 +38,7 @@ import {
 	FormControl,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
@@ -52,10 +53,15 @@ interface PenaltySelectorProps {
 	disabled?: boolean; // Optional disabled state
 }
 
+type PenaltyType = {
+	penaltyCode: string;
+	desc: string;
+};
+
 interface PenaltySelectorContentProps {
-	value?: string; // Current value (for uncontrolled mode)
-	onChange?: (value: string) => void; // Change handler (for uncontrolled mode)
-	disabled?: boolean; // Optional disabled state
+	value?: string;
+	onChange?: (value: string) => void;
+	disabled?: boolean;
 }
 
 /**
@@ -102,16 +108,23 @@ const PenaltySelectorContent: React.FC<PenaltySelectorContentProps> = ({
 	const formContext = useFormContext<FormValues>();
 	const [localValue, setLocalValue] = useState(propValue || "");
 	const [open, setOpen] = useState(false);
-	const [memberTypes, setMemberTypes] = useState<
-		{ value: string; label: string }[]
-	>([]);
 
-	// Determine value source (form context or props)
+	const { data: memberTypes = [] } = useQuery<{ value: string; label: string }[]>({
+		queryKey: ["penalties"],
+		queryFn: async () => {
+			const response = await fetch(penaltyRoute);
+			const data: PenaltyType[] = await response.json();
+			return data.map((type) => ({
+				value: type.penaltyCode + " - " + type.desc,
+				label: type.penaltyCode + " - " + type.desc,
+			}));
+		},
+	});
+
 	const currentValue = formContext
 		? formContext.watch("penaltyCode")
 		: localValue;
 
-	// Handle value changes in either mode
 	const handleValueChange = (newValue: string) => {
 		if (formContext) {
 			formContext.setValue("penaltyCode", newValue);
@@ -120,25 +133,6 @@ const PenaltySelectorContent: React.FC<PenaltySelectorContentProps> = ({
 			onChange?.(newValue);
 		}
 	};
-
-	// Fetch penalties from API on component mount
-	useEffect(() => {
-		async function loadPenalties() {
-			try {
-				const response = await fetch(penaltyRoute);
-				const data = await response.json();
-				setMemberTypes(
-					data.map((type: { penaltyCode: string; desc: string }) => ({
-						value: type.penaltyCode + " - " + type.desc,
-						label: type.penaltyCode + " - " + type.desc,
-					}))
-				);
-			} catch (error) {
-				console.error("Failed to fetch penalties", error);
-			}
-		}
-		loadPenalties();
-	}, []);
 
 	return (
 		// Render the dropdown selector UI

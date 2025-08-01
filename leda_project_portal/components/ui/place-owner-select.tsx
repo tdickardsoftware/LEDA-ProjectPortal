@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import {
 	FormControl,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 interface FormValues {
 	contactId: string;
@@ -65,29 +66,19 @@ export default function PlaceOwnerSelect({
 const PlaceOwnerSelectContent: React.FC = () => {
 	const formContext = useFormContext<FormValues>();
 	const currentValue = formContext ? formContext.watch("contactId") : "";
-
 	const [open, setOpen] = useState(false);
-	const [owners, setOwners] = useState<{ value: string; label: string }[]>(
-		[]
-	);
 
-	useEffect(() => {
-		async function loadPlaceTypes() {
-			try {
-				const response = await fetch(placeOwnerRoute);
-				const data = await response.json();
-				setOwners(
-					data.map((type: { ledaId: string; fullName: string }) => ({
-						value: type.ledaId,
-						label: type.ledaId + " - " + type.fullName,
-					}))
-				);
-			} catch (error) {
-				console.error("Failed to fetch place owners", error);
-			}
-		}
-		loadPlaceTypes();
-	}, []);
+	const { data: owners = [] } = useQuery({
+		queryKey: ["placeOwners"],
+		queryFn: async () => {
+			const response = await fetch(placeOwnerRoute);
+			const data = await response.json();
+			return data.map((type: { ledaId: string; fullName: string }) => ({
+				value: type.ledaId,
+				label: type.ledaId + " - " + type.fullName,
+			}));
+		},
+	});
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -102,7 +93,7 @@ const PlaceOwnerSelectContent: React.FC = () => {
 						>
 							{currentValue
 								? owners.find(
-										(type) => type.value === currentValue
+										(type: { value: string; label: string }) => type.value === currentValue
 								  )?.label
 								: "Select a place owner..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -114,7 +105,7 @@ const PlaceOwnerSelectContent: React.FC = () => {
 							<CommandEmpty>No place owner found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{owners.map((type) => (
+									{owners.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}
