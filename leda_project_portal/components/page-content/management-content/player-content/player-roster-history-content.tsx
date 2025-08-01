@@ -2,7 +2,8 @@
 
 import { rosterRoute } from "@/lib/apiRoutes";
 import { PlayerMemberInfo, PlayerRosterHistory } from "@/lib/definitions";
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -36,20 +37,18 @@ export default function PlayerRosterHistoryContent({
 }: {
 	playerData: PlayerMemberInfo;
 }) {
-	const [rosterHistory, setRosterHistory] = useState<PlayerRosterHistory[]>(
-		[]
-	);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [error, setError] = useState<string | null>(null);
-
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize] = useState(10);
 	const [totalPages, setTotalPages] = useState(1);
 
-	const getPlayerRosterHistory = useCallback(async () => {
-		try {
-			setIsLoading(true);
+	const {
+		data: rosterHistory = [],
+		isLoading,
+		error,
+	} = useQuery<PlayerRosterHistory[]>({
+		queryKey: ["playerRosterHistory", playerData.ledaId],
+		queryFn: async () => {
 			const response = await fetch(
 				rosterRoute + `/rosterHistory?ledaId=${playerData.ledaId}`,
 				{
@@ -62,23 +61,9 @@ export default function PlayerRosterHistoryContent({
 			if (!response.ok) {
 				throw new Error("Failed to fetch data");
 			}
-			const data = await response.json();
-			setRosterHistory(data);
-			return data;
-		} catch (error) {
-			setError(
-				error instanceof Error
-					? error.message
-					: "An unknown error occurred"
-			);
-		} finally {
-			setIsLoading(false);
-		}
-	}, [playerData.ledaId]);
-
-	useEffect(() => {
-		getPlayerRosterHistory();
-	}, [getPlayerRosterHistory]);
+			return await response.json();
+		},
+	});
 
 	// Calculate total pages whenever roster history or page size changes
 	useEffect(() => {
@@ -186,7 +171,11 @@ export default function PlayerRosterHistoryContent({
 	};
 
 	if (error) {
-		return <div className="p-4 text-red-500">Error: {error}</div>;
+		return (
+			<div className="p-4 text-red-500">
+				Error: {(error as Error).message || "Failed to load roster history"}
+			</div>
+		);
 	}
 
 	return (

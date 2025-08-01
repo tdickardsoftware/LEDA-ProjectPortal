@@ -2,7 +2,7 @@
 
 import { MentionPlayerHistory, PlayerMemberInfo } from "@/lib/definitions";
 import { mentionPlayerHistoryRoute } from "@/lib/apiRoutes";
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -17,14 +17,13 @@ export default function PlayerMentionsHistoryContent({
 }: {
 	playerData: PlayerMemberInfo;
 }) {
-	const [mentionsData, setMentionsData] = useState<MentionPlayerHistory[]>(
-		[]
-	);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		const getTrailsData = async () => {
+	const {
+		data: mentionsData = [],
+		isLoading,
+		error,
+	} = useQuery<MentionPlayerHistory[]>({
+		queryKey: ["playerMentionsHistory", playerData.ledaId],
+		queryFn: async () => {
 			const results = await fetch(
 				`${mentionPlayerHistoryRoute}?ledaId=${playerData.ledaId}`,
 				{
@@ -34,26 +33,9 @@ export default function PlayerMentionsHistoryContent({
 			if (!results.ok) {
 				throw new Error("Failed to fetch trails data");
 			}
-			const data = await results.json();
-			return data;
-		};
-
-		const fetchTrailsData = async () => {
-			try {
-				setIsLoading(true);
-				const data = await getTrailsData();
-				setMentionsData(data);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load trails history data");
-				console.error(err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchTrailsData();
-	}, [playerData.ledaId]);
+			return await results.json();
+		},
+	});
 
 	return (
 		<div className="container mx-auto p-6">
@@ -72,7 +54,9 @@ export default function PlayerMentionsHistoryContent({
 						Loading trails history...
 					</p>
 				) : error ? (
-					<p className="text-red-500">{error}</p>
+					<p className="text-red-500">
+						{(error as Error).message || "Failed to load trails history data"}
+					</p>
 				) : mentionsData.length === 0 ? (
 					<p className="text-gray-500">
 						No trails history found for this player.

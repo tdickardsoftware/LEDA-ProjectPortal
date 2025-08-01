@@ -2,7 +2,7 @@
 
 import { PlayerMemberInfo } from "@/lib/definitions";
 import { trailsPlayerHistoryRoute } from "@/lib/apiRoutes";
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -27,12 +27,13 @@ export default function PlayerTrailsHistoryContent({
 }: {
 	playerData: PlayerMemberInfo;
 }) {
-	const [trailsData, setTrailsData] = useState<TrailsAuditRecord[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		const getTrailsData = async () => {
+	const {
+		data: trailsData = [],
+		isLoading,
+		error,
+	} = useQuery<TrailsAuditRecord[]>({
+		queryKey: ["playerTrailsHistory", playerData.ledaId],
+		queryFn: async () => {
 			const results = await fetch(
 				`${trailsPlayerHistoryRoute}?ledaId=${playerData.ledaId}`,
 				{
@@ -42,26 +43,9 @@ export default function PlayerTrailsHistoryContent({
 			if (!results.ok) {
 				throw new Error("Failed to fetch trails data");
 			}
-			const data = await results.json();
-			return data;
-		};
-
-		const fetchTrailsData = async () => {
-			try {
-				setIsLoading(true);
-				const data = await getTrailsData();
-				setTrailsData(data);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load trails history data");
-				console.error(err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchTrailsData();
-	}, [playerData.ledaId]);
+			return await results.json();
+		},
+	});
 
 	return (
 		<div className="container mx-auto p-6">
@@ -80,7 +64,9 @@ export default function PlayerTrailsHistoryContent({
 						Loading trails history...
 					</p>
 				) : error ? (
-					<p className="text-red-500">{error}</p>
+					<p className="text-red-500">
+						{(error as Error).message || "Failed to load trails history data"}
+					</p>
 				) : trailsData.length === 0 ? (
 					<p className="text-gray-500">
 						No trails history found for this player.
