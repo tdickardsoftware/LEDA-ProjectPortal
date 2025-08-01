@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { trailsRoute } from "@/lib/apiRoutes";
 import { TrailsDateData } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
+import { useMutation } from "@tanstack/react-query";
 
 const TrailsDateDataFormSchema = z.object({
 	singlesPlace: z.number().positive().optional(),
@@ -51,6 +52,40 @@ export default function TrailsDateEditForm({
 		},
 	});
 
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof TrailsDateDataFormSchema>) => {
+			const response = await fetch(trailsRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: (results) => {
+			toast.success("Successfully updated the form!");
+			form.reset();
+			handleRefresh(index);
+			console.log("Form updated successfully!", results);
+		},
+		onError: (error) => {
+			console.error("Form update error", error);
+			toast.error(
+				`Failed to update the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		},
+	});
+
 	if (!rowData) {
 		return <div>No place type data available.</div>;
 	}
@@ -64,38 +99,7 @@ export default function TrailsDateEditForm({
 		values.doublesPlace = values.doublesPlace
 			? Number(values.doublesPlace)
 			: undefined;
-		try {
-			const response = await fetch(trailsRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(values),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			const results = await response.json();
-			toast.success("Successfully updated the form!");
-
-			// Reset form and state
-			form.reset();
-			handleRefresh(index);
-			console.log("Form updated successfully!", results);
-		} catch (error) {
-			console.error("Form update error", error);
-			toast.error(
-				`Failed to update the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+		mutation.mutate(values);
 	}
 
 	return (

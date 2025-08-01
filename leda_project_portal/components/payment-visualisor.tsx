@@ -37,7 +37,6 @@ interface PaymentVisualisorProps {
 	ledaId?: string;
 }
 
-
 export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 	const [selectedDate, setSelectedDate] = useState<string>("all");
 	const [selectedPaymentType, setSelectedPaymentType] = useState<
@@ -221,21 +220,44 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 						<SelectTrigger className="w-[200px] border-gray-400 text-gray-700">
 							<SelectValue placeholder="Filter by date" />
 						</SelectTrigger>
-						<SelectContent className="bg-white border-gray-400 text-gray-700">
-							<SelectItem value="all">All Dates</SelectItem>
+						<SelectContent className="bg-white  border-gray-400 text-gray-700">
+							<SelectItem value="all" className="hover:bg-gray-300">All Dates</SelectItem>
 							{Array.isArray(uniqueDates) &&
-								uniqueDates.map((date, index) => (
-									<SelectItem
-										key={`${date.paymentDate}-${index}`}
-										value={date.paymentDate}
-									>
-										{date.paymentDate
-											? new Date(
-													date.paymentDate + "T00:00:00Z"
-											  ).toLocaleDateString("en-US", { timeZone: "UTC" })
-											: "Unknown date"}
-									</SelectItem>
-								))}
+								uniqueDates.map((date, index) => {
+									// Defensive: ensure date.paymentDate is a valid date string (YYYY-MM-DD)
+									// Postgres DATE fields may be returned as JS Date objects, ISO strings, or plain YYYY-MM-DD strings.
+									let dateStr = "";
+									if (date.paymentDate instanceof Date) {
+										dateStr = date.paymentDate.toISOString().slice(0, 10);
+									} else if (
+										typeof date.paymentDate === "string" &&
+										/^\d{4}-\d{2}-\d{2}$/.test(date.paymentDate)
+									) {
+										dateStr = date.paymentDate;
+									} else if (
+										typeof date.paymentDate === "string" &&
+										!isNaN(Date.parse(date.paymentDate))
+									) {
+										dateStr = new Date(date.paymentDate).toISOString().slice(0, 10);
+									}
+
+									const isValid =
+										typeof dateStr === "string" &&
+										/^\d{4}-\d{2}-\d{2}$/.test(dateStr) &&
+										!isNaN(Date.parse(dateStr + "T00:00:00Z"));
+
+									return (
+										<SelectItem
+											key={`${date.paymentDate}-${index}`}
+											value={dateStr || date.paymentDate}
+											className="hover:bg-gray-300"
+										>
+											{isValid
+												? new Date(dateStr + "T00:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC" })
+												: "Unknown date"}
+										</SelectItem>
+									);
+								})}
 						</SelectContent>
 					</Select>
 
@@ -539,3 +561,4 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 		</div>
 	);
 }
+

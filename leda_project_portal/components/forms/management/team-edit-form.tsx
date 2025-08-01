@@ -22,6 +22,7 @@ import { teamRoute } from "@/lib/apiRoutes";
 import { Team } from "@/lib/definitions";
 import PlayerSelector from "@/components/ui/player-selector";
 import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
 
 const teamInfoSchema = z.object({
 	ledaId: z
@@ -73,6 +74,42 @@ export default function TeamEditForm({
 				? new Date(formData.establishedDate).toISOString().split("T")[0]
 				: undefined,
 			memo: formData.memo || "",
+		},
+	});
+
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof teamInfoSchema>) => {
+			const submittedValues = { ...values, memberIdList: memberIdList };
+			const response = await fetch(teamRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(submittedValues),
+			});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: (results) => {
+			toast.success("Successfully updated the form!");
+			form.reset();
+			console.log("Form updated successfully!", results);
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
+			console.error("Form update error", error);
+			toast.error(
+				`Failed to update the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
 		},
 	});
 
@@ -154,46 +191,12 @@ export default function TeamEditForm({
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No team data available.</div>;
+	function onSubmit(values: z.infer<typeof teamInfoSchema>) {
+		mutation.mutate(values);
 	}
 
-	async function onSubmit(values: z.infer<typeof teamInfoSchema>) {
-		const submittedValues = { ...values, memberIdList: memberIdList };
-		try {
-			const response = await fetch(teamRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(submittedValues),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			const results = await response.json();
-			toast.success("Successfully updated the form!");
-
-			// Reset form and state
-			form.reset();
-
-			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the team API route
-		} catch (error) {
-			console.error("Form update error", error);
-			toast.error(
-				`Failed to update the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+	if (!rowData) {
+		return <div>No team data available.</div>;
 	}
 
 	return (

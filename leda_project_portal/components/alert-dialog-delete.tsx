@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 
 interface AlertDialogDeleteProps {
 	buttonName: string;
@@ -40,21 +41,27 @@ export default function AlertDialogDelete({
 		setCurrentSelectedRowCount(selectedRowCount || 0);
 	}, [selectedRowCount]);
 
-	async function onClickDelete() {
-		for (let j = 0; j < rowData.length; j++) {
-			await fetch(apiEndpoint, {
-				method: "DELETE",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(
-					rowData[j] // Ensure targetValue is correctly passed
-				),
-			});
-		}
-		if (onRefresh) {
-			onRefresh();
-		}
+	const deleteMutation = useMutation({
+		mutationFn: async () => {
+			for (let j = 0; j < rowData.length; j++) {
+				await fetch(apiEndpoint, {
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(rowData[j]),
+				});
+			}
+		},
+		onSuccess: () => {
+			if (onRefresh) {
+				onRefresh();
+			}
+		},
+	});
+
+	function onClickDelete() {
+		deleteMutation.mutate();
 	}
 
 	return (

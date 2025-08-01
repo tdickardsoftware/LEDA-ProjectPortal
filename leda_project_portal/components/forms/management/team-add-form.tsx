@@ -23,6 +23,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import PlayerSelector from "@/components/ui/player-selector";
 import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
 
 export const teamFormSchema = z.object({
 	ledaId: z
@@ -76,6 +77,56 @@ export default function PlaceAddForm({
 		},
 	});
 
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof teamFormSchema>) => {
+			const submissionValues = generateIDStatus
+				? { ...values, ledaId: 0 }
+				: values;
+			const submissionValues2 = {
+				...submissionValues,
+				memberIdList: memberIdList,
+			};
+
+			const response = await fetch(teamRoute, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(submissionValues2),
+			});
+
+			if (!response.ok) {
+				if (response.status === 422) {
+					setLedaIdExists(true);
+				}
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+
+			return await response.json();
+		},
+		onSuccess: (results) => {
+			toast.success("Successfully submitted the form!");
+			form.reset();
+			setGenerateIDStatus(true);
+			setCurrentStep(0);
+			console.log("Form submitted successfully!", results);
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
+			console.error("Form submission error", error);
+			toast.error(
+				`Failed to submit the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		},
+	});
+
 	function handleSetMemberIdList(memberIdList: string) {
 		setMemberIdList(memberIdList);
 	}
@@ -117,55 +168,9 @@ export default function PlaceAddForm({
 		}
 	};
 
-	async function onSubmit(values: z.infer<typeof teamFormSchema>) {
-		try {
-			// If generateIDStatus is true, set ledaId to 0
-			const submissionValues = generateIDStatus
-				? { ...values, ledaId: 0 }
-				: values;
-			const submissionValues2 = {
-				...submissionValues,
-				memberIdList: memberIdList,
-			};
-
-			const response = await fetch(teamRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(submissionValues2),
-			});
-
-			if (!response.ok) {
-				if (response.status === 422) {
-					setLedaIdExists(true);
-				}
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			const results = await response.json();
-			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
-			form.reset();
-			setGenerateIDStatus(true);
-			setCurrentStep(0);
-
-			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
-			console.error("Form submission error", error);
-			toast.error(
-				`Failed to submit the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+	function onSubmit(values: z.infer<typeof teamFormSchema>) {
+		setLedaIdExists(false);
+		mutation.mutate(values);
 	}
 
 	return (

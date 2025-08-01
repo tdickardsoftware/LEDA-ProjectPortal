@@ -21,6 +21,7 @@ import MentionBasisSelector from "@/components/ui/mention-basis-selector";
 import { Textarea } from "@/components/ui/textarea";
 import { mentionRoute } from "@/lib/apiRoutes";
 import { Mention } from "@/lib/definitions";
+import { useMutation } from "@tanstack/react-query";
 
 const mentionFormSchema = z.object({
 	mentionCode: z.string().min(1, { message: "Mention Code is required." }),
@@ -79,17 +80,13 @@ export default function MentionEditForm({
 			form.reset({
 				...data,
 				points: data.points ? Number(data.points) : undefined,
-			}); // Set form values to the retrieved data
+			});
 		};
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No mention data available.</div>;
-	}
-
-	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof mentionFormSchema>) => {
 			const response = await fetch(mentionRoute, {
 				method: "PUT",
 				headers: {
@@ -97,7 +94,6 @@ export default function MentionEditForm({
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(
@@ -105,24 +101,31 @@ export default function MentionEditForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the mention API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form update error", error);
 			toast.error(
 				`Failed to update the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
+		mutation.mutate(values);
+	}
+
+	if (!rowData) {
+		return <div>No mention data available.</div>;
 	}
 
 	return (

@@ -27,6 +27,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -130,6 +131,52 @@ export default function PlayerAddInformationForm({
 		},
 	});
 
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
+			const submissionValues = generateIDStatus
+				? { ...values, ledaId: 0 }
+				: values;
+
+			const response = await fetch(playerRoute, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(submissionValues),
+			});
+
+			if (!response.ok) {
+				if (response.status === 422) {
+					setLedaIdExists(true);
+				}
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: () => {
+			toast.success("Successfully submitted the form!");
+			form.reset();
+			setGenerateIDStatus(true);
+			setBadStandingStatus(false);
+			setLifetimeMemberStatus(false);
+			window.location.reload();
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
+			console.error("Form submission error", error);
+			toast.error(
+				`Failed to submit the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		},
+	});
+
 	// Define the steps
 	const steps = [
 		{
@@ -184,8 +231,6 @@ export default function PlayerAddInformationForm({
 	// Handle step navigation
 	const nextStep = async () => {
 		const currentStepFields = steps[currentStep].fields;
-
-		// Validate only the fields in the current step
 		const result = await form.trigger(
 			currentStepFields as (keyof z.infer<typeof playerInfoSchema>)[]
 		);
@@ -194,7 +239,6 @@ export default function PlayerAddInformationForm({
 			if (currentStep < steps.length - 1) {
 				setCurrentStep(currentStep + 1);
 			} else {
-				// If we're on the last step, submit the form
 				form.handleSubmit(onSubmit)();
 			}
 		}
@@ -208,51 +252,9 @@ export default function PlayerAddInformationForm({
 		}
 	};
 
-	async function onSubmit(values: z.infer<typeof playerInfoSchema>) {
-		try {
-			const submissionValues = generateIDStatus
-				? { ...values, ledaId: 0 }
-				: values;
-
-			const response = await fetch(playerRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(submissionValues),
-			});
-
-			if (!response.ok) {
-				if (response.status === 422) {
-					setLedaIdExists(true);
-				}
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-			if (response.status === 422) {
-				setLedaIdExists(true);
-			}
-			toast.success("Successfully submitted the form!");
-			// Reset form and state
-			form.reset();
-			setGenerateIDStatus(true);
-			setBadStandingStatus(false);
-			setLifetimeMemberStatus(false);
-			window.location.reload();
-
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the player API route
-		} catch (error) {
-			console.error("Form submission error", error);
-			toast.error(
-				`Failed to submit the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+	function onSubmit(values: z.infer<typeof playerInfoSchema>) {
+		setLedaIdExists(false);
+		mutation.mutate(values);
 	}
 
 	return (

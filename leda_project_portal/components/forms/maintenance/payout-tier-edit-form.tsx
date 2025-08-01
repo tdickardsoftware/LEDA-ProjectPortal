@@ -18,6 +18,7 @@ import React from "react";
 import { payoutTierRoute } from "@/lib/apiRoutes";
 import { PayoutTier } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
+import { useMutation } from "@tanstack/react-query";
 
 const payoutTierFormSchema = z.object({
 	place: z
@@ -80,12 +81,8 @@ export default function PayoutTierEditForm({
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No payout tier data available.</div>;
-	}
-
-	async function onSubmit(values: z.infer<typeof payoutTierFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof payoutTierFormSchema>) => {
 			const response = await fetch(payoutTierRoute, {
 				method: "PUT",
 				headers: {
@@ -93,7 +90,6 @@ export default function PayoutTierEditForm({
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(
@@ -101,24 +97,31 @@ export default function PayoutTierEditForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the payout tier API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form update error", error);
 			toast.error(
 				`Failed to update the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof payoutTierFormSchema>) {
+		mutation.mutate(values);
+	}
+
+	if (!rowData) {
+		return <div>No payout tier data available.</div>;
 	}
 
 	return (

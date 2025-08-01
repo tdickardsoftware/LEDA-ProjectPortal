@@ -17,6 +17,7 @@ import React from "react";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "../../ui/textarea";
 import { penaltyRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
 
 // Define the schema for the form validation
 const penaltyFormSchema = z.object({
@@ -46,9 +47,8 @@ export default function PenaltyAddForm({
 
 	const [penaltyExists, setPenaltyExists] = React.useState(false);
 
-	// Handle form submission
-	async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof penaltyFormSchema>) => {
 			const response = await fetch(penaltyRoute, {
 				method: "POST",
 				headers: {
@@ -56,7 +56,6 @@ export default function PenaltyAddForm({
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				if (response.status === 422) {
 					setPenaltyExists(true);
@@ -67,24 +66,28 @@ export default function PenaltyAddForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
+		setPenaltyExists(false);
+		mutation.mutate(values);
 	}
 
 	return (

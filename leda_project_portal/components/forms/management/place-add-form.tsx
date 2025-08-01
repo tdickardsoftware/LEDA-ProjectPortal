@@ -29,6 +29,7 @@ import { placeRoute } from "@/lib/apiRoutes";
 import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
 
 const placeFormSchema = z.object({
 	ledaId: z
@@ -157,35 +158,8 @@ export default function PlaceAddForm({
 		},
 	});
 
-	// Handle step navigation
-	const nextStep = async () => {
-		const currentStepFields = steps[currentStep].fields;
-
-		// Validate only the fields in the current step
-		const result = await form.trigger(
-			currentStepFields as (keyof z.infer<typeof placeFormSchema>)[]
-		);
-
-		if (result) {
-			if (currentStep < steps.length - 1) {
-				setCurrentStep(currentStep + 1);
-			} else {
-				// If we're on the last step, submit the form
-				form.handleSubmit(onSubmit)();
-			}
-		}
-	};
-
-	const prevStep = () => {
-		if (currentStep > 0) {
-			setCurrentStep(currentStep - 1);
-		} else {
-			onClose();
-		}
-	};
-
-	async function onSubmit(values: z.infer<typeof placeFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof placeFormSchema>) => {
 			const submissionValues = generateIDStatus
 				? { ...values, ledaId: 0 }
 				: values;
@@ -209,21 +183,52 @@ export default function PlaceAddForm({
 				);
 			}
 
+			return await response.json();
+		},
+		onSuccess: () => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
 			setGenerateIDStatus(true);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
+		},
+	});
+
+	// Handle step navigation
+	const nextStep = async () => {
+		const currentStepFields = steps[currentStep].fields;
+		const result = await form.trigger(
+			currentStepFields as (keyof z.infer<typeof placeFormSchema>)[]
+		);
+
+		if (result) {
+			if (currentStep < steps.length - 1) {
+				setCurrentStep(currentStep + 1);
+			} else {
+				form.handleSubmit(onSubmit)();
+			}
 		}
+	};
+
+	const prevStep = () => {
+		if (currentStep > 0) {
+			setCurrentStep(currentStep - 1);
+		} else {
+			onClose();
+		}
+	};
+
+	function onSubmit(values: z.infer<typeof placeFormSchema>) {
+		setLedaIdExists(false);
+		mutation.mutate(values);
 	}
 
 	return (

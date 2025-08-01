@@ -28,6 +28,7 @@ import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { Place } from "@/lib/definitions";
 import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
 
 const placeFormSchema = z.object({
 	ledaId: z
@@ -164,11 +165,48 @@ export default function PlaceEditForm({
 		},
 	});
 
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof placeFormSchema>) => {
+			const response = await fetch(placeRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: (results) => {
+			toast.success("Successfully updated the form!");
+			form.reset();
+			console.log("Form updated successfully!", results);
+			if (onClose) {
+				onClose();
+			}
+			if (onRefresh) {
+				onRefresh();
+			}
+		},
+		onError: (error: unknown) => {
+			console.error("Form update error", error);
+			toast.error(
+				`Failed to update the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		},
+	});
+
 	// Handle step navigation
 	const nextStep = async () => {
 		const currentStepFields = steps[currentStep].fields;
-
-		// Validate only the fields in the current step
 		const result = await form.trigger(
 			currentStepFields as (keyof z.infer<typeof placeFormSchema>)[]
 		);
@@ -177,7 +215,6 @@ export default function PlaceEditForm({
 			if (currentStep < steps.length - 1) {
 				setCurrentStep(currentStep + 1);
 			} else {
-				// If we're on the last step, submit the form
 				form.handleSubmit(onSubmit)();
 			}
 		}
@@ -239,45 +276,8 @@ export default function PlaceEditForm({
 		return <div>No place data available.</div>;
 	}
 
-	async function onSubmit(values: z.infer<typeof placeFormSchema>) {
-		try {
-			const response = await fetch(placeRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(values),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			const results = await response.json();
-			toast.success("Successfully updated the form!");
-
-			// Reset form and state
-			form.reset();
-
-			console.log("Form updated successfully!", results);
-			if (onClose) {
-				onClose(); // Close the form
-			}
-			if (onRefresh) {
-				onRefresh(); // Refresh the data table
-			}
-		} catch (error) {
-			console.error("Form update error", error);
-			toast.error(
-				`Failed to update the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+	function onSubmit(values: z.infer<typeof placeFormSchema>) {
+		mutation.mutate(values);
 	}
 
 	return (

@@ -42,6 +42,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useQuery } from "@tanstack/react-query";
 
 // Add interface for payment status data
 interface PaymentStatus {
@@ -102,23 +103,50 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	// Add new state for payment status
 	const [showPaymentStatus, setShowPaymentStatus] =
 		React.useState<boolean>(false);
-	const [paymentStatusData, setPaymentStatusData] = React.useState<
-		PaymentStatus[]
-	>([]);
-	const [paymentStatusLoading, setPaymentStatusLoading] =
-		React.useState(false);
 
 	// Add local state for the Show Payment Status checkbox
 	const [pendingShowPaymentStatus, setPendingShowPaymentStatus] =
 		React.useState<boolean>(false);
 
+	// --- TanStack Query: Fetch payment status data ---
+	const {
+		data: paymentStatusData = [],
+		isFetching: paymentStatusLoading,
+		refetch: refetchPaymentStatus,
+	} = useQuery<PaymentStatus[]>({
+		queryKey: [
+			"datatablePaymentStatus",
+			pageName,
+			filterSeasonCode,
+			showPaymentStatus,
+		],
+		enabled: !!showPaymentStatus && !!filterSeasonCode,
+		queryFn: async () => {
+			let res;
+			if (pageName.includes("Players")) {
+				res = await fetch(
+					`${playerPaymentHistoryRoute}/viewData?seasonCode=${filterSeasonCode}`
+				);
+			} else if (pageName.includes("Places")) {
+				res = await fetch(
+					`${placePaymentHistoryRoute}/viewData?seasonCode=${filterSeasonCode}`
+				);
+			} else {
+				res = await fetch(
+					`${teamPaymentHistoryRoute}/viewData?seasonCode=${filterSeasonCode}`
+				);
+			}
+			const data = await res.json();
+			return Array.isArray(data) ? data : [];
+		},
+	});
+
 	// Debounce the search input
 	React.useEffect(() => {
 		const handler = setTimeout(() => {
 			setDebouncedQuery(searchQuery);
-		}, 300); // Update after 300ms of inactivity
-
-		return () => clearTimeout(handler); // Cleanup on each change
+		}, 300);
+		return () => clearTimeout(handler);
 	}, [searchQuery]);
 
 	// When filterCurrentSeason changes, reset filterSeasonCode and pendingShowPaymentStatus if needed
@@ -126,51 +154,18 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		if (filterCurrentSeason) {
 			setFilterSeasonCode("");
 			setPendingShowPaymentStatus(false);
-			setShowPaymentStatus(false); // Reset payment status when changing season
+			setShowPaymentStatus(false);
 		}
 	}, [filterCurrentSeason]);
-
-	// Function to fetch payment status data
-	const fetchPaymentStatus = React.useCallback(
-		async (seasonCode: string) => {
-			if (!seasonCode) return;
-
-			setPaymentStatusLoading(true);
-			try {
-				let res;
-				if (pageName.includes("Players")) {
-					res = await fetch(
-						`${playerPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`
-					);
-				} else if (pageName.includes("Places")) {
-					res = await fetch(
-						`${placePaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`
-					);
-				} else {
-					res = await fetch(
-						`${teamPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`
-					);
-				}
-				const data = await res.json();
-				setPaymentStatusData(Array.isArray(data) ? data : []);
-			} catch (e) {
-				console.error("Failed to fetch payment status", e);
-				setPaymentStatusData([]);
-			} finally {
-				setPaymentStatusLoading(false);
-			}
-		},
-		[pageName]
-	);
 
 	// Only fetch payment status when showPaymentStatus is set (after Apply)
 	React.useEffect(() => {
 		if (showPaymentStatus && filterSeasonCode) {
-			fetchPaymentStatus(filterSeasonCode);
-		} else {
-			setPaymentStatusData([]);
+			refetchPaymentStatus();
 		}
-	}, [showPaymentStatus, filterSeasonCode, fetchPaymentStatus]);
+		// No else branch needed, paymentStatusData will be empty if not enabled
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [showPaymentStatus, filterSeasonCode]);
 
 	const handleApplyFilter = async () => {
 		if (!filterSeasonCode) return;
@@ -507,9 +502,6 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 														);
 														setPendingShowPaymentStatus(
 															false
-														);
-														setPaymentStatusData(
-															[]
 														);
 													}}
 													className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
