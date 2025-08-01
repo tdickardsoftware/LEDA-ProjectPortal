@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -13,37 +13,28 @@ import {
 type PenaltyHistory = {
 	seasonCode: string;
 	weekNum: number;
-	ledaId: number;
+	team_id: number;
 	penaltycode: string;
 	points: number;
 	notes: string;
-	teamLabel: string;
+	teamlabel: string;
 };
 
 export default function TeamPenaltyHistory({ ledaId }: { ledaId: number }) {
-	const [penaltyHistory, setPenaltyHistory] = useState<PenaltyHistory[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		const fetchPenaltyHistory = async () => {
-			try {
-				setIsLoading(true);
-				const res = await fetch(
-					`/api/management/team/penaltyHistory?ledaId=${ledaId}`
-				);
-				if (!res.ok) throw new Error("Failed to fetch penalty history");
-				const data = await res.json();
-				setPenaltyHistory(data);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load penalty history data: " + err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchPenaltyHistory();
-	}, [ledaId]);
+	const {
+		data: penaltyHistory = [],
+		isLoading,
+		error,
+	} = useQuery<PenaltyHistory[]>({
+		queryKey: ["teamPenaltyHistory", ledaId],
+		queryFn: async () => {
+			const res = await fetch(
+				`/api/management/team/penaltyHistory?ledaId=${ledaId}`
+			);
+			if (!res.ok) throw new Error("Failed to fetch penalty history");
+			return await res.json();
+		},
+	});
 
 	return (
 		<div className="container mx-auto p-6">
@@ -53,7 +44,9 @@ export default function TeamPenaltyHistory({ ledaId }: { ledaId: number }) {
 					Loading penalty history...
 				</p>
 			) : error ? (
-				<p className="text-red-500">{error}</p>
+				<p className="text-red-500">
+					{(error as Error).message || "Failed to load penalty history data"}
+				</p>
 			) : penaltyHistory.length === 0 ? (
 				<p className="text-gray-500">
 					No penalty history found for this team.
@@ -79,7 +72,7 @@ export default function TeamPenaltyHistory({ ledaId }: { ledaId: number }) {
 									<TableCell>{penalty.penaltycode}</TableCell>
 									<TableCell>{penalty.points}</TableCell>
 									<TableCell>{penalty.notes}</TableCell>
-									<TableCell>{penalty.teamLabel}</TableCell>
+									<TableCell>{penalty.teamlabel}</TableCell>
 								</TableRow>
 							))}
 						</TableBody>
