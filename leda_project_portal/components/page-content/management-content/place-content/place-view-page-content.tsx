@@ -135,13 +135,17 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 								Established Date:{" "}
 								{new Date(
 									placeData.establishDate
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">
 								Last Sanctioning Date:{" "}
 								{new Date(
 									placeData.lastSanctioningDate
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">
 								Send Mailings:{" "}

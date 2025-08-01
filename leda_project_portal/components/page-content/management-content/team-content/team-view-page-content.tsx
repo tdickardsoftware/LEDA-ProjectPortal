@@ -285,7 +285,9 @@ export default function TeamPageContent({
 								Established Date:{" "}
 								{new Date(
 									teamData.establishedDate
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">
 								Last Team Fee Payment:{" "}
