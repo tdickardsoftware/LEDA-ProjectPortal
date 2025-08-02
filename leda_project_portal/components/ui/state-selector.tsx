@@ -117,25 +117,39 @@ export default function StatePicker({ name, control }: StatePickerProps) {
 	);
 }
 
+// Utility hook to track last input type (keyboard or mouse)
+function useLastInputType() {
+	const [lastInputType, setLastInputType] = React.useState<"keyboard" | "mouse" | null>(null);
+
+	React.useEffect(() => {
+		const handleKeyDown = () => setLastInputType("keyboard");
+		const handleMouseDown = () => setLastInputType("mouse");
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("mousedown", handleMouseDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("mousedown", handleMouseDown);
+		};
+	}, []);
+
+	return lastInputType;
+}
+
 // StatePickerContent component definition
 const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
 	const [open, setOpen] = React.useState(false);
 	const justClosedRef = React.useRef(false);
 	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+	const lastInputType = useLastInputType();
 
-	const handleTriggerFocus = () => {
-		// Only open if not already open and not just closed
-		if (!open && !justClosedRef.current) {
+	const handleFocus = React.useCallback(() => {
+		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
 			setOpen(true);
 		}
 		if (justClosedRef.current) {
 			justClosedRef.current = false;
 		}
-	};
-
-	const handleTriggerBlur = () => {
-		// No-op, let Radix handle closing
-	};
+	}, [lastInputType, open]);
 
 	const handleSelect = (value: string) => {
 		field.onChange(value);
@@ -153,8 +167,7 @@ const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
 						role="combobox"
 						aria-expanded={open}
 						className="w-[200px] justify-between"
-						onFocus={handleTriggerFocus}
-						onBlur={handleTriggerBlur}
+						onFocus={handleFocus}
 					>
 						{field.value
 							? states.find(
@@ -169,7 +182,11 @@ const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
 						<CommandInput placeholder="Search state..." autoFocus />
 						<CommandEmpty>No state found.</CommandEmpty>
 						<CommandGroup>
-							<CommandList>
+							<CommandList
+								className="max-h-60 overflow-y-auto"
+								tabIndex={0}
+								onWheel={(e) => e.stopPropagation()}
+							>
 								{states.map((state) => (
 									<CommandItem
 										key={state.value}

@@ -86,6 +86,24 @@ export default function SeasonCodeSelector({
 	);
 }
 
+// Utility hook to track last input type (keyboard or mouse)
+function useLastInputType() {
+	const [lastInputType, setLastInputType] = React.useState<"keyboard" | "mouse" | null>(null);
+
+	React.useEffect(() => {
+		const handleKeyDown = () => setLastInputType("keyboard");
+		const handleMouseDown = () => setLastInputType("mouse");
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("mousedown", handleMouseDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("mousedown", handleMouseDown);
+		};
+	}, []);
+
+	return lastInputType;
+}
+
 // SeasonCodeSelectorContent component definition
 const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 	disabled,
@@ -96,6 +114,10 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 	const { watch, setValue } = useFormContext<FormValues>();
 	const seasonCode = watch(name);
 	const [open, setOpen] = useState(false);
+
+	const justClosedRef = React.useRef(false);
+	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+	const lastInputType = useLastInputType();
 
 	const { data: seasonCodes = [], isLoading: loading } = useQuery({
 		queryKey: ["seasonCodes", excludeCode, exclusive],
@@ -136,17 +158,34 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 		},
 	});
 
+	const handleFocus = React.useCallback(() => {
+		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
+			setOpen(true);
+		}
+		if (justClosedRef.current) {
+			justClosedRef.current = false;
+		}
+	}, [lastInputType, open]);
+
+	const handleSelect = (type: { value: string; label: string }) => {
+		setValue(name, type.value);
+		setOpen(false);
+		justClosedRef.current = true;
+	};
+
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild disabled={loading}>
 						<Button
+							ref={popoverTriggerRef}
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
 							className="w-[200px] justify-between"
 							disabled={disabled}
+							onFocus={handleFocus}
 						>
 							{seasonCode
 								? seasonCodes.find(
@@ -158,21 +197,21 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 					</PopoverTrigger>
 					<PopoverContent
 						className="w-[200px] p-0 bg-white"
-						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
 							<CommandInput placeholder="Search season code..." />
 							<CommandEmpty>No season code found.</CommandEmpty>
 							<CommandGroup>
-								<CommandList>
+								<CommandList
+									className="max-h-60 overflow-y-auto"
+									tabIndex={0}
+									onWheel={e => e.stopPropagation()}
+								>
 									{seasonCodes.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}
-											onSelect={() => {
-												setValue(name, type.value);
-												setOpen(false);
-											}}
+											onSelect={() => handleSelect(type)}
 											className="hover:bg-gray-200"
 										>
 											<Check

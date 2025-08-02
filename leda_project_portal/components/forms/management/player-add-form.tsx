@@ -120,7 +120,7 @@ export default function PlayerAddInformationForm({
 			firstName: "",
 			lastName: "",
 			city: "",
-			state: "",
+			state: "Ohio",
 			zip: "",
 			email: "",
 			phoneNumber: "",

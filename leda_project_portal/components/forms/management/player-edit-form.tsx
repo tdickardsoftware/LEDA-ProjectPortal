@@ -304,8 +304,8 @@ export default function PlayerEditInformationForm({
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No player data available.</div>;
+	if (!rowData || !formData.state) {
+		return <div>Loading player data...</div>;
 	}
 
 	function onSubmit(values: z.infer<typeof playerInfoSchema>) {

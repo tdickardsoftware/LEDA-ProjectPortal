@@ -138,7 +138,7 @@ export default function PlaceAddForm({
 			addressOne: "",
 			addressTwo: "",
 			city: "",
-			state: "",
+			state: "Ohio",
 			zip: "",
 			phoneNumber: "",
 			otherNumber: "",
