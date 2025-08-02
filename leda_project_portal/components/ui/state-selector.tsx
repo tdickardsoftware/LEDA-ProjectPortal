@@ -119,18 +119,42 @@ export default function StatePicker({ name, control }: StatePickerProps) {
 
 // StatePickerContent component definition
 const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
-	// State to manage the popover open/close status
 	const [open, setOpen] = React.useState(false);
+	const justClosedRef = React.useRef(false);
+	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+
+	const handleTriggerFocus = () => {
+		// Only open if not already open and not just closed
+		if (!open && !justClosedRef.current) {
+			setOpen(true);
+		}
+		if (justClosedRef.current) {
+			justClosedRef.current = false;
+		}
+	};
+
+	const handleTriggerBlur = () => {
+		// No-op, let Radix handle closing
+	};
+
+	const handleSelect = (value: string) => {
+		field.onChange(value);
+		setOpen(false);
+		justClosedRef.current = true;
+	};
 
 	return (
 		<div className="w-auto">
 			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild>
 					<Button
+						ref={popoverTriggerRef}
 						variant="outline"
 						role="combobox"
 						aria-expanded={open}
 						className="w-[200px] justify-between"
+						onFocus={handleTriggerFocus}
+						onBlur={handleTriggerBlur}
 					>
 						{field.value
 							? states.find(
@@ -140,9 +164,9 @@ const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
 						<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent className="w-[200px] p-0 bg-white">
+				<PopoverContent className="w-[200px] p-0 bg-white" tabIndex={0}>
 					<Command>
-						<CommandInput placeholder="Search state..." />
+						<CommandInput placeholder="Search state..." autoFocus />
 						<CommandEmpty>No state found.</CommandEmpty>
 						<CommandGroup>
 							<CommandList>
@@ -150,10 +174,7 @@ const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
 									<CommandItem
 										key={state.value}
 										value={state.value}
-										onSelect={() => {
-											field.onChange(state.value);
-											setOpen(false);
-										}}
+										onSelect={() => handleSelect(state.value)}
 										className="hover:bg-gray-200"
 									>
 										<Check
