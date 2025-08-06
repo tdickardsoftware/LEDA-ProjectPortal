@@ -237,40 +237,30 @@ export default function PlaceAddForm({
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4 mx-auto"
 			>
-				<Tab.Group
-					selectedIndex={currentStep}
-					onChange={setCurrentStep}
-				>
+				<Tab.Group selectedIndex={currentStep}>
 					<div className="mb-6">
 						<div className="flex border-b border-gray-200">
-							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
+							{/* Render step headers as non-clickable */}
+							<div className="flex space-x-1 rounded-xl p-1 w-full">
 								{steps.map((step, index) => (
-									<Tab
+									<div
 										key={index}
-										className={({ selected }) =>
-											`w-full py-2.5 text-sm font-medium leading-5 
-											${
-												selected
-													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-											} ${
-												index < currentStep
-													? "text-green-500"
-													: ""
-											}`
-										}
+										className={`w-full py-2.5 text-sm font-medium leading-5 
+							${
+								index === currentStep
+									? "border-b-2 border-blue-500 text-blue-600"
+									: "text-gray-500"
+							} ${index < currentStep ? "text-green-500" : ""}`}
 									>
 										<span className="flex items-center justify-center">
 											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
-												{index < currentStep
-													? "✓"
-													: index + 1}
+												{index < currentStep ? "✓" : index + 1}
 											</span>
 											{step.name}
 										</span>
-									</Tab>
+									</div>
 								))}
-							</Tab.List>
+							</div>
 						</div>
 					</div>
 
