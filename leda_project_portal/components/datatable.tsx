@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Fuse from "fuse.js";
 import {
 	ColumnDef,
 	SortingState,
@@ -149,58 +150,261 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		return () => clearTimeout(handler);
 	}, [searchQuery]);
 
-	// When filterCurrentSeason changes, reset filterSeasonCode and pendingShowPaymentStatus if needed
-	React.useEffect(() => {
-		if (filterCurrentSeason) {
-			setFilterSeasonCode("");
-			setPendingShowPaymentStatus(false);
-			setShowPaymentStatus(false);
-		}
-	}, [filterCurrentSeason]);
+	// Configure Fuse.js for search
+	const fuseOptions = React.useMemo(() => {
+		const searchKeys = columns
+			.map((col) => {
+				if (col.id) return col.id;
+				if ("accessorKey" in col && typeof col.accessorKey === "string") {
+					return col.accessorKey;
+				}
+				return null;
+			})
+			.filter(Boolean) as string[];
 
-	// Only fetch payment status when showPaymentStatus is set (after Apply)
-	React.useEffect(() => {
-		if (showPaymentStatus && filterSeasonCode) {
-			refetchPaymentStatus();
-		}
-		// No else branch needed, paymentStatusData will be empty if not enabled
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [showPaymentStatus, filterSeasonCode]);
+		return {
+			keys: searchKeys,
+			threshold: 0.3, // Lower = more strict matching
+			includeScore: true,
+			includeMatches: true,
+			ignoreLocation: true,
+			minMatchCharLength: 1,
+		};
+	}, [columns]);
 
-	const handleApplyFilter = async () => {
-		if (!filterSeasonCode) return;
-		setFilterLoading(true);
-		try {
-			let res;
-			if (pageName.includes("Players")) {
-				res = await fetch(
-					`${rosterRoute}/rosterPlayerView?seasonCode=${filterSeasonCode}`
-				);
-			} else if (pageName.includes("Places")) {
-				res = await fetch(
-					`${rosterRoute}/rosterPlaceView?seasonCode=${filterSeasonCode}`
-				);
-			} else {
-				res = await fetch(
-					`${rosterRoute}/rosterTeamView?seasonCode=${filterSeasonCode}`
-				);
+	// Initialize Fuse instance
+	const fuse = React.useMemo(() => {
+		let base = tableData;
+		if (filteredLedaIds) {
+			base = base.filter((row) =>
+				filteredLedaIds.includes(String(row.ledaId))
+			);
+		}
+		return new Fuse(base, fuseOptions);
+	}, [tableData, filteredLedaIds, fuseOptions]);
+
+	// Helper function to extract text from React elements (improved)
+	const extractTextFromReactElement = React.useCallback((element: unknown): string => {
+		if (typeof element === "string") return element;
+		if (typeof element === "number") return String(element);
+
+		// Handle React elements
+		if (element && typeof element === "object") {
+			const el = element as { props?: { [key: string]: unknown } };
+			// If it has props.children, recurse into children
+			if (el.props?.children) {
+				if (typeof el.props.children === "string") {
+					return el.props.children;
+				}
+				if (Array.isArray(el.props.children)) {
+					return el.props.children
+						.map((child) => extractTextFromReactElement(child))
+						.filter((text) => text && text.trim())
+						.join(" ");
+				}
+				// Single child that's not a string
+				return extractTextFromReactElement(el.props.children);
 			}
-			const ids: { ledaId: string | number }[] = await res.json();
-			// Extract ledaId values from the array of objects
-			const ledaIds = Array.isArray(ids)
-				? ids.map((item) => String(item.ledaId))
-				: [];
-			setFilteredLedaIds(ledaIds);
-			setShowPaymentStatus(pendingShowPaymentStatus); // Only set showPaymentStatus on Apply
-			setFilterPopoverOpen(false);
-		} catch (e) {
-			console.error("Failed to filter by season", e);
-		} finally {
-			setFilterLoading(false);
-		}
-	};
 
-	// Filtered data based on debounced query and filter
+			// Check for common text properties
+			if (el.props?.title && typeof el.props.title === "string") return el.props.title;
+			if (el.props?.alt && typeof el.props.alt === "string") return el.props.alt;
+			if (el.props?.label && typeof el.props.label === "string") return el.props.label;
+		}
+
+		return "";
+	}, []);
+
+	// Create column mapping for field name translation
+	const columnMapping = React.useMemo(() => {
+		const mapping = new Map<string, string>();
+		
+		console.log("=== Building column mapping ===");
+		
+		columns.forEach((col, index) => {
+			let displayName = "";
+			let dataKey = "";
+			
+			// Get display name from header - handle all possible header types
+			if (typeof col.header === "string") {
+				displayName = col.header;
+			} else if (typeof col.header === "function") {
+				// Try to render the header function to get the display name
+				try {
+					const mockContext = {
+						header: {
+							column: { columnDef: col },
+							getContext: () => ({}),
+						}
+					} as any;
+					const rendered = col.header(mockContext);
+					if (typeof rendered === "string") {
+						displayName = rendered;
+					} else if (rendered && typeof rendered === "object" && "props" in rendered) {
+						// Handle React elements - try to extract text content
+						displayName = extractTextFromReactElement(rendered);
+					}
+				} catch (e) {
+					console.warn(`Error rendering header function for column ${index}:`, e);
+				}
+			}
+			
+			// Get data key
+			if (col.id) {
+				dataKey = col.id;
+			} else if ("accessorKey" in col && typeof col.accessorKey === "string") {
+				dataKey = col.accessorKey;
+			}
+			
+			console.log(`Column ${index}: displayName="${displayName}", dataKey="${dataKey}"`);
+			
+			if (dataKey) { // Only need dataKey to create mappings
+				const variations = new Set<string>();
+				
+				// Add display name variations if available
+				if (displayName && displayName.trim()) {
+					const cleanDisplayName = displayName.trim();
+					variations.add(cleanDisplayName.toLowerCase());
+					variations.add(cleanDisplayName.toLowerCase().replace(/\s+/g, ""));
+					variations.add(cleanDisplayName.toLowerCase().replace(/[^a-z0-9]/g, ""));
+				}
+				
+				// Add data key variations
+				variations.add(dataKey.toLowerCase());
+				variations.add(dataKey); // original case
+				
+				// Add camelCase variations
+				if (dataKey !== dataKey.toLowerCase()) {
+					variations.add(dataKey.toLowerCase());
+					const underscored = dataKey.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
+					variations.add(underscored);
+					const spaced = dataKey.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+					variations.add(spaced);
+				}
+				
+				// Remove empty variations and add to mapping
+				Array.from(variations).forEach(variation => {
+					if (variation && variation.trim()) {
+						mapping.set(variation, dataKey);
+						console.log(`  Mapping: "${variation}" -> "${dataKey}"`);
+					}
+				});
+			}
+		});
+		
+		console.log("=== Final mapping entries ===");
+		Array.from(mapping.entries()).forEach(([key, value]) => {
+			console.log(`"${key}" -> "${value}"`);
+		});
+		
+		return mapping;
+	}, [columns, extractTextFromReactElement]);
+
+	// Helper function to resolve field name to actual data key
+	const resolveFieldName = React.useCallback((fieldName: string): string => {
+		const normalized = fieldName.toLowerCase();
+		
+		console.log(`=== Resolving field: "${fieldName}" ===`);
+		console.log(`Normalized: "${normalized}"`);
+		
+		// Try exact match first
+		if (columnMapping.has(normalized)) {
+			const resolved = columnMapping.get(normalized)!;
+			console.log(`Found exact match: "${normalized}" -> "${resolved}"`);
+			return resolved;
+		}
+		
+		// Try without spaces and special characters
+		const cleanName = normalized.replace(/[^a-z0-9]/g, "");
+		console.log(`Clean name: "${cleanName}"`);
+		if (columnMapping.has(cleanName)) {
+			const resolved = columnMapping.get(cleanName)!;
+			console.log(`Found clean match: "${cleanName}" -> "${resolved}"`);
+			return resolved;
+		}
+		
+		console.log(`No mapping found for "${fieldName}", returning original`);
+		console.log("Available mappings:", Array.from(columnMapping.keys()));
+		
+		// Return original if no mapping found
+		return fieldName;
+	}, [columnMapping]);
+
+	// Parse field-specific search queries with AND/OR logic
+	const parseFieldSearch = React.useCallback((query: string) => {
+		// Check for field-specific patterns first
+		const hasFieldPattern = /["']?(\w+|\w+\s+\w+)["']?\s*=/.test(query);
+		
+		if (!hasFieldPattern) {
+			return { type: "general", query: query.trim() };
+		}
+
+		// Split by OR first (case insensitive)
+		const orGroups = query.split(/\s+or\s+/gi);
+		
+		const searchGroups = orGroups.map(orGroup => {
+			// Within each OR group, split by AND
+			const andParts = orGroup.split(/\s+and\s+/gi);
+			
+			const fieldSearches: Array<{ field: string; values: string[] }> = [];
+			let remainingQuery = "";
+			
+			andParts.forEach(part => {
+				// Enhanced regex to handle quoted field names: "LEDA ID Number"=value or field=value
+				const quotedFieldMatch = part.match(/"([^"]+)"\s*=\s*(.+)/);
+				const unquotedFieldMatch = part.match(/(\w+)\s*=\s*(.+)/);
+				
+				const fieldMatch = quotedFieldMatch || unquotedFieldMatch;
+				
+				if (fieldMatch) {
+					const originalField = fieldMatch[1];
+					const resolvedField = resolveFieldName(originalField);
+					const valuesPart = fieldMatch[2];
+					
+					// Parse comma-separated values, handling both quoted and unquoted
+					const values: string[] = [];
+					const quotedValuePattern = /"([^"]*)"/g;
+					const quotedMatches = [...valuesPart.matchAll(quotedValuePattern)];
+					
+					if (quotedMatches.length > 0) {
+						// Has quoted values
+						quotedMatches.forEach(match => {
+							values.push(match[1]);
+						});
+					} else {
+						// No quotes, split by comma
+						valuesPart.split(',').forEach(v => {
+							const trimmed = v.trim();
+							if (trimmed) values.push(trimmed);
+						});
+					}
+					
+					if (values.length > 0) {
+						fieldSearches.push({ field: resolvedField, values });
+					}
+				} else {
+					// This part is general search text
+					if (part.trim()) {
+						remainingQuery += " " + part.trim();
+					}
+				}
+			});
+			
+			return {
+				fieldSearches,
+				remainingQuery: remainingQuery.trim(),
+				operator: "AND" as const
+			};
+		});
+
+		return {
+			type: "field-specific" as const,
+			searchGroups,
+			operator: "OR" as const
+		};
+	}, [resolveFieldName]);
+
+	// Enhanced filtered data with Fuse.js and field-specific search with AND/OR logic
 	const filteredData = React.useMemo(() => {
 		let base = tableData;
 		if (filteredLedaIds) {
@@ -208,15 +412,56 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 				filteredLedaIds.includes(String(row.ledaId))
 			);
 		}
+		
 		if (!debouncedQuery) return base;
-		return base.filter((row) =>
-			Object.values(row).some((value) =>
-				String(value)
-					.toLowerCase()
-					.includes(debouncedQuery.toLowerCase())
-			)
-		);
-	}, [debouncedQuery, tableData, filteredLedaIds]);
+
+		const searchConfig = parseFieldSearch(debouncedQuery);
+
+		if (searchConfig.type === "general") {
+			// Use Fuse.js for general search
+			const results = fuse.search(searchConfig.query);
+			return results.map(result => result.item);
+		} else {
+			// Handle field-specific searches with AND/OR logic
+			return base.filter(row => {
+				// OR logic: row matches if it satisfies ANY search group
+				if (!searchConfig.searchGroups) return false;
+				return searchConfig.searchGroups.some(group => {
+					// AND logic within group: row must satisfy ALL conditions in the group
+					let fieldMatches = true;
+					let generalMatches = true;
+					
+					// Check field-specific searches (all must match - AND logic)
+					if (group.fieldSearches.length > 0) {
+						fieldMatches = group.fieldSearches.every(({ field, values }) => {
+							const cellValue = String(row[field] || "").toLowerCase();
+							
+							// If multiple values (comma-separated), treat as IN statement
+							if (values.length > 1) {
+								// Exact match for any of the values (IN behavior)
+								return values.some(value => 
+									cellValue === value.toLowerCase()
+								);
+							} else {
+								// Single value: use contains for partial matching
+								return cellValue.includes(values[0].toLowerCase());
+							}
+						});
+					}
+					
+					// Check remaining general search text
+					if (group.remainingQuery) {
+						const tempFuse = new Fuse([row], fuseOptions);
+						const results = tempFuse.search(group.remainingQuery);
+						generalMatches = results.length > 0;
+					}
+					
+					// Both field and general searches must match within this group
+					return fieldMatches && generalMatches;
+				});
+			});
+		}
+	}, [debouncedQuery, tableData, filteredLedaIds, fuse, parseFieldSearch, fuseOptions]);
 
 	// Function to get payment status for a given ledaId
 	const getPaymentStatus = React.useCallback(
@@ -389,6 +634,57 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			setRowSelection({ [defaultSelectedRow]: true });
 		}
 	}, [defaultSelectedRow]);
+
+	// When filterCurrentSeason changes, reset filterSeasonCode and pendingShowPaymentStatus if needed
+	React.useEffect(() => {
+		if (filterCurrentSeason) {
+			setFilterSeasonCode("");
+			setPendingShowPaymentStatus(false);
+			setShowPaymentStatus(false);
+		}
+	}, [filterCurrentSeason]);
+
+	// Only fetch payment status when showPaymentStatus is set (after Apply)
+	React.useEffect(() => {
+		if (showPaymentStatus && filterSeasonCode) {
+			refetchPaymentStatus();
+		}
+		// No else branch needed, paymentStatusData will be empty if not enabled
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [showPaymentStatus, filterSeasonCode]);
+
+	const handleApplyFilter = async () => {
+		if (!filterSeasonCode) return;
+		setFilterLoading(true);
+		try {
+			let res;
+			if (pageName.includes("Players")) {
+				res = await fetch(
+					`${rosterRoute}/rosterPlayerView?seasonCode=${filterSeasonCode}`
+				);
+			} else if (pageName.includes("Places")) {
+				res = await fetch(
+					`${rosterRoute}/rosterPlaceView?seasonCode=${filterSeasonCode}`
+				);
+			} else {
+				res = await fetch(
+					`${rosterRoute}/rosterTeamView?seasonCode=${filterSeasonCode}`
+				);
+			}
+			const ids: { ledaId: string | number }[] = await res.json();
+			// Extract ledaId values from the array of objects
+			const ledaIds = Array.isArray(ids)
+				? ids.map((item) => String(item.ledaId))
+				: [];
+			setFilteredLedaIds(ledaIds);
+			setShowPaymentStatus(pendingShowPaymentStatus); // Only set showPaymentStatus on Apply
+			setFilterPopoverOpen(false);
+		} catch (e) {
+			console.error("Failed to filter by season", e);
+		} finally {
+			setFilterLoading(false);
+		}
+	};
 
 	return (
 		<div className="w-full">
