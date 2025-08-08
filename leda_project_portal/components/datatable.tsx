@@ -91,6 +91,21 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const [tableData, setTableData] = React.useState(data); // State for table data
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
+	// Initialize pageIndex from localStorage immediately
+	const [pageIndex, setPageIndex] = React.useState<number>(() => {
+		if (typeof window !== 'undefined') {
+			const savedPageIndex = localStorage.getItem(`datatable_pageIndex_${pageName}`);
+			if (savedPageIndex !== null) {
+				const parsedIndex = parseInt(savedPageIndex, 10);
+				if (!isNaN(parsedIndex) && parsedIndex >= 0) {
+					return parsedIndex;
+				}
+			}
+		}
+		return 0;
+	});
+	// Define a unique storage key for page index based on pageName
+	const pageIndexStorageKey = `datatable_pageIndex_${pageName}`;
 
 	// Filter state
 	const [filterPopoverOpen, setFilterPopoverOpen] = React.useState(false);
@@ -594,9 +609,33 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		state: {
 			sorting,
 			rowSelection,
+			pagination: {
+				pageIndex,
+				pageSize: 10
+			}, // Add pagination state
+		},
+		onPaginationChange: (updater) => {
+			// updater can be a function or value
+			if (typeof updater === "function") {
+				setPageIndex((prev) => {
+					const next = updater({
+						pageIndex: prev,
+						pageSize: 5
+					}).pageIndex;
+					// Save to localStorage immediately
+					localStorage.setItem(pageIndexStorageKey, next.toString());
+					return next;
+				});
+			} else if (typeof updater === "object" && updater !== null && "pageIndex" in updater) {
+				const newIndex = updater.pageIndex;
+				setPageIndex(newIndex);
+				// Save to localStorage immediately
+				localStorage.setItem(pageIndexStorageKey, newIndex.toString());
+			}
 		},
 		initialState: {
 			sorting: [{ id: defaultSort ? defaultSort : "", desc: false }],
+			pagination: { pageIndex, pageSize: 5 }, // Use the initialized pageIndex
 		},
 	});
 
@@ -624,6 +663,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			const newData = await response.json();
 			setTableData(newData);
 			setRowSelection({}); // Clear row selection on refresh
+			// Don't reset page index on refresh - keep user's current position
 		} catch (error) {
 			console.error("Failed to refresh data", error);
 		}
@@ -852,6 +892,11 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		}
 		return "";
 	}, [extractTextFromReactElement]);
+
+	// Save page index to localStorage whenever it changes
+	React.useEffect(() => {
+		localStorage.setItem(pageIndexStorageKey, pageIndex.toString());
+	}, [pageIndex, pageIndexStorageKey]);
 
 	return (
 		<div className="w-full">
@@ -1191,7 +1236,12 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() => table.previousPage()}
+						onClick={() => {
+							table.previousPage();
+							const newIndex = table.getState().pagination.pageIndex - 1;
+							setPageIndex(newIndex);
+							localStorage.setItem(pageIndexStorageKey, newIndex.toString());
+						}}
 						disabled={!table.getCanPreviousPage()}
 						className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
 					>
@@ -1204,7 +1254,12 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() => table.nextPage()}
+						onClick={() => {
+							table.nextPage();
+							const newIndex = table.getState().pagination.pageIndex + 1;
+							setPageIndex(newIndex);
+							localStorage.setItem(pageIndexStorageKey, newIndex.toString());
+						}}
 						disabled={!table.getCanNextPage()}
 						className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
 					>

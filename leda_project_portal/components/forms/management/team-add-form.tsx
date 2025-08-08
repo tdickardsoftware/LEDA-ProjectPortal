@@ -179,140 +179,136 @@ export default function PlaceAddForm({
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4 mx-auto"
 			>
-				<Tab.Group selectedIndex={currentStep}>
-					<div className="mb-6">
-						<div className="flex border-b border-gray-200">
-							{/* Render step headers as non-clickable */}
-							<div className="flex space-x-1 rounded-xl p-1 w-full">
-								{steps.map((step, index) => (
-									<div
-										key={index}
-										className={`w-full py-2.5 text-sm font-medium leading-5 
-							${
-								index === currentStep
-									? "border-b-2 border-blue-500 text-blue-600"
-									: "text-gray-500"
-							} ${index < currentStep ? "text-green-500" : ""}`}
-									>
-										<span className="flex items-center justify-center">
-											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
-												{index < currentStep ? "✓" : index + 1}
-											</span>
-											{step.name}
+				<div className="mb-6">
+					<div className="flex border-b border-gray-200">
+						{/* Render step headers as non-clickable */}
+						<div className="flex space-x-1 rounded-xl p-1 w-full">
+							{steps.map((step, index) => (
+								<div
+									key={index}
+									className={`w-full py-2.5 text-sm font-medium leading-5 
+						${
+							index === currentStep
+								? "border-b-2 border-blue-500 text-blue-600"
+								: "text-gray-500"
+						} ${index < currentStep ? "text-green-500" : ""}`}
+								>
+									<span className="flex items-center justify-center">
+										<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
+											{index < currentStep ? "✓" : index + 1}
 										</span>
-									</div>
-								))}
-							</div>
+										{step.name}
+									</span>
+								</div>
+							))}
 						</div>
 					</div>
+				</div>
 
-					<Tab.Panels>
-						{/* Step 1: Basic Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Team Basic Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<div className="flex items-start space-x-2">
-									<Label
-										className="whitespace-nowrap"
-										htmlFor="generateID"
-									>
-										Generate LEDA ID
-									</Label>
-									<Checkbox
-										checked={generateIDStatus}
-										onCheckedChange={(checked: boolean) =>
-											setGenerateIDStatus(checked)
-										}
-										className={checkboxWidth}
-										id="generateID"
-									/>
-								</div>
-								<FormField
-									control={form.control}
-									name="ledaId"
-									render={({ field }) => (
-										<FormItem>
-											<FormControl>
-												<Input
-													placeholder="LEDA ID #"
-													{...field}
-													disabled={generateIDStatus}
-													className={inputWidth}
-													type="number"
-													onChange={(e) => {
-														field.onChange(
-															e.target.value ===
-																""
-																? undefined
-																: parseFloat(
-																		e.target
-																			.value
-																  )
-														);
-													}}
-												/>
-											</FormControl>
-											<FormMessage />
-											{ledaIdExists && (
-												<p className="text-red-500 text-sm mt-1">
-													This LEDA ID is already in
-													use
-												</p>
-											)}
-										</FormItem>
+				{/* Step 1: Basic Info */}
+				{currentStep === 0 && (
+					<div className={formContainerStyle}>
+						<h1>Team Basic Information</h1>
+						<hr className="bg-gray-300 mb-4"></hr>
+						<div className="flex items-start space-x-2">
+							<Label
+								className="whitespace-nowrap"
+								htmlFor="generateID"
+							>
+								Generate LEDA ID
+							</Label>
+							<Checkbox
+								checked={generateIDStatus}
+								onCheckedChange={(checked: boolean) =>
+									setGenerateIDStatus(checked)
+								}
+								className={checkboxWidth}
+								id="generateID"
+							/>
+						</div>
+						<FormField
+							control={form.control}
+							name="ledaId"
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<Input
+											placeholder="LEDA ID #"
+											{...field}
+											disabled={generateIDStatus}
+											className={inputWidth}
+											type="number"
+											onChange={(e) => {
+												field.onChange(
+													e.target.value ===
+														""
+														? undefined
+														: parseFloat(
+																e.target
+																	.value
+														  )
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+									{ledaIdExists && (
+										<p className="text-red-500 text-sm mt-1">
+											This LEDA ID is already in
+											use
+										</p>
 									)}
-								/>
-								<InputDefault
-									control={form.control}
-									name="teamName"
-									label="Team Name *"
-								/>
-							</div>
-						</Tab.Panel>
+								</FormItem>
+							)}
+						/>
+						<InputDefault
+							control={form.control}
+							name="teamName"
+							label="Team Name *"
+						/>
+					</div>
+				)}
 
-						{/* Step 2: Team Details */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Team Details</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<InputDefault
-									control={form.control}
-									name="establishedDate"
-									label="Established Date *"
-									type="date"
-								/>
-								<FormField
-									control={form.control}
-									name="memo"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Memo</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder="Additional Data Here..."
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
-						</Tab.Panel>
+				{/* Step 2: Team Details */}
+				{currentStep === 1 && (
+					<div className={formContainerStyle}>
+						<h1>Team Details</h1>
+						<hr className="bg-gray-300 mb-4"></hr>
+						<InputDefault
+							control={form.control}
+							name="establishedDate"
+							label="Established Date *"
+							type="date"
+						/>
+						<FormField
+							control={form.control}
+							name="memo"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Memo</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder="Additional Data Here..."
+											{...field}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				)}
 
-						{/* Step 3: Team Members */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Team Members</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<PlayerSelector
-									setMemberIdList={handleSetMemberIdList}
-								/>
-							</div>
-						</Tab.Panel>
-					</Tab.Panels>
-				</Tab.Group>
+				{/* Step 3: Team Members */}
+				{currentStep === 2 && (
+					<div className={formContainerStyle}>
+						<h1>Team Members</h1>
+						<hr className="bg-gray-300 mb-4"></hr>
+						<PlayerSelector
+							setMemberIdList={handleSetMemberIdList}
+						/>
+					</div>
+				)}
 
 				<div className="flex justify-between">
 					<Button type="button" onClick={prevStep}>

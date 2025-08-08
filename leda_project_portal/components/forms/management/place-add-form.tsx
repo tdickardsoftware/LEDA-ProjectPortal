@@ -237,265 +237,261 @@ export default function PlaceAddForm({
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4 mx-auto"
 			>
-				<Tab.Group selectedIndex={currentStep}>
-					<div className="mb-6">
-						<div className="flex border-b border-gray-200">
-							{/* Render step headers as non-clickable */}
-							<div className="flex space-x-1 rounded-xl p-1 w-full">
-								{steps.map((step, index) => (
-									<div
-										key={index}
-										className={`w-full py-2.5 text-sm font-medium leading-5 
-							${
-								index === currentStep
-									? "border-b-2 border-blue-500 text-blue-600"
-									: "text-gray-500"
-							} ${index < currentStep ? "text-green-500" : ""}`}
-									>
-										<span className="flex items-center justify-center">
-											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
-												{index < currentStep ? "✓" : index + 1}
-											</span>
-											{step.name}
+				<div className="mb-6">
+					<div className="flex border-b border-gray-200">
+						{/* Render step headers as non-clickable */}
+						<div className="flex space-x-1 rounded-xl p-1 w-full">
+							{steps.map((step, index) => (
+								<div
+									key={index}
+									className={`w-full py-2.5 text-sm font-medium leading-5 
+						${
+							index === currentStep
+								? "border-b-2 border-blue-500 text-blue-600"
+								: "text-gray-500"
+						} ${index < currentStep ? "text-green-500" : ""}`}
+								>
+									<span className="flex items-center justify-center">
+										<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
+											{index < currentStep ? "✓" : index + 1}
 										</span>
-									</div>
-								))}
-							</div>
+										{step.name}
+									</span>
+								</div>
+							))}
 						</div>
 					</div>
+				</div>
 
-					<Tab.Panels>
-						{/* Step 1: Basic Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Basic Place Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<InputDefault
-									control={form.control}
-									name="name"
-									label="Name of Place *"
-								/>
-								<InputDefault
-									control={form.control}
-									name="website"
-									label="Website"
-								/>
-								<FormField
-									control={form.control}
-									name="numberOfBoards"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>
-												Number of Boards *
-											</FormLabel>
-											<FormControl>
-												<Input
-													placeholder="Number of Boards..."
-													{...field}
-													className={inputWidth}
-													type="number"
-													onChange={(e) => {
-														field.onChange(
-															e.target.value ===
-																""
-																? undefined
-																: parseFloat(
-																		e.target
-																			.value
-																  )
-														);
-													}}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
+				{/* Step 1: Basic Info */}
+				{currentStep === 0 && (
+					<div className={formContainerStyle}>
+						<h1>Basic Place Information</h1>
+						<hr className="bg-gray-300 mb-4"></hr>
+						<InputDefault
+							control={form.control}
+							name="name"
+							label="Name of Place *"
+						/>
+						<InputDefault
+							control={form.control}
+							name="website"
+							label="Website"
+						/>
+						<FormField
+							control={form.control}
+							name="numberOfBoards"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>
+										Number of Boards *
+									</FormLabel>
+									<FormControl>
+										<Input
+											placeholder="Number of Boards..."
+											{...field}
+											className={inputWidth}
+											type="number"
+											onChange={(e) => {
+												field.onChange(
+													e.target.value ===
+														""
+														? undefined
+														: parseFloat(
+																e.target
+																	.value
+														  )
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				)}
+
+				{/* Step 2: Contact Info */}
+				{currentStep === 1 && (
+					<div className={formContainerStyle}>
+						<h1>Contact Information</h1>
+						<hr className="bg-gray-300 mb-4"></hr>
+						<InputDefault
+							control={form.control}
+							name="addressOne"
+							label="Address One *"
+						/>
+						<InputDefault
+							control={form.control}
+							name="addressTwo"
+							label="Address Two"
+						/>
+						<div className="flex space-x-4">
+							<InputDefault
+								control={form.control}
+								name="city"
+								label="City *"
+							/>
+							<StatePicker
+								control={form.control}
+								name="state"
+							/>
+							<InputDefault
+								control={form.control}
+								name="zip"
+								label="Zip Code *"
+							/>
+						</div>
+						<InputDefault
+							control={form.control}
+							name="email"
+							label="Email *"
+							type="email"
+						/>
+						<PhoneNumberInput
+							control={form.control}
+							name="phoneNumber"
+							label="Phone Number *"
+						/>
+						<PhoneNumberInput
+							control={form.control}
+							name="otherNumber"
+							label="Other Number"
+						/>
+					</div>
+				)}
+
+				{/* Step 3: Membership Info */}
+				{currentStep === 2 && (
+					<div className={formContainerStyle}>
+						<h1>Membership Information</h1>
+						<hr className="bg-gray-300 mb-4"></hr>
+						{/* Generate ID Checkbox */}
+						<div className="flex items-start space-x-2">
+							<Label
+								className="whitespace-nowrap"
+								htmlFor="generateID"
+							>
+								Generate LEDA ID
+							</Label>
+							<Checkbox
+								checked={generateIDStatus}
+								onCheckedChange={(checked: boolean) =>
+									setGenerateIDStatus(checked)
+								}
+								className={checkboxWidth}
+								id="generateID"
+							/>
+						</div>
+
+						<FormField
+							control={form.control}
+							name="ledaId"
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<Input
+											placeholder="LEDA ID #"
+											{...field}
+											disabled={generateIDStatus}
+											className={inputWidth}
+											type="number"
+											onChange={(e) => {
+												field.onChange(
+													e.target.value ===
+														""
+														? undefined
+														: parseFloat(
+																e.target
+																	.value
+														  )
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+									{ledaIdExists && (
+										<p className="text-red-500 text-sm mt-1">
+											This LEDA ID is already in
+											use
+										</p>
 									)}
-								/>
-							</div>
-						</Tab.Panel>
+								</FormItem>
+							)}
+						/>
+						<PlaceOwnerSelector
+							control={form.control}
+							name="contactId"
+							label="Select Place Owner *"
+						/>
+						<PlaceTypeSelector
+							control={form.control}
+							name="placeType"
+							label="Place Type *"
+						/>
+						<InputDefault
+							control={form.control}
+							name="establishDate"
+							label="Established Date *"
+							type="date"
+						/>
+					</div>
+				)}
 
-						{/* Step 2: Contact Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Contact Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<InputDefault
-									control={form.control}
-									name="addressOne"
-									label="Address One *"
-								/>
-								<InputDefault
-									control={form.control}
-									name="addressTwo"
-									label="Address Two"
-								/>
-								<div className="flex space-x-4">
-									<InputDefault
-										control={form.control}
-										name="city"
-										label="City *"
-									/>
-									<StatePicker
-										control={form.control}
-										name="state"
-									/>
-									<InputDefault
-										control={form.control}
-										name="zip"
-										label="Zip Code *"
-									/>
-								</div>
-								<InputDefault
-									control={form.control}
-									name="email"
-									label="Email *"
-									type="email"
-								/>
-								<PhoneNumberInput
-									control={form.control}
-									name="phoneNumber"
-									label="Phone Number *"
-								/>
-								<PhoneNumberInput
-									control={form.control}
-									name="otherNumber"
-									label="Other Number"
-								/>
-							</div>
-						</Tab.Panel>
-
-						{/* Step 3: Membership Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Membership Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								{/* Generate ID Checkbox */}
-								<div className="flex items-start space-x-2">
-									<Label
-										className="whitespace-nowrap"
-										htmlFor="generateID"
-									>
-										Generate LEDA ID
-									</Label>
-									<Checkbox
-										checked={generateIDStatus}
-										onCheckedChange={(checked: boolean) =>
-											setGenerateIDStatus(checked)
-										}
-										className={checkboxWidth}
-										id="generateID"
-									/>
-								</div>
-
-								<FormField
-									control={form.control}
-									name="ledaId"
-									render={({ field }) => (
-										<FormItem>
-											<FormControl>
-												<Input
-													placeholder="LEDA ID #"
-													{...field}
-													disabled={generateIDStatus}
-													className={inputWidth}
-													type="number"
-													onChange={(e) => {
-														field.onChange(
-															e.target.value ===
-																""
-																? undefined
-																: parseFloat(
-																		e.target
-																			.value
-																  )
-														);
-													}}
-												/>
-											</FormControl>
-											<FormMessage />
-											{ledaIdExists && (
-												<p className="text-red-500 text-sm mt-1">
-													This LEDA ID is already in
-													use
-												</p>
-											)}
-										</FormItem>
-									)}
-								/>
-								<PlaceOwnerSelector
-									control={form.control}
-									name="contactId"
-									label="Select Place Owner *"
-								/>
-								<PlaceTypeSelector
-									control={form.control}
-									name="placeType"
-									label="Place Type *"
-								/>
-								<InputDefault
-									control={form.control}
-									name="establishDate"
-									label="Established Date *"
-									type="date"
-								/>
-							</div>
-						</Tab.Panel>
-
-						{/* Step 4: Additional Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Additional Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<InputDefault
-									control={form.control}
-									name="lastSanctioningDate"
-									label="Last Sanctioning Date *"
-									type="date"
-								/>
-								<CheckboxDefault
-									control={form.control}
-									name="sendMailings"
-									label="Send Mailings"
-									className={checkboxWidth}
-								/>
-								<CheckboxDefault
-									control={form.control}
-									name="regularSponsor"
-									label="Regular Sponsor"
-									className={checkboxWidth}
-								/>
-								<CheckboxDefault
-									control={form.control}
-									name="currentSponsor"
-									label="Current Sponsor"
-									className={checkboxWidth}
-								/>
-								<CheckboxDefault
-									control={form.control}
-									name="issues"
-									label="Issues"
-									className={checkboxWidth}
-								/>
-								<FormField
-									control={form.control}
-									name="memo"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Memo</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder="Additional Data Here..."
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
-						</Tab.Panel>
-					</Tab.Panels>
-				</Tab.Group>
+				{/* Step 4: Additional Info */}
+				{currentStep === 3 && (
+					<div className={formContainerStyle}>
+						<h1>Additional Information</h1>
+						<hr className="bg-gray-300 mb-4"></hr>
+						<InputDefault
+							control={form.control}
+							name="lastSanctioningDate"
+							label="Last Sanctioning Date *"
+							type="date"
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="sendMailings"
+							label="Send Mailings"
+							className={checkboxWidth}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="regularSponsor"
+							label="Regular Sponsor"
+							className={checkboxWidth}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="currentSponsor"
+							label="Current Sponsor"
+							className={checkboxWidth}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="issues"
+							label="Issues"
+							className={checkboxWidth}
+						/>
+						<FormField
+							control={form.control}
+							name="memo"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Memo</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder="Additional Data Here..."
+											{...field}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				)}
 
 				<div className="flex justify-between">
 					<Button type="button" onClick={prevStep}>

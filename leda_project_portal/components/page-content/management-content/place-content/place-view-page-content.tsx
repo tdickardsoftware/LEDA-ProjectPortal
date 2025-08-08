@@ -41,6 +41,7 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 	const handlePaymentHistory = () => {
 		setIsPaymentHistoryDialogOpen(!isPaymentHistoryDialogOpen);
 	};
+
 	return (
 		<div className="container mx-auto p-6">
 			<div>
