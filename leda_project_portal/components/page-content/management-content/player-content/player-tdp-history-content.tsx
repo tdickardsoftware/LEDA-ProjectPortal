@@ -7,7 +7,8 @@ import {
 	TopDarterTotals,
 	WeeklyTopDarterScores,
 } from "@/lib/definitions";
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import PlayerTDPHistorySidenav from "./player-tdp-history-sidenav";
 
 export default function PlayerTDPHistoryContent({
@@ -15,10 +16,35 @@ export default function PlayerTDPHistoryContent({
 }: {
 	playerData: PlayerMemberInfo;
 }) {
-	const [TDPSeasonCodeData, setTDPSeasonCodeData] = useState<
-		TopDarterTotals[]
-	>([]);
-	const [TDPWeeklyScoresData, setTDPWeeklyScoresData] = useState<{
+	// --- TanStack Query: Fetch TDP Season Code Data ---
+	const {
+		data: TDPSeasonCodeData = [],
+	} = useQuery<TopDarterTotals[]>({
+		queryKey: ["tdpSeasonCodeData", playerData.ledaId],
+		queryFn: async () => {
+			const results = await fetch(
+				weeklyScoresheetsRoute +
+					"/playerPoints?viewPlayerTopDarterPoints=true&ledaId=" +
+					playerData.ledaId,
+				{
+					method: "GET",
+				}
+			);
+			if (!results.ok) {
+				throw new Error("Failed to fetch TDP data");
+			}
+			return await results.json();
+		},
+	});
+
+	const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
+	const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+	const [selectedGame, setSelectedGame] = useState<string | null>(null);
+
+	// --- TanStack Query: Fetch TDP Weekly Scores Data for all seasons ---
+	const {
+		data: TDPWeeklyScoresData = {},
+	} = useQuery<{
 		[seasonCode: string]: {
 			[teamName: string]: {
 				teamId: number;
@@ -33,177 +59,122 @@ export default function PlayerTDPHistoryContent({
 				};
 			};
 		};
-	}>({});
-	const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
-	const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
-	const [selectedGame, setSelectedGame] = useState<string | null>(null);
-	const [mentionData, setMentionData] = useState<{
-		seasonCode?: string;
-		teamId?: number;
-		weekNum?: number;
-		mentions: MentionPlayerHistory[];
-		loading: boolean;
-	}>({ mentions: [], loading: false });
-
-	const getTDPSeasonCodeData = useCallback(async () => {
-		const results = await fetch(
-			weeklyScoresheetsRoute +
-				"/playerPoints?viewPlayerTopDarterPoints=true&ledaId=" +
-				playerData.ledaId,
-			{
-				method: "GET",
-			}
-		);
-		if (!results.ok) {
-			throw new Error("Failed to fetch TDP data");
-		}
-		const data = await results.json();
-		return data;
-	}, [playerData.ledaId]);
-
-	const getTDPWeeklyScoresData = useCallback(
-		async (seasonCode: string) => {
-			const results = await fetch(
-				weeklyScoresheetsRoute +
-					"/playerPoints?getSeasonWeekPoints=true&seasonCode=" +
-					seasonCode +
-					"&ledaId=" +
-					playerData.ledaId,
-				{
-					method: "GET",
-				}
-			);
-			if (!results.ok) {
-				throw new Error("Failed to fetch TDP data");
-			}
-			const data = await results.json();
-
-			// Log the raw API response to verify `changeBy`
-			console.log("Weekly scores API response:", data);
-
-			return data;
-		},
-		[playerData.ledaId]
-	);
-
-	const getPlayerMentions = useCallback(
-		async (seasonCode: string, teamId: number, weekNum?: number) => {
-			try {
-				let url = `/api/maintenance/mention/mentionHistory?ledaId=${playerData.ledaId}&seasonCode=${seasonCode}&teamId=${teamId}`;
-				if (weekNum !== undefined) {
-					url += `&weekNum=${weekNum}`;
-				}
-
-				const results = await fetch(url);
-				if (!results.ok) {
-					throw new Error("Failed to fetch mention data");
-				}
-				const data = await results.json();
-				return data;
-			} catch (err) {
-				console.error("Error fetching mentions:", err);
-				return [];
-			}
-		},
-		[playerData.ledaId]
-	);
-
-	useEffect(() => {
-		const fetchTDPSeasonCodeData = async () => {
-			try {
-				const data = await getTDPSeasonCodeData();
-				setTDPSeasonCodeData(data);
-
-				// Only set selectedSeason on initial load if it's not already set
-				if (data.length > 0 && !selectedSeason) {
-					setSelectedSeason(data[0].seasonCode);
-				}
-			} catch (err) {
-				console.error(err);
-			}
-		};
-
-		fetchTDPSeasonCodeData();
-	}, [getTDPSeasonCodeData, selectedSeason]);
-
-	useEffect(() => {
-		if (!selectedSeason) return; // Ensure a season is selected before fetching weekly scores
-
-		const fetchTDPWeeklyScoresData = async () => {
-			try {
-				const structuredData: {
-					[seasonCode: string]: {
-						[teamName: string]: {
-							teamId: number;
-							weekData: {
-								[weekNum: number]: {
-									totalPoints: number;
-									gameName: string;
-									changeBy: number;
-									prevTotalPoints: number;
-									teamLedaId: number;
-								};
+	}>({
+		queryKey: ["tdpWeeklyScoresData", playerData.ledaId, TDPSeasonCodeData.map(s => s.seasonCode).join(",")],
+		enabled: !!TDPSeasonCodeData && TDPSeasonCodeData.length > 0,
+		queryFn: async () => {
+			const structuredData: {
+				[seasonCode: string]: {
+					[teamName: string]: {
+						teamId: number;
+						weekData: {
+							[weekNum: number]: {
+								totalPoints: number;
+								gameName: string;
+								changeBy: number;
+								prevTotalPoints: number;
+								teamLedaId: number;
 							};
 						};
 					};
-				} = {};
-				for (const seasonData of TDPSeasonCodeData) {
-					const seasonCode = seasonData.seasonCode;
-					if (!structuredData[seasonCode]) {
-						structuredData[seasonCode] = {};
+				};
+			} = {};
+			for (const seasonData of TDPSeasonCodeData) {
+				const seasonCode = seasonData.seasonCode;
+				if (!structuredData[seasonCode]) {
+					structuredData[seasonCode] = {};
+				}
+				const results = await fetch(
+					weeklyScoresheetsRoute +
+						"/playerPoints?getSeasonWeekPoints=true&seasonCode=" +
+						seasonCode +
+						"&ledaId=" +
+						playerData.ledaId,
+					{
+						method: "GET",
+					}
+				);
+				if (!results.ok) {
+					throw new Error("Failed to fetch TDP data");
+				}
+				const weeklyData = await results.json();
+				weeklyData.forEach((weeklyScore: WeeklyTopDarterScores) => {
+					const {
+						teamName: rawTeamName,
+						teamLedaId,
+						weekNum,
+						totalPoints,
+						gameName,
+						changeBy,
+						prevTotalPoints,
+					} = weeklyScore;
+					const teamName =
+						rawTeamName && rawTeamName !== "undefined"
+							? rawTeamName
+							: `Team ${teamLedaId || "Unknown"}`;
+
+					if (!structuredData[seasonCode][teamName]) {
+						structuredData[seasonCode][teamName] = {
+							teamId: teamLedaId,
+							weekData: {},
+						};
 					}
 
-					const weeklyData = await getTDPWeeklyScoresData(seasonCode);
-
-					// Log the weekly data to verify `changeBy`
-					console.log(
-						`Weekly data for season ${seasonCode}:`,
-						weeklyData
-					);
-
-					weeklyData.forEach((weeklyScore: WeeklyTopDarterScores) => {
-						const {
-							teamName: rawTeamName,
-							teamLedaId,
-							weekNum,
-							totalPoints,
-							gameName,
-							changeBy,
-							prevTotalPoints,
-						} = weeklyScore;
-						const teamName =
-							rawTeamName && rawTeamName !== "undefined"
-								? rawTeamName
-								: `Team ${teamLedaId || "Unknown"}`;
-
-						if (!structuredData[seasonCode][teamName]) {
-							structuredData[seasonCode][teamName] = {
-								teamId: teamLedaId,
-								weekData: {},
-							};
-						}
-
-						structuredData[seasonCode][teamName].weekData[weekNum] =
-							{
-								totalPoints,
-								gameName: gameName || `Game ${weekNum}`,
-								changeBy, // Ensure `changeBy` is mapped correctly
-								prevTotalPoints,
-								teamLedaId,
-							};
-					});
-				}
-
-				console.log("Structured data:", structuredData);
-				setTDPWeeklyScoresData(structuredData);
-			} catch (err) {
-				console.error("Failed to fetch weekly scores:", err);
-				setTDPWeeklyScoresData({});
+					structuredData[seasonCode][teamName].weekData[weekNum] = {
+						totalPoints,
+						gameName: gameName || `Game ${weekNum}`,
+						changeBy,
+						prevTotalPoints,
+						teamLedaId,
+					};
+				});
 			}
-		};
+			return structuredData;
+		},
+	});
 
-		fetchTDPWeeklyScoresData();
-	}, [selectedSeason, getTDPWeeklyScoresData, TDPSeasonCodeData]);
+	// --- TanStack Query: Fetch Player Mentions ---
+	const [mentionParams, setMentionParams] = useState<{
+		seasonCode?: string;
+		teamId?: number;
+		weekNum?: number;
+	} | null>(null);
+
+	const {
+		data: mentionData = { mentions: [], loading: false },
+		isFetching: mentionLoading,
+	} = useQuery<{
+		mentions: MentionPlayerHistory[];
+		loading: boolean;
+	}>({
+		queryKey: [
+			"playerMentions",
+			playerData.ledaId,
+			mentionParams?.seasonCode,
+			mentionParams?.teamId,
+			mentionParams?.weekNum,
+		],
+		enabled: !!mentionParams?.seasonCode && !!mentionParams?.teamId,
+		queryFn: async () => {
+			let url = `/api/maintenance/mention/mentionHistory?ledaId=${playerData.ledaId}&seasonCode=${mentionParams?.seasonCode}&teamId=${mentionParams?.teamId}`;
+			if (mentionParams?.weekNum !== undefined) {
+				url += `&weekNum=${mentionParams.weekNum}`;
+			}
+			const results = await fetch(url);
+			if (!results.ok) {
+				throw new Error("Failed to fetch mention data");
+			}
+			const data = await results.json();
+			return { mentions: data, loading: false };
+		},
+	});
+
+	// Set initial selectedSeason when TDPSeasonCodeData loads
+	useEffect(() => {
+		if (TDPSeasonCodeData.length > 0 && !selectedSeason) {
+			setSelectedSeason(TDPSeasonCodeData[0].seasonCode);
+		}
+	}, [TDPSeasonCodeData, selectedSeason]);
 
 	// Handle team selection
 	const handleTeamSelect = (seasonCode: string, teamName: string) => {
@@ -211,22 +182,9 @@ export default function PlayerTDPHistoryContent({
 		setSelectedTeam(teamName);
 		setSelectedGame(null); // Reset game selection when team changes
 
-		// Get the teamId from the weekly scores data
 		const teamId = TDPWeeklyScoresData[seasonCode]?.[teamName]?.teamId;
-
 		if (teamId) {
-			// Show loading state
-			setMentionData((prev) => ({ ...prev, loading: true }));
-
-			// Fetch mentions for this player, season and team
-			getPlayerMentions(seasonCode, teamId).then((mentions) => {
-				setMentionData({
-					seasonCode,
-					teamId,
-					mentions,
-					loading: false,
-				});
-			});
+			setMentionParams({ seasonCode, teamId });
 		}
 	};
 
@@ -244,21 +202,7 @@ export default function PlayerTDPHistoryContent({
 		const weekNumInt = parseInt(weekNum, 10);
 
 		if (teamId) {
-			// Show loading state
-			setMentionData((prev) => ({ ...prev, loading: true }));
-
-			// Fetch mentions for this specific week
-			getPlayerMentions(seasonCode, teamId, weekNumInt).then(
-				(mentions) => {
-					setMentionData({
-						seasonCode,
-						teamId,
-						weekNum: weekNumInt,
-						mentions,
-						loading: false,
-					});
-				}
-			);
+			setMentionParams({ seasonCode, teamId, weekNum: weekNumInt });
 		}
 	};
 
@@ -288,12 +232,10 @@ export default function PlayerTDPHistoryContent({
 		) {
 			return 0;
 		}
-
 		// Find the highest week number
 		const lastWeekNum = Math.max(
 			...Object.keys(teamData.weekData).map((w) => parseInt(w, 10))
 		);
-
 		// Return the total points from the last week
 		return teamData.weekData[lastWeekNum]?.totalPoints || 0;
 	};
@@ -315,7 +257,6 @@ export default function PlayerTDPHistoryContent({
 		) {
 			return weekData?.totalPoints || 0;
 		}
-
 		// Sum all mention points for this week
 		const mentionPointsTotal = mentionData.mentions.reduce(
 			(sum, mention) => {
@@ -323,7 +264,6 @@ export default function PlayerTDPHistoryContent({
 			},
 			0
 		);
-
 		// Subtract mention points from total points
 		return weekData.totalPoints - mentionPointsTotal;
 	};
@@ -376,8 +316,6 @@ export default function PlayerTDPHistoryContent({
 							<h2 className="text-2xl font-semibold mb-4">
 								{selectedTeam} - {teamTotalPoints} pts
 							</h2>
-
-							{/* Add point summary similar to game view */}
 							<div className="mt-4">
 								<div className="flex justify-between items-center p-4 border rounded-md bg-gray-50">
 									<div>
@@ -387,29 +325,33 @@ export default function PlayerTDPHistoryContent({
 										<p className="text-gray-600">
 											Season: {selectedSeason}
 										</p>
-										{/* Calculate base points (total points minus mention points) */}
 										<p className="text-gray-600 mt-1">
 											Base Points:{" "}
 											{teamTotalPoints -
-												mentionData.mentions.reduce(
-													(sum, mention) =>
-														sum +
-														mention.mentionPoints *
-															(mention.count ||
-																1),
-													0
-												)}{" "}
+												(mentionData.mentions
+													? mentionData.mentions.reduce(
+															(sum, mention) =>
+																sum +
+																mention.mentionPoints *
+																	(mention.count ||
+																		1),
+															0
+													  )
+													: 0)}{" "}
 											pts
 										</p>
 										<p className="text-gray-600 mt-2">
 											Mention Points:{" "}
-											{mentionData.mentions.reduce(
-												(sum, mention) =>
-													sum +
-													mention.mentionPoints *
-														(mention.count || 1),
-												0
-											)}{" "}
+											{mentionData.mentions
+												? mentionData.mentions.reduce(
+														(sum, mention) =>
+															sum +
+															mention.mentionPoints *
+																(mention.count ||
+																	1),
+														0
+												  )
+												: 0}{" "}
 											pts
 										</p>
 									</div>
@@ -420,13 +362,11 @@ export default function PlayerTDPHistoryContent({
 									</div>
 								</div>
 							</div>
-
-							{/* Season mentions section with improved styling */}
 							<div className="mt-6">
 								<h3 className="text-lg font-semibold mb-3">
 									Mentions for this season
 								</h3>
-								{mentionData.loading ? (
+								{mentionLoading ? (
 									<p className="text-gray-500">
 										Loading mentions...
 									</p>
@@ -525,7 +465,6 @@ export default function PlayerTDPHistoryContent({
 									</p>
 								)}
 							</div>
-
 							<p className="text-gray-600 mt-6">
 								Select a game from the sidebar to view detailed
 								weekly information.
@@ -536,8 +475,6 @@ export default function PlayerTDPHistoryContent({
 							<h2 className="text-2xl font-semibold mb-4">
 								{selectedTeam} - {selectedGameData.gameName}
 							</h2>
-
-							{/* Game details */}
 							<div className="mt-4">
 								<div className="flex justify-between items-center p-4 border rounded-md bg-gray-50">
 									<div>
@@ -552,13 +489,16 @@ export default function PlayerTDPHistoryContent({
 										</p>
 										<p className="text-gray-600 mt-2">
 											Mention Points:{" "}
-											{mentionData.mentions.reduce(
-												(sum, mention) =>
-													sum +
-													mention.mentionPoints *
-														(mention.count || 1),
-												0
-											)}{" "}
+											{mentionData.mentions
+												? mentionData.mentions.reduce(
+														(sum, mention) =>
+															sum +
+															mention.mentionPoints *
+																(mention.count ||
+																	1),
+														0
+												  )
+												: 0}{" "}
 											pts
 										</p>
 									</div>
@@ -584,13 +524,11 @@ export default function PlayerTDPHistoryContent({
 									</div>
 								</div>
 							</div>
-
-							{/* Weekly mentions section */}
 							<div className="mt-6">
 								<h3 className="text-lg font-semibold mb-3">
 									Week {selectedGame} Mentions
 								</h3>
-								{mentionData.loading ? (
+								{mentionLoading ? (
 									<p className="text-gray-500">
 										Loading mentions...
 									</p>

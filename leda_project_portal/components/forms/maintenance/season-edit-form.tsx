@@ -31,6 +31,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useMutation } from "@tanstack/react-query";
 
 // Define the schema for form validation using zod
 const seasonFormSchema = z.object({
@@ -65,11 +66,7 @@ export default function SeasonEditForm({
 	};
 	handleRefresh?: () => void;
 }) {
-	if (!rowData) {
-		return null;
-	}
-	// Initialize the form using react-hook-form and zodResolver
-	// eslint-disable-next-line react-hooks/rules-of-hooks
+	// Move all hooks to the top-level, before any conditional returns
 	const form = useForm<z.infer<typeof seasonFormSchema>>({
 		resolver: zodResolver(seasonFormSchema),
 		defaultValues: {
@@ -77,12 +74,53 @@ export default function SeasonEditForm({
 			dates: JSON.stringify(rowData.dates),
 		},
 	});
-
-	// Define state for dates
-	// eslint-disable-next-line react-hooks/rules-of-hooks
 	const [dates, setDates] = React.useState<string>(
 		JSON.stringify(rowData.dates)
 	);
+
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof seasonFormSchema>) => {
+			values.dates = dates;
+			const response = await fetch(seasonRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: (results) => {
+			toast.success("Successfully submitted the form!");
+			form.reset();
+			console.log("Form submitted successfully!", results);
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
+			console.error("Form submission error", error);
+			toast.error(
+				`Failed to submit the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		},
+	});
+
+	if (!rowData) {
+		return null;
+	}
+
+	async function onSubmit(values: z.infer<typeof seasonFormSchema>) {
+		mutation.mutate(values);
+	}
 
 	// Handle date change for manual date selection
 	const handleDateChange = (selectedDate: Date | null, index: number) => {
@@ -93,45 +131,6 @@ export default function SeasonEditForm({
 			setDates(JSON.stringify(updatedDates));
 		}
 	};
-
-	// Define the onSubmit function to handle form submission
-	async function onSubmit(values: z.infer<typeof seasonFormSchema>) {
-		values.dates = dates;
-		try {
-			const response = await fetch(seasonRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(values),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			const results = await response.json();
-			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
-			form.reset();
-
-			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
-			console.error("Form submission error", error);
-			toast.error(
-				`Failed to submit the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
-	}
 
 	// Render the form
 	return (

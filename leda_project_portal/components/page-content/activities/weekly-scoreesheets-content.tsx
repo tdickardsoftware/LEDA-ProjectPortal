@@ -66,6 +66,8 @@ import {
 import MentionForm from "@/components/forms/activities/mentions-form";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { isMatchupValid } from "@/utils/matchupValidation";
+// Import React Query hooks
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Utility function: Deep merge two objects
 const deepMerge = <
@@ -172,11 +174,194 @@ const areAllMatchupsValid = (data: FormattedScoreData): boolean => {
 	return true;
 };
 
+// Utility to generate empty matchup data for a given matchup
+const generateEmptyMatchupData = (
+	division: string,
+	subdivision: string,
+	matchupKey: string,
+	homeTeamId: string,
+	awayTeamId: string,
+	homeTeamLetter: string,
+	awayTeamLetter: string,
+	homeTeamName: string,
+	awayTeamName: string
+) => ({
+	[division]: {
+		[subdivision]: {
+			[matchupKey]: {
+				teamInformation: {
+					[homeTeamId]: {
+						teamLetter: homeTeamLetter,
+						teamName: homeTeamName,
+						home: true,
+						teamMembers: {},
+						penalties: {},
+					},
+					[awayTeamId]: {
+						teamLetter: awayTeamLetter,
+						teamName: awayTeamName,
+						home: false,
+						teamMembers: {},
+						penalties: {},
+					},
+				},
+				gameInformation: {},
+				teamPoints: { homePoints: "0", awayPoints: "0" },
+			},
+		},
+	},
+});
+
+// API fetch functions for React Query
+const fetchSchedule = async (seasonCode: string) => {
+	const response = await fetch(scheduleRoute + `?seasonCode=${seasonCode}`);
+	return response.json();
+};
+
+const fetchTeam = async (teamId: string) => {
+	if (!teamId) return null;
+	const response = await fetch(teamRoute + `?ledaId=${teamId}`);
+	return response.json();
+};
+
+const fetchPlayer = async (playerId: string) => {
+	const response = await fetch(playerRoute + `?ledaId=${playerId}`);
+	return response.json();
+};
+
+const fetchScoresheet = async (seasonCode: string, weekNumber: string) => {
+	if (!seasonCode || !weekNumber) return { scoresheetData: {} };
+	const response = await fetch(
+		`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&weekNumber=${weekNumber}`
+	);
+	if (!response.ok) return { scoresheetData: {} };
+	return response.json();
+};
+
+const saveTeamPoints = async (data: {
+	seasonCode: string;
+	weekNum: number;
+	ledaId: string;
+	totalPoints: number;
+}) => {
+	const response = await fetch(`${weeklyScoresheetsRoute}/teamPoints`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(data),
+	});
+	return response.json();
+};
+
+const savePlayerPoints = async (data: {
+	seasonCode: string;
+	weekNum: number;
+	ledaId: string;
+	playerId: string;
+	totalPoints: number;
+	pointsByGame: Record<string, boolean>;
+	teamLedaId: string;
+	mentions: Record<
+		string,
+		{
+			mentionCode: string;
+			desc: string;
+			points: number;
+			notes?: string;
+			count?: number;
+		}
+	>;
+}) => {
+	const response = await fetch(`${weeklyScoresheetsRoute}/playerPoints`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(data),
+	});
+	return response.json();
+};
+
+const createMentionHistory = async (data: {
+	ledaId: string;
+	mentionId: string;
+	mentionCode: string;
+	mentionDesc: string;
+	mentionPoints: number;
+	seasonCode: string;
+	weekNum: number;
+	notes: string;
+	count?: number;
+	teamId?: string;
+}) => {
+	const response = await fetch(mentionPlayerHistoryRoute, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			...data,
+			count: data.count ?? 0,
+		}),
+	});
+	return response.json();
+};
+
+const updateMentionHistory = async (data: {
+	ledaId: string;
+	mentionId: string;
+	mentionCode: string;
+	mentionDesc: string;
+	mentionPoints: number;
+	seasonCode: string;
+	weekNum: number;
+	notes: string;
+	count?: number;
+	teamId?: string;
+}) => {
+	const response = await fetch(mentionPlayerHistoryRoute, {
+		method: "PUT",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			...data,
+			count: data.count ?? 0,
+		}),
+	});
+	return response.json();
+};
+
+const deleteMentionHistory = async (data: {
+	ledaId: string;
+	mentionId: string;
+	mentionCode: string;
+	mentionDesc: string;
+	mentionPoints: number;
+	seasonCode: string;
+	weekNum: number;
+	notes: string;
+	teamId?: string;
+}) => {
+	const response = await fetch(mentionPlayerHistoryRoute, {
+		method: "DELETE",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(data),
+	});
+	return response.json();
+};
+
 export default function WeeklyScoresheetsContent({
 	renderSeasonCode,
 }: {
 	renderSeasonCode?: string;
 }) {
+	// Initialize the React Query client
+	const queryClient = useQueryClient();
+
 	// State declarations
 	const [seasonCode, setSeasonCode] = useState<string>("");
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
@@ -193,17 +378,10 @@ export default function WeeklyScoresheetsContent({
 	const [selectedSubdivision, setSelectedSubdivision] = useState<string>("");
 	const [selectedHomeTeamId, setSelectedHomeTeamId] = useState<string>("");
 	const [selectedAwayTeamId, setSelectedAwayTeamId] = useState<string>("");
-	const [homeTeamInformation, setHomeTeamInformation] = useState<Team>();
-	const [awayTeamInformation, setAwayTeamInformation] = useState<Team>();
-	const [homeTeamPlayerInformation, setHomeTeamPlayerInformation] =
-		useState<Player[]>();
-	const [awayTeamPlayerInformation, setAwayTeamPlayerInformation] =
-		useState<Player[]>();
 
 	// Game data state
 	const [homeTeamGameData, setHomeTeamGameData] = useState<TeamGameData>({});
 	const [awayTeamGameData, setAwayTeamGameData] = useState<TeamGameData>({});
-	const [isLoading, setIsLoading] = useState<boolean>(false);
 
 	// Game points and wins state
 	const [homeWins, setHomeWins] = useState<boolean[]>(Array(11).fill(false));
@@ -212,7 +390,6 @@ export default function WeeklyScoresheetsContent({
 
 	// API operation state
 	const [selectedWeek, setSelectedWeek] = useState<string>("");
-	const [isSaving, setIsSaving] = useState<boolean>(false);
 	const [isDataChanged, setIsDataChanged] = useState<boolean>(false);
 
 	// Penalty management state
@@ -255,6 +432,276 @@ export default function WeeklyScoresheetsContent({
 		count: number;
 	} | null>(null);
 
+	// React Query hooks
+	// Schedule data query
+	const { data: scheduleData, isLoading: isScheduleLoading } = useQuery({
+		queryKey: ["schedule", seasonCode],
+		queryFn: () => fetchSchedule(seasonCode),
+		enabled: !!seasonCode && !seasonSelected,
+		staleTime: 1000 * 60 * 5, // 5 minutes
+	});
+
+	// Scoresheet data query
+	const { data: scoresheetData, isLoading: isScoresheetLoading } = useQuery({
+		queryKey: ["scoresheet", seasonCode, selectedWeek],
+		queryFn: () => fetchScoresheet(seasonCode, selectedWeek),
+		enabled: !!seasonCode && !!selectedWeek,
+		staleTime: 1000 * 60, // 1 minute
+	});
+
+	// Team data queries
+	const { data: homeTeamData, isLoading: isHomeTeamLoading } = useQuery({
+		queryKey: ["team", selectedHomeTeamId],
+		queryFn: () => fetchTeam(selectedHomeTeamId),
+		enabled: !!selectedHomeTeamId && matchSelected,
+		staleTime: 1000 * 60 * 10, // 10 minutes
+	});
+
+	const { data: awayTeamData, isLoading: isAwayTeamLoading } = useQuery({
+		queryKey: ["team", selectedAwayTeamId],
+		queryFn: () => fetchTeam(selectedAwayTeamId),
+		enabled: !!selectedAwayTeamId && matchSelected,
+		staleTime: 1000 * 60 * 10, // 10 minutes
+	});
+
+	// Player data queries
+	const { data: homeTeamPlayerData, isLoading: isHomePlayersLoading } = useQuery({
+		queryKey: ["teamPlayers", selectedHomeTeamId],
+		queryFn: async () => {
+			if (!homeTeamData?.memberIdList) return [];
+			
+			const players: Player[] = [];
+			for (const playerKey in homeTeamData.memberIdList) {
+				const playerInfo = homeTeamData.memberIdList[playerKey];
+				const playerData = await fetchPlayer(playerInfo.ledaId);
+				players.push(playerData);
+			}
+			return players;
+		},
+		enabled: !!homeTeamData && !!homeTeamData.memberIdList,
+		staleTime: 1000 * 60 * 10, // 10 minutes
+	});
+
+	const { data: awayTeamPlayerData, isLoading: isAwayPlayersLoading } = useQuery({
+		queryKey: ["teamPlayers", selectedAwayTeamId],
+		queryFn: async () => {
+			if (!awayTeamData?.memberIdList) return [];
+			
+			const players: Player[] = [];
+			for (const playerKey in awayTeamData.memberIdList) {
+				const playerInfo = awayTeamData.memberIdList[playerKey];
+				const playerData = await fetchPlayer(playerInfo.ledaId);
+				players.push(playerData);
+			}
+			return players;
+		},
+		enabled: !!awayTeamData && !!awayTeamData.memberIdList,
+		staleTime: 1000 * 60 * 10, // 10 minutes
+	});
+
+	// Save scoresheet function must be defined before useMutation
+	// API call to actually save the scoresheet to the backend
+	const saveScoresheetApi = async ({
+		seasonCode,
+		weekNumber,
+		scoresheetData,
+		finishedScoresheet,
+	}: {
+		seasonCode: string;
+		weekNumber: string;
+		scoresheetData: FormattedScoreData;
+		finishedScoresheet: boolean;
+	}) => {
+		const response = await fetch(weeklyScoresheetsRoute, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				seasonCode,
+				weekNumber,
+				scoresheetData,
+				finishedScoresheet,
+			}),
+		});
+		return response.json();
+	};
+
+	// Mutations
+	const saveScoresheetMutation = useMutation({
+		mutationFn: saveScoresheetApi,
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["scoresheet", seasonCode, selectedWeek],
+			});
+			setIsDataChanged(false);
+		},
+	});
+
+	const saveScoresheet = async (data: FormattedScoreData) => {
+		if (!seasonCode || !selectedWeek) {
+			return;
+		}
+
+		try {
+			// Determine if all matchups are valid
+			const finishedScoresheet = areAllMatchupsValid(data);
+
+			// Fetch existing scoresheet data (using cached data from React Query)
+			const existingData = scoresheetData?.scoresheetData || {};
+			let completeData: FormattedScoreData = data;
+			let previousData: FormattedScoreData | null = null;
+
+			// If there's existing data, merge it with our new data
+			if (Object.keys(existingData).length > 0) {
+				// Store previous data for mention history comparison
+				previousData = JSON.parse(JSON.stringify(existingData));
+
+				// For the current matchup, use our new data completely
+				// but merge with other matchups that might exist
+				
+				// Start with a clean copy of existing data
+				completeData = JSON.parse(JSON.stringify(existingData));
+
+				// Make sure our current division and subdivision exists
+				if (!completeData[selectedDivision]) {
+					completeData[selectedDivision] = {};
+				}
+				if (!completeData[selectedDivision][selectedSubdivision]) {
+					completeData[selectedDivision][selectedSubdivision] = {};
+				}
+
+				// Replace the entire matchup data with our new version
+				const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+				if (data[selectedDivision]?.[selectedSubdivision]?.[matchupKey]) {
+					completeData[selectedDivision][selectedSubdivision][matchupKey] =
+						data[selectedDivision][selectedSubdivision][matchupKey];
+				}
+			}
+
+			// Use React Query mutation to save the scoresheet
+			await saveScoresheetMutation.mutateAsync({
+				seasonCode,
+				weekNumber: selectedWeek,
+				scoresheetData: completeData,
+				finishedScoresheet,
+			});
+
+			// Save team points for each team with penalty adjustments
+			const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+			const matchupData = data[selectedDivision]?.[selectedSubdivision]?.[matchupKey];
+
+			if (matchupData) {
+				// Save home team points
+				await saveTeamPointsMutation.mutateAsync({
+					seasonCode,
+					weekNum: parseInt(selectedWeek),
+					ledaId: selectedHomeTeamId,
+					totalPoints: parseInt(matchupData.teamPoints.homePoints),
+				});
+
+				// Save away team points
+				await saveTeamPointsMutation.mutateAsync({
+					seasonCode,
+					weekNum: parseInt(selectedWeek),
+					ledaId: selectedAwayTeamId,
+					totalPoints: parseInt(matchupData.teamPoints.awayPoints),
+				});
+
+				// Process players and their mentions
+				await processMentionHistory(
+					matchupData,
+					previousData,
+					selectedDivision,
+					selectedSubdivision,
+					matchupKey,
+					parseInt(selectedWeek)
+				);
+
+				// Save player points for each player in the home team
+				const homePlayers = matchupData.teamInformation[selectedHomeTeamId].teamMembers;
+				for (const playerId in homePlayers) {
+					const player = homePlayers[playerId];
+					await savePlayerPointsMutation.mutateAsync({
+						seasonCode,
+						weekNum: parseInt(selectedWeek),
+						ledaId: playerId,
+						playerId,
+						totalPoints: parseInt(player.gamePoints),
+						pointsByGame: player.gameStats,
+						teamLedaId: selectedHomeTeamId,
+						mentions: player.mentions || {},
+					});
+				}
+
+				// Save player points for each player in the away team
+				const awayPlayers = matchupData.teamInformation[selectedAwayTeamId].teamMembers;
+				for (const playerId in awayPlayers) {
+					const player = awayPlayers[playerId];
+					await savePlayerPointsMutation.mutateAsync({
+						seasonCode,
+						weekNum: parseInt(selectedWeek),
+						ledaId: playerId,
+						playerId,
+						totalPoints: parseInt(player.gamePoints),
+						pointsByGame: player.gameStats,
+						teamLedaId: selectedAwayTeamId,
+						mentions: player.mentions || {},
+					});
+				}
+			}
+
+			// Update the local state with the complete data
+			setFormattedScoreData(completeData);
+			setIsDataChanged(false);
+			
+			// Invalidate related queries to ensure fresh data
+			queryClient.invalidateQueries({ queryKey: ["scoresheet"] });
+			
+		} catch (error) {
+			console.error("Error saving scoresheet:", error);
+		}
+	};
+
+	const saveTeamPointsMutation = useMutation({
+		mutationFn: saveTeamPoints,
+	});
+
+	const savePlayerPointsMutation = useMutation({
+		mutationFn: savePlayerPoints,
+	});
+
+	const createMentionHistoryMutation = useMutation({
+		mutationFn: createMentionHistory,
+	});
+
+	const updateMentionHistoryMutation = useMutation({
+		mutationFn: updateMentionHistory,
+	});
+
+	const deleteMentionHistoryMutation = useMutation({
+		mutationFn: deleteMentionHistory,
+	});
+
+	// Derived state
+	const isLoading = 
+		isScheduleLoading || 
+		isScoresheetLoading || 
+		isHomeTeamLoading || 
+		isAwayTeamLoading || 
+		isHomePlayersLoading || 
+		isAwayPlayersLoading;
+	
+	const isSaving = 
+		saveScoresheetMutation.isPending || 
+		saveTeamPointsMutation.isPending || 
+		savePlayerPointsMutation.isPending;
+
+	const homeTeamInformation = homeTeamData as Team | undefined;
+	const awayTeamInformation = awayTeamData as Team | undefined;
+	const homeTeamPlayerInformation = homeTeamPlayerData as Player[] | undefined;
+	const awayTeamPlayerInformation = awayTeamPlayerData as Player[] | undefined;
+
 	// Use renderSeasonCode if provided
 	useEffect(() => {
 		if (renderSeasonCode) {
@@ -262,16 +709,21 @@ export default function WeeklyScoresheetsContent({
 			setCurrentSeason(false); // Disable current season checkbox when season code is provided
 			setSeasonSelected(false); // Allow week selection
 
-			// Call the state reset logic directly instead of calling handleSeasonCodeSelect
-			// This avoids the same function being called with the same value multiple times
+			// Reset state
 			setSidenavData({});
 			setMatchSelected(false);
 			setFormattedScoreData(null);
 			setSelectedHomeLetter("");
 			setSelectedAwayLetter("");
-			// Add other resets as needed
 		}
-	}, [renderSeasonCode]); // Include renderSeasonCode in dependency array
+	}, [renderSeasonCode]); 
+
+	// Update formatted score data when scoresheet data changes
+	useEffect(() => {
+		if (scoresheetData?.scoresheetData && Object.keys(scoresheetData.scoresheetData).length > 0) {
+			setFormattedScoreData(scoresheetData.scoresheetData);
+		}
+	}, [scoresheetData]);
 
 	// Event handlers
 	const handleDataChange = () => {
@@ -282,40 +734,26 @@ export default function WeeklyScoresheetsContent({
 		setSeasonCode(value);
 		setSeasonSelected(false);
 
-		// Reset week-related state when a new season is selected
+		// Reset state when season changes
 		setSelectedWeek("");
 		setSidenavData({});
 		setMatchSelected(false);
 		setFormattedScoreData(null);
-
-		// Reset matchup data
 		setSelectedHomeLetter("");
 		setSelectedAwayLetter("");
 		setSelectedDivision("");
 		setSelectedSubdivision("");
 		setSelectedHomeTeamId("");
 		setSelectedAwayTeamId("");
-
-		// Reset team information
-		setHomeTeamInformation(undefined);
-		setAwayTeamInformation(undefined);
-		setHomeTeamPlayerInformation(undefined);
-		setAwayTeamPlayerInformation(undefined);
-
-		// Reset game data
 		setHomeTeamGameData({});
 		setAwayTeamGameData({});
-
-		// Reset game wins and points
 		setHomeWins(Array(11).fill(false));
 		setHomePoints(Array(11).fill(""));
 		setAwayPoints(Array(11).fill(""));
-
-		// Reset penalties and mentions counters
 		setHomePenaltyCounter(0);
 		setAwayPenaltyCounter(0);
 		setMentionCounters({});
-	}, []); // Empty dependency array since this function shouldn't change
+	}, []); 
 
 	const handleMatchupSelection = async (
 		homeLetter: string,
@@ -324,386 +762,193 @@ export default function WeeklyScoresheetsContent({
 		subdivisionName: string
 	) => {
 		setMatchSelected(true);
-		setIsLoading(true);
 		setSelectedDivision(divisionName);
 		setSelectedSubdivision(subdivisionName);
 		setSelectedHomeLetter(homeLetter);
 		setSelectedAwayLetter(awayLetter);
 
-		// Reset player information when loading a new matchup
-		setHomeTeamPlayerInformation(undefined);
-		setAwayTeamPlayerInformation(undefined);
-		setHomeTeamGameData({}); // Reset the game data
-		setAwayTeamGameData({}); // Reset the game data
-
-		// Reset game wins when selecting a new matchup
-		setHomeWins(Array(11).fill(false));
-
-		// Reset points when selecting a new matchup
-		setHomePoints(Array(11).fill(""));
-		setAwayPoints(Array(11).fill(""));
-
-		// Reset mention counters when loading a new matchup
-		setMentionCounters({});
-
-		// Find team IDs and fetch team information
-		if (
-			sidenavData[divisionName] &&
-			sidenavData[divisionName][subdivisionName]
-		) {
-			// Iterate through all games in this subdivision to find the matching one
-			const games = sidenavData[divisionName][subdivisionName];
-			for (const gameNumber in games) {
-				const game = games[gameNumber];
-				if (
-					game.homeTeamLetter === homeLetter &&
-					game.awayTeamLetter === awayLetter
-				) {
-					setSelectedHomeTeamId(game.homeTeamId);
-					// Fetch the home team information
-					const resultsHome = await fetch(
-						teamRoute + `?ledaId=${game.homeTeamId}`
-					);
-					const dataHome = await resultsHome.json();
-					// set the home team information
-					setHomeTeamInformation(dataHome);
-
-					// Fetch home team player information
-					const homePlayers: Player[] = [];
-					if (dataHome.memberIdList) {
-						for (const playerKey in dataHome.memberIdList) {
-							const playerInfo = dataHome.memberIdList[playerKey];
-							const playerResponse = await fetch(
-								playerRoute + `?ledaId=${playerInfo.ledaId}`
-							);
-							const playerData = await playerResponse.json();
-							homePlayers.push(playerData);
-						}
-					}
-					setHomeTeamPlayerInformation(homePlayers);
-
-					// Initialize game data for each home player
-					const homeGameData: TeamGameData = {};
-					homePlayers.forEach((player) => {
-						const playerGameData: PlayerGameData = {};
-						for (let i = 1; i <= 11; i++) {
-							playerGameData[`Game ${i}`] = false;
-						}
-						homeGameData[player.ledaId] = playerGameData;
-
-						// Defensive: Ensure formattedScoreData is initialized
-						if (!formattedScoreData) {
-							setFormattedScoreData({});
-						}
-						const fsd = formattedScoreData || {};
-
-						// Initialize mentions if not already present
-						fsd[divisionName] = fsd[divisionName] || {};
-						fsd[divisionName][subdivisionName] =
-							fsd[divisionName][subdivisionName] || {};
-						fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						] = fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						] || { teamInformation: {} };
-						fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						].teamInformation[selectedHomeTeamId] = fsd[
-							divisionName
-						][subdivisionName][`${homeLetter} - ${awayLetter}`]
-							.teamInformation[selectedHomeTeamId] || {
-							teamMembers: {},
-						};
-						fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						].teamInformation[selectedHomeTeamId].teamMembers[
-							player.ledaId
-						] = fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						].teamInformation[selectedHomeTeamId].teamMembers[
-							player.ledaId
-						] || { mentions: {} };
-					});
-
-					console.log(homeGameData);
-					setHomeTeamGameData(homeGameData);
-
-					// set the away team id
-					setSelectedAwayTeamId(game.awayTeamId);
-					// fetch away team information
-					const resultsAway = await fetch(
-						teamRoute + `?ledaId=${game.awayTeamId}`
-					);
-					const dataAway = await resultsAway.json();
-					// set the away team information
-					setAwayTeamInformation(dataAway);
-
-					// Fetch away team player information
-					const awayPlayers: Player[] = [];
-					if (dataAway.memberIdList) {
-						for (const playerKey in dataAway.memberIdList) {
-							const playerInfo = dataAway.memberIdList[playerKey];
-							const playerResponse = await fetch(
-								playerRoute + `?ledaId=${playerInfo.ledaId}`
-							);
-							const playerData = await playerResponse.json();
-							awayPlayers.push(playerData);
-						}
-					}
-					setAwayTeamPlayerInformation(awayPlayers);
-
-					// Initialize game data for each away player
-					const awayGameData: TeamGameData = {};
-					awayPlayers.forEach((player) => {
-						const playerGameData: PlayerGameData = {};
-						for (let i = 1; i <= 11; i++) {
-							playerGameData[`Game ${i}`] = false;
-						}
-						awayGameData[player.ledaId] = playerGameData;
-						// Defensive: Ensure formattedScoreData is initialized
-						if (!formattedScoreData) {
-							setFormattedScoreData({});
-						}
-						const fsd = formattedScoreData || {};
-
-						// Initialize mentions if not already present
-						fsd[divisionName] = fsd[divisionName] || {};
-						fsd[divisionName][subdivisionName] =
-							fsd[divisionName][subdivisionName] || {};
-						fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						] = fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						] || { teamInformation: {} };
-						fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						].teamInformation[selectedAwayTeamId] = fsd[
-							divisionName
-						][subdivisionName][`${homeLetter} - ${awayLetter}`]
-							.teamInformation[selectedAwayTeamId] || {
-							teamMembers: {},
-						};
-						fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						].teamInformation[selectedAwayTeamId].teamMembers[
-							player.ledaId
-						] = fsd[divisionName][subdivisionName][
-							`${homeLetter} - ${awayLetter}`
-						].teamInformation[selectedAwayTeamId].teamMembers[
-							player.ledaId
-						] || { mentions: {} };
-					});
-					setAwayTeamGameData(awayGameData);
-
-					break;
-				}
-			}
+		// Find team IDs from sidenavData
+		let homeTeamId = "";
+		let awayTeamId = "";
+		const games = sidenavData[divisionName]?.[subdivisionName] || {};
+		for (const gameNumber in games) {
+			const game = games[gameNumber];
 			if (
-				formattedScoreData &&
-				formattedScoreData[divisionName] &&
-				formattedScoreData[divisionName][subdivisionName]
+				game.homeTeamLetter === homeLetter &&
+				game.awayTeamLetter === awayLetter
 			) {
-				const matchupKey = `${homeLetter} - ${awayLetter}`;
-				const matchupData =
-					formattedScoreData[divisionName][subdivisionName][
-						matchupKey
-					];
-
-				if (matchupData) {
-					// Get the actual team IDs from the match information
-					const teamIds = Object.keys(matchupData.teamInformation);
-					let homeTeamId = "";
-					let awayTeamId = "";
-
-					for (const teamId of teamIds) {
-						if (matchupData.teamInformation[teamId].home) {
-							homeTeamId = teamId;
-						} else {
-							awayTeamId = teamId;
-						}
-					}
-
-					// Now use these verified team IDs that exist in the matchup data
-
-					// Set home team data using actual home team ID
-					setHomeTeamInformation({
-						teamName:
-							matchupData.teamInformation[homeTeamId]?.teamName ||
-							"",
-						teamId:
-							matchupData.teamInformation[homeTeamId]
-								?.teamLetter || "",
-						matchesData: {}, // Populate if necessary
-					});
-
-					// Set home team player information using actual home team ID
-					setHomeTeamPlayerInformation(
-						Object.values(
-							matchupData.teamInformation[homeTeamId]
-								?.teamMembers || {}
-						).map((member, index) => {
-							const name = member.name || "";
-							const [firstName = "", lastName = ""] =
-								name.split(" ");
-							return {
-								ledaId: index + 1, // Convert to number
-								firstName,
-								lastName,
-								middleInitial: "",
-								addressOne: "",
-								addressTwo: "",
-								city: "",
-								state: "",
-								zip: "",
-								phoneNumber: "",
-								email: "",
-								fullName: name,
-								gender: "Unknown", // Default or fetched value
-								dateOfBirth: new Date(), // Default or fetched value
-							};
-						})
-					);
-
-					// Set away team data using actual away team ID
-					setAwayTeamInformation({
-						teamName:
-							matchupData.teamInformation[awayTeamId]?.teamName ||
-							"",
-						teamId:
-							matchupData.teamInformation[awayTeamId]
-								?.teamLetter || "",
-						matchesData: {}, // Populate if necessary
-					});
-
-					// Set away team player information using actual away team ID
-					setAwayTeamPlayerInformation(
-						Object.values(
-							matchupData.teamInformation[awayTeamId]
-								?.teamMembers || {}
-						).map((member, index) => {
-							const name = member.name || "";
-							const [firstName = "", lastName = ""] =
-								name.split(" ");
-							return {
-								ledaId: index + 1, // Convert to number
-								firstName,
-								lastName,
-								middleInitial: "",
-								addressOne: "",
-								addressTwo: "",
-								city: "",
-								state: "",
-								zip: "",
-								phoneNumber: "",
-								email: "",
-								fullName: name,
-								gender: "Unknown", // Default or fetched value
-								dateOfBirth: new Date(), // Default or fetched value
-							};
-						})
-					);
-
-					// Set game data with safety checks
-					const homeGameData: TeamGameData = {};
-					const awayGameData: TeamGameData = {};
-
-					// Initialize mention counters to track existing mentions
-					const newMentionCounters: Record<string, number> = {
-						...mentionCounters,
-					};
-
-					// Use optional chaining to avoid errors when accessing properties
-					Object.entries(
-						matchupData.teamInformation[homeTeamId]?.teamMembers ||
-							{}
-					).forEach(([playerId, member]) => {
-						homeGameData[playerId] = member.gameStats;
-
-						// Check for existing mentions and update counters
-						if (member.mentions) {
-							const mentionIds = Object.keys(member.mentions);
-							if (mentionIds.length > 0) {
-								const maxId = Math.max(
-									...mentionIds.map((id) => parseInt(id))
-								);
-								const playerMentionKey = `${selectedHomeTeamId}-${playerId}`;
-								newMentionCounters[playerMentionKey] = maxId;
-							}
-						}
-					});
-
-					Object.entries(
-						matchupData.teamInformation[awayTeamId]?.teamMembers ||
-							{}
-					).forEach(([playerId, member]) => {
-						awayGameData[playerId] = member.gameStats;
-
-						// Check for existing mentions and update counters
-						if (member.mentions) {
-							const mentionIds = Object.keys(member.mentions);
-							if (mentionIds.length > 0) {
-								const maxId = Math.max(
-									...mentionIds.map((id) => parseInt(id))
-								);
-								const playerMentionKey = `${selectedAwayTeamId}-${playerId}`;
-								newMentionCounters[playerMentionKey] = maxId;
-							}
-						}
-					});
-
-					setHomeTeamGameData(homeGameData);
-					setAwayTeamGameData(awayGameData);
-					setMentionCounters(newMentionCounters);
-
-					// Set game points and wins
-					const gameInformation = matchupData.gameInformation;
-					const homeWinsArray = Array(11).fill(false);
-					const homePointsArray = Array(11).fill("");
-					const awayPointsArray = Array(11).fill("");
-
-					Object.entries(gameInformation).forEach(
-						([, gameData], index) => {
-							homeWinsArray[index] = gameData.homeWin;
-							homePointsArray[index] = gameData.homePoints;
-							awayPointsArray[index] = gameData.awayPoints;
-						}
-					);
-
-					setHomeWins(homeWinsArray);
-					setHomePoints(homePointsArray);
-					setAwayPoints(awayPointsArray);
-				}
+				homeTeamId = game.homeTeamId;
+				awayTeamId = game.awayTeamId;
+				break;
 			}
 		}
-		setIsLoading(false);
+		setSelectedHomeTeamId(homeTeamId);
+		setSelectedAwayTeamId(awayTeamId);
+
+		// Initialize game data from existing data if present
+		const matchupKey = `${homeLetter} - ${awayLetter}`;
+		const fsd = formattedScoreData || {};
+		const matchupData =
+			fsd[divisionName]?.[subdivisionName]?.[matchupKey] || {};
+
+		// Setup will be handled in useEffect after team data is fetched
+		// This ensures we're using React Query for the data fetching
+		
+		// Set homeWins, homePoints, awayPoints from matchupData if present
+		const gameInformation = matchupData?.gameInformation || {};
+		const homeWinsArray = Array(11)
+			.fill(false)
+			.map((_, i) => gameInformation[`Game ${i + 1}`]?.homeWin || false);
+		const homePointsArray = Array(11)
+			.fill("")
+			.map((_, i) => gameInformation[`Game ${i + 1}`]?.homePoints || "");
+		const awayPointsArray = Array(11)
+			.fill("")
+			.map((_, i) => gameInformation[`Game ${i + 1}`]?.awayPoints || "");
+		setHomeWins(homeWinsArray);
+		setHomePoints(homePointsArray);
+		setAwayPoints(awayPointsArray);
+
+		// Mentions counter logic (preserve existing)
+		const newMentionCounters: Record<string, number> = { ...mentionCounters };
+		[homeTeamId, awayTeamId].forEach((teamId) => {
+			const teamMembers =
+				matchupData?.teamInformation?.[teamId]?.teamMembers || {};
+			Object.entries(teamMembers).forEach(([playerId, member]) => {
+				if (member.mentions) {
+					const mentionIds = Object.keys(member.mentions);
+					if (mentionIds.length > 0) {
+						const maxId = Math.max(...mentionIds.map((id) => parseInt(id)));
+						const playerMentionKey = `${teamId}-${playerId}`;
+						newMentionCounters[playerMentionKey] = maxId;
+					}
+				}
+			});
+		});
+		setMentionCounters(newMentionCounters);
 	};
 
-	const handleDateToDisplay = async (value: string) => {
-		const results = await fetch(
-			scheduleRoute + `?seasonCode=${seasonCode}`
-		);
-		const data = await results.json();
-		setMatchSelected(false);
-		setSidenavData(convertScheduleData(data.scheduleData, value));
+	// Update game data when team player data changes
+	useEffect(() => {
+		if (!matchSelected || !formattedScoreData) return;
+		
+		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+		const matchupData = 
+			formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[matchupKey] || {};
+		
+		// Set up home team game data
+		if (homeTeamPlayerInformation?.length) {
+			const homeGameData: TeamGameData = {};
+			homeTeamPlayerInformation.forEach((player) => {
+				const playerGameData: PlayerGameData = {};
+				for (let i = 1; i <= 11; i++) {
+					const gameKey = `Game ${i}`;
+					playerGameData[gameKey] =
+						matchupData?.teamInformation?.[selectedHomeTeamId]?.teamMembers?.[player.ledaId]?.gameStats?.[gameKey] ||
+						false;
+				}
+				homeGameData[player.ledaId] = playerGameData;
+			});
+			setHomeTeamGameData(homeGameData);
+		}
 
+		// Set up away team game data
+		if (awayTeamPlayerInformation?.length) {
+			const awayGameData: TeamGameData = {};
+			awayTeamPlayerInformation.forEach((player) => {
+				const playerGameData: PlayerGameData = {};
+				for (let i = 1; i <= 11; i++) {
+					const gameKey = `Game ${i}`;
+					playerGameData[gameKey] =
+						matchupData?.teamInformation?.[selectedAwayTeamId]?.teamMembers?.[player.ledaId]?.gameStats?.[gameKey] ||
+						false;
+				}
+				awayGameData[player.ledaId] = playerGameData;
+			});
+			setAwayTeamGameData(awayGameData);
+		}
+	}, [
+		matchSelected, 
+		formattedScoreData, 
+		homeTeamPlayerInformation, 
+		awayTeamPlayerInformation,
+		selectedDivision,
+		selectedSubdivision,
+		selectedHomeLetter,
+		selectedAwayLetter,
+		selectedHomeTeamId,
+		selectedAwayTeamId
+	]);
+
+	const handleDateToDisplay = async (value: string) => {
+		setMatchSelected(false);
+		
 		// Extract the week number from "DateX" format
 		const weekNumber = value.replace("Date", "");
 		setSelectedWeek(weekNumber);
-		console.log("Selected week:", weekNumber);
+		
+		if (scheduleData?.scheduleData) {
+			const newSidenavData = convertScheduleData(scheduleData.scheduleData, value);
+			setSidenavData(newSidenavData);
+			
+			// React Query will automatically fetch the scoresheet data based on the selectedWeek change
+			// We'll process it when it arrives in the useEffect hook
+			
+			// Build matchups from schedule data
+			let allWeekMatchups: FormattedScoreData = {};
+			for (const division in newSidenavData) {
+				for (const subdivision in newSidenavData[division]) {
+					for (const matchupNum in newSidenavData[division][subdivision]) {
+						const matchup = newSidenavData[division][subdivision][matchupNum];
+						const matchupKey = `${matchup.homeTeamLetter} - ${matchup.awayTeamLetter}`;
+						const homeTeamId = matchup.homeTeamId;
+						const awayTeamId = matchup.awayTeamId;
+						const homeTeamLetter = matchup.homeTeamLetter;
+						const awayTeamLetter = matchup.awayTeamLetter;
 
-		// Fetch existing scoresheet data for the selected week and season code
-		try {
-			const scoresheetResponse = await fetch(
-				`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&weekNumber=${weekNumber}`
-			);
-			if (scoresheetResponse.ok) {
-				const scoresheetData = await scoresheetResponse.json();
-				if (scoresheetData && scoresheetData.scoresheetData) {
-					setFormattedScoreData(scoresheetData.scoresheetData); // Update formattedScoreData
+						// Try to get team names from DB data if available, else fallback to empty string
+						const dbScoreData = scoresheetData?.scoresheetData || {};
+						const homeTeamName =
+							dbScoreData?.[division]?.[subdivision]?.[matchupKey]?.teamInformation?.[homeTeamId]?.teamName || "";
+						const awayTeamName =
+							dbScoreData?.[division]?.[subdivision]?.[matchupKey]?.teamInformation?.[awayTeamId]?.teamName || "";
+
+						// If matchup exists in DB, use DB data, else generate empty
+						const matchupData =
+							dbScoreData?.[division]?.[subdivision]?.[matchupKey]
+								? {
+										[division]: {
+											[subdivision]: {
+												[matchupKey]:
+													dbScoreData[division][subdivision][matchupKey],
+											},
+										},
+									}
+								: generateEmptyMatchupData(
+										division,
+										subdivision,
+										matchupKey,
+										homeTeamId,
+										awayTeamId,
+										homeTeamLetter,
+										awayTeamLetter,
+										homeTeamName,
+										awayTeamName
+									);
+
+						// Deep merge into allWeekMatchups
+						allWeekMatchups = deepMerge(allWeekMatchups, matchupData);
+					}
 				}
 			}
-		} catch (error) {
-			console.error("Error fetching scoresheet data:", error);
+
+			// If DB had extra matchups (e.g. new ones added in DB), merge them in
+			const dbScoreData = scoresheetData?.scoresheetData || {};
+			if (dbScoreData && Object.keys(dbScoreData).length > 0) {
+				allWeekMatchups = deepMerge(allWeekMatchups, dbScoreData);
+			}
+
+			setFormattedScoreData(allWeekMatchups);
 		}
 	};
 
@@ -712,7 +957,7 @@ export default function WeeklyScoresheetsContent({
 		playerId: string,
 		gameIndex: number
 	) => {
-		const gameKey = `Game ${gameIndex + 1}`; // Convert index to "Game X" format
+		const gameKey = `Game ${gameIndex + 1}`;
 
 		if (teamType === "home") {
 			setHomeTeamGameData((prev) => {
@@ -927,170 +1172,6 @@ export default function WeeklyScoresheetsContent({
 		// Format data in the requested JSON structure
 		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
 
-		// Build gameInformation object
-		const gameInformation: Record<
-			string,
-			{ homeWin: boolean; homePoints: string; awayPoints: string }
-		> = {};
-		for (let i = 1; i <= 11; i++) {
-			gameInformation[`Game ${i}`] = {
-				homeWin: homeWins[i - 1],
-				homePoints: homePoints[i - 1] || "0",
-				awayPoints: awayPoints[i - 1] || "0",
-			};
-		}
-
-		// Use the same calculation method as displayed in the UI
-		const teamPointsCalculation = calculatePoints();
-
-		// Build home team members with mentions preserved
-		const homeTeamMembers: Record<
-			string,
-			{
-				name: string;
-				gameStats: Record<string, boolean>;
-				gamePoints: string;
-				mentions?: Record<
-					string,
-					{
-						mentionCode: string;
-						desc: string;
-						points: number;
-						notes: string;
-						count?: number;
-					}
-				>;
-			}
-		> = {};
-		homeTeamPlayerInformation?.forEach((player) => {
-			const playerGameStats: Record<string, boolean> = {};
-			for (let i = 1; i <= 11; i++) {
-				const gameKey = `Game ${i}`;
-				playerGameStats[gameKey] =
-					homeTeamGameData[player.ledaId]?.[gameKey] || false;
-			}
-
-			// Preserve existing mentions data
-			const existingMentions =
-				formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[
-					matchupKey
-				]?.teamInformation?.[selectedHomeTeamId]?.teamMembers?.[
-					String(player.ledaId)
-				]?.mentions;
-
-			homeTeamMembers[String(player.ledaId)] = {
-				name: player.fullName,
-				gameStats: playerGameStats,
-				gamePoints: String(
-					homePlayerPoints.find(
-						(p) => p.playerId === String(player.ledaId)
-					)?.totalPoints || 0
-				),
-			};
-
-			// Only add mentions if they exist
-			if (existingMentions && Object.keys(existingMentions).length > 0) {
-				// Convert the mentions to ensure notes is always a string and count is always present
-				const formattedMentions: Record<
-					string,
-					{
-						mentionCode: string;
-						desc: string;
-						points: number;
-						notes: string;
-						count?: number;
-					}
-				> = {};
-
-				Object.entries(existingMentions).forEach(([id, mention]) => {
-					formattedMentions[id] = {
-						mentionCode: mention.mentionCode,
-						desc: mention.desc,
-						points: mention.points,
-						notes: mention.notes || "",
-						count: mention.count ?? 0, // Always include count, default to 0 if missing
-					};
-				});
-
-				homeTeamMembers[String(player.ledaId)].mentions =
-					formattedMentions;
-			}
-		});
-
-		// Build away team members with mentions preserved
-		const awayTeamMembers: Record<
-			string,
-			{
-				name: string;
-				gameStats: Record<string, boolean>;
-				gamePoints: string;
-				mentions?: Record<
-					string,
-					{
-						mentionCode: string;
-						desc: string;
-						points: number;
-						notes: string;
-						count?: number;
-					}
-				>;
-			}
-		> = {};
-		awayTeamPlayerInformation?.forEach((player) => {
-			const playerGameStats: Record<string, boolean> = {};
-			for (let i = 1; i <= 11; i++) {
-				const gameKey = `Game ${i}`;
-				playerGameStats[gameKey] =
-					awayTeamGameData[player.ledaId]?.[gameKey] || false;
-			}
-
-			// Preserve existing mentions data
-			const existingMentions =
-				formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[
-					matchupKey
-				]?.teamInformation?.[selectedAwayTeamId]?.teamMembers?.[
-					String(player.ledaId)
-				]?.mentions;
-
-			awayTeamMembers[String(player.ledaId)] = {
-				name: player.fullName,
-				gameStats: playerGameStats,
-				gamePoints: String(
-					awayPlayerPoints.find(
-						(p) => p.playerId === String(player.ledaId)
-					)?.totalPoints || 0
-				),
-			};
-
-			// Only add mentions if they exist
-			if (existingMentions && Object.keys(existingMentions).length > 0) {
-				// Convert the mentions to ensure notes is always a string and count is always present
-				const formattedMentions: Record<
-					string,
-					{
-						mentionCode: string;
-						desc: string;
-						points: number;
-						notes: string;
-						count?: number;
-					}
-				> = {};
-
-				Object.entries(existingMentions).forEach(([id, mention]) => {
-					formattedMentions[id] = {
-						mentionCode: mention.mentionCode,
-						desc: mention.desc,
-						points: mention.points,
-						notes: mention.notes || "",
-						count: mention.count ?? 0,
-					};
-
-					awayTeamMembers[String(player.ledaId)].mentions =
-						formattedMentions;
-				});
-			}
-		});
-
 		// Create the new formatted data
 		const newData: FormattedScoreData = {
 			[selectedDivision]: {
@@ -1101,7 +1182,38 @@ export default function WeeklyScoresheetsContent({
 								teamLetter: selectedHomeLetter,
 								teamName: homeTeamInformation?.teamName || "",
 								home: true,
-								teamMembers: homeTeamMembers,
+								teamMembers:
+									homeTeamPlayerInformation?.reduce(
+										(acc, player) => {
+											acc[player.ledaId] = {
+												name: player.fullName,
+												gameStats: homeTeamGameData[player.ledaId] || {},
+												// mentions will be merged in deepMerge if present
+												gamePoints: String(
+													homePlayerPoints.find(
+														(p) => p.playerId === String(player.ledaId)
+													)?.totalPoints || 0
+												),
+											};
+											return acc;
+										},
+										{} as {
+											[playerId: string]: {
+												name: string;
+												gameStats: Record<string, boolean>;
+												gamePoints: string;
+												mentions?: {
+													[mentionId: string]: {
+														mentionCode: string;
+														desc: string;
+														points: number;
+														notes?: string;
+														count?: number;
+													};
+												};
+											};
+										}
+									) || {},
 								penalties:
 									formattedScoreData?.[selectedDivision]?.[
 										selectedSubdivision
@@ -1113,7 +1225,38 @@ export default function WeeklyScoresheetsContent({
 								teamLetter: selectedAwayLetter,
 								teamName: awayTeamInformation?.teamName || "",
 								home: false,
-								teamMembers: awayTeamMembers,
+								teamMembers:
+									awayTeamPlayerInformation?.reduce(
+										(acc, player) => {
+											acc[player.ledaId] = {
+												name: player.fullName,
+												gameStats: awayTeamGameData[player.ledaId] || {},
+												// mentions will be merged in deepMerge if present
+												gamePoints: String(
+													awayPlayerPoints.find(
+														(p) => p.playerId === String(player.ledaId)
+													)?.totalPoints || 0
+												),
+											};
+											return acc;
+										},
+										{} as {
+											[playerId: string]: {
+												name: string;
+												gameStats: Record<string, boolean>;
+												gamePoints: string;
+												mentions?: {
+													[mentionId: string]: {
+														mentionCode: string;
+														desc: string;
+														points: number;
+														notes?: string;
+														count?: number;
+													};
+												};
+											};
+										}
+									) || {},
 								penalties:
 									formattedScoreData?.[selectedDivision]?.[
 										selectedSubdivision
@@ -1122,13 +1265,24 @@ export default function WeeklyScoresheetsContent({
 									]?.penalties || {},
 							},
 						},
-						gameInformation: gameInformation,
+						gameInformation: {
+							...Array.from({ length: 11 }, (_, i) => {
+								const gameNum = i + 1;
+								return {
+									[`Game ${gameNum}`]: {
+										homeWin: homeWins[i],
+										homePoints: homePoints[i] || "0",
+										awayPoints: awayPoints[i] || "0",
+									},
+								};
+							}).reduce((acc, cur) => ({ ...acc, ...cur }), {}),
+						},
 						teamPoints: {
 							homePoints: String(
-								teamPointsCalculation.finalHomePoints
+								calculatePoints().finalHomePoints
 							),
 							awayPoints: String(
-								teamPointsCalculation.finalAwayPoints
+								calculatePoints().finalAwayPoints
 							),
 						},
 					},
@@ -1146,260 +1300,13 @@ export default function WeeklyScoresheetsContent({
 			setFormattedScoreData(newData);
 		}
 
-		// After calculating and formatting the data, save it to the database
+		// Save using React Query mutation
 		saveScoresheet(newData);
 	};
 
-	const saveScoresheet = async (data: FormattedScoreData) => {
-		if (!seasonCode || !selectedWeek) {
-			return;
-		}
-
-		setIsSaving(true);
-
-		try {
-			// Determine if all matchups are valid
-			const finishedScoresheet = areAllMatchupsValid(data);
-			console.log("Finished scoresheet:", finishedScoresheet);
-
-			// First, try to fetch existing scoresheet data for this season and week
-			const fetchResponse = await fetch(
-				`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&weekNumber=${selectedWeek}`
-			);
-
-			let completeData: FormattedScoreData = data;
-			let previousData: FormattedScoreData | null = null;
-
-			// If there's existing data, merge it with our new data
-			if (fetchResponse.ok) {
-				const existingData = await fetchResponse.json();
-				if (existingData && existingData.scoresheetData) {
-					// Store previous data for mention history comparison
-					previousData = JSON.parse(
-						JSON.stringify(existingData.scoresheetData)
-					);
-
-					// For the current matchup, use our new data completely (including penalty removals)
-					// but merge with other matchups that might exist
-					const existingScoreData =
-						existingData.scoresheetData as FormattedScoreData;
-
-					// Start with a clean copy of existing data
-					completeData = JSON.parse(
-						JSON.stringify(existingScoreData)
-					);
-
-					// Make sure our current division and subdivision exists
-					if (!completeData[selectedDivision]) {
-						completeData[selectedDivision] = {};
-					}
-					if (!completeData[selectedDivision][selectedSubdivision]) {
-						completeData[selectedDivision][selectedSubdivision] =
-							{};
-					}
-
-					// Replace the entire matchup data with our new version
-					// This preserves penalty removals
-					const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-					if (
-						data[selectedDivision]?.[selectedSubdivision]?.[
-							matchupKey
-						]
-					) {
-						completeData[selectedDivision][selectedSubdivision][
-							matchupKey
-						] =
-							data[selectedDivision][selectedSubdivision][
-								matchupKey
-							];
-					}
-				}
-			}
-
-			// Now save the complete merged data
-			const saveResponse = await fetch(weeklyScoresheetsRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					seasonCode: seasonCode,
-					weekNumber: selectedWeek,
-					scoresheetData: completeData,
-					finishedScoresheet, // Include the finishedScoresheet status
-				}),
-			});
-
-			if (!saveResponse.ok) {
-				throw new Error(
-					`Server responded with ${saveResponse.status}: ${saveResponse.statusText}`
-				);
-			}
-
-			// Save team points for each team with penalty adjustments
-			const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-			const matchupData =
-				data[selectedDivision]?.[selectedSubdivision]?.[matchupKey];
-
-			if (matchupData) {
-				const homeTeamPointsPayload = {
-					seasonCode,
-					weekNum: parseInt(selectedWeek),
-					ledaId: selectedHomeTeamId,
-					totalPoints: parseInt(matchupData.teamPoints.homePoints), // Already includes penalty adjustment
-				};
-
-				const awayTeamPointsPayload = {
-					seasonCode,
-					weekNum: parseInt(selectedWeek),
-					ledaId: selectedAwayTeamId,
-					totalPoints: parseInt(matchupData.teamPoints.awayPoints), // Already includes penalty adjustment
-				};
-
-				// Save home team points
-				await fetch(`${weeklyScoresheetsRoute}/teamPoints`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(homeTeamPointsPayload),
-				});
-
-				// Save away team points
-				await fetch(`${weeklyScoresheetsRoute}/teamPoints`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(awayTeamPointsPayload),
-				});
-
-				// Process players and their mentions
-				await processMentionHistory(
-					matchupData,
-					previousData,
-					selectedDivision,
-					selectedSubdivision,
-					matchupKey,
-					parseInt(selectedWeek)
-				);
-
-				// Save player points for each player in the home team
-				const homePlayers =
-					matchupData.teamInformation[selectedHomeTeamId].teamMembers;
-				for (const playerId in homePlayers) {
-					const player = homePlayers[playerId];
-					const playerPointsPayload = {
-						seasonCode,
-						weekNum: parseInt(selectedWeek),
-						ledaId: playerId,
-						playerId,
-						totalPoints: parseInt(player.gamePoints),
-						pointsByGame: player.gameStats,
-						teamLedaId: selectedHomeTeamId,
-						// Include mentions data for each player if it exists
-						mentions: player.mentions || {},
-					};
-
-					await fetch(`${weeklyScoresheetsRoute}/playerPoints`, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify(playerPointsPayload),
-					});
-				}
-
-				// Save player points for each player in the away team
-				const awayPlayers =
-					matchupData.teamInformation[selectedAwayTeamId].teamMembers;
-				for (const playerId in awayPlayers) {
-					const player = awayPlayers[playerId];
-					const playerPointsPayload = {
-						seasonCode,
-						weekNum: parseInt(selectedWeek),
-						ledaId: playerId, // Correctly set to the player's ID
-						playerId,
-						totalPoints: parseInt(player.gamePoints),
-						pointsByGame: player.gameStats,
-						teamLedaId: selectedAwayTeamId, // Correctly set to the team's ID
-						// Include mentions data for each player if it exists
-						mentions: player.mentions || {},
-					};
-
-					await fetch(`${weeklyScoresheetsRoute}/playerPoints`, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify(playerPointsPayload),
-					});
-				}
-			}
-
-			const result = await saveResponse.json();
-			console.log("Scoresheet saved successfully:", result);
-
-			// Update the local state with the complete data to show accurate representation
-			setFormattedScoreData(completeData);
-			setIsDataChanged(false); // Reset data change flag after successful save
-		} catch (error) {
-			console.error("Error saving scoresheet:", error);
-		} finally {
-			setIsSaving(false);
-		}
-	};
-
-	// Add this new helper function to process mentions history
+	// Process mention history using React Query mutations
 	const processMentionHistory = async (
-		matchupData: {
-			teamInformation: Record<
-				string,
-				{
-					teamName: string;
-					teamLetter: string;
-					home: boolean;
-					teamMembers: Record<
-						string,
-						{
-							name: string;
-							gameStats: Record<string, boolean>;
-							gamePoints: string;
-							mentions?: Record<
-								string,
-								{
-									mentionCode: string;
-									desc: string;
-									points: number;
-									notes?: string;
-									count?: number;
-								}
-							>;
-						}
-					>;
-					penalties?: Record<
-						string,
-						{
-							penaltyCode: string;
-							points: number;
-							notes?: string;
-						}
-					>;
-				}
-			>;
-			gameInformation: Record<
-				string,
-				{
-					homeWin: boolean;
-					homePoints: string;
-					awayPoints: string;
-				}
-			>;
-			teamPoints: {
-				homePoints: string;
-				awayPoints: string;
-			};
-		},
+		matchupData: FormattedScoreData[string][string][string],
 		previousData: FormattedScoreData | null,
 		division: string,
 		subdivision: string,
@@ -1410,8 +1317,7 @@ export default function WeeklyScoresheetsContent({
 		const teamIds = [selectedHomeTeamId, selectedAwayTeamId];
 
 		for (const teamId of teamIds) {
-			const teamMembers =
-				matchupData.teamInformation[teamId]?.teamMembers || {};
+			const teamMembers = matchupData.teamInformation[teamId]?.teamMembers || {};
 
 			// Process each player in the team
 			for (const playerId in teamMembers) {
@@ -1442,8 +1348,8 @@ export default function WeeklyScoresheetsContent({
 							prevMention.points !== mention.points ||
 							prevMention.notes !== mention.notes
 						) {
-							// Update the mention history
-							await updateMentionHistory({
+							// Update the mention history using React Query mutation
+							await updateMentionHistoryMutation.mutateAsync({
 								ledaId: playerId,
 								mentionId,
 								mentionCode: mention.mentionCode,
@@ -1453,12 +1359,12 @@ export default function WeeklyScoresheetsContent({
 								weekNum,
 								notes: mention.notes || "",
 								count: mention.count || 0,
-								teamId: teamId, // Add teamId
+								teamId: teamId,
 							});
 						}
 					} else {
-						// This is a new mention, add it to history
-						await createMentionHistory({
+						// This is a new mention, add it to history using React Query mutation
+						await createMentionHistoryMutation.mutateAsync({
 							ledaId: playerId,
 							mentionId,
 							mentionCode: mention.mentionCode,
@@ -1468,7 +1374,7 @@ export default function WeeklyScoresheetsContent({
 							weekNum,
 							notes: mention.notes || "",
 							count: mention.count || 0,
-							teamId: teamId, // Add teamId
+							teamId: teamId,
 						});
 					}
 				}
@@ -1476,8 +1382,8 @@ export default function WeeklyScoresheetsContent({
 				// Check for deleted mentions
 				for (const mentionId in previousMentions) {
 					if (!processedMentionIds.has(mentionId)) {
-						// This mention was deleted, remove it from history
-						await deleteMentionHistory({
+						// This mention was deleted, remove it from history using React Query mutation
+						await deleteMentionHistoryMutation.mutateAsync({
 							ledaId: playerId,
 							mentionId,
 							seasonCode,
@@ -1486,7 +1392,7 @@ export default function WeeklyScoresheetsContent({
 							mentionDesc: "",
 							mentionPoints: 0,
 							notes: "",
-							teamId: teamId, // Add teamId
+							teamId: teamId,
 						});
 					}
 				}
@@ -1494,133 +1400,8 @@ export default function WeeklyScoresheetsContent({
 		}
 	};
 
-	// Helper functions for mention history API calls
-	const createMentionHistory = async (data: {
-		ledaId: string;
-		mentionId: string;
-		mentionCode: string;
-		mentionDesc: string;
-		mentionPoints: number;
-		seasonCode: string;
-		weekNum: number;
-		notes: string;
-		count?: number; // Add count field
-		teamId?: string; // Add teamId parameter
-	}) => {
-		try {
-			const response = await fetch(mentionPlayerHistoryRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					...data,
-					count: data.count ?? 0, // Ensure count is always provided
-					teamId:
-						data.teamId ??
-						(data.ledaId.startsWith(selectedHomeTeamId)
-							? selectedHomeTeamId
-							: selectedAwayTeamId),
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error(
-					`Failed to create mention history: ${response.statusText}`
-				);
-			}
-
-			console.log(
-				`Created mention history for player ${data.ledaId}, mention ${data.mentionId}`
-			);
-		} catch (error) {
-			console.error("Error creating mention history:", error);
-		}
-	};
-
-	const updateMentionHistory = async (data: {
-		ledaId: string;
-		mentionId: string;
-		mentionCode: string;
-		mentionDesc: string;
-		mentionPoints: number;
-		seasonCode: string;
-		weekNum: number;
-		notes: string;
-		count?: number; // Add count field
-		teamId?: string; // Add teamId parameter
-	}) => {
-		try {
-			const response = await fetch(mentionPlayerHistoryRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					...data,
-					count: data.count ?? 0, // Ensure count is always provided
-					teamId:
-						data.teamId ??
-						(data.ledaId.startsWith(selectedHomeTeamId)
-							? selectedHomeTeamId
-							: selectedAwayTeamId),
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error(
-					`Failed to update mention history: ${response.statusText}`
-				);
-			}
-
-			console.log(
-				`Updated mention history for player ${data.ledaId}, mention ${data.mentionId}`
-			);
-		} catch (error) {
-			console.error("Error updating mention history:", error);
-		}
-	};
-
-	const deleteMentionHistory = async (data: {
-		ledaId: string;
-		mentionId: string;
-		mentionCode: string;
-		mentionDesc: string;
-		mentionPoints: number;
-		seasonCode: string;
-		weekNum: number;
-		notes: string;
-		teamId?: string; // Add teamId parameter
-	}) => {
-		try {
-			const response = await fetch(mentionPlayerHistoryRoute, {
-				method: "DELETE",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					...data,
-					teamId:
-						data.teamId ??
-						(data.ledaId.startsWith(selectedHomeTeamId)
-							? selectedHomeTeamId
-							: selectedAwayTeamId),
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error(
-					`Failed to delete mention history: ${response.statusText}`
-				);
-			}
-
-			console.log(
-				`Deleted mention history for player ${data.ledaId}, mention ${data.mentionId}`
-			);
-		} catch (error) {
-			console.error("Error deleting mention history:", error);
-		}
-	};
+	// The rest of the functions (penalty management, mention management, etc.) can remain mostly unchanged
+	// as they're primarily operating on local state
 
 	const resetScoresheet = () => {
 		if (
@@ -2708,7 +2489,7 @@ export default function WeeklyScoresheetsContent({
 														<span>Penalties</span>
 													</Button>
 												</DialogTrigger>
-												<DialogContent>
+												<DialogContent className="w-fit bg-white">
 													<DialogHeader>
 														<DialogTitle>
 															{penaltyEditMode

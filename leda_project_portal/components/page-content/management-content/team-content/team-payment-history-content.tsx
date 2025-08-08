@@ -2,7 +2,8 @@
 
 import { PaymentHistory } from "@/lib/definitions";
 import { teamPaymentHistoryRoute } from "@/lib/apiRoutes";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -32,12 +33,6 @@ export default function TeamPaymentHistoryContent({
 }: {
 	teamData: { ledaId: number; teamName: string };
 }) {
-	const [paymentData, setPaymentData] = useState<PaymentHistory[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [uniqueDates, setUniqueDates] = useState<{ paymentDate: string }[]>(
-		[]
-	);
 	const [selectedDate, setSelectedDate] = useState<string>("all");
 	const [selectedPaymentType, setSelectedPaymentType] = useState<
 		{ paymentType: string; desc: string } | undefined
@@ -47,8 +42,13 @@ export default function TeamPaymentHistoryContent({
 	>(undefined);
 	const [filterOpen, setFilterOpen] = useState(false);
 
-	useEffect(() => {
-		const getPaymentData = async () => {
+	const {
+		data: paymentData = [],
+		isLoading,
+		error,
+	} = useQuery<PaymentHistory[]>({
+		queryKey: ["teamPaymentHistory", teamData.ledaId],
+		queryFn: async () => {
 			const results = await fetch(
 				`${teamPaymentHistoryRoute}?teamId=${teamData.ledaId}`,
 				{
@@ -58,54 +58,31 @@ export default function TeamPaymentHistoryContent({
 			if (!results.ok) {
 				throw new Error("Failed to fetch payment data");
 			}
-			const data = await results.json();
-			return data;
-		};
+			return await results.json();
+		},
+	});
 
-		const fetchPaymentData = async () => {
-			try {
-				setIsLoading(true);
-				const data = await getPaymentData();
-				setPaymentData(data);
+	const uniqueDates: { paymentDate: string }[] = [
+		...new Set(
+			(paymentData || []).map((item: PaymentHistory) => {
+				if (!item.date) return null;
+				const date = new Date(item.date);
+				return `${date.getUTCFullYear()}-${String(
+					date.getUTCMonth() + 1
+				).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+			})
+		),
+	]
+		.filter(Boolean)
+		.map((date) => ({ paymentDate: date as string }));
 
-				const dates = [
-					...new Set(
-						data.map((item: PaymentHistory) => {
-							if (!item.date) return null;
-							const date = new Date(item.date);
-							// Always use UTC for date string
-							return `${date.getUTCFullYear()}-${String(
-								date.getUTCMonth() + 1
-							).padStart(2, "0")}-${String(
-								date.getUTCDate()
-							).padStart(2, "0")}`;
-						})
-					),
-				]
-					.filter(Boolean)
-					.map((date) => ({ paymentDate: date as string }));
-
-				setUniqueDates(dates);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load payment history data");
-				console.error(err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchPaymentData();
-	}, [teamData.ledaId]);
-
-	const filteredPaymentData = paymentData.filter((payment) => {
+	const filteredPaymentData = (paymentData || []).filter((payment) => {
 		let matchesDate = true;
 		let matchesType = true;
 
 		if (selectedDate !== "all") {
 			if (payment.date) {
 				const paymentDate = new Date(payment.date);
-				// Use UTC for comparison
 				const paymentDateStr = `${paymentDate.getUTCFullYear()}-${String(
 					paymentDate.getUTCMonth() + 1
 				).padStart(2, "0")}-${String(paymentDate.getUTCDate()).padStart(
@@ -270,7 +247,9 @@ export default function TeamPaymentHistoryContent({
 						Loading payment history...
 					</p>
 				) : error ? (
-					<p className="text-red-500">{error}</p>
+					<p className="text-red-500">
+						{(error as Error).message || "Failed to load payment history data"}
+					</p>
 				) : filteredPaymentData.length === 0 ? (
 					<p className="text-gray-500">
 						No payment history found for this team.

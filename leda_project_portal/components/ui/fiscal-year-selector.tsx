@@ -17,6 +17,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { seasonRoute } from "@/lib/apiRoutes";
+import { useQuery } from "@tanstack/react-query";
 
 interface FiscalYearSelectorProps {
 	disabled?: boolean;
@@ -32,37 +33,36 @@ const FiscalYearSelector: React.FC<FiscalYearSelectorProps> = ({
 	fiscalYear,
 }) => {
 	const [open, setOpen] = useState(false);
-	const [fiscalYears, setFiscalYears] = useState<{ value: string; label: string }[]>([]);
 	const [selectedFiscalYear, setSelectedFiscalYear] = useState<string | null>(null);
+
+	type FiscalYearItem = { value: string; label: string };
+
+	const { data: fiscalYears = [] } = useQuery<FiscalYearItem[]>({
+		queryKey: ["fiscalYears"],
+		queryFn: async () => {
+			const response = await fetch(`${seasonRoute}/fiscalYear`);
+			const data = await response.json();
+			return data.map((item: { fiscalYear: string }) => ({
+				value: item.fiscalYear,
+				label: item.fiscalYear,
+			}));
+		},
+	});
+
+	useEffect(() => {
+		if (fiscalYears.length > 0 && !fiscalYear) {
+			setSelectedFiscalYear(fiscalYears[0].value);
+			handleSelect(fiscalYears[0].value);
+		}
+		if (setDisabled) setDisabled(false);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [fiscalYears]);
 
 	const handleSelectFiscalYear = (value: string) => {
 		setSelectedFiscalYear(value);
 		handleSelect(value);
 		setOpen(false);
 	};
-
-	useEffect(() => {
-		async function loadFiscalYears() {
-			try {
-				const response = await fetch(`${seasonRoute}/fiscalYear`);
-				const data = await response.json();
-				setFiscalYears(
-					data.map((item: { fiscalYear: string }) => ({
-						value: item.fiscalYear,
-						label: item.fiscalYear,
-					}))
-				);
-				if (data.length > 0 && !fiscalYear) {
-					setSelectedFiscalYear(data[0].fiscalYear);
-					handleSelect(data[0].fiscalYear);
-				}
-				if (setDisabled) setDisabled(false);
-			} catch (error) {
-				console.error("Failed to fetch fiscal years", error);
-			}
-		}
-		loadFiscalYears();
-	}, [setDisabled, handleSelect, fiscalYear]);
 
 	return (
 		<div className="flex flex-col gap-4">

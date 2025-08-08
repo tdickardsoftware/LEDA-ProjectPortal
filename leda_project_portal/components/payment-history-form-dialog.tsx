@@ -48,6 +48,7 @@ import PlayerSelect from "@/components/ui/single-player-select";
 import TeamSelector from "@/components/ui/team-selector";
 import PlaceSelector from "@/components/ui/place-selector";
 import { PaymentHistory } from "@/lib/definitions";
+import { useMutation } from "@tanstack/react-query";
 
 // Define form schema with Zod
 const formSchema = z.object({
@@ -159,34 +160,21 @@ export default function PaymentHistoryFormDialog({
 		}
 	}, [paymentData, isEditing, initialLedaId, form, type]);
 
-	// Handle form submission
-	const onSubmit = async (data: FormValues) => {
-		try {
-			console.log("Form submission data:", data); // Add this for debugging
-
+	// Mutation for adding/editing payment history
+	const mutation = useMutation({
+		mutationFn: async (data: FormValues) => {
 			// Extract payment type more reliably
 			let paymentTypeValue = "Unknown";
-
 			if (data.type) {
-				// If data.type has paymentType property directly
 				if (
 					typeof data.type === "object" &&
 					"paymentType" in data.type
 				) {
 					paymentTypeValue = data.type.paymentType;
-				}
-				// If data.type is a string
-				else if (typeof data.type === "string") {
+				} else if (typeof data.type === "string") {
 					paymentTypeValue = data.type;
 				}
-				// Log the type value to help with debugging
-				console.log(
-					"Payment type data structure:",
-					JSON.stringify(data.type, null, 2)
-				);
 			}
-
-			// Get the appropriate ID based on the type
 			let ledaId: string;
 			if (type === "player" && data.ledaId) {
 				ledaId = data.ledaId.toString();
@@ -197,7 +185,6 @@ export default function PaymentHistoryFormDialog({
 			} else {
 				throw new Error("No valid ID found for the selected type");
 			}
-
 			const payload = {
 				ledaId: ledaId,
 				type: paymentTypeValue,
@@ -208,16 +195,11 @@ export default function PaymentHistoryFormDialog({
 				notes: data.notes,
 				paidOff: data.paidOff,
 				date: data.date,
-				// Include payment number if editing
 				...(isEditing &&
 					paymentData?.paymentNbr && {
 						paymentNbr: paymentData.paymentNbr,
 					}),
 			};
-
-			console.log("API payload:", payload); // Add this for debugging
-
-			// Send data to your API - using POST for both create and update (upsert)
 			const response = await fetch(route, {
 				method: "POST",
 				headers: {
@@ -225,7 +207,6 @@ export default function PaymentHistoryFormDialog({
 				},
 				body: JSON.stringify(payload),
 			});
-
 			if (!response.ok) {
 				throw new Error(
 					isEditing
@@ -233,23 +214,29 @@ export default function PaymentHistoryFormDialog({
 						: "Failed to add payment"
 				);
 			}
-
-			// Reset form and close dialog on success
+			return response;
+		},
+		onSuccess: () => {
 			form.reset();
 			setOpen(false);
-			// Call success callback if provided, otherwise reload the page
 			if (onSuccess) {
 				onSuccess();
-				window.location.reload(); // Reload the page after success
+				window.location.reload();
 			} else {
 				window.location.reload();
 			}
-		} catch (error) {
+		},
+		onError: (error) => {
 			console.error(
 				isEditing ? "Error updating payment:" : "Error adding payment:",
 				error
 			);
-		}
+		},
+	});
+
+	// Handle form submission
+	const onSubmit = (data: FormValues) => {
+		mutation.mutate(data);
 	};
 
 	return (

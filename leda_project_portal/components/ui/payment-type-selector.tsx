@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,11 +26,17 @@ import {
 	FormControl,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
-	type: JSON; // Changed from paymentTypeData to type to match form context
+	type?: PaymentType; // Changed from JSON to PaymentType to match usage
 }
+
+type PaymentType = {
+	paymentType: string;
+	desc: string;
+};
 
 interface PaymentTypeSelectorProps {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,13 +51,10 @@ interface PaymentTypeSelectorProps {
 }
 
 interface PaymentTypeSelectorContentProps {
-	value?: JSON; // Current value (for uncontrolled mode)
-	onChange?: (value: JSON) => void; // Change handler (for uncontrolled mode)
-	disabled?: boolean; // Optional disabled state
-	handlePaymentTypeChange?: (value: {
-		paymentType: string;
-		desc: string;
-	}) => void; // Optional change handler
+	value?: PaymentType;
+	onChange?: (value: PaymentType) => void;
+	disabled?: boolean;
+	handlePaymentTypeChange?: (value: PaymentType) => void;
 }
 
 /**
@@ -90,6 +93,24 @@ export default function PaymentTypeSelector({
 	);
 }
 
+// Utility hook to track last input type (keyboard or mouse)
+function useLastInputType() {
+	const [lastInputType, setLastInputType] = React.useState<"keyboard" | "mouse" | null>(null);
+
+	React.useEffect(() => {
+		const handleKeyDown = () => setLastInputType("keyboard");
+		const handleMouseDown = () => setLastInputType("mouse");
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("mousedown", handleMouseDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("mousedown", handleMouseDown);
+		};
+	}, []);
+
+	return lastInputType;
+}
+
 /**
  * Internal content component that handles the actual selector functionality
  * Can work in both controlled (via form context) and uncontrolled modes
@@ -101,48 +122,41 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 	handlePaymentTypeChange,
 }) => {
 	const formContext = useFormContext<FormValues>();
-	const [localValue, setLocalValue] = useState(propValue || "");
+	const [localValue, setLocalValue] = useState<PaymentType | "">(
+		propValue || ""
+	);
 	const [open, setOpen] = useState(false);
-	const [paymentTypes, setPaymentTypes] = useState<
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		{ value: any; label: string }[]
-	>([]);
 
-	// Determine value source (form context or props)
-	// Hardcoded to "type" instead of "paymentTypeData"
+	const justClosedRef = React.useRef(false);
+	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+	const lastInputType = useLastInputType();
+
+	const { data: paymentTypes = [] } = useQuery<{
+		value: PaymentType;
+		label: string;
+	}[]>({
+		queryKey: ["paymentTypes"],
+		queryFn: async () => {
+			const response = await fetch(paymentTypeRoute);
+			const data: PaymentType[] = await response.json();
+			return data.map((item) => ({
+				value: item,
+				label: item.paymentType + " - " + item.desc,
+			}));
+		},
+	});
+
 	const currentValue = formContext ? formContext.watch("type") : localValue;
 
-	// Handle value changes in either mode
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const handleValueChange = (newValue: any) => {
+	const handleValueChange = (newValue: PaymentType) => {
 		if (formContext) {
-			formContext.setValue("type", newValue); // Hardcoded to "type"
+			formContext.setValue("type", newValue);
 		} else {
 			setLocalValue(newValue);
 			onChange?.(newValue);
 		}
 	};
 
-	// Fetch payment types from API on component mount
-	useEffect(() => {
-		async function loadPaymentTypes() {
-			try {
-				const response = await fetch(paymentTypeRoute);
-				const data = await response.json();
-				setPaymentTypes(
-					data.map((item: { paymentType: string; desc: string }) => ({
-						value: item, // Store the raw object as value
-						label: item.paymentType + " - " + item.desc,
-					}))
-				);
-			} catch (error) {
-				console.error("Failed to fetch payment types", error);
-			}
-		}
-		loadPaymentTypes();
-	}, []);
-
-	// Find the selected payment type in the dropdown options
 	const getSelectedPaymentType = () => {
 		// If currentValue exists, try to find an exact match first
 		if (currentValue) {
@@ -169,6 +183,22 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 		return "Select a payment type...";
 	};
 
+	const handleFocus = React.useCallback(() => {
+		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
+			setOpen(true);
+		}
+		if (justClosedRef.current) {
+			justClosedRef.current = false;
+		}
+	}, [lastInputType, open]);
+
+	const handleSelect = (type: { value: PaymentType; label: string }) => {
+		handleValueChange(type.value);
+		handlePaymentTypeChange?.(type.value);
+		setOpen(false);
+		justClosedRef.current = true;
+	};
+
 	return (
 		// Render the dropdown selector UI
 		<div className="flex flex-col gap-4">
@@ -176,10 +206,12 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild disabled={disabled}>
 						<Button
+							ref={popoverTriggerRef}
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
 							className="w-fit justify-between"
+							onFocus={handleFocus}
 						>
 							{getSelectedPaymentType()}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -190,24 +222,21 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 							<CommandInput placeholder="Search payment type..." />
 							<CommandEmpty>No payment type found.</CommandEmpty>
 							<CommandGroup>
-								<CommandList>
+								<CommandList
+									className="max-h-60 overflow-y-auto"
+									tabIndex={0}
+									onWheel={e => e.stopPropagation()}
+								>
 									{paymentTypes.map((type) => (
 										<CommandItem
 											key={type.label}
 											value={type.label}
-											onSelect={() => {
-												handleValueChange(type.value); // Pass the object directly
-												handlePaymentTypeChange?.(
-													type.value
-												); // Call the optional change handler
-												setOpen(false);
-											}}
+											onSelect={() => handleSelect(type)}
 											className="hover:bg-gray-200"
 										>
 											<Check
 												className={cn(
 													"mr-2 h-4 w-4",
-													// Check if current value matches this option
 													currentValue &&
 														(JSON.stringify(
 															type.value
@@ -217,11 +246,14 @@ const PaymentTypeSelectorContent: React.FC<PaymentTypeSelectorContentProps> = ({
 															) ||
 															(typeof currentValue ===
 																"object" &&
+																currentValue !==
+																	null &&
 																"paymentType" in
 																	currentValue &&
 																type.value
 																	.paymentType ===
-																	currentValue.paymentType))
+																	(currentValue as PaymentType)
+																		.paymentType))
 														? "opacity-100"
 														: "opacity-0"
 												)}

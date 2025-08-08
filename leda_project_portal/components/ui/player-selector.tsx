@@ -24,6 +24,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { TooltipContent } from "@radix-ui/react-tooltip";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the player interface
 interface Player {
@@ -42,39 +43,31 @@ export default function PlayerSelector({
 	setMemberIdList,
 	existingJsonList = "{}",
 }: PlayerSelectorProps) {
-	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
-	// State to store the fetched players
-	const [players, setPlayers] = useState<Player[]>([]);
-	// State to store the selected players
-	const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
 
-	// Fetch players from the API endpoint
-	useEffect(() => {
-		async function loadPlayers() {
-			try {
-				const response = await fetch(playerRoute);
-				const data = await response.json();
-				setPlayers(
-					data.map(
-						(player: {
-							ledaId: string;
-							fullName: string;
-							cannotBeCaptain: boolean;
-						}) => ({
-							ledaId: player.ledaId,
-							fullName: player.fullName,
-							cannotBeCaptain: player.cannotBeCaptain,
-							isCaptain: false,
-						})
-					)
-				);
-			} catch (error) {
-				console.error("Failed to fetch players", error);
-			}
-		}
-		loadPlayers();
-	}, []);
+	const { data: players = [] } = useQuery({
+		queryKey: ["players"],
+		queryFn: async () => {
+			const response = await fetch(playerRoute);
+			const data = await response.json();
+			return data.map(
+				(player: {
+					ledaId: string;
+					fullName: string;
+					cannotBeCaptain: boolean;
+				}) => ({
+					ledaId: player.ledaId,
+					fullName: player.fullName,
+					cannotBeCaptain: player.cannotBeCaptain,
+					isCaptain: false,
+				})
+			);
+		},
+	});
+
+	const [selectedPlayers, setSelectedPlayers] = useState<
+		{ ledaId: string; fullName: string; isCaptain: boolean; cannotBeCaptain: boolean }[]
+	>([]);
 
 	// Load existing selected players from JSON list
 	useEffect(() => {
@@ -104,7 +97,7 @@ export default function PlayerSelector({
 								cannotBeCaptain = false;
 							}
 							const fullName =
-								players.find((p) => p.ledaId === entry.ledaId)
+								players.find((p: Player) => p.ledaId === entry.ledaId)
 									?.fullName || "";
 							return {
 								ledaId: entry.ledaId,
@@ -126,7 +119,7 @@ export default function PlayerSelector({
 
 	// Filter out selected players from the list
 	const availablePlayers = players.filter(
-		(player) => !selectedPlayers.some((p) => p.ledaId === player.ledaId)
+		(player: Player) => !selectedPlayers.some((p) => p.ledaId === player.ledaId)
 	);
 
 	// Generate the stringified JSON list
@@ -223,7 +216,7 @@ export default function PlayerSelector({
 							<CommandEmpty>No player found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{availablePlayers.map((player) => (
+									{availablePlayers.map((player: Player) => (
 										<CommandItem
 											key={player.ledaId}
 											value={player.ledaId}

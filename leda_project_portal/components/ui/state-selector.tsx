@@ -117,20 +117,57 @@ export default function StatePicker({ name, control }: StatePickerProps) {
 	);
 }
 
+// Utility hook to track last input type (keyboard or mouse)
+function useLastInputType() {
+	const [lastInputType, setLastInputType] = React.useState<"keyboard" | "mouse" | null>(null);
+
+	React.useEffect(() => {
+		const handleKeyDown = () => setLastInputType("keyboard");
+		const handleMouseDown = () => setLastInputType("mouse");
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("mousedown", handleMouseDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("mousedown", handleMouseDown);
+		};
+	}, []);
+
+	return lastInputType;
+}
+
 // StatePickerContent component definition
 const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
-	// State to manage the popover open/close status
 	const [open, setOpen] = React.useState(false);
+	const justClosedRef = React.useRef(false);
+	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+	const lastInputType = useLastInputType();
+
+	const handleFocus = React.useCallback(() => {
+		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
+			setOpen(true);
+		}
+		if (justClosedRef.current) {
+			justClosedRef.current = false;
+		}
+	}, [lastInputType, open]);
+
+	const handleSelect = (value: string) => {
+		field.onChange(value);
+		setOpen(false);
+		justClosedRef.current = true;
+	};
 
 	return (
 		<div className="w-auto">
 			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild>
 					<Button
+						ref={popoverTriggerRef}
 						variant="outline"
 						role="combobox"
 						aria-expanded={open}
 						className="w-[200px] justify-between"
+						onFocus={handleFocus}
 					>
 						{field.value
 							? states.find(
@@ -140,20 +177,21 @@ const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
 						<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent className="w-[200px] p-0 bg-white">
+				<PopoverContent className="w-[200px] p-0 bg-white" tabIndex={0}>
 					<Command>
-						<CommandInput placeholder="Search state..." />
+						<CommandInput placeholder="Search state..." autoFocus />
 						<CommandEmpty>No state found.</CommandEmpty>
 						<CommandGroup>
-							<CommandList>
+							<CommandList
+								className="max-h-60 overflow-y-auto"
+								tabIndex={0}
+								onWheel={(e) => e.stopPropagation()}
+							>
 								{states.map((state) => (
 									<CommandItem
 										key={state.value}
 										value={state.value}
-										onSelect={() => {
-											field.onChange(state.value);
-											setOpen(false);
-										}}
+										onSelect={() => handleSelect(state.value)}
 										className="hover:bg-gray-200"
 									>
 										<Check

@@ -18,6 +18,7 @@ import React from "react";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "../../ui/textarea";
 import { placeTypeRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
 
 // Define the schema for form validation using zod
 const placeTypeFormSchema = z.object({
@@ -49,9 +50,8 @@ export default function PlaceTypeAddForm({
 
 	const [placeTypeExists, setPlaceTypeExists] = React.useState(false);
 
-	// Define the onSubmit function to handle form submission
-	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof placeTypeFormSchema>) => {
 			const response = await fetch(placeTypeRoute, {
 				method: "POST",
 				headers: {
@@ -59,7 +59,6 @@ export default function PlaceTypeAddForm({
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				if (response.status === 422) {
 					setPlaceTypeExists(true);
@@ -70,24 +69,28 @@ export default function PlaceTypeAddForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
+		setPlaceTypeExists(false);
+		mutation.mutate(values);
 	}
 
 	// Render the form

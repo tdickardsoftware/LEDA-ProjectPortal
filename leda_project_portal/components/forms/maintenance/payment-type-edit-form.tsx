@@ -19,6 +19,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "@/components/ui/textarea";
 import { paymentTypeRoute } from "@/lib/apiRoutes";
 import { PaymentType } from "@/lib/definitions";
+import { useMutation } from "@tanstack/react-query";
 
 const paymentTypeFormSchema = z.object({
 	paymentType: z.string().min(1, { message: "Payment Type is required." }),
@@ -71,17 +72,13 @@ export default function PaymentTypeEditForm({
 			setFormData(data);
 			form.reset({
 				...data,
-			}); // Set form values to the retrieved data
+			});
 		};
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No payment type data available.</div>;
-	}
-
-	async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof paymentTypeFormSchema>) => {
 			const response = await fetch(paymentTypeRoute, {
 				method: "PUT",
 				headers: {
@@ -89,7 +86,6 @@ export default function PaymentTypeEditForm({
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(
@@ -97,24 +93,31 @@ export default function PaymentTypeEditForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the payment type API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form update error", error);
 			toast.error(
 				`Failed to update the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
+		mutation.mutate(values);
+	}
+
+	if (!rowData) {
+		return <div>No payment type data available.</div>;
 	}
 
 	return (

@@ -9,6 +9,7 @@ import { Form } from "@/components/ui/form";
 import React from "react";
 import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { rosterRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
 
 // Define the schema for form validation using zod
 const divisionFormSchema = z.object({
@@ -39,23 +40,37 @@ export default function RosterCopyForm({
 		},
 	});
 
+	const copyRosterMutation = useMutation({
+		mutationFn: async (values: z.infer<typeof divisionFormSchema>) => {
+			const response = await fetch(rosterRoute + "/rosterUpserter", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+			if (!response.ok) {
+				throw new Error("Failed to copy roster");
+			}
+			return response;
+		},
+		onSuccess: () => {
+			setOpen(false);
+			window.location.reload();
+		},
+		onError: (error) => {
+			console.error("Error copying roster:", error);
+			alert("Failed to copy roster.");
+		},
+	});
+
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
 		const confirmed = window.confirm(
 			"This will overwrite any existing data on the selected season. Do you want to proceed?"
 		);
 		if (!confirmed) return;
-
-		fetch(rosterRoute + "/rosterUpserter", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(values),
-		});
-		console.log(values);
-		setOpen(false);
-		window.location.reload();
+		copyRosterMutation.mutate(values);
 	}
 
 	// Render the form

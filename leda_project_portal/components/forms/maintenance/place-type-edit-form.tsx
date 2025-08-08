@@ -19,6 +19,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "@/components/ui/textarea";
 import { placeTypeRoute } from "@/lib/apiRoutes";
 import { PlaceType } from "@/lib/definitions";
+import { useMutation } from "@tanstack/react-query";
 
 const placeTypeFormSchema = z.object({
 	placeTypeCode: z
@@ -73,17 +74,13 @@ export default function PlaceTypeEditForm({
 			setFormData(data);
 			form.reset({
 				...data,
-			}); // Set form values to the retrieved data
+			});
 		};
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No place type data available.</div>;
-	}
-
-	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof placeTypeFormSchema>) => {
 			const response = await fetch(placeTypeRoute, {
 				method: "PUT",
 				headers: {
@@ -91,7 +88,6 @@ export default function PlaceTypeEditForm({
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(
@@ -99,24 +95,31 @@ export default function PlaceTypeEditForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place type API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form update error", error);
 			toast.error(
 				`Failed to update the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
+		mutation.mutate(values);
+	}
+
+	if (!rowData) {
+		return <div>No place type data available.</div>;
 	}
 
 	return (

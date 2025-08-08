@@ -41,6 +41,7 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 	const handlePaymentHistory = () => {
 		setIsPaymentHistoryDialogOpen(!isPaymentHistoryDialogOpen);
 	};
+
 	return (
 		<div className="container mx-auto p-6">
 			<div>
@@ -135,13 +136,17 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 								Established Date:{" "}
 								{new Date(
 									placeData.establishDate
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">
 								Last Sanctioning Date:{" "}
 								{new Date(
 									placeData.lastSanctioningDate
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">
 								Send Mailings:{" "}

@@ -28,6 +28,7 @@ import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { PlayerMemberInfo } from "@/lib/definitions";
 import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -90,7 +91,6 @@ export default function PlayerEditInformationForm({
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	rowData: PlayerMemberInfo;
 	handleEdit?: () => void;
 }) {
@@ -195,6 +195,43 @@ export default function PlayerEditInformationForm({
 		},
 	});
 
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
+			const response = await fetch(playerRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: () => {
+			toast.success("Successfully updated the form!");
+			form.reset();
+			setBadStandingStatus(false);
+			setLifetimeMemberStatus(false);
+			window.location.reload();
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
+			console.error("Form update error", error);
+			toast.error(
+				`Failed to update the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		},
+	});
+
 	// Handle step navigation
 	const nextStep = async () => {
 		const currentStepFields = steps[currentStep].fields;
@@ -267,45 +304,12 @@ export default function PlayerEditInformationForm({
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No player data available.</div>;
+	if (!rowData || !formData.state) {
+		return <div>Loading player data...</div>;
 	}
 
-	async function onSubmit(values: z.infer<typeof playerInfoSchema>) {
-		try {
-			const response = await fetch(playerRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(values),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			toast.success("Successfully updated the form!");
-
-			// Reset form and state
-			form.reset();
-			setBadStandingStatus(false);
-			setLifetimeMemberStatus(false);
-			window.location.reload();
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the player API route
-		} catch (error) {
-			console.error("Form update error", error);
-			toast.error(
-				`Failed to update the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+	function onSubmit(values: z.infer<typeof playerInfoSchema>) {
+		mutation.mutate(values);
 	}
 
 	return (

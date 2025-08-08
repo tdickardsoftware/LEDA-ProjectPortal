@@ -33,6 +33,7 @@ import {
 	trailsDateRoute,
 	trailsRoute,
 } from "@/lib/apiRoutes";
+import { useQuery } from "@tanstack/react-query";
 //
 // async function to get all player data from the database
 //
@@ -446,4 +447,130 @@ export async function fetchTrailsDateData(
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Trails Date Data");
 	}
+}
+
+// --- TanStack Query Hooks ---
+
+export function usePlayersQuery() {
+	return useQuery({
+		queryKey: ["players"],
+		queryFn: fetchPlayers,
+	});
+}
+
+export function usePlayerMemberQuery(ledaId: string) {
+	return useQuery({
+		queryKey: ["playerMember", ledaId],
+		queryFn: () => fetchPlayerMember(ledaId),
+		enabled: !!ledaId,
+	});
+}
+
+export function useTeamsQuery() {
+	return useQuery({
+		queryKey: ["teams"],
+		queryFn: fetchTeams,
+	});
+}
+
+export function useTeamQuery(ledaId: string) {
+	return useQuery({
+		queryKey: ["team", ledaId],
+		queryFn: () => fetchTeam(ledaId),
+		enabled: !!ledaId,
+	});
+}
+
+export function usePlacesQuery() {
+	return useQuery({
+		queryKey: ["places"],
+		queryFn: fetchPlaces,
+	});
+}
+
+export function usePlaceQuery(ledaId: string) {
+	return useQuery({
+		queryKey: ["place", ledaId],
+		queryFn: () => fetchPlace(ledaId),
+		enabled: !!ledaId,
+	});
+}
+
+export function useDivisionsQuery() {
+	return useQuery({
+		queryKey: ["divisions"],
+		queryFn: fetchDivisions,
+	});
+}
+
+export function useMentionsQuery() {
+	return useQuery({
+		queryKey: ["mentions"],
+		queryFn: fetchMentions,
+	});
+}
+
+export function usePaymentTypesQuery() {
+	return useQuery({
+		queryKey: ["paymentTypes"],
+		queryFn: fetchPaymentTypes,
+	});
+}
+
+export function usePayoutTiersQuery() {
+	return useQuery({
+		queryKey: ["payoutTiers"],
+		queryFn: fetchPayoutTiers,
+	});
+}
+
+export function usePenaltiesQuery() {
+	return useQuery({
+		queryKey: ["penalties"],
+		queryFn: fetchPenalties,
+	});
+}
+
+export function usePeopleTypesQuery() {
+	return useQuery({
+		queryKey: ["peopleTypes"],
+		queryFn: fetchPeopleTypes,
+	});
+}
+
+export function usePlaceTypesQuery() {
+	return useQuery({
+		queryKey: ["placeTypes"],
+		queryFn: fetchPlaceTypes,
+	});
+}
+
+export function useSeasonsQuery() {
+	return useQuery({
+		queryKey: ["seasons"],
+		queryFn: fetchSeasons,
+	});
+}
+
+export function useSeasonQuery(seasonCode: string) {
+	return useQuery({
+		queryKey: ["season", seasonCode],
+		queryFn: () => fetchSeason(seasonCode),
+		enabled: !!seasonCode,
+	});
+}
+
+export function useTrailsDatesQuery() {
+	return useQuery({
+		queryKey: ["trailsDates"],
+		queryFn: fetchTrailsDates,
+	});
+}
+
+export function useTrailsDateDataQuery(trailsDate: string) {
+	return useQuery({
+		queryKey: ["trailsDateData", trailsDate],
+		queryFn: () => fetchTrailsDateData(trailsDate),
+		enabled: !!trailsDate,
+	});
 }

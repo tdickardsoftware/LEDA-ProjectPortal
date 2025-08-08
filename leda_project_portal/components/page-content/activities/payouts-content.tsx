@@ -36,6 +36,13 @@ import {
 import ManageGlobalAdjustments from "@/components/forms/activities/manage-global-adjustments";
 import { Pencil, X } from "lucide-react";
 
+// TanStack Query imports
+import {
+	useQuery,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
+
 // Define types for roster data structure
 type TeamInfo = {
 	teamId: string;
@@ -85,6 +92,7 @@ type PayoutsData = {
 };
 
 export default function PayoutsContent() {
+	const queryClient = useQueryClient();
 	const [seasonCode, setSeasonCode] = useState<string | null>(null);
 	const [currentSeason, setCurrentSeason] = useState(true);
 	const [divisionsData, setDivisionsData] = useState<RosterData>({});
@@ -145,6 +153,113 @@ export default function PayoutsContent() {
 	const [originalPayoutsData, setOriginalPayoutsData] = useState<PayoutsData>(
 		{}
 	); // Store original data for comparison
+
+	// --- TanStack Query: Fetch payouts data ---
+	const {
+		data: payoutsQueryData,
+		isLoading: payoutsLoading,
+	} = useQuery({
+		queryKey: ["payouts", seasonCode],
+		queryFn: async () => {
+			if (!seasonCode) return null;
+			const res = await fetch(`${payoutRoute}?seasonCode=${seasonCode}`);
+			if (!res.ok) throw new Error("Failed to fetch payouts data");
+			const data = await res.json();
+			return data && data.length > 0 ? data[0].payoutsData : null;
+		},
+		enabled: !!seasonCode,
+	});
+
+	// --- TanStack Query: Fetch roster data ---
+	const {
+		data: rosterQueryData,
+		isLoading: rosterLoading,
+	} = useQuery({
+		queryKey: ["roster", seasonCode],
+		queryFn: async () => {
+			if (!seasonCode) return null;
+			const res = await fetch(`${rosterRoute}?seasonCode=${seasonCode}`);
+			if (!res.ok) throw new Error("Failed to fetch roster data");
+			const data = await res.json();
+			return data ? JSON.parse(JSON.stringify(data.teamInformation)) : {};
+		},
+		enabled: !!seasonCode,
+	});
+
+	// --- TanStack Query: Fetch season weeks data ---
+	const {
+		data: seasonWeeksData,
+		isLoading: seasonWeeksLoading,
+	} = useQuery({
+		queryKey: ["seasonWeeks", seasonCode],
+		queryFn: async () => {
+			if (!seasonCode) return null;
+			const res = await fetch(`${seasonRoute}?seasonCode=${seasonCode}`);
+			if (!res.ok) throw new Error("Failed to fetch season weeks");
+			const data = await res.json();
+			return data;
+		},
+		enabled: !!seasonCode,
+	});
+
+	// --- TanStack Query: Fetch completed scoresheet count ---
+	const {
+		data: completedScoresheetData,
+		isLoading: completedScoresheetLoading,
+	} = useQuery({
+		queryKey: ["completedScoresheetCount", seasonCode],
+		queryFn: async () => {
+			if (!seasonCode) return null;
+			const res = await fetch(
+				`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&countOfFinishedWeeks=true`
+			);
+			if (!res.ok) throw new Error("Failed to fetch completed scoresheet count");
+			const data = await res.json();
+			return data;
+		},
+		enabled: !!seasonCode,
+	});
+
+	// --- Effect: When seasonCode changes, update local state from queries ---
+	useEffect(() => {
+		if (!seasonCode) return;
+		setLoading(
+			payoutsLoading ||
+			rosterLoading ||
+			seasonWeeksLoading ||
+			completedScoresheetLoading
+		);
+
+		if (rosterQueryData) {
+			setDivisionsData(rosterQueryData);
+		}
+		if (payoutsQueryData) {
+			setPayoutsData(payoutsQueryData);
+			setOriginalPayoutsData(deepCopy(payoutsQueryData));
+			toast.success("Payouts data loaded successfully");
+		} else if (rosterQueryData) {
+			// If no payouts data, but roster exists, create new payoutsData structure
+			toast.info("Creating new payouts data from roster");
+			// This will be handled by the effect below (when divisionsData changes)
+		}
+		if (seasonWeeksData) {
+			setWeekCount(Object.keys(seasonWeeksData.dates).length);
+		}
+		if (completedScoresheetData) {
+			setCompletedScoresheetCount(completedScoresheetData.count);
+		}
+		// eslint-disable-next-line
+	}, [
+		seasonCode,
+		payoutsQueryData,
+		rosterQueryData,
+		seasonWeeksData,
+		completedScoresheetData,
+		payoutsLoading,
+		rosterLoading,
+		seasonWeeksLoading,
+		completedScoresheetLoading,
+	]);
 
 	// Create payouts data when divisions data changes
 	useEffect(() => {
@@ -222,123 +337,133 @@ export default function PayoutsContent() {
 		}
 	}, [divisionsData]);
 
-	// Utility function to create a deep copy of an object
-	const deepCopy = (obj: PayoutsData): PayoutsData => {
-		return JSON.parse(JSON.stringify(obj));
-	};
-
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(
 		async (value: string) => {
 			if (value === seasonCode) return;
 			setSeasonCode(value);
-
-			try {
-				setLoading(true);
-
-				// Fetch payouts data for the selected seasonCode
-				const payoutsResult = await fetch(
-					`${payoutRoute}?seasonCode=${value}`,
-					{
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
-
-				let foundPayoutsData = false;
-				if (payoutsResult.status === 200) {
-					const payoutsData = await payoutsResult.json();
-					if (payoutsData && payoutsData.length > 0) {
-						setPayoutsData(payoutsData[0].payoutsData);
-						setOriginalPayoutsData(
-							deepCopy(payoutsData[0].payoutsData)
-						); // Use deep copy here
-						foundPayoutsData = true;
-						toast.success("Payouts data loaded successfully");
-					}
-				}
-
-				// Always fetch roster data to ensure UI structure is populated
-				const result = await fetch(
-					`${rosterRoute}?seasonCode=${value}`,
-					{
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
-
-				if (result.status === 200) {
-					const data = await result.json();
-					if (data) {
-						const roster = data;
-						const fetchedData = JSON.parse(
-							JSON.stringify(roster.teamInformation)
-						);
-						setDivisionsData(fetchedData);
-
-						if (!foundPayoutsData) {
-							toast.info("Creating new payouts data from roster");
-						}
-					}
-				}
-
-				const weeksResult = await fetch(
-					`${seasonRoute}?seasonCode=${value}`,
-					{
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
-
-				if (weeksResult.status === 200) {
-					const weeksData = await weeksResult.json();
-					if (weeksData) {
-						setWeekCount(Object.keys(weeksData.dates).length);
-					}
-
-					const completedScoresheetCountResult = await fetch(
-						`${weeklyScoresheetsRoute}?seasonCode=${value}&countOfFinishedWeeks=${true}`,
-						{
-							method: "GET",
-							headers: {
-								"Content-Type": "application/json",
-							},
-						}
-					);
-
-					if (completedScoresheetCountResult.status === 200) {
-						const completedScoresheetData =
-							await completedScoresheetCountResult.json();
-						if (completedScoresheetData) {
-							setCompletedScoresheetCount(
-								completedScoresheetData.count
-							);
-						}
-					}
-				}
-			} catch (error) {
-				console.error("Failed to fetch data:", error);
-				toast.error("Failed to load data");
-			} finally {
-				setLoading(false);
-			}
+			// TanStack Query will refetch automatically due to queryKey dependency
 		},
 		[seasonCode]
 	);
 
-	// Utility function to check if payouts data has changed
-	const hasPayoutsDataChanged = () => {
-		return (
-			JSON.stringify(payoutsData) !== JSON.stringify(originalPayoutsData)
-		);
+	// --- TanStack Mutation: Save payouts data ---
+	const savePayoutsMutation = useMutation({
+		mutationFn: async (payload: { seasonCode: string | null; payoutsData: PayoutsData }) => {
+			const response = await fetch(payoutRoute, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(payload),
+			});
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.message || "Failed to save payouts data");
+			return result;
+		},
+		onSuccess: () => {
+			toast.success("Payouts data saved successfully");
+			queryClient.invalidateQueries({ queryKey: ["payouts", seasonCode] });
+		},
+		onError: (error: unknown) => {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: typeof error === "string"
+					? error
+					: "Unknown error";
+			toast.error(`Failed to save payouts data: ${errorMessage}`);
+		},
+	});
+
+	const handleSavePayoutsData = async () => {
+		savePayoutsMutation.mutate({ seasonCode, payoutsData });
+		setOriginalPayoutsData(deepCopy(payoutsData));
 	};
 
+	// --- TanStack Query: Calculate payouts (team points) ---
+	const calculatePayoutsMutation = useMutation({
+		mutationFn: async (params: {
+			seasonCode: string | null;
+			weekCount: number;
+			teamIdsBySubdivision: { [subdivision: string]: string[] };
+			divisionsData: RosterData;
+			payoutsData: PayoutsData;
+		}) => {
+			const { seasonCode, weekCount, teamIdsBySubdivision, divisionsData, payoutsData } = params;
+			const newPayoutsData = { ...payoutsData };
+			for (const subdivision of Object.keys(teamIdsBySubdivision)) {
+				const response = await fetch(
+					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${weekCount}&teamLedaIds=${teamIdsBySubdivision[subdivision]}`,
+					{ method: "GET", headers: { "Content-Type": "application/json" } }
+				);
+				if (!response.ok) throw new Error("Failed to fetch team points data");
+				const data = await response.json();
+				if (data && Array.isArray(data)) {
+					data.forEach(
+						(teamData: {
+							teamLedaId: string;
+							place: string;
+							amount: string;
+						}) => {
+							Object.keys(divisionsData).forEach((division) => {
+								Object.keys(
+									divisionsData[division]?.subdivisions || {}
+								).forEach((subdivisionKey) => {
+									if (
+										newPayoutsData[division]?.[subdivisionKey]?.[teamData.teamLedaId]
+									) {
+										newPayoutsData[division][subdivisionKey][teamData.teamLedaId].place =
+											parseInt(teamData.place, 10) || null;
+										newPayoutsData[division][subdivisionKey][teamData.teamLedaId].amount =
+											parseFloat(teamData.amount) || 0;
+									}
+								});
+							});
+						}
+					);
+				}
+			}
+			return newPayoutsData;
+		},
+		onSuccess: (data) => {
+			setPayoutsData(data);
+			toast.success("Payouts calculated successfully");
+		},
+		onError: () => {
+			toast.error("Failed to retrieve team standings");
+		},
+	});
+
+	const handleCalculatePayoutsClick = async () => {
+		const teamIdsBySubdivision: { [subdivision: string]: string[] } = {};
+		Object.keys(divisionsData).forEach((division) => {
+			Object.keys(divisionsData[division]?.subdivisions || {}).forEach(
+				(subdivision) => {
+					teamIdsBySubdivision[subdivision] = Object.keys(
+						divisionsData[division]?.subdivisions[subdivision] || {}
+					).map(
+						(team) =>
+							divisionsData[division]?.subdivisions[subdivision][
+								team
+							]?.teamId
+					);
+				}
+			);
+		});
+		calculatePayoutsMutation.mutate({
+			seasonCode,
+			weekCount,
+			teamIdsBySubdivision,
+			divisionsData,
+			payoutsData,
+		});
+	};
+
+	// Utility function to create a deep copy of an object
+	const deepCopy = (obj: PayoutsData): PayoutsData => {
+		return JSON.parse(JSON.stringify(obj));
+	};
+
+	// Handle adjustment
 	const handleAdjustment = (
 		teamId: string,
 		amount: number,
@@ -594,115 +719,9 @@ export default function PayoutsContent() {
 		setManageGlobalAdjustmentsDialogOpen(true);
 	};
 
-	const handleCalculatePayoutsClick = async () => {
-		const teamIdsBySubdivision: { [subdivision: string]: string[] } = {};
-		const newPayoutsData = { ...payoutsData };
-
-		Object.keys(divisionsData).forEach((division) => {
-			Object.keys(divisionsData[division]?.subdivisions || {}).forEach(
-				(subdivision) => {
-					teamIdsBySubdivision[subdivision] = Object.keys(
-						divisionsData[division]?.subdivisions[subdivision] || {}
-					).map(
-						(team) =>
-							divisionsData[division]?.subdivisions[subdivision][
-								team
-							]?.teamId
-					);
-				}
-			);
-		});
-
-		for (const subdivision of Object.keys(teamIdsBySubdivision)) {
-			try {
-				const response = await fetch(
-					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${weekCount}&teamLedaIds=${teamIdsBySubdivision[subdivision]}`,
-					{
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
-				if (!response.ok) {
-					throw new Error("Failed to fetch team points data");
-				}
-
-				const data = await response.json();
-				console.log("Team points data:", data);
-				if (data && Array.isArray(data)) {
-					// Correctly map fetched data to payoutsData
-					data.forEach(
-						(teamData: {
-							teamLedaId: string;
-							place: string;
-							amount: string;
-						}) => {
-							Object.keys(divisionsData).forEach((division) => {
-								Object.keys(
-									divisionsData[division]?.subdivisions || {}
-								).forEach((subdivisionKey) => {
-									if (
-										newPayoutsData[division]?.[
-											subdivisionKey
-										]?.[teamData.teamLedaId]
-									) {
-										newPayoutsData[division][
-											subdivisionKey
-										][teamData.teamLedaId].place =
-											parseInt(teamData.place, 10) ||
-											null;
-										newPayoutsData[division][
-											subdivisionKey
-										][teamData.teamLedaId].amount =
-											parseFloat(teamData.amount) || 0;
-									}
-								});
-							});
-						}
-					);
-				}
-			} catch (error) {
-				console.error("Error fetching team points:", error);
-				toast.error("Failed to retrieve team standings");
-			}
-		}
-		console.log(newPayoutsData);
-		setPayoutsData(newPayoutsData);
-		toast.success("Payouts calculated successfully");
-	};
-
-	const handleSavePayoutsData = async () => {
-		try {
-			const response = await fetch(payoutRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					seasonCode: seasonCode,
-					payoutsData: payoutsData, // Explicitly stringify the payoutsData object
-				}),
-			});
-
-			const result = await response.json();
-
-			if (response.ok) {
-				toast.success("Payouts data saved successfully");
-			} else {
-				throw new Error(
-					result.message || "Failed to save payouts data"
-				);
-			}
-		} catch (error) {
-			console.error("Error saving payouts data:", error);
-			toast.error(
-				`Failed to save payouts data: ${
-					error instanceof Error ? error.message : "Unknown error"
-				}`
-			);
-		}
-		setOriginalPayoutsData(deepCopy(payoutsData));
+	// Utility function to check if payoutsData has changed compared to originalPayoutsData
+	const hasPayoutsDataChanged = (): boolean => {
+		return JSON.stringify(payoutsData) !== JSON.stringify(originalPayoutsData);
 	};
 
 	return (
@@ -914,23 +933,36 @@ export default function PayoutsContent() {
 																		][team];
 																	const teamId =
 																		teamInfo?.teamId;
-																	const place =
+																	const payoutTeam =
+																		teamId &&
 																		payoutsData[
 																			division
-																		]?.[
-																			subdivision
-																		]?.[
+																		] &&
+																		payoutsData[
+																			division
+																		][subdivision] &&
+																		payoutsData[
+																			division
+																		][subdivision][
 																			teamId
 																		]
-																			?.place;
+																			? payoutsData[
+																					division
+																			  ][subdivision][
+																					teamId
+																			  ]
+																			: undefined;
+																	const place =
+																		payoutTeam && typeof payoutTeam.place === "number"
+																			? payoutTeam.place
+																			: Number.MAX_SAFE_INTEGER;
 																	return {
 																		team,
 																		teamInfo,
 																		teamId,
-																		place:
-																			place ||
-																			Number.MAX_SAFE_INTEGER,
-																	}; // Use MAX_SAFE_INTEGER for teams without place
+																		payoutTeam,
+																		place,
+																	};
 																})
 																.sort(
 																	(a, b) =>
@@ -939,11 +971,7 @@ export default function PayoutsContent() {
 																) // Sort by place (ascending)
 																.map(
 																	(
-																		{
-																			team,
-																			teamInfo,
-																			teamId,
-																		},
+																		{ team, teamInfo, teamId, payoutTeam },
 																		teamIndex
 																	) => {
 																		return (
@@ -957,27 +985,10 @@ export default function PayoutsContent() {
 																				<AccordionTrigger className="flex justify-between items-center">
 																					<div className="flex items-center gap-6">
 																						<span className="text-left">
-																							{payoutsData[
-																								division
-																							]?.[
-																								subdivision
-																							]?.[
-																								teamId
-																							]
-																								?.place !==
-																							null ? (
+																							{payoutTeam && payoutTeam.place !== null ? (
 																								<span>
 																									<span className="font-semibold">
-																										{
-																											payoutsData[
-																												division
-																											][
-																												subdivision
-																											][
-																												teamId
-																											]
-																												.place
-																										}
+																										{payoutTeam.place}
 																									</span>
 																									{
 																										" - "
@@ -1002,25 +1013,11 @@ export default function PayoutsContent() {
 																										Base
 																										Winnings:
 																										$
-																										{payoutsData[
-																											division
-																										][
-																											subdivision
-																										][
-																											teamId
-																										].amount.toFixed(
+																										{payoutTeam.amount.toFixed(
 																											2
 																										)}
 																									</span>
-																									{payoutsData[
-																										division
-																									][
-																										subdivision
-																									][
-																										teamId
-																									]
-																										.adjustmentAmount !==
-																										0 && (
+																									{payoutTeam.adjustmentAmount !== 0 && (
 																										<>
 																											{
 																												" - "
@@ -1031,22 +1028,8 @@ export default function PayoutsContent() {
 																												Adjustments:
 																												$
 																												{(
-																													payoutsData[
-																														division
-																													][
-																														subdivision
-																													][
-																														teamId
-																													]
-																														.amount +
-																													payoutsData[
-																														division
-																													][
-																														subdivision
-																													][
-																														teamId
-																													]
-																														.adjustmentAmount
+																													payoutTeam.amount +
+																													payoutTeam.adjustmentAmount
 																												).toFixed(
 																													2
 																												)}
@@ -1084,26 +1067,11 @@ export default function PayoutsContent() {
 																					</div>
 																				</AccordionTrigger>
 																				<AccordionContent>
-																					{payoutsData[
-																						division
-																					]?.[
-																						subdivision
-																					]?.[
-																						teamId
-																					]
-																						?.adjustments &&
-																					Object.keys(
-																						payoutsData[
-																							division
-																						][
-																							subdivision
-																						][
-																							teamId
-																						]
-																							.adjustments ||
+																					{payoutTeam && payoutTeam.adjustments &&
+																						Object.keys(
+																							payoutTeam.adjustments ||
 																							{}
-																					)
-																						.length >
+																						).length >
 																						0 ? (
 																						<div className="space-y-4">
 																							{/* Global Adjustments */}
@@ -1114,15 +1082,7 @@ export default function PayoutsContent() {
 																								</h4>
 																								<div className="flex flex-wrap gap-2">
 																									{Object.entries(
-																										payoutsData[
-																											division
-																										][
-																											subdivision
-																										][
-																											teamId
-																										]
-																											.adjustments ||
-																											{}
+																										payoutTeam.adjustments || {}
 																									)
 																										.filter(
 																											([
@@ -1228,15 +1188,7 @@ export default function PayoutsContent() {
 																								</h4>
 																								<div className="flex flex-wrap gap-2">
 																									{Object.entries(
-																										payoutsData[
-																											division
-																										][
-																											subdivision
-																										][
-																											teamId
-																										]
-																											.adjustments ||
-																											{}
+																										payoutTeam.adjustments || {}
 																									)
 																										.filter(
 																											([

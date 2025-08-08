@@ -33,6 +33,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useMutation } from "@tanstack/react-query";
 
 // Define the schema for form validation using zod
 const seasonFormSchema = z.object({
@@ -63,6 +64,52 @@ export default function SeasonAddForm({
 	const [initialDate, setInitialDate] = React.useState(new Date());
 	const [dates, setDates] = React.useState<string>();
 	const [seasonCodeExists, setSeasonCodeExists] = React.useState(false);
+
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof seasonFormSchema>) => {
+			const formattedDates = JSON.parse(dates || "[]").reduce(
+				(acc: { [key: string]: string }, date: string, index: number) => {
+					acc[`Date${index + 1}`] = date;
+					return acc;
+				},
+				{}
+			);
+			values.dates = JSON.stringify(formattedDates);
+			const response = await fetch(seasonRoute, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+			if (!response.ok) {
+				if (response.status === 422) {
+					setSeasonCodeExists(true);
+				}
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: (results) => {
+			toast.success("Successfully submitted the form!");
+			form.reset();
+			console.log("Form submitted successfully!", results);
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
+			console.error("Form submission error", error);
+			toast.error(
+				`Failed to submit the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		},
+	});
 
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof seasonFormSchema>>({
@@ -109,53 +156,9 @@ export default function SeasonAddForm({
 		}
 	};
 
-	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof seasonFormSchema>) {
-		const formattedDates = JSON.parse(dates || "[]").reduce(
-			(acc: { [key: string]: string }, date: string, index: number) => {
-				acc[`Date${index + 1}`] = date;
-				return acc;
-			},
-			{}
-		);
-		values.dates = JSON.stringify(formattedDates);
-		try {
-			const response = await fetch(seasonRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(values),
-			});
-
-			if (!response.ok) {
-				if (response.status === 422) {
-					setSeasonCodeExists(true);
-				}
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			const results = await response.json();
-			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
-			form.reset();
-
-			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
-			console.error("Form submission error", error);
-			toast.error(
-				`Failed to submit the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+		setSeasonCodeExists(false);
+		mutation.mutate(values);
 	}
 
 	// Render the form

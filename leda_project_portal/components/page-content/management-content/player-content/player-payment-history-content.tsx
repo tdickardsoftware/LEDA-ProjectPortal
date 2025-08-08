@@ -2,7 +2,7 @@
 
 import { PlayerMemberInfo, PaymentHistory } from "@/lib/definitions";
 import { playerPaymentHistoryRoute } from "@/lib/apiRoutes";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
 	Table,
 	TableBody,
@@ -26,18 +26,13 @@ import {
 } from "@/components/ui/popover";
 import { FilterIcon, XIcon } from "lucide-react";
 import PaymentTypeSelectorNF from "@/components/ui/payment-type-selector-nf";
+import { useQuery } from "@tanstack/react-query";
 
 export default function PlayerPaymentHistoryContent({
 	playerData,
 }: {
 	playerData: PlayerMemberInfo;
 }) {
-	const [paymentData, setPaymentData] = useState<PaymentHistory[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [uniqueDates, setUniqueDates] = useState<{ paymentDate: string }[]>(
-		[]
-	);
 	const [selectedDate, setSelectedDate] = useState<string>("all");
 	const [selectedPaymentType, setSelectedPaymentType] = useState<
 		{ paymentType: string; desc: string } | undefined
@@ -47,9 +42,14 @@ export default function PlayerPaymentHistoryContent({
 	>(undefined);
 	const [filterOpen, setFilterOpen] = useState(false);
 
-	// Fetch payment data
-	useEffect(() => {
-		const getPaymentData = async () => {
+	// TanStack Query for payment data
+	const {
+		data: paymentData = [],
+		isLoading,
+		error,
+	} = useQuery<PaymentHistory[]>({
+		queryKey: ["playerPaymentHistory", playerData.ledaId],
+		queryFn: async () => {
 			const results = await fetch(
 				`${playerPaymentHistoryRoute}?ledaId=${playerData.ledaId}`,
 				{
@@ -59,49 +59,28 @@ export default function PlayerPaymentHistoryContent({
 			if (!results.ok) {
 				throw new Error("Failed to fetch payment data");
 			}
-			const data = await results.json();
-			return data;
-		};
+			return await results.json();
+		},
+	});
 
-		const fetchPaymentData = async () => {
-			try {
-				setIsLoading(true);
-				const data = await getPaymentData();
-				setPaymentData(data);
-
-				// Extract unique dates for the filter, using a consistent date format
-				const dates = [
-					...new Set(
-						data.map((item: PaymentHistory) => {
-							if (!item.date) return null;
-							const date = new Date(item.date);
-							// Always use UTC for date string
-							return `${date.getUTCFullYear()}-${String(
-								date.getUTCMonth() + 1
-							).padStart(2, "0")}-${String(
-								date.getUTCDate()
-							).padStart(2, "0")}`;
-						})
-					),
-				]
-					.filter(Boolean)
-					.map((date) => ({ paymentDate: date as string }));
-
-				setUniqueDates(dates);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load payment history data");
-				console.error(err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchPaymentData();
-	}, [playerData.ledaId]);
+	// Extract unique dates for the filter, using a consistent date format
+	const uniqueDates: { paymentDate: string }[] = [
+		...new Set(
+			(paymentData || []).map((item: PaymentHistory) => {
+				if (!item.date) return null;
+				const date = new Date(item.date);
+				// Always use UTC for date string
+				return `${date.getUTCFullYear()}-${String(
+					date.getUTCMonth() + 1
+				).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+			})
+		),
+	]
+		.filter(Boolean)
+		.map((date) => ({ paymentDate: date as string }));
 
 	// Filter payment data
-	const filteredPaymentData = paymentData.filter((payment) => {
+	const filteredPaymentData = (paymentData || []).filter((payment) => {
 		let matchesDate = true;
 		let matchesType = true;
 
@@ -279,7 +258,9 @@ export default function PlayerPaymentHistoryContent({
 						Loading payment history...
 					</p>
 				) : error ? (
-					<p className="text-red-500">{error}</p>
+					<p className="text-red-500">
+						{(error as Error).message || "Failed to load payment history data"}
+					</p>
 				) : filteredPaymentData.length === 0 ? (
 					<p className="text-gray-500">
 						No payment history found for this player.

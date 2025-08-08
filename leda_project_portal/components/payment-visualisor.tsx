@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	Accordion,
 	AccordionContent,
@@ -36,13 +37,7 @@ interface PaymentVisualisorProps {
 	ledaId?: string;
 }
 
-interface PaymentDate {
-	paymentDate: string;
-}
-
 export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
-	const [payments, setPayments] = useState<PaymentHistory[]>([]);
-	const [uniqueDates, setUniqueDates] = useState<PaymentDate[]>([]);
 	const [selectedDate, setSelectedDate] = useState<string>("all");
 	const [selectedPaymentType, setSelectedPaymentType] = useState<
 		{ paymentType: string; desc: string } | undefined
@@ -50,29 +45,104 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 	const [appliedPaymentType, setAppliedPaymentType] = useState<
 		{ paymentType: string; desc: string } | undefined
 	>(undefined);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
 	const [filterOpen, setFilterOpen] = useState(false);
-
-	// Capitalize first letter of type
-	const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
-
-	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
 	const recordsPerPage = 10;
+
+	const queryClient = useQueryClient();
+
+	// TanStack Query for unique dates
+	const {
+		data: uniqueDates = [],
+		error: datesError,
+		isLoading: datesLoading,
+		refetch: refetchDates,
+	} = useQuery({
+		queryKey: ['uniqueDates', type, ledaId],
+		queryFn: async () => {
+			let baseRoute = "";
+			if (type === "player") baseRoute = playerPaymentHistoryRoute;
+			else if (type === "team") baseRoute = teamPaymentHistoryRoute;
+			else if (type === "place") baseRoute = placePaymentHistoryRoute;
+			else return [];
+			const url = ledaId
+				? `${baseRoute}/uniqueDates?ledaId=${ledaId}`
+				: `${baseRoute}/uniqueDates`;
+			const response = await fetch(url);
+			if (!response.ok) throw new Error('Failed to fetch unique dates');
+			const data = await response.json();
+			return Array.isArray(data)
+				? data.map((item) => ({ paymentDate: item.date }))
+				: (data?.rows || []).map((item: { date: string }) => ({
+						paymentDate: item.date,
+				  }));
+		},
+		enabled: !!type,
+		staleTime: 5 * 60 * 1000,
+	});
+
+	// TanStack Query for payments
+	const {
+		data: payments = [],
+		error: paymentsError,
+		isLoading: paymentsLoading,
+		refetch: refetchPayments,
+	} = useQuery({
+		queryKey: ['paymentHistory', type, ledaId, selectedDate, appliedPaymentType],
+		queryFn: async () => {
+			let baseUrl = "";
+			if (type === "player") baseUrl = playerPaymentHistoryRoute;
+			else if (type === "team") baseUrl = teamPaymentHistoryRoute;
+			else if (type === "place") baseUrl = placePaymentHistoryRoute;
+			else return [];
+			const url = ledaId ? `${baseUrl}?ledaId=${ledaId}` : baseUrl;
+			const response = await fetch(url);
+			if (!response.ok) throw new Error(`API returned ${response.status}: ${response.statusText}`);
+			let data = await response.json();
+			data = Array.isArray(data) ? data : data?.payments || [];
+			data = data.map((payment: PaymentHistory) => ({
+				...payment,
+				date: payment.date || payment.date,
+			}));
+			if (selectedDate !== "all") {
+				data = data.filter((payment: PaymentHistory) => {
+					const paymentDate = String(payment.date || "");
+					if (!paymentDate) return false;
+					const paymentUTC = new Date(paymentDate + (paymentDate.endsWith("Z") ? "" : "T00:00:00Z"));
+					const selectedUTC = new Date(selectedDate + "T00:00:00Z");
+					return paymentUTC.toISOString().slice(0, 10) === selectedUTC.toISOString().slice(0, 10);
+				});
+			}
+			if (appliedPaymentType) {
+				data = data.filter((payment: PaymentHistory) => payment.type === appliedPaymentType.paymentType);
+			}
+			data.sort((a: PaymentHistory, b: PaymentHistory) => {
+				const dateA = new Date(String(a.date || "") + (String(a.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
+				const dateB = new Date(String(b.date || "") + (String(b.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
+				return dateB.getTime() - dateA.getTime();
+			});
+			return data;
+		},
+		enabled: !!type,
+		staleTime: 2 * 60 * 1000,
+		retry: 1,
+	});
+
+	const error = datesError || paymentsError;
+	const loading = datesLoading || paymentsLoading;
+
+	const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+
 	const indexOfLastRecord = currentPage * recordsPerPage;
 	const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-	const currentRecords = payments.slice(
-		indexOfFirstRecord,
-		indexOfLastRecord
-	);
+	const currentRecords = payments.slice(indexOfFirstRecord, indexOfLastRecord);
 	const totalPages = Math.ceil(payments.length / recordsPerPage);
 
-	// Function to refresh payment data after a new payment is added
 	const refreshPayments = () => {
-		setLoading(true);
-		// This will trigger the useEffect that fetches payments
-		setSelectedDate(selectedDate);
+		refetchPayments();
+		refetchDates();
+		queryClient.invalidateQueries({ queryKey: ['paymentHistory'] });
+		queryClient.invalidateQueries({ queryKey: ['uniqueDates'] });
 	};
 
 	// Function to clear all filters
@@ -88,140 +158,6 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 		setAppliedPaymentType(selectedPaymentType);
 		setFilterOpen(false);
 	};
-
-	// Fetch all unique payment dates
-	useEffect(() => {
-		async function fetchUniqueDates() {
-			try {
-				let baseRoute = "";
-				if (type === "player") baseRoute = playerPaymentHistoryRoute;
-				else if (type === "team") baseRoute = teamPaymentHistoryRoute;
-				else if (type === "place") baseRoute = placePaymentHistoryRoute;
-				else return setUniqueDates([]);
-
-				const url = ledaId
-					? `${baseRoute}/uniqueDates?ledaId=${ledaId}`
-					: `${baseRoute}/uniqueDates`;
-				const response = await fetch(url);
-
-				if (!response.ok) return setUniqueDates([]);
-
-				const data = await response.json();
-				// Convert the field name from "date" to "paymentDate" to match the interface
-				const dates = Array.isArray(data)
-					? data.map((item) => ({ paymentDate: item.date }))
-					: (data?.rows || []).map((item: { date: string }) => ({
-							paymentDate: item.date,
-					  }));
-				setUniqueDates(dates);
-			} catch {
-				setUniqueDates([]);
-			}
-		}
-
-		fetchUniqueDates();
-	}, [type, ledaId]);
-
-	// Fetch payment information
-	useEffect(() => {
-		const controller = new AbortController();
-		let isMounted = true;
-
-		async function fetchPayments() {
-			setLoading(true);
-			setError(null);
-
-			try {
-				let baseUrl = "";
-				if (type === "player") baseUrl = playerPaymentHistoryRoute;
-				else if (type === "team") baseUrl = teamPaymentHistoryRoute;
-				else if (type === "place") baseUrl = placePaymentHistoryRoute;
-				else {
-					if (isMounted) {
-						setPayments([]);
-						setLoading(false);
-					}
-					return;
-				}
-
-				const url = ledaId ? `${baseUrl}?ledaId=${ledaId}` : baseUrl;
-				const response = await fetch(url, {
-					signal: controller.signal,
-				});
-
-				if (!response.ok) {
-					throw new Error(
-						`API returned ${response.status}: ${response.statusText}`
-					);
-				}
-
-				let data = await response.json();
-				data = Array.isArray(data) ? data : data?.payments || [];
-
-				// Map paymentDate to date for consistency
-				data = data.map((payment: PaymentHistory) => ({
-					...payment,
-					date: payment.date || payment.date,
-				}));
-
-				// Filter by selected date if not "all"
-				if (selectedDate !== "all") {
-					data = data.filter((payment: PaymentHistory) => {
-						const paymentDate = String(payment.date || "");
-						if (!paymentDate) return false;
-						const paymentUTC = new Date(paymentDate + (paymentDate.endsWith("Z") ? "" : "T00:00:00Z"));
-						const selectedUTC = new Date(selectedDate + "T00:00:00Z");
-						return paymentUTC.toISOString().slice(0, 10) === selectedUTC.toISOString().slice(0, 10);
-					});
-				}
-
-				// Filter by selected payment type if one is selected
-				if (appliedPaymentType) {
-					data = data.filter((payment: PaymentHistory) => {
-						// Handle field name mismatch - payment data uses 'type' field but selector uses 'paymentType'
-						return payment.type === appliedPaymentType.paymentType;
-					});
-				}
-
-				// Sort data by date in descending order (newest dates first)
-				data.sort((a: PaymentHistory, b: PaymentHistory) => {
-					const dateA = new Date(String(a.date || "") + (String(a.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
-					const dateB = new Date(String(b.date || "") + (String(b.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
-					return dateB.getTime() - dateA.getTime();
-				});
-
-				if (isMounted) {
-					setPayments(data);
-				}
-			} catch (error: unknown) {
-				// Only handle errors that are not abort errors
-				if (error instanceof Error && error.name === "AbortError") {
-					// Ignore abort errors
-					return;
-				}
-				console.error("Payment fetch error:", error);
-				if (isMounted) {
-					setPayments([]);
-					setError(
-						error instanceof Error
-							? error.message
-							: "Failed to load payment data"
-					);
-				}
-			} finally {
-				if (isMounted) {
-					setLoading(false);
-				}
-			}
-		}
-
-		fetchPayments();
-
-		return () => {
-			isMounted = false;
-			controller.abort();
-		};
-	}, [type, ledaId, selectedDate, appliedPaymentType]);
 
 	// Function to delete a payment record
 	const handleDeletePayment = async (payment: PaymentHistory) => {
@@ -247,14 +183,11 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 				},
 				body: JSON.stringify(payment),
 			});
-
 			if (!response.ok) {
 				throw new Error(
 					`Failed to delete payment: ${response.statusText}`
 				);
 			}
-
-			// Refresh the payment data after successful deletion
 			refreshPayments();
 			window.location.reload();
 		} catch (error) {
@@ -287,21 +220,44 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 						<SelectTrigger className="w-[200px] border-gray-400 text-gray-700">
 							<SelectValue placeholder="Filter by date" />
 						</SelectTrigger>
-						<SelectContent className="bg-white border-gray-400 text-gray-700">
-							<SelectItem value="all">All Dates</SelectItem>
+						<SelectContent className="bg-white  border-gray-400 text-gray-700">
+							<SelectItem value="all" className="hover:bg-gray-300">All Dates</SelectItem>
 							{Array.isArray(uniqueDates) &&
-								uniqueDates.map((date, index) => (
-									<SelectItem
-										key={`${date.paymentDate}-${index}`}
-										value={date.paymentDate}
-									>
-										{date.paymentDate
-											? new Date(
-													date.paymentDate + "T00:00:00Z"
-											  ).toLocaleDateString("en-US", { timeZone: "UTC" })
-											: "Unknown date"}
-									</SelectItem>
-								))}
+								uniqueDates.map((date, index) => {
+									// Defensive: ensure date.paymentDate is a valid date string (YYYY-MM-DD)
+									// Postgres DATE fields may be returned as JS Date objects, ISO strings, or plain YYYY-MM-DD strings.
+									let dateStr = "";
+									if (date.paymentDate instanceof Date) {
+										dateStr = date.paymentDate.toISOString().slice(0, 10);
+									} else if (
+										typeof date.paymentDate === "string" &&
+										/^\d{4}-\d{2}-\d{2}$/.test(date.paymentDate)
+									) {
+										dateStr = date.paymentDate;
+									} else if (
+										typeof date.paymentDate === "string" &&
+										!isNaN(Date.parse(date.paymentDate))
+									) {
+										dateStr = new Date(date.paymentDate).toISOString().slice(0, 10);
+									}
+
+									const isValid =
+										typeof dateStr === "string" &&
+										/^\d{4}-\d{2}-\d{2}$/.test(dateStr) &&
+										!isNaN(Date.parse(dateStr + "T00:00:00Z"));
+
+									return (
+										<SelectItem
+											key={`${date.paymentDate}-${index}`}
+											value={dateStr || date.paymentDate}
+											className="hover:bg-gray-300"
+										>
+											{isValid
+												? new Date(dateStr + "T00:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC" })
+												: "Unknown date"}
+										</SelectItem>
+									);
+								})}
 						</SelectContent>
 					</Select>
 
@@ -388,12 +344,12 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 				</div>
 			) : error ? (
 				<div className="flex justify-center items-center h-40 text-red-500">
-					<p>{error}</p>
+					<p>{error instanceof Error ? error.message : String(error)}</p>
 				</div>
 			) : payments.length > 0 ? (
 				<>
 					<Accordion type="single" collapsible className="w-full">
-						{currentRecords.map((payment) => (
+						{currentRecords.map((payment: PaymentHistory) => (
 							<AccordionItem
 								key={payment.paymentNbr}
 								value={`payment-${payment.paymentNbr}`}
@@ -605,3 +561,4 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 		</div>
 	);
 }
+

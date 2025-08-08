@@ -9,7 +9,7 @@ export default async function handler(
 		if (req.query.ledaId) {
 			try {
 				const result = await query(
-					`SELECT "seasonCode", "weekNum", "ledaId", penaltycode, points, notes, "teamLabel" FROM public.leda_team_penalty_history where "ledaId" = $1`,
+					`SELECT "seasonCode", "weekNum", "team_id", penaltycode, points, notes, "teamlabel" FROM public.leda_team_penalty_history where "team_id" = $1`,
 					[req.query.ledaId as string]
 				);
 				res.status(200).json(result.rows);

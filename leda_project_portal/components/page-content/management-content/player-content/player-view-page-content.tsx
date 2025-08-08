@@ -139,7 +139,9 @@ export default function PlayerPageContent({
 								Date of Birth:{" "}
 								{new Date(
 									playerData.dateOfBirth
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">Email: {playerData.email}</p>
 							<p className="text-lg">

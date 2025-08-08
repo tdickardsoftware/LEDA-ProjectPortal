@@ -20,6 +20,7 @@ import MentionBasisSelector from "@/components/ui/mention-basis-selector";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { mentionRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
 
 // Define the schema for form validation using zod
 const mentionFormSchema = z.object({
@@ -55,9 +56,8 @@ export default function MentionAddForm({
 
 	const [mentionCodeExists, setMentionCodeExists] = React.useState(false);
 
-	// Define the onSubmit function to handle form submission
-	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof mentionFormSchema>) => {
 			const response = await fetch(mentionRoute, {
 				method: "POST",
 				headers: {
@@ -65,7 +65,6 @@ export default function MentionAddForm({
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				if (response.status === 422) {
 					setMentionCodeExists(true);
@@ -76,24 +75,28 @@ export default function MentionAddForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
+		setMentionCodeExists(false);
+		mutation.mutate(values);
 	}
 
 	// Render the form

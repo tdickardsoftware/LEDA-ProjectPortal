@@ -9,7 +9,7 @@ import {
 } from "@/components//ui/card";
 import TeamEditForm from "@/components/forms/management/team-edit-form";
 import Link from "next/link";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import { FolderTabMed } from "@/components/ui/folder-tab";
@@ -46,6 +46,7 @@ import {
 import TeamPaymentHistoryContent from "./team-payment-history-content";
 import TeamPenaltyHistory from "./team-penalty-history";
 import TeamLeagueHistory from "./team-league-history";
+import { useQuery } from "@tanstack/react-query";
 
 export default function TeamPageContent({
 	teamData,
@@ -61,13 +62,8 @@ export default function TeamPageContent({
 	}[];
 }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	// Payment status dialog state
 	const [showPaymentPopover, setShowPaymentPopover] = useState(false);
 	const [paymentSeasonCode, setPaymentSeasonCode] = useState<string>("");
-	const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
-	const [paymentStatusData, setPaymentStatusData] = useState<
-		{ ledaId: string; status: "PAID" | "PART" | "UNPAID" }[]
-	>([]);
 	const [filterCurrentSeason, setFilterCurrentSeason] = useState(true);
 	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] =
 		useState(false);
@@ -75,6 +71,38 @@ export default function TeamPageContent({
 		useState(false);
 	const [isTeamLeagueHistoryDialogOpen, setIsTeamLeagueHistoryDialogOpen] =
 		useState(false);
+
+	// --- TanStack Query: Fetch payment status for team members for the selected season ---
+	const {
+		data: paymentStatusData = [],
+		isFetching: paymentStatusLoading,
+		refetch: refetchPaymentStatus,
+	} = useQuery<{
+		ledaId: string;
+		status: "PAID" | "PART" | "UNPAID" | null;
+	}[]>({
+		queryKey: [
+			"teamMemberPaymentStatus",
+			paymentSeasonCode,
+			memberDetails.map((m) => m.ledaId).join(","),
+		],
+		enabled: !!paymentSeasonCode && memberDetails.length > 0 && showPaymentPopover,
+		queryFn: async () => {
+			const results = await Promise.all(
+				memberDetails.map(async (member) => {
+					const res = await fetch(
+						`${playerPaymentHistoryRoute}/viewData?seasonCode=${paymentSeasonCode}&ledaId=${member.ledaId}`
+					);
+					const data = await res.json();
+					return {
+						ledaId: member.ledaId,
+						status: data?.status || null,
+					};
+				})
+			);
+			return results;
+		},
+	});
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -96,95 +124,56 @@ export default function TeamPageContent({
 		setIsTeamLeagueHistoryDialogOpen(!isTeamLeagueHistoryDialogOpen);
 	};
 
-	// Fetch payment status for team members for the selected season
-	const fetchPaymentStatus = useCallback(
-		async (seasonCode: string) => {
-			if (!seasonCode) return;
-			setPaymentStatusLoading(true);
-			try {
-				// Fetch payment status for each member using playerPaymentHistoryRoute
-				const results = await Promise.all(
-					memberDetails.map(async (member) => {
-						const res = await fetch(
-							`${playerPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}&ledaId=${member.ledaId}`
-						);
-						const data = await res.json();
-						// data may be null/undefined if not found
-						return {
-							ledaId: member.ledaId,
-							status: data?.status || null,
-						};
-					})
-				);
-				setPaymentStatusData(results);
-			} catch (e) {
-				console.error("Failed to fetch payment status", e);
-				setPaymentStatusData([]);
-			} finally {
-				setPaymentStatusLoading(false);
-			}
-		},
-			[memberDetails]
-	);
-
 	const handleShowPaymentStatus = async () => {
 		if (!paymentSeasonCode) return;
-		await fetchPaymentStatus(paymentSeasonCode);
+		await refetchPaymentStatus();
 	};
 
-	// Helper to get payment status for a member
-	const getPaymentStatus = useCallback(
-		(ledaId: string) => {
-			const paymentRecord = paymentStatusData.find(
-				(p) => String(p.ledaId) === String(ledaId)
-			);
-			return paymentRecord?.status || null;
-		},
-		[paymentStatusData]
-	);
+	const getPaymentStatus = (ledaId: string) => {
+		const paymentRecord = paymentStatusData.find(
+			(p) => String(p.ledaId) === String(ledaId)
+		);
+		return paymentRecord?.status || null;
+	};
 
-	// Helper to render payment status icon with tooltip
-	const renderPaymentStatusIcon = useCallback(
-		(ledaId: string) => {
-			const status = getPaymentStatus(ledaId);
-			if (!status) return null;
-			let icon = null;
-			let tooltipText = "";
-			switch (status) {
-				case "PAID":
-					icon = (
-						<CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />
-					);
-					tooltipText = "Paid";
-					break;
-				case "PART":
-					icon = (
-						<AlertTriangle className="h-5 w-5 text-amber-500 ml-2" />
-					);
-					tooltipText = "Partial";
-					break;
-				case "UNPAID":
-					icon = <XCircle className="h-5 w-5 text-red-500 ml-2" />;
-					tooltipText = "Unpaid";
-					break;
-				default:
-					return null;
-			}
-			return (
-				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<span>{icon}</span>
-						</TooltipTrigger>
-						<TooltipContent className="bg-white rounded-lg">
-							{tooltipText}
-						</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
-			);
-		},
-		[getPaymentStatus]
-	);
+	const renderPaymentStatusIcon = (ledaId: string) => {
+		const status = getPaymentStatus(ledaId);
+		if (!status) return null;
+		let icon = null;
+		let tooltipText = "";
+		switch (status) {
+			case "PAID":
+				icon = (
+					<CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />
+				);
+				tooltipText = "Paid";
+				break;
+			case "PART":
+				icon = (
+					<AlertTriangle className="h-5 w-5 text-amber-500 ml-2" />
+				);
+				tooltipText = "Partial";
+				break;
+			case "UNPAID":
+				icon = <XCircle className="h-5 w-5 text-red-500 ml-2" />;
+				tooltipText = "Unpaid";
+				break;
+			default:
+				return null;
+		}
+		return (
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<span>{icon}</span>
+					</TooltipTrigger>
+					<TooltipContent className="bg-white rounded-lg">
+						{tooltipText}
+					</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		);
+	};
 
 	return (
 		<div className="container mx-auto p-6">
@@ -296,7 +285,9 @@ export default function TeamPageContent({
 								Established Date:{" "}
 								{new Date(
 									teamData.establishedDate
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">
 								Last Team Fee Payment:{" "}
@@ -326,7 +317,7 @@ export default function TeamPageContent({
 												Captain
 											</TableHead>
 											<TableHead className="px-4 py-2 text-center">
-												Cannot Be Captain
+												Can&apos;t Be Captain
 											</TableHead>
 											<TableHead className="px-4 py-2 text-center">
 												Bad Standing
@@ -461,3 +452,4 @@ export default function TeamPageContent({
 		</div>
 	);
 }
+							

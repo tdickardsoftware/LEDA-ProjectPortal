@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -18,29 +18,20 @@ type LeagueHistory = {
 };
 
 export default function TeamLeagueHistory({ ledaId }: { ledaId: number }) {
-	const [leagueHistory, setLeagueHistory] = useState<LeagueHistory[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		const fetchLeagueHistory = async () => {
-			try {
-				setIsLoading(true);
-				const res = await fetch(
-					`/api/management/team/leagueHistory?ledaId=${ledaId}`
-				);
-				if (!res.ok) throw new Error("Failed to fetch league history");
-				const data = await res.json();
-				setLeagueHistory(data);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load league history data: " + err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchLeagueHistory();
-	}, [ledaId]);
+	const {
+		data: leagueHistory = [],
+		isLoading,
+		error,
+	} = useQuery<LeagueHistory[]>({
+		queryKey: ["teamLeagueHistory", ledaId],
+		queryFn: async () => {
+			const res = await fetch(
+				`/api/management/team/leagueHistory?ledaId=${ledaId}`
+			);
+			if (!res.ok) throw new Error("Failed to fetch league history");
+			return await res.json();
+		},
+	});
 
 	return (
 		<div className="container mx-auto p-6">
@@ -50,7 +41,9 @@ export default function TeamLeagueHistory({ ledaId }: { ledaId: number }) {
 					Loading league history...
 				</p>
 			) : error ? (
-				<p className="text-red-500">{error}</p>
+				<p className="text-red-500">
+					{(error as Error).message || "Failed to load league history data"}
+				</p>
 			) : leagueHistory.length === 0 ? (
 				<p className="text-gray-500">
 					No league history found for this team.

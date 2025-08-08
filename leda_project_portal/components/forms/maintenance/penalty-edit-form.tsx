@@ -19,6 +19,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "@/components/ui/textarea";
 import { penaltyRoute } from "@/lib/apiRoutes";
 import { Penalty } from "@/lib/definitions";
+import { useMutation } from "@tanstack/react-query";
 
 const penaltyFormSchema = z.object({
 	penaltyCode: z.string().min(1, { message: "Penalty Code is required." }),
@@ -71,17 +72,13 @@ export default function PenaltyEditForm({
 			setFormData(data);
 			form.reset({
 				...data,
-			}); // Set form values to the retrieved data
+			});
 		};
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No penalty data available.</div>;
-	}
-
-	async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof penaltyFormSchema>) => {
 			const response = await fetch(penaltyRoute, {
 				method: "PUT",
 				headers: {
@@ -89,7 +86,6 @@ export default function PenaltyEditForm({
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(
@@ -97,24 +93,31 @@ export default function PenaltyEditForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the penalty API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form update error", error);
 			toast.error(
 				`Failed to update the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
+		mutation.mutate(values);
+	}
+
+	if (!rowData) {
+		return <div>No penalty data available.</div>;
 	}
 
 	return (

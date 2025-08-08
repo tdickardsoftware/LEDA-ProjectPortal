@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import React from "react";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { divisionRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
 
 // Define the schema for form validation using zod
 const divisionFormSchema = z.object({
@@ -38,9 +39,8 @@ export default function DivisionAddForm({
 
 	const [divisionNameExists, setDivisionNameExists] = React.useState(false);
 
-	// Define the onSubmit function to handle form submission
-	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof divisionFormSchema>) => {
 			const response = await fetch(divisionRoute, {
 				method: "POST",
 				headers: {
@@ -48,7 +48,6 @@ export default function DivisionAddForm({
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				if (response.status === 422) {
 					setDivisionNameExists(true);
@@ -59,24 +58,28 @@ export default function DivisionAddForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
+		setDivisionNameExists(false);
+		mutation.mutate(values);
 	}
 
 	// Render the form
