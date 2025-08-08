@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
@@ -86,7 +87,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 }: DataTableProps<TData, TValue>) {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
-	const [debouncedQuery, setDebouncedQuery] = React.useState(""); // State for debounced query
+	const [activeSearchQuery, setActiveSearchQuery] = React.useState(""); // State for executed search
 	const [tableData, setTableData] = React.useState(data); // State for table data
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
@@ -142,13 +143,26 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		},
 	});
 
-	// Debounce the search input
-	React.useEffect(() => {
-		const handler = setTimeout(() => {
-			setDebouncedQuery(searchQuery);
-		}, 300);
-		return () => clearTimeout(handler);
+	// Remove the old debounce effect and replace with manual search execution
+	const executeSearch = React.useCallback(() => {
+		setActiveSearchQuery(searchQuery);
 	}, [searchQuery]);
+
+	// Clear search function
+	const clearSearch = React.useCallback(() => {
+		setSearchQuery("");
+		setActiveSearchQuery("");
+	}, []);
+
+	// Handle enter key in search input
+	const handleSearchKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			executeSearch();
+		} else if (e.key === 'Escape') {
+			clearSearch();
+		}
+	}, [executeSearch, clearSearch]);
 
 	// Configure Fuse.js for search
 	const fuseOptions = React.useMemo(() => {
@@ -219,7 +233,6 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const columnMapping = React.useMemo(() => {
 		const mapping = new Map<string, string>();
 		
-		console.log("=== Building column mapping ===");
 		
 		columns.forEach((col, index) => {
 			let displayName = "";
@@ -256,8 +269,6 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 				dataKey = col.accessorKey;
 			}
 			
-			console.log(`Column ${index}: displayName="${displayName}", dataKey="${dataKey}"`);
-			
 			if (dataKey) { // Only need dataKey to create mappings
 				const variations = new Set<string>();
 				
@@ -286,15 +297,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 				Array.from(variations).forEach(variation => {
 					if (variation && variation.trim()) {
 						mapping.set(variation, dataKey);
-						console.log(`  Mapping: "${variation}" -> "${dataKey}"`);
 					}
 				});
 			}
-		});
-		
-		console.log("=== Final mapping entries ===");
-		Array.from(mapping.entries()).forEach(([key, value]) => {
-			console.log(`"${key}" -> "${value}"`);
 		});
 		
 		return mapping;
@@ -304,27 +309,18 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const resolveFieldName = React.useCallback((fieldName: string): string => {
 		const normalized = fieldName.toLowerCase();
 		
-		console.log(`=== Resolving field: "${fieldName}" ===`);
-		console.log(`Normalized: "${normalized}"`);
-		
 		// Try exact match first
 		if (columnMapping.has(normalized)) {
 			const resolved = columnMapping.get(normalized)!;
-			console.log(`Found exact match: "${normalized}" -> "${resolved}"`);
 			return resolved;
 		}
 		
 		// Try without spaces and special characters
 		const cleanName = normalized.replace(/[^a-z0-9]/g, "");
-		console.log(`Clean name: "${cleanName}"`);
 		if (columnMapping.has(cleanName)) {
 			const resolved = columnMapping.get(cleanName)!;
-			console.log(`Found clean match: "${cleanName}" -> "${resolved}"`);
 			return resolved;
 		}
-		
-		console.log(`No mapping found for "${fieldName}", returning original`);
-		console.log("Available mappings:", Array.from(columnMapping.keys()));
 		
 		// Return original if no mapping found
 		return fieldName;
@@ -367,9 +363,19 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 					const quotedMatches = [...valuesPart.matchAll(quotedValuePattern)];
 					
 					if (quotedMatches.length > 0) {
-						// Has quoted values
+						// Has quoted values - check if they contain commas for splitting
 						quotedMatches.forEach(match => {
-							values.push(match[1]);
+							const quotedValue = match[1];
+							if (quotedValue.includes(',')) {
+								// Split comma-separated values inside quotes
+								quotedValue.split(',').forEach(v => {
+									const trimmed = v.trim();
+									if (trimmed) values.push(trimmed);
+								});
+							} else {
+								// Single value inside quotes
+								values.push(quotedValue);
+							}
 						});
 					} else {
 						// No quotes, split by comma
@@ -404,7 +410,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		};
 	}, [resolveFieldName]);
 
-	// Enhanced filtered data with Fuse.js and field-specific search with AND/OR logic
+	// Enhanced filtered data with manual search execution
 	const filteredData = React.useMemo(() => {
 		let base = tableData;
 		if (filteredLedaIds) {
@@ -413,9 +419,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			);
 		}
 		
-		if (!debouncedQuery) return base;
+		if (!activeSearchQuery) return base;
 
-		const searchConfig = parseFieldSearch(debouncedQuery);
+		const searchConfig = parseFieldSearch(activeSearchQuery);
 
 		if (searchConfig.type === "general") {
 			// Use Fuse.js for general search
@@ -461,7 +467,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 				});
 			});
 		}
-	}, [debouncedQuery, tableData, filteredLedaIds, fuse, parseFieldSearch, fuseOptions]);
+	}, [activeSearchQuery, tableData, filteredLedaIds, fuse, parseFieldSearch, fuseOptions]);
 
 	// Function to get payment status for a given ledaId
 	const getPaymentStatus = React.useCallback(
@@ -686,6 +692,167 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		}
 	};
 
+	// Add state for context menu
+	const [contextMenu, setContextMenu] = React.useState<{
+		show: boolean;
+		x: number;
+		y: number;
+		columnName: string;
+	}>({ show: false, x: 0, y: 0, columnName: "" });
+
+	// Add state for row context menu
+	const [rowContextMenu, setRowContextMenu] = React.useState<{
+		show: boolean;
+		x: number;
+		y: number;
+		columnKey: string;
+		columnName: string;
+		cellValue: string;
+	}>({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
+
+	// Ref for the search input to focus and position cursor
+	const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+	// Handle right-click on column headers
+	const handleColumnRightClick = React.useCallback((e: React.MouseEvent, columnName: string) => {
+		e.preventDefault();
+		setContextMenu({
+			show: true,
+			x: e.clientX,
+			y: e.clientY,
+			columnName
+		});
+	}, []);
+
+	// Handle right-click on table cells
+	const handleCellRightClick = React.useCallback((
+		e: React.MouseEvent, 
+		columnKey: string, 
+		columnName: string, 
+		cellValue: any
+	) => {
+		// Don't show context menu for select column
+		if (columnKey === "select") return;
+		
+		e.preventDefault();
+		setRowContextMenu({
+			show: true,
+			x: e.clientX,
+			y: e.clientY,
+			columnKey,
+			columnName,
+			cellValue: String(cellValue || "")
+		});
+	}, []);
+
+	// Handle context menu option selection
+	const handleAddToSearch = React.useCallback(() => {
+		const { columnName } = contextMenu;
+		const searchPattern = `"${columnName}"=""`;
+		
+		// If there's existing search text, add " and " before the new pattern
+		const newSearchQuery = searchQuery 
+			? `${searchQuery} and ${searchPattern}`
+			: searchPattern;
+		
+		setSearchQuery(newSearchQuery);
+		setContextMenu({ show: false, x: 0, y: 0, columnName: "" });
+		
+		// Focus the input and position cursor between the quotes
+		setTimeout(() => {
+			if (searchInputRef.current) {
+				searchInputRef.current.focus();
+				const cursorPosition = newSearchQuery.length - 1; // Position inside the closing quotes
+				searchInputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+			}
+		}, 0);
+	}, [contextMenu, searchQuery]);
+
+	// Handle adding cell value to search
+	const handleAddCellToSearch = React.useCallback(() => {
+		const { columnName, cellValue } = rowContextMenu;
+		
+		// Check if this field is already in the search query
+		const fieldPattern = new RegExp(`"${columnName}"\\s*=\\s*([^\\s]+(?:\\s+(?!and|or)[^\\s]*)*)`);
+		const match = searchQuery.match(fieldPattern);
+		
+		if (match) {
+			// Field exists, add to its values
+			const existingValues = match[1];
+			const newSearchQuery = searchQuery.replace(
+				fieldPattern,
+				`"${columnName}"="${existingValues.replace(/"/g, '')},${cellValue}"`
+			);
+			setSearchQuery(newSearchQuery);
+		} else {
+			// Field doesn't exist, add new field search
+			const searchPattern = `"${columnName}"="${cellValue}"`;
+			const newSearchQuery = searchQuery 
+				? `${searchQuery} and ${searchPattern}`
+				: searchPattern;
+			setSearchQuery(newSearchQuery);
+		}
+		
+		setRowContextMenu({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
+	}, [rowContextMenu, searchQuery]);
+
+	// Close context menus when clicking elsewhere
+	React.useEffect(() => {
+		const handleClickOutside = () => {
+			setContextMenu({ show: false, x: 0, y: 0, columnName: "" });
+			setRowContextMenu({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
+		};
+
+		if (contextMenu.show || rowContextMenu.show) {
+			document.addEventListener('click', handleClickOutside);
+			return () => document.removeEventListener('click', handleClickOutside);
+		}
+	}, [contextMenu.show, rowContextMenu.show]);
+
+	// Helper function to extract display name from column header
+	const getColumnDisplayName = React.useCallback((col: ColumnDef<TData, TValue>): string => {
+		if (typeof col.header === "string") {
+			return col.header;
+		} else if (typeof col.header === "function") {
+			try {
+				const mockColumn = {
+					columnDef: col,
+					getIsSorted: () => false,
+					toggleSorting: () => {},
+					...col
+				};
+				const mockContext = {
+					column: mockColumn,
+					header: {
+						column: mockColumn,
+						getContext: () => mockContext
+					},
+					table: {
+						getIsAllPageRowsSelected: () => false,
+						getIsSomePageRowsSelected: () => false,
+						toggleAllPageRowsSelected: () => {}
+					}
+				} as any;
+				
+				const rendered = col.header(mockContext);
+				if (typeof rendered === "string") {
+					return rendered;
+				} else if (rendered) {
+					return extractTextFromReactElement(rendered);
+				}
+			} catch {
+				// Fallback to accessor key or id
+				if ("accessorKey" in col && typeof col.accessorKey === "string") {
+					return col.accessorKey;
+				}
+				if (col.id) {
+					return col.id;
+				}
+			}
+		}
+		return "";
+	}, [extractTextFromReactElement]);
+
 	return (
 		<div className="w-full">
 			<div className="p-5 shadow-sm bg-white rounded-xl border border-gray-200 w-full transition-all">
@@ -869,16 +1036,36 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 					</div>
 					{/* Search Input */}
 					<div className="mb-4">
-						<Input
-							type="text"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							placeholder="Search..."
-							className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-all"
-						/>
+						<div className="flex gap-2">
+							<Input
+								ref={searchInputRef}
+								type="text"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								onKeyDown={handleSearchKeyDown}
+								placeholder="Search... (Press Esc to clear)"
+								className="flex-1 p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-all"
+							/>
+							<Button
+								onClick={executeSearch}
+								variant="outline"
+								className="px-4 hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+							>
+								Search
+							</Button>
+							{(searchQuery || activeSearchQuery) && (
+								<Button
+									onClick={clearSearch}
+									variant="outline"
+									className="px-4 hover:bg-red-100 border-red-300 text-red-700 transition-colors"
+								>
+									Clear
+								</Button>
+							)}
+						</div>
 					</div>
 
-					<div className="border border-gray-200 rounded-lg overflow-hidden">
+					<div className="border border-gray-200 rounded-lg overflow-hidden relative">
 						<Table className="min-w-full">
 							<TableHeader className="bg-gray-50 border-b">
 								{table.getHeaderGroups().map((headerGroup) => (
@@ -886,21 +1073,28 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 										key={headerGroup.id}
 										className="border-gray-200"
 									>
-										{headerGroup.headers.map((header) => (
-											<TableHead
-												key={header.id}
-												className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
-											>
-												{header.isPlaceholder
-													? null
-													: flexRender(
-															header.column
-																.columnDef
-																.header,
-															header.getContext()
-													  )}
-											</TableHead>
-										))}
+										{headerGroup.headers.map((header) => {
+											const isSelectColumn = header.column.columnDef.id === "select";
+											const displayName = isSelectColumn ? "" : getColumnDisplayName(header.column.columnDef);
+											
+											return (
+												<TableHead
+													key={header.id}
+													className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
+													onContextMenu={isSelectColumn ? undefined : (e) => handleColumnRightClick(e, displayName)}
+													style={{ userSelect: 'none' }}
+												>
+													{header.isPlaceholder
+														? null
+														: flexRender(
+																header.column
+																	.columnDef
+																	.header,
+																header.getContext()
+														  )}
+												</TableHead>
+											);
+										})}
 									</TableRow>
 								))}
 							</TableHeader>
@@ -917,18 +1111,28 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 										>
 											{row
 												.getVisibleCells()
-												.map((cell) => (
-													<TableCell
-														key={cell.id}
-														className="px-6 py-3 text-sm text-gray-700"
-													>
-														{flexRender(
-															cell.column
-																.columnDef.cell,
-															cell.getContext()
-														)}
-													</TableCell>
-												))}
+												.map((cell) => {
+													const columnKey = cell.column.id;
+													const isSelectColumn = columnKey === "select";
+													const columnName = isSelectColumn ? "" : getColumnDisplayName(cell.column.columnDef);
+													const cellValue = cell.getValue();
+												
+													return (
+														<TableCell
+															key={cell.id}
+															className="px-6 py-3 text-sm text-gray-700"
+															onContextMenu={isSelectColumn ? undefined : (e) => 
+																handleCellRightClick(e, columnKey, columnName, cellValue)
+															}
+														>
+															{flexRender(
+																cell.column
+																	.columnDef.cell,
+																cell.getContext()
+															)}
+														</TableCell>
+													);
+												})}
 										</TableRow>
 									))
 								) : (
@@ -943,6 +1147,44 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								)}
 							</TableBody>
 						</Table>
+
+						{/* Column Header Context Menu */}
+						{contextMenu.show && (
+							<div
+								className="fixed bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50"
+								style={{
+									left: contextMenu.x,
+									top: contextMenu.y,
+								}}
+								onClick={(e) => e.stopPropagation()}
+							>
+								<button
+									className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors"
+									onClick={handleAddToSearch}
+								>
+									Add &quot;{contextMenu.columnName}&quot; to search
+								</button>
+							</div>
+						)}
+
+						{/* Row Cell Context Menu */}
+						{rowContextMenu.show && (
+							<div
+								className="fixed bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50"
+								style={{
+									left: rowContextMenu.x,
+									top: rowContextMenu.y,
+								}}
+								onClick={(e) => e.stopPropagation()}
+							>
+								<button
+									className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors"
+									onClick={handleAddCellToSearch}
+								>
+									Add &quot;{rowContextMenu.columnName}&quot; = &quot;{rowContextMenu.cellValue}&quot; to search
+								</button>
+							</div>
+						)}
 					</div>
 				</div>
 				<div className="flex items-center justify-between space-x-2 py-4 mt-2">
