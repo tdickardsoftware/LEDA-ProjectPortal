@@ -1,7 +1,16 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getCookieCache } from "better-auth/cookies"
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+    if (process.env.DISABLE_AUTH != 'true') {
+        const session = await getCookieCache(request);
+
+        if (!session) {
+            return NextResponse.redirect(new URL('/login', request.url));
+        }
+    }
     // In Next.js middleware, environment variables must be prefixed with NEXT_PUBLIC_
     // to be accessible, so let's check both formats
     const isMaintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' || 
@@ -21,7 +30,6 @@ export function middleware(request: NextRequest) {
 // Match all routes except for specific ones you want to exclude
 export const config = {
     matcher: [
-        // Simplify the matcher to ensure it catches all relevant routes
-        '/((?!api|_next|maintenance|_vercel|favicon.ico).*)'
+        '/((?!api|_next|maintenance|login|_vercel|favicon.ico).*)'
     ]
 }
