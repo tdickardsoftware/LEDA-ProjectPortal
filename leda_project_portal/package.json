@@ -64,6 +64,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.17.10",
+    "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.11.10",
     "@types/react": "19.1.9",
     "@types/react-dom": "19.1.7",
