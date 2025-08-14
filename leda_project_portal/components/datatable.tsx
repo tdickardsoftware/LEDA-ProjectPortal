@@ -2,6 +2,9 @@
 "use client";
 
 import * as React from "react";
+import { DialogWithButton } from "@/components/dialog-with-button";
+import AlertDialogDelete from "@/components/alert-dialog-delete";
+import CustomLink from "@/components/ui/custom-link";
 import Fuse from "fuse.js";
 import {
 	ColumnDef,
@@ -52,33 +55,56 @@ interface PaymentStatus {
 	status: "PAID" | "PART" | "UNPAID";
 }
 
+type keyofFormComponents =
+	| "PlayerAddInformationForm"
+	| "PlayerEditInformationForm"
+	| "PlaceAddForm"
+	| "TeamAddForm"
+	| "TeamEditForm"
+	| "DivisionAddForm"
+	| "MentionAddForm"
+	| "PaymentTypeAddForm"
+	| "PayoutTierAddForm"
+	| "PenaltyAddForm"
+	| "PeopleTypeAddForm"
+	| "PlaceTypeAddForm"
+	| "SeasonAddForm"
+	| "PlaceEditForm"
+	| "MentionEditForm"
+	| "PaymentTypeEditForm"
+	| "PayoutTierEditForm"
+	| "PenaltyEditForm"
+	| "PlaceTypeEditForm"
+	| "PeopleTypeEditForm"
+	| "SeasonEditForm";
+
 interface DataTableProps<TData extends Record<string, unknown>, TValue> {
-	columns: ColumnDef<TData, TValue>[];
-	data: TData[];
-	pageName: string;
-	addDialog?: React.ReactNode;
-	deleteDialog?: React.ReactNode;
-	editDialog?: React.ReactNode;
-	viewLink?: React.ReactNode;
-	onRefresh?: (api: string) => void;
-	apiEndpoint: string; // New prop for API endpoint
-	defaultSort?: string;
-	singleRowSelection?: boolean;
-	passValueToParent?: (value: string) => void;
-	defaultSelectedRow?: number; // Optional prop for default selected row
-	filter?: boolean; // New optional prop
+		columns: ColumnDef<TData, TValue>[];
+		data: TData[];
+		pageName: string;
+		addDialogConfig?: { form: keyofFormComponents; title: string; buttonName: string };
+		editDialogConfig?: { form: keyofFormComponents; title: string; buttonName: string };
+		deleteDialogConfig?: { buttonName: string; title: string; apiEndpoint: string };
+		viewLinkConfig?: { linkName: string; parentPage: string };
+		onRefresh?: (api: string) => void;
+		apiEndpoint: string;
+		defaultSort?: string;
+		singleRowSelection?: boolean;
+		passValueToParent?: (value: string) => void;
+		defaultSelectedRow?: number;
+		filter?: boolean;
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
 	columns,
 	data,
 	pageName,
-	addDialog,
-	deleteDialog,
-	editDialog,
-	viewLink,
+	addDialogConfig,
+	editDialogConfig,
+	deleteDialogConfig,
+	viewLinkConfig,
 	onRefresh,
-	apiEndpoint, // Destructure the new prop
+	apiEndpoint,
 	defaultSort,
 	singleRowSelection,
 	passValueToParent,
@@ -906,15 +932,14 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						{pageName}
 					</h1>
 					<div className="flex items-center justify-between space-x-3 mb-4">
-						{addDialog ? (
-							<div>
-								{React.cloneElement(
-									// eslint-disable-next-line @typescript-eslint/no-explicit-any
-									addDialog as React.ReactElement<any>,
-									{ onRefresh: handleRefresh }
-								)}
-							</div>
-						) : null}
+						{addDialogConfig && (
+							<DialogWithButton
+								form={addDialogConfig.form}
+								title={addDialogConfig.title}
+								buttonName={addDialogConfig.buttonName}
+								onRefresh={handleRefresh}
+							/>
+						)}
 						<div className="flex space-x-2">
 							{/* Filter By Season Button and Popover */}
 							{filter && (
@@ -1021,62 +1046,35 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									</PopoverContent>
 								</Popover>
 							)}
-							{/* ...existing code for viewLink, editDialog, deleteDialog... */}
-							{viewLink ? (
-								<div>
-									{React.cloneElement(
-										// eslint-disable-next-line @typescript-eslint/no-explicit-any
-										viewLink as React.ReactElement<any>,
-										{
-											disabled:
-												selectedRowCount === 1
-													? false
-													: true,
-											href: `/Portal/${
-												selectedRowsData[0]?.ledaId
-													? "Management"
-													: "Maintenance"
-											}/**REPLACE**/${
-												selectedRowsData[0]?.ledaId ??
-												selectedRowsData[0]?.seasonCode
-											}`,
-										}
-									)}
-								</div>
-							) : null}
-							{editDialog ? (
-								<div>
-									{React.cloneElement(
-										// eslint-disable-next-line @typescript-eslint/no-explicit-any
-										editDialog as React.ReactElement<any>,
-										{
-											disabled:
-												selectedRowCount === 1
-													? false
-													: true,
-											rowData: selectedRowsData[0], // Pass the first selected row's data
-											onRefresh: handleRefresh,
-										}
-									)}
-								</div>
-							) : null}
-							{deleteDialog ? (
-								<div>
-									{React.cloneElement(
-										// eslint-disable-next-line @typescript-eslint/no-explicit-any
-										deleteDialog as React.ReactElement<any>,
-										{
-											selectedRowCount,
-											disabled:
-												selectedRowCount > 0
-													? false
-													: true,
-											rowData: selectedRowsData, // Pass the selected rows' data
-											onRefresh: handleRefresh,
-										}
-									)}
-								</div>
-							) : null}
+							{viewLinkConfig && (
+								<CustomLink
+									linkName={viewLinkConfig.linkName}
+									parentPage={viewLinkConfig.parentPage}
+									disabled={selectedRowCount !== 1}
+									href={`/Portal/${selectedRowsData[0]?.ledaId ? "Management" : "Maintenance"}/**REPLACE**/${selectedRowsData[0]?.ledaId ?? selectedRowsData[0]?.seasonCode}`}
+								/>
+							)}
+							{editDialogConfig && (
+								<DialogWithButton
+									form={editDialogConfig.form}
+									title={editDialogConfig.title}
+									buttonName={editDialogConfig.buttonName}
+									onRefresh={handleRefresh}
+									rowData={selectedRowsData[0]}
+									disabled={selectedRowCount !== 1}
+								/>
+							)}
+							{deleteDialogConfig && (
+								<AlertDialogDelete
+									buttonName={deleteDialogConfig.buttonName}
+									title={deleteDialogConfig.title}
+									apiEndpoint={deleteDialogConfig.apiEndpoint}
+									onRefresh={handleRefresh}
+									rowData={selectedRowsData}
+									selectedRowCount={selectedRowCount}
+									disabled={selectedRowCount === 0}
+								/>
+							)}
 						</div>
 					</div>
 					{/* Search Input */}

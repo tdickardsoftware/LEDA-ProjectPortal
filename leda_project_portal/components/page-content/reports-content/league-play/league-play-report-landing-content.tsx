@@ -69,10 +69,15 @@ export default function LeaguePlayReportLandingContent() {
     }, []);
 
     const handleReportSelect = (value: string, requiresWeekFlag?: boolean, minimumPointsFlag?: boolean) => {
+        const isSameReport = value === selectedReport;
         setSelectedReport(value);
         setRequiresWeek(!!requiresWeekFlag);
         setNeedsMinimumPoints(!!minimumPointsFlag);
         setSelectedWeek(""); // Reset week when report changes
+        if (!isSameReport) {
+            setReportData([]); // Clear previous report data only if report changes
+            setDataFetched(false); // Reset dataFetched so PDFDownloadLink is not rendered
+        }
     };
 
     const handleDataFetch = useCallback((data: unknown[]) => {
@@ -292,8 +297,19 @@ export default function LeaguePlayReportLandingContent() {
             // Do not render the download link for unsupported reports
             return null;
         }
+
+        // Generate a key that changes when any relevant input changes
+        const pdfKey = [
+            selectedReport,
+            seasonCode,
+            selectedWeek,
+            minimumPoints,
+            reportData.length // also include data length for extra safety
+        ].join("|");
+
         return (
             <PDFDownloadLink
+                key={pdfKey}
                 document={document}
                 fileName={fileName}
                 className="inline-flex items-center justify-center rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"

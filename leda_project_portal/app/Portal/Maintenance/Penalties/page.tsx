@@ -13,37 +13,31 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-	return (
-		<>
-			<div className="container mx-auto py-10">
-				<DataTable
-					columns={columns}
-					data={await fetchPenalties()}
-					pageName="Penalties Page"
-					addDialog={
-						<DialogWithButton
-							form="PenaltyAddForm"
-							title="Add Penalty"
-							buttonName="Add Penalty +"
-						/>
-					}
-					deleteDialog={
-						<AlertDialogDelete
-							buttonName="Delete Penalty"
-							title="Delete Penalty"
-							apiEndpoint={penaltyRoute}
-						/>
-					}
-					editDialog={
-						<DialogWithButton
-							form="PenaltyEditForm"
-							title="Edit Penalty"
-							buttonName="Edit Penalty"
-						/>
-					}
-					apiEndpoint={penaltyRoute}
-				/>
-			</div>
-		</>
-	);
+	 return (
+		 <>
+			 <div className="container mx-auto py-10">
+				 <DataTable
+					 columns={columns}
+					 data={await fetchPenalties()}
+					 pageName="Penalties Page"
+					 addDialogConfig={{
+						 form: "PenaltyAddForm",
+						 title: "Add Penalty",
+						 buttonName: "Add Penalty +"
+					 }}
+					 deleteDialogConfig={{
+						 buttonName: "Delete Penalty",
+						 title: "Delete Penalty",
+						 apiEndpoint: penaltyRoute
+					 }}
+					 editDialogConfig={{
+						 form: "PenaltyEditForm",
+						 title: "Edit Penalty",
+						 buttonName: "Edit Penalty"
+					 }}
+					 apiEndpoint={penaltyRoute}
+				 />
+			 </div>
+		 </>
+	 );
 }

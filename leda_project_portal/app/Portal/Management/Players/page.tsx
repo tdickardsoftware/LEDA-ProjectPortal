@@ -14,45 +14,37 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-	return (
-		<>
-			<div className="container mx-auto py-10">
-				<DataTable
-					columns={columns}
-					data={await fetchPlayers()}
-					pageName="Players Page"
-					addDialog={
-						<DialogWithButton
-							form="PlayerAddInformationForm"
-							title="Add Player"
-							buttonName="Add Player +"
-						/>
-					}
-					deleteDialog={
-						<AlertDialogDelete
-							buttonName="Delete Player"
-							title="Delete Player"
-							apiEndpoint={playerRoute}
-						/>
-					}
-					editDialog={
-						<DialogWithButton
-							form="PlayerEditInformationForm"
-							title="Edit Player"
-							buttonName="Edit Player"
-						/>
-					}
-					viewLink={
-						<CustomLink
-							linkName="View Player"
-							parentPage="Players"
-						/>
-					}
-					apiEndpoint={playerRoute}
-					defaultSort="ledaId"
-					filter={true}
-				/>
-			</div>
-		</>
-	);
+	 return (
+		 <>
+			 <div className="container mx-auto py-10">
+				 <DataTable
+					 columns={columns}
+					 data={await fetchPlayers()}
+					 pageName="Players Page"
+					 addDialogConfig={{
+						 form: "PlayerAddInformationForm",
+						 title: "Add Player",
+						 buttonName: "Add Player +"
+					 }}
+					 deleteDialogConfig={{
+						 buttonName: "Delete Player",
+						 title: "Delete Player",
+						 apiEndpoint: playerRoute
+					 }}
+					 editDialogConfig={{
+						 form: "PlayerEditInformationForm",
+						 title: "Edit Player",
+						 buttonName: "Edit Player"
+					 }}
+					 viewLinkConfig={{
+						 linkName: "View Player",
+						 parentPage: "Players"
+					 }}
+					 apiEndpoint={playerRoute}
+					 defaultSort="ledaId"
+					 filter={true}
+				 />
+			 </div>
+		 </>
+	 );
 }
