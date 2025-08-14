@@ -32,27 +32,6 @@ const signupSchema = z.object({
 });
 
 export default function SignupPageContent() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Check if sign up is disabled
-    if (process.env.DISABLE_SIGN_UP === "true") {
-      router.replace("/login");
-      return;
-    }
-
-    // Check if user is already authenticated
-    authClient.getSession().then((session) => {
-      if (session) {
-        // Go back to previous page if available, else go to /Portal
-        if (window.history.length > 1) {
-          router.back();
-        } else {
-          router.replace("/Portal");
-        }
-      }
-    });
-  }, [router]);
 
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
@@ -67,8 +46,15 @@ export default function SignupPageContent() {
     },
   });
 
+  const [signupError, setSignupError] = React.useState<string | null>(null);
+  const [signupSuccess, setSignupSuccess] = React.useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
+
   async function onSubmit(values: z.infer<typeof signupSchema>) {
-    await authClient.signUp.email({
+    setSignupError(null);
+    setIsSubmitting(true);
+    try {
+      const response = await authClient.signUp.email({
         username: values.username,
         email: values.email,
         password: values.password,
@@ -76,13 +62,45 @@ export default function SignupPageContent() {
           ? `${values.firstName} ${values.middleInitial} ${values.lastName}`
           : `${values.firstName} ${values.lastName}`,
         callbackURL: `/Portal`
-    });
+      });
+      setSignupSuccess(true); // Show success message
+    } catch (err: unknown) {
+      // If error response has status 422, show the error
+      if (typeof err === "object" && err !== null && "status" in err && (err as { status?: number }).status === 422) {
+        setSignupError("Username or email already exists.");
+      } else {
+        setSignupError("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (signupSuccess) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-gray-200 text-center">
+          <h2 className="text-2xl font-bold mb-6">Sign Up Successful</h2>
+          <p className="mb-4 text-gray-700">
+            Please check your email for a verification link to complete your registration.
+          </p>
+          <p className="text-sm text-gray-500">
+            If you don&apos;t see the email, check your spam folder.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-gray-200">
         <h2 className="text-2xl font-bold mb-6 text-center">Sign Up</h2>
+        {signupError && (
+          <div className="mb-4 text-red-600 text-center text-sm font-medium">
+            {signupError}
+          </div>
+        )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -92,7 +110,7 @@ export default function SignupPageContent() {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your username" {...field} />
+                    <Input placeholder="Enter your username" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -105,7 +123,7 @@ export default function SignupPageContent() {
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your first name" {...field} />
+                    <Input placeholder="Enter your first name" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -118,7 +136,7 @@ export default function SignupPageContent() {
                 <FormItem>
                   <FormLabel>Middle Initial</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter you middle initial" maxLength={1} {...field} />
+                    <Input placeholder="Enter you middle initial" maxLength={1} {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -131,7 +149,7 @@ export default function SignupPageContent() {
                 <FormItem>
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your last name" {...field} />
+                    <Input placeholder="Enter your last name" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -145,7 +163,7 @@ export default function SignupPageContent() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="Enter your email" {...field} />
+                    <Input type="email" placeholder="Enter your email" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -158,7 +176,7 @@ export default function SignupPageContent() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Enter your password" {...field} />
+                    <Input type="password" placeholder="Enter your password" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                   <div className="text-xs text-gray-500 mt-1">
@@ -174,14 +192,26 @@ export default function SignupPageContent() {
                 <FormItem>
                   <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Re-enter your password" {...field} />
+                    <Input type="password" placeholder="Re-enter your password" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             
-            <Button type="submit" className="w-full">Sign Up</Button>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin h-4 w-4 mr-2 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Signing Up...
+                </span>
+              ) : (
+                "Sign Up"
+              )}
+            </Button>
           </form>
         </Form>
       </div>

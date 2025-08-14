@@ -4,13 +4,13 @@ import type { NextRequest } from 'next/server'
 import { getCookieCache } from "better-auth/cookies"
 
 export async function middleware(request: NextRequest) {
-    if (process.env.DISABLE_AUTH != 'true') {
-        const session = await getCookieCache(request);
+    // if (process.env.DISABLE_AUTH != 'true') {
+    //     const session = await getCookieCache(request);
 
-        if (!session) {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
-    }
+    //     if (!session) {
+    //         return NextResponse.redirect(new URL('/login', request.url));
+    //     }
+    // }
     // In Next.js middleware, environment variables must be prefixed with NEXT_PUBLIC_
     // to be accessible, so let's check both formats
     const isMaintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' || 

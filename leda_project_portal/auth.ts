@@ -2,11 +2,34 @@ import { betterAuth } from "better-auth";
 import { username } from "better-auth/plugins"
 import { nextCookies } from "better-auth/next-js"
 import { pool } from "./lib/getPool";
+import { transport } from "./lib/email";
 
 export const auth = betterAuth({
     database: pool,
     emailAndPassword: {
-        enabled: true
+        enabled: true,
+        requireEmailVerification: true,
+    },
+    emailVerification: {
+        sendOnSignUp: true,
+        sendVerificationEmail: async ({ user, url }) => {
+            try {
+                await transport.sendMail({
+                    from: process.env.SMTP_USER,
+                    to: user.email,
+                    subject: "Verify your email",
+                    html: `
+                        <p>Hello ${user.name || ""},</p>
+                        <p>Click the link below to verify your email:</p>
+                        <a href="${url}" target="_blank">${url}</a>
+                        <p>If you didn’t request this, you can ignore this email.</p>
+                    `
+                })
+                console.log("Verification email sent successfully")
+            } catch (error) {
+                console.error("Error sending verification email:", error)
+            }
+        }
     },
     plugins: [
         username(),

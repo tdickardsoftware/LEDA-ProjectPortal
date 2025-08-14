@@ -28,22 +28,6 @@ const loginSchema = z.object({
 
 export default function LoginPageContent() {
 
-  const router = useRouter();
-
-  useEffect(() => {
-    // Check if user is already authenticated
-    authClient.getSession().then((session) => {
-      if (session) {
-        // Go back to previous page if available, else go to /Portal
-        if (window.history.length > 1) {
-          router.back();
-        } else {
-          router.replace("/Portal");
-        }
-      }
-    });
-  }, [router]);
-
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
