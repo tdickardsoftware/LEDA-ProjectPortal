@@ -96,7 +96,7 @@ export default function LoginPageContent() {
               )}
             />
             <div className="flex justify-between mb-2">
-              {Boolean(process.env.DISABLE_SIGN_UP) !== false && (
+              {Boolean(process.env.DISABLE_SIGN_UP) == false && (
                 <Link href="/sign-up" className="text-sm text-blue-600 hover:underline">
                   Create Account
                 </Link>

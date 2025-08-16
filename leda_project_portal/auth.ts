@@ -54,6 +54,9 @@ export const auth = betterAuth({
         nextCookies()
     ],
     user: {
+        deleteUser: {
+            enabled: true
+        },
         additionalFields: {
             role: {
                 type: "string",

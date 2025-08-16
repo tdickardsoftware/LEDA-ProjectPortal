@@ -59,6 +59,25 @@ export function NavUser() {
 		});
 	}
 
+	// Add: delete handler that prompts the user then calls authClient.deleteUser
+	async function handleDelete() {
+		const confirmed = typeof window !== "undefined" && window.confirm(
+			"Are you sure you want to permanently delete your account? This action cannot be undone."
+		);
+		if (!confirmed) return;
+
+		try {
+			await authClient.deleteUser({
+				callbackURL: "/login"
+			});
+			// authClient.deleteUser should redirect via callbackURL, but push as fallback:
+			router.push("/login");
+		} catch (err) {
+			console.error("Error deleting user account:", err);
+			// optionally show UI feedback here
+		}
+	}
+
 	if (!user) return null;
 
 	return (
@@ -114,6 +133,18 @@ export function NavUser() {
 							>
 								<LogOut />
 								Log out
+							</Button>
+						</DropdownMenuItem>
+
+						{/* New delete user item */}
+						<DropdownMenuItem asChild>
+							<Button
+								type="button"
+								onClick={handleDelete}
+								className="flex items-center gap-2 text-red-600 hover:underline bg-transparent border-none p-0 m-0 cursor-pointer w-full text-left"
+							>
+								{/* no icon to keep change minimal */}
+								Delete account
 							</Button>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
