@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 export function NavUser() {
 	const { isMobile } = useSidebar();
 	const [user, setUser] = useState<
-		{ name: string; email: string } | null
+		{ name: string; email: string, username: string } | null
 	>(null);
 	const router = useRouter();
 
@@ -39,6 +39,7 @@ export function NavUser() {
 					setUser({
 						name: user.name || "",
 						email: user.email || "",
+						username: user.username || "",
 					});
 				}
 			} catch {
@@ -73,6 +74,9 @@ export function NavUser() {
 								<span className="truncate font-semibold">
 									{user.name}
 								</span>
+								<span className="truncate text-sm">
+									{user.username}
+								</span>
 								<span className="truncate text-xs">
 									{user.email}
 								</span>
@@ -92,6 +96,9 @@ export function NavUser() {
 									<span className="truncate font-semibold">
 										{user.name}
 									</span>
+									<span className="truncate text-sm">
+									{user.username}
+								</span>
 									<span className="truncate text-xs">
 										{user.email}
 									</span>
