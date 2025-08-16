@@ -34,11 +34,6 @@ import Link from "next/link";
 // Define data for sidenav bar
 //
 const data = {
-	user: {
-		name: "Tyler Dickard",
-		email: "tdickardsoftware@gmail.com",
-		avatar: "/avatars/shadcn.jpg",
-	},
 	navMain: [
 		{
 			title: "Management",
@@ -214,7 +209,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				<NavMain items={data.navMain} />
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={data.user} />
+				<NavUser />
 			</SidebarFooter>
 		</Sidebar>
 	);
