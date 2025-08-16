@@ -9,13 +9,30 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,
+        sendResetPassword: async ({ user, url }) => {
+            try {
+                await transport.sendMail({
+                    from: `Office <${process.env.SMTP_USER}>`,
+                    to: user.email,
+                    subject: "Reset your password",
+                    html: `
+                        <p>Hello ${user.name || ""},</p>
+                        <p>Click the link below to reset your password:</p>
+                        <a href="${url}" target="_blank">${url}</a>
+                    `
+                })
+                console.log("Password reset email sent successfully")
+            } catch (error) {
+                console.error("Error sending password reset email:", error)
+            }
+        }
     },
     emailVerification: {
         sendOnSignUp: true,
         sendVerificationEmail: async ({ user, url }) => {
             try {
                 await transport.sendMail({
-                    from: process.env.SMTP_USER,
+                    from: `Office <${process.env.SMTP_USER}>`,
                     to: user.email,
                     subject: "Verify your email",
                     html: `
@@ -31,6 +48,7 @@ export const auth = betterAuth({
             }
         }
     },
+    
     plugins: [
         username(),
         nextCookies()

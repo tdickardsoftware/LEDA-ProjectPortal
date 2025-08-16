@@ -6,9 +6,8 @@ import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import React, { useEffect } from "react";
+import React from "react";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 
 // Password requirements: min 8 chars, 1 special char, 1 number, 1 uppercase
 const signupSchema = z.object({

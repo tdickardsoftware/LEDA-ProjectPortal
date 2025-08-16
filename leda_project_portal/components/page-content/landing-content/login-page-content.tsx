@@ -6,9 +6,9 @@ import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import React, { useEffect } from "react";
+import React from "react";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 // Accepts either a valid email or a username (alphanumeric, 3-32 chars)
 const loginSchema = z.object({
@@ -95,6 +95,11 @@ export default function LoginPageContent() {
                 </FormItem>
               )}
             />
+            <div className="text-right mb-2">
+              <Link href="/login/forgot-password" className="text-sm text-blue-600 hover:underline">
+                Forgot Password?
+              </Link>
+            </div>
             <Button type="submit" className="w-full">Login</Button>
           </form>
         </Form>
