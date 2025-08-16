@@ -7,7 +7,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
 const resetSchema = z.object({
@@ -25,6 +25,7 @@ const resetSchema = z.object({
 export default function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams?.get("token") || "";
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof resetSchema>>({
     resolver: zodResolver(resetSchema),
@@ -44,7 +45,10 @@ export default function ResetPasswordContent() {
     try {
       await authClient.resetPassword({ token, newPassword: values.password });
       setSubmitted(true);
-    } catch (err) {
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500); // short delay for user feedback
+    } catch {
       setError("Unable to reset password. The link may be invalid or expired.");
     } finally {
       setIsSubmitting(false);

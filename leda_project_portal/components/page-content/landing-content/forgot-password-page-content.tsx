@@ -32,7 +32,7 @@ export default function ForgotPasswordPageContent() {
     try {
       await authClient.requestPasswordReset({ email: values.email, redirectTo: `${window.location.origin}/login/reset-password` });
       setSubmitted(true);
-    } catch (err) {
+    } catch {
       setError("Unable to process request. Please try again.");
     } finally {
       setIsSubmitting(false);

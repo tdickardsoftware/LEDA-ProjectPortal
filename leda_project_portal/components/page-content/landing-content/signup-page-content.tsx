@@ -53,7 +53,7 @@ export default function SignupPageContent() {
     setSignupError(null);
     setIsSubmitting(true);
     try {
-      const response = await authClient.signUp.email({
+      await authClient.signUp.email({
         username: values.username,
         email: values.email,
         password: values.password,

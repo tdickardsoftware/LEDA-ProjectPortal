@@ -95,9 +95,14 @@ export default function LoginPageContent() {
                 </FormItem>
               )}
             />
-            <div className="text-right mb-2">
+            <div className="flex justify-between mb-2">
+              {Boolean(process.env.DISABLE_SIGN_UP) !== false && (
+                <Link href="/sign-up" className="text-sm text-blue-600 hover:underline">
+                  Create Account
+                </Link>
+              )}
               <Link href="/login/forgot-password" className="text-sm text-blue-600 hover:underline">
-                Forgot Password?
+              Forgot Password?
               </Link>
             </div>
             <Button type="submit" className="w-full">Login</Button>
