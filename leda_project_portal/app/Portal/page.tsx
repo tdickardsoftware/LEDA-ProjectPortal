@@ -8,8 +8,10 @@ export const metadata: Metadata = {
 	title: "Portal",
 };
 
+
 // Define the main page component
 export default function Page() {
+	
 	return (
 		// Main container for the page content
 		<main>

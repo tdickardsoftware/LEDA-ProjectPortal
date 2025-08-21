@@ -3,6 +3,8 @@
 import {
 	ChevronsUpDown,
 	LogOut,
+	Users,
+	Undo,
 } from "lucide-react";
 
 import {
@@ -12,6 +14,9 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+	DropdownMenuSub,
+	DropdownMenuSubTrigger,
+	DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import {
 	SidebarMenu,
@@ -19,35 +24,14 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { useUserAbilities } from "@/lib/use-user-abilities";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 export function NavUser() {
 	const { isMobile } = useSidebar();
-	const [user, setUser] = useState<
-		{ name: string; email: string, username: string } | null
-	>(null);
+	const { user, emulateRole } = useUserAbilities();
 	const router = useRouter();
-
-	useEffect(() => {
-		async function fetchUser() {
-			try {
-				const session = await authClient.getSession();
-				const user = session?.data?.user;
-				if (user) {
-					setUser({
-						name: user.name || "",
-						email: user.email || "",
-						username: user.username || "",
-					});
-				}
-			} catch {
-				setUser(null);
-			}
-		}
-		fetchUser();
-	}, []);
 
 	async function handleLogout() {
 		await authClient.signOut({
@@ -80,6 +64,12 @@ export function NavUser() {
 
 	if (!user) return null;
 
+	const canEmulate = user.role === "Developer" || user.role === "Office Admin";
+	const availableRoles: { [key: string]: ("Office Admin" | "User")[] } = {
+		Developer: ["Office Admin", "User"],
+		"Office Admin": ["User"],
+	};
+
 	return (
 		<SidebarMenu>
 			<SidebarMenuItem>
@@ -96,9 +86,11 @@ export function NavUser() {
 								<span className="truncate text-sm">
 									{user.username}
 								</span>
-								<span className="truncate text-xs">
-									{user.email}
-								</span>
+								{user.emulatedRole && (
+									<span className="flex items-center gap-1 text-xs text-red-600 font-semibold">
+										Emulating: {user.emulatedRole}
+									</span>
+								)}
 							</div>
 							<ChevronsUpDown className="ml-auto size-4" />
 						</SidebarMenuButton>
@@ -116,15 +108,52 @@ export function NavUser() {
 										{user.name}
 									</span>
 									<span className="truncate text-sm">
-									{user.username}
-								</span>
+										{user.username}
+									</span>
 									<span className="truncate text-xs">
 										{user.email}
+									</span>
+									<span className="truncate text-xs">
+										Role: {user.emulatedRole ? `${user.role} (emulating ${user.emulatedRole})` : user.role}
 									</span>
 								</div>
 							</div>
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
+						{canEmulate && (
+							<>
+								<DropdownMenuLabel className="text-xs text-gray-500 px-2">
+									Role Emulation
+								</DropdownMenuLabel>
+								<DropdownMenuSub>
+									<DropdownMenuSubTrigger>
+										<Users className="mr-2 size-4" />
+										<span>Emulate Role</span>
+									</DropdownMenuSubTrigger>
+									<DropdownMenuSubContent className="bg-white">
+										{user.emulatedRole && (
+											<DropdownMenuItem onClick={() => emulateRole(null)}>
+												<Undo className="mr-2 size-4" />
+												Revert to {user.originalRole}
+											</DropdownMenuItem>
+										)}
+										{availableRoles[user.role]?.map((role) => (
+											<DropdownMenuItem
+												key={role}
+												onClick={() => emulateRole(role)}
+												disabled={user.emulatedRole === role}
+											>
+												View as {role}
+											</DropdownMenuItem>
+										))}
+									</DropdownMenuSubContent>
+								</DropdownMenuSub>
+								<DropdownMenuSeparator />
+							</>
+						)}
+						<DropdownMenuLabel className="text-xs text-gray-500 px-2">
+							Account Management
+						</DropdownMenuLabel>
 						<DropdownMenuItem asChild>
 							<Button
 								type="button"
