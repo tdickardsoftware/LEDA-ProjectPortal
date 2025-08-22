@@ -41,6 +41,11 @@ type NavItem = {
 export function NavMain({ items }: { items: NavItem[] }) {
 	const pathname = usePathname(); // Get the current pathname
 
+	// If no items are available (e.g., user cannot manage any section), render nothing
+	if (!items || items.length === 0) {
+		return null;
+	}
+
 	// Use NavItem[] as the type for menuItems parameter
 	const renderMenuItems = (menuItems: NavItem[]) => {
 		return menuItems.map((item: NavItem) => {
