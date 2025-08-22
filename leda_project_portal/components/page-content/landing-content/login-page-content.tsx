@@ -20,10 +20,6 @@ const loginSchema = z.object({
       { message: "Enter a valid email or username" }
     ),
   password: z.string()
-    .min(8, { message: "Password must be at least 8 characters" })
-    .regex(/[A-Z]/, { message: "Password must include an uppercase letter" })
-    .regex(/[0-9]/, { message: "Password must include a number" })
-    .regex(/[^A-Za-z0-9]/, { message: "Password must include a special character" }),
 });
 
 export default function LoginPageContent() {
@@ -36,30 +32,96 @@ export default function LoginPageContent() {
     },
   });
 
+  function getErrorInfo(err: unknown): { message: string; status?: number } {
+    if (err instanceof Error) {
+      const e1 = err as unknown as Record<string, unknown>;
+      const status = typeof e1["status"] === "number" ? (e1["status"] as number) : undefined;
+      return { message: err.message || "", status };
+    }
+    if (typeof err === "string") {
+      return { message: err };
+    }
+    if (err && typeof err === "object") {
+      const rec = err as Record<string, unknown>;
+      const message = typeof rec.message === "string" ? rec.message : JSON.stringify(rec);
+      const status = typeof rec.status === "number" ? rec.status : undefined;
+      return { message, status };
+    }
+    return { message: "" };
+  }
+
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     const { emailOrUsername, password } = values;
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailOrUsername);
 
-    if (isEmail) {
-      await authClient.signIn.email({
-        email: emailOrUsername,
-        password,
-        callbackURL: `/Portal`
-      }, {
-        onSuccess: () => {
+    const setInvalidPassword = () =>
+      form.setError("password", { message: "Invalid password" });
+    const setInvalidIdentifier = () =>
+      form.setError("emailOrUsername", { message: `Incorrect ${isEmail ? "email" : "username"}` });
+
+    try {
+      if (isEmail) {
+        await authClient.signIn.email(
+          { email: emailOrUsername, password, callbackURL: `/Portal` },
+          {
+            onSuccess: () => {
               window.location.href = "/Portal";
-        }
-      } );
-    } else {
-      await authClient.signIn.username({
-        username: emailOrUsername,
-        password,
-        callbackURL: `/Portal`
-      }, {
-        onSuccess: () => {
+            },
+            onError: (error: unknown) => {
+              const { message, status } = getErrorInfo(error);
+              const msg = message.toLowerCase();
+              if (msg.includes("too many") || status === 429) {
+                form.setError("emailOrUsername", { message: "Too many attempts. Try again later." });
+                return;
+              }
+              if (msg.includes("password")) {
+                setInvalidPassword();
+              } else if (msg.includes("user") || msg.includes("email")) {
+                setInvalidIdentifier();
+              } else {
+                // Default to password error to avoid leaking which field is wrong
+                setInvalidPassword();
+              }
+            },
+          }
+        );
+      } else {
+        await authClient.signIn.username(
+          { username: emailOrUsername, password, callbackURL: `/Portal` },
+          {
+            onSuccess: () => {
               window.location.href = "/Portal";
-        }
-      });
+            },
+            onError: (error: unknown) => {
+              const { message, status } = getErrorInfo(error);
+              const msg = message.toLowerCase();
+              if (msg.includes("too many") || status === 429) {
+                form.setError("emailOrUsername", { message: "Too many attempts. Try again later." });
+                return;
+              }
+              if (msg.includes("password")) {
+                setInvalidPassword();
+              } else if (msg.includes("user") || msg.includes("username")) {
+                setInvalidIdentifier();
+              } else {
+                setInvalidPassword();
+              }
+            },
+          }
+        );
+      }
+    } catch (error) {
+      const { message, status } = getErrorInfo(error);
+      const msg = message.toLowerCase();
+      if (msg.includes("too many") || status === 429) {
+        form.setError("emailOrUsername", { message: "Too many attempts. Try again later." });
+      } else if (msg.includes("password")) {
+        setInvalidPassword();
+      } else if (msg.includes("user") || msg.includes("email") || msg.includes("username")) {
+        setInvalidIdentifier();
+      } else {
+        setInvalidPassword();
+      }
     }
   }
 
