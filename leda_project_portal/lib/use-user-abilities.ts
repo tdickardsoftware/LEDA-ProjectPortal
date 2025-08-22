@@ -56,6 +56,12 @@ export function useUserAbilities() {
     const emulateRole = useCallback((role: User['emulatedRole'] | null) => {
         if (role) {
             sessionStorage.setItem("emulatedRole", role);
+            // Persist to cookie so server-side auth can honor emulation
+            try {
+                const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+                // 1 day duration; adjust as needed
+                document.cookie = `emulatedRole=${encodeURIComponent(role)}; Path=/; SameSite=Lax${secure}; Max-Age=86400`;
+            } catch { /* no-op */ }
             setEmulatedRole(role);
             setUser(prevUser => prevUser
                 ? {
@@ -67,6 +73,11 @@ export function useUserAbilities() {
             );
         } else {
             sessionStorage.removeItem("emulatedRole");
+            // Clear cookie when stopping emulation
+            try {
+                const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+                document.cookie = `emulatedRole=; Path=/; SameSite=Lax${secure}; Max-Age=0`;
+            } catch { /* no-op */ }
             setEmulatedRole(undefined);
             setUser(prevUser => prevUser ? { ...prevUser, emulatedRole: undefined, originalRole: undefined } : null);
         }

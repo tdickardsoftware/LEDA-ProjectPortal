@@ -35,6 +35,16 @@ import {
 	trailsRoute,
 } from "@/lib/apiRoutes";
 import { useQuery } from "@tanstack/react-query";
+
+// Helper: allow Next.js redirect errors to bubble to the framework
+function rethrowNextRedirect(error: unknown) {
+	// Next attaches a special digest to redirect errors
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const digest = (error as any)?.digest as unknown;
+	if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
+		throw error;
+	}
+}
 //
 // async function to get all player data from the database
 //
@@ -70,7 +80,19 @@ async function fetchWithSession(input: string, init: RequestInit = {}) {
 		(baseInit as any).credentials = "include";
 	}
 
-	return fetch(url, baseInit);
+	const resp = await fetch(url, baseInit);
+	if (resp.status === 403) {
+		if (typeof window === "undefined") {
+			const { redirect } = await import("next/navigation");
+			redirect("/Portal");
+		} else {
+			try {
+				window.location.assign("/Portal");
+			} catch { /* no-op */ }
+			throw new Error("Forbidden");
+		}
+	}
+	return resp;
 }
 
 export async function fetchPlayers() {
@@ -84,6 +106,7 @@ export async function fetchPlayers() {
 		const data = (await response.json()) as Player[];
 		return data;
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -106,6 +129,7 @@ export async function fetchPlayerMember(ledaId: string) {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Member Information");
 	}
@@ -124,6 +148,7 @@ export async function fetchTeams() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -146,6 +171,7 @@ export async function fetchTeam(ledaId: string) {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Team Information");
 	}
@@ -164,6 +190,7 @@ export async function fetchPlaces() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -204,6 +231,7 @@ export async function fetchDivisions() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -222,6 +250,7 @@ export async function fetchMentions() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -240,6 +269,7 @@ export async function fetchPaymentTypes() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -258,6 +288,7 @@ export async function fetchPayoutTiers() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -276,6 +307,7 @@ export async function fetchPenalties() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -294,6 +326,7 @@ export async function fetchPeopleTypes() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -312,6 +345,7 @@ export async function fetchPlaceTypes() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -330,6 +364,7 @@ export async function fetchSeasons() {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -350,6 +385,7 @@ export async function fetchSeason(seasonCode: string) {
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}
@@ -391,6 +427,7 @@ export async function fetchTrailsDateData(
 		return data;
 		// if it cannot get data error out
 	} catch (error) {
+	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Trails Date Data");
 	}
