@@ -1,10 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
+import { requireApiSession } from "@/lib/require-session";
 
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+    await requireApiSession(req, res);
 	if (req.method === "GET") {
 		if (req.query.seasonCode) {
 			try {

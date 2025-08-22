@@ -2,6 +2,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import {  MailingList } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
@@ -25,6 +26,8 @@ export default async function handler(
             });
         }
     } else if (req.method === "POST") {
+        const session = await requireApiSession(req, res);
+        if (!session) return;
         try {
             const mailingLabels: MailingList[] = req.body;
             if (!Array.isArray(mailingLabels) || mailingLabels.length === 0) {
@@ -61,6 +64,8 @@ export default async function handler(
             });
         }
     } else if (req.method === "DELETE") {
+        const session = await requireApiSession(req, res);
+        if (!session) return;
         try {
             const { ledaId, name, addressLineOne, addressLineTwo } = req.body;
             if (!ledaId || !name || !addressLineOne) {

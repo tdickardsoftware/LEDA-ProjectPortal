@@ -28,7 +28,6 @@ import { InputDefault } from "../../ui/form-input-default";
 import { placeRoute } from "@/lib/apiRoutes";
 import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
-import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
 
 const placeFormSchema = z.object({

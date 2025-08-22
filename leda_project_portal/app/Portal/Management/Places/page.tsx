@@ -1,7 +1,4 @@
-import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-with-button";
-import CustomLink from "@/components/ui/custom-link";
 import { placeRoute } from "@/lib/apiRoutes";
 import { fetchPlaces } from "@/lib/getData";
 import { columns } from "@/schemas/managment/places";

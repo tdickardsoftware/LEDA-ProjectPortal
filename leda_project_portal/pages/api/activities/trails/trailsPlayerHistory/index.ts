@@ -3,12 +3,15 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { TrailsPlayerHistory } from "@/lib/definitions";
 import { format } from "date-fns";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	// Handle GET requests
 	if (req.method === "GET") {
 		if (!req.query.ledaId) {

@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PaymentHistory } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 
 // --- Helper Functions ---
 
@@ -75,6 +76,8 @@ export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	if (req.method === "GET") {
 		// Handle GET: fetch payment history, optionally for a specific ledaId
 		try {

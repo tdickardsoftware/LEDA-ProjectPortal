@@ -22,7 +22,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import PlayerSelector from "@/components/ui/player-selector";
-import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
 
 export const teamFormSchema = z.object({

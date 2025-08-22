@@ -19,17 +19,18 @@ import {
 	TrailsDateData,
 } from "@/lib/definitions";
 import {
-	divisionRouteServer,
-	mentionRouteServer,
-	paymentTypeRouteServer,
-	payoutTierRouteServer,
-	penaltyRouteServer,
-	peopleTypeRouteServer,
-	placeRouteServer,
-	placeTypeRouteServer,
-	playerRouteServer,
-	seasonRouteServer,
-	teamRouteServer,
+	// relative API routes
+	divisionRoute,
+	mentionRoute,
+	paymentTypeRoute,
+	payoutTierRoute,
+	penaltyRoute,
+	peopleTypeRoute,
+	placeRoute,
+	placeTypeRoute,
+	playerRoute,
+	seasonRoute,
+	teamRoute,
 	trailsDateRoute,
 	trailsRoute,
 } from "@/lib/apiRoutes";
@@ -37,15 +38,44 @@ import { useQuery } from "@tanstack/react-query";
 //
 // async function to get all player data from the database
 //
+// Shared helper to call our Next.js API with session cookies
+async function fetchWithSession(input: string, init: RequestInit = {}) {
+	const baseInit: RequestInit = {
+		method: init.method ?? "GET",
+		headers: {
+			"Content-Type": "application/json",
+			...(init.headers as Record<string, string> | undefined),
+		},
+		cache: "no-store",
+		...init,
+	};
+
+	let url = input;
+
+	if (typeof window === "undefined") {
+		// Server-side: build absolute URL and forward cookies from the incoming request
+		const { headers } = await import("next/headers");
+		const hdrs = await headers();
+		const host = hdrs.get("host") ?? process.env.VERCEL_URL ?? "localhost:3000";
+		const proto = hdrs.get("x-forwarded-proto") ?? (process.env.NODE_ENV === "production" ? "https" : "http");
+		const origin = `${proto}://${host}`;
+		if (!/^https?:\/\//i.test(input)) {
+			url = origin + input;
+		}
+		const cookieHeader = hdrs.get("cookie") ?? "";
+		(baseInit.headers as Record<string, string>).cookie = cookieHeader;
+	} else {
+		// Client-side: include credentials for same-origin requests
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(baseInit as any).credentials = "include";
+	}
+
+	return fetch(url, baseInit);
+}
+
 export async function fetchPlayers() {
-	// attempt to get data
 	try {
-		const response = await fetch(playerRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+		const response = await fetchWithSession(playerRoute);
 		if (!response.ok) {
 			throw new Error(
 				"Network response was not ok: " + (await response.text())
@@ -53,7 +83,6 @@ export async function fetchPlayers() {
 		}
 		const data = (await response.json()) as Player[];
 		return data;
-		// if it cannot get data error out
 	} catch (error) {
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
@@ -65,12 +94,7 @@ export async function fetchPlayers() {
 export async function fetchPlayerMember(ledaId: string) {
 	// attempt to get data
 	try {
-		const response = await fetch(`${playerRouteServer}?ledaId=${ledaId}`, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(`${playerRoute}?ledaId=${ledaId}`);
 		if (!response.ok) {
 			if (response.status === 404) {
 				return null;
@@ -92,12 +116,7 @@ export async function fetchPlayerMember(ledaId: string) {
 export async function fetchTeams() {
 	// attempt to get data
 	try {
-		const response = await fetch(teamRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(teamRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -115,12 +134,7 @@ export async function fetchTeams() {
 export async function fetchTeam(ledaId: string) {
 	// attempt to get data
 	try {
-		const response = await fetch(`${teamRouteServer}?ledaId=${ledaId}`, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(`${teamRoute}?ledaId=${ledaId}`);
 		if (!response.ok) {
 			if (response.status === 404) {
 				return null;
@@ -142,12 +156,7 @@ export async function fetchTeam(ledaId: string) {
 export async function fetchPlaces() {
 	// attempt to get data
 	try {
-		const response = await fetch(placeRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(placeRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -165,12 +174,7 @@ export async function fetchPlaces() {
 export async function fetchPlace(ledaId: string) {
 	// attempt to get data
 	try {
-		const response = await fetch(`${placeRouteServer}?ledaId=${ledaId}`, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(`${placeRoute}?ledaId=${ledaId}`);
 		if (!response.ok) {
 			if (response.status === 404) {
 				return null;
@@ -192,12 +196,7 @@ export async function fetchPlace(ledaId: string) {
 export async function fetchDivisions() {
 	// attempt to get data
 	try {
-		const response = await fetch(divisionRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(divisionRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -215,12 +214,7 @@ export async function fetchDivisions() {
 export async function fetchMentions() {
 	// attempt to get data
 	try {
-		const response = await fetch(mentionRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(mentionRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -238,12 +232,7 @@ export async function fetchMentions() {
 export async function fetchPaymentTypes() {
 	// attempt to get data
 	try {
-		const response = await fetch(paymentTypeRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(paymentTypeRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -261,12 +250,7 @@ export async function fetchPaymentTypes() {
 export async function fetchPayoutTiers() {
 	// attempt to get data
 	try {
-		const response = await fetch(payoutTierRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(payoutTierRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -284,12 +268,7 @@ export async function fetchPayoutTiers() {
 export async function fetchPenalties() {
 	// attempt to get data
 	try {
-		const response = await fetch(penaltyRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(penaltyRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -307,12 +286,7 @@ export async function fetchPenalties() {
 export async function fetchPeopleTypes() {
 	// attempt to get data
 	try {
-		const response = await fetch(peopleTypeRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(peopleTypeRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -330,12 +304,7 @@ export async function fetchPeopleTypes() {
 export async function fetchPlaceTypes() {
 	// attempt to get data
 	try {
-		const response = await fetch(placeTypeRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(placeTypeRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -353,12 +322,7 @@ export async function fetchPlaceTypes() {
 export async function fetchSeasons() {
 	// attempt to get data
 	try {
-		const response = await fetch(seasonRouteServer, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(seasonRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -376,14 +340,8 @@ export async function fetchSeasons() {
 export async function fetchSeason(seasonCode: string) {
 	// attempt to get data
 	try {
-		const response = await fetch(
-			`${seasonRouteServer}?seasonCode=${seasonCode}`,
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			}
+		const response = await fetchWithSession(
+			`${seasonRoute}?seasonCode=${seasonCode}`
 		);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
@@ -402,12 +360,7 @@ export async function fetchSeason(seasonCode: string) {
 export async function fetchTrailsDates() {
 	// attempt to get data
 	try {
-		const response = await fetch(trailsDateRoute, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+	const response = await fetchWithSession(trailsDateRoute);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");
 		}
@@ -427,14 +380,8 @@ export async function fetchTrailsDateData(
 ): Promise<TrailsDateData[]> {
 	// attempt to get data
 	try {
-		const response = await fetch(
-			`${trailsRoute}?trailsDate=${trailsDate}`,
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			}
+		const response = await fetchWithSession(
+			`${trailsRoute}?trailsDate=${trailsDate}`
 		);
 		if (!response.ok) {
 			throw new Error("Network response was not ok");

@@ -2,11 +2,14 @@ import { MentionPlayerHistory } from "@/lib/definitions";
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	if (req.method === "POST") {
 		try {
 			const data = req.body as MentionPlayerHistory;

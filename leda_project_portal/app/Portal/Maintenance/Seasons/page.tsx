@@ -1,7 +1,4 @@
-import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-with-button";
-import CustomLink from "@/components/ui/custom-link";
 import { seasonRoute } from "@/lib/apiRoutes";
 import { fetchSeasons } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/seasons";

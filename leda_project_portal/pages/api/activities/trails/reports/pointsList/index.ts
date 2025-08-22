@@ -2,12 +2,14 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { TrailsPointsList } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
 		try {

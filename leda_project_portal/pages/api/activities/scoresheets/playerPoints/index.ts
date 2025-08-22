@@ -6,11 +6,14 @@ import {
 	WeeklyTopDarterScores,
 } from "@/lib/definitions";
 import { query } from "@/lib/dbTypeGet";
+import { requireApiSession } from "@/lib/require-session";
 
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	if (req.method === "POST") {
 		try {
 			const data = req.body as PlayerPoints;
