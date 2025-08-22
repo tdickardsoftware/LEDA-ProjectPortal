@@ -32,6 +32,28 @@ export async function requireApiSession(
     else if (path.startsWith("/api/reports")) subject = "Reports";
 
     const method = req.method || "GET";
+    // CSRF check for unsafe methods
+    if (method === "POST" || method === "PUT" || method === "DELETE" || method === "PATCH") {
+      // Double-submit cookie pattern: header must match cookie
+      const headerToken = (req.headers["x-csrf-token"] || req.headers["X-CSRF-Token"]) as string | undefined;
+      const cookieHeader = req.headers["cookie"] as string | undefined;
+      let cookieToken: string | undefined;
+      if (cookieHeader) {
+        const parts = cookieHeader.split(/;\s*/);
+        for (const p of parts) {
+          const [k, v] = p.split("=");
+          if (k === "csrfToken") {
+            cookieToken = decodeURIComponent(v ?? "");
+            break;
+          }
+        }
+      }
+      if (!headerToken || !cookieToken || headerToken !== cookieToken) {
+        res.status(403).json({ error: "Invalid CSRF token" });
+        return null;
+      }
+    }
+
     const action: Actions =
       method === "POST"
         ? "write"

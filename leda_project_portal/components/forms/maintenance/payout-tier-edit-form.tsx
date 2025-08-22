@@ -19,6 +19,7 @@ import { payoutTierRoute } from "@/lib/apiRoutes";
 import { PayoutTier } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const payoutTierFormSchema = z.object({
 	place: z
@@ -56,7 +57,7 @@ export default function PayoutTierEditForm({
 			if (!rowData || !rowData.place) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				payoutTierRoute + `?place=${rowData.place}`,
 				{
 					method: "GET",
@@ -83,7 +84,7 @@ export default function PayoutTierEditForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof payoutTierFormSchema>) => {
-			const response = await fetch(payoutTierRoute, {
+			const response = await fetchWithSession(payoutTierRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",

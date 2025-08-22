@@ -27,22 +27,43 @@ export async function middleware(request: NextRequest) {
 
     const sessionCookie = getSessionCookie(request); // Use getSessionCookie for optimistic check
 
+    // Prepare a default pass-through response so we can set cookies
+    let response: NextResponse | null = null;
+
     if (sessionCookie) {
         if (publicPaths.includes(pathname)) {
             return NextResponse.redirect(new URL('/Portal', request.url));
         }
-        return NextResponse.next();
+        response = NextResponse.next();
+    } else if (publicPaths.includes(pathname)) {
+        response = NextResponse.next();
+    } else {
+        const loginUrl = new URL('/login', request.url);
+        const returnTo = pathname + (request.nextUrl.search || '');
+        loginUrl.searchParams.set('redirectTo', returnTo);
+        console.log('Unauthenticated user, redirecting to login from:', pathname);
+        return NextResponse.redirect(loginUrl);
     }
 
-    if (publicPaths.includes(pathname)) {
-        return NextResponse.next();
+    // Double-submit CSRF cookie: set if missing (non-API paths only; matcher excludes /api)
+    try {
+        const hasCsrf = request.cookies.get('csrfToken');
+        if (!hasCsrf) {
+            const token = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)).replace(/-/g, '');
+            const isSecure = request.nextUrl.protocol === 'https:';
+            response.cookies.set('csrfToken', token, {
+                path: '/',
+                sameSite: 'lax',
+                secure: isSecure,
+                httpOnly: false,
+                maxAge: 60 * 60 * 24, // 1 day
+            });
+        }
+    } catch {
+        // no-op: if crypto not available, token generation falls back above
     }
 
-    const loginUrl = new URL('/login', request.url);
-    const returnTo = pathname + (request.nextUrl.search || '');
-    loginUrl.searchParams.set('redirectTo', returnTo);
-    console.log('Unauthenticated user, redirecting to login from:', pathname);
-    return NextResponse.redirect(loginUrl);
+    return response;
 }
 
 export const config = {

@@ -27,6 +27,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -136,7 +137,7 @@ export default function PlayerAddInformationForm({
 				? { ...values, ledaId: 0 }
 				: values;
 
-			const response = await fetch(playerRoute, {
+			const response = await fetchWithSession(playerRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

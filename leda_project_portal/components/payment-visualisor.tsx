@@ -31,6 +31,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { FilterIcon } from "lucide-react";
+import { fetchWithSession } from "@/lib/getData";
 
 interface PaymentVisualisorProps {
 	type: "player" | "team" | "place";
@@ -176,7 +177,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 			else if (type === "place") baseRoute = placePaymentHistoryRoute;
 			else return;
 
-			const response = await fetch(`${baseRoute}`, {
+			const response = await fetchWithSession(`${baseRoute}`, {
 				method: "DELETE",
 				headers: {
 					"Content-Type": "application/json",

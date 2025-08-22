@@ -18,6 +18,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "../../ui/textarea";
 import { peopleTypeRoute } from "@/lib/apiRoutes";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for the form validation
 const peopleTypeFormSchema = z.object({
@@ -51,7 +52,7 @@ export default function PeopleTypeAddForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof peopleTypeFormSchema>) => {
-			const response = await fetch(peopleTypeRoute, {
+			const response = await fetchWithSession(peopleTypeRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { placeTypeRoute } from "@/lib/apiRoutes";
 import { PlaceType } from "@/lib/definitions";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const placeTypeFormSchema = z.object({
 	placeTypeCode: z
@@ -56,7 +57,7 @@ export default function PlaceTypeEditForm({
 			if (!rowData || !rowData.placeTypeCode) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				placeTypeRoute + `?placeTypeCode=${rowData.placeTypeCode}`,
 				{
 					method: "GET",
@@ -81,7 +82,7 @@ export default function PlaceTypeEditForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof placeTypeFormSchema>) => {
-			const response = await fetch(placeTypeRoute, {
+			const response = await fetchWithSession(placeTypeRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",

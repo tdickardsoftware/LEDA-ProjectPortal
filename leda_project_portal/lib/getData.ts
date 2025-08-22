@@ -49,7 +49,7 @@ function rethrowNextRedirect(error: unknown) {
 // async function to get all player data from the database
 //
 // Shared helper to call our Next.js API with session cookies
-async function fetchWithSession(input: string, init: RequestInit = {}) {
+export async function fetchWithSession(input: string, init: RequestInit = {}) {
 	const baseInit: RequestInit = {
 		method: init.method ?? "GET",
 		headers: {
@@ -74,10 +74,26 @@ async function fetchWithSession(input: string, init: RequestInit = {}) {
 		}
 		const cookieHeader = hdrs.get("cookie") ?? "";
 		(baseInit.headers as Record<string, string>).cookie = cookieHeader;
+		// Extract csrfToken from cookies and send as header for unsafe methods
+		if (/^(POST|PUT|DELETE|PATCH)$/i.test(String(baseInit.method))) {
+			const match = cookieHeader.match(/(?:^|;\s*)csrfToken=([^;]+)/);
+			if (match?.[1]) {
+				(baseInit.headers as Record<string, string>)["X-CSRF-Token"] = decodeURIComponent(match[1]);
+			}
+		}
 	} else {
 		// Client-side: include credentials for same-origin requests
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(baseInit as any).credentials = "include";
+		// Read CSRF token from document.cookie
+		if (/^(POST|PUT|DELETE|PATCH)$/i.test(String(baseInit.method))) {
+			try {
+				const m = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]+)/);
+				if (m?.[1]) {
+					(baseInit.headers as Record<string, string>)["X-CSRF-Token"] = decodeURIComponent(m[1]);
+				}
+			} catch { /* no-op */ }
+		}
 	}
 
 	const resp = await fetch(url, baseInit);

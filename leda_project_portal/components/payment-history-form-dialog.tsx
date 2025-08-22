@@ -49,6 +49,7 @@ import TeamSelector from "@/components/ui/team-selector";
 import PlaceSelector from "@/components/ui/place-selector";
 import { PaymentHistory } from "@/lib/definitions";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define form schema with Zod
 const formSchema = z.object({
@@ -200,7 +201,7 @@ export default function PaymentHistoryFormDialog({
 						paymentNbr: paymentData.paymentNbr,
 					}),
 			};
-			const response = await fetch(route, {
+			const response = await fetchWithSession(route, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

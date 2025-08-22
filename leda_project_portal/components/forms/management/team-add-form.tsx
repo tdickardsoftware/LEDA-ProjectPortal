@@ -23,6 +23,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import PlayerSelector from "@/components/ui/player-selector";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 export const teamFormSchema = z.object({
 	ledaId: z
@@ -86,7 +87,7 @@ export default function PlaceAddForm({
 				memberIdList: memberIdList,
 			};
 
-			const response = await fetch(teamRoute, {
+			const response = await fetchWithSession(teamRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

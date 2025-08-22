@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { mentionRoute } from "@/lib/apiRoutes";
 import { Mention } from "@/lib/definitions";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const mentionFormSchema = z.object({
 	mentionCode: z.string().min(1, { message: "Mention Code is required." }),
@@ -61,7 +62,7 @@ export default function MentionEditForm({
 			if (!rowData || !rowData.mentionCode) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				mentionRoute + `?mentionCode=${rowData.mentionCode}`,
 				{
 					method: "GET",
@@ -87,7 +88,7 @@ export default function MentionEditForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof mentionFormSchema>) => {
-			const response = await fetch(mentionRoute, {
+			const response = await fetchWithSession(mentionRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",

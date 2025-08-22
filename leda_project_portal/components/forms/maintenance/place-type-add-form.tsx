@@ -19,6 +19,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "../../ui/textarea";
 import { placeTypeRoute } from "@/lib/apiRoutes";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for form validation using zod
 const placeTypeFormSchema = z.object({
@@ -52,7 +53,7 @@ export default function PlaceTypeAddForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof placeTypeFormSchema>) => {
-			const response = await fetch(placeTypeRoute, {
+			const response = await fetchWithSession(placeTypeRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

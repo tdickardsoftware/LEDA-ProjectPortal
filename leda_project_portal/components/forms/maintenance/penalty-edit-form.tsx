@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { penaltyRoute } from "@/lib/apiRoutes";
 import { Penalty } from "@/lib/definitions";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const penaltyFormSchema = z.object({
 	penaltyCode: z.string().min(1, { message: "Penalty Code is required." }),
@@ -54,7 +55,7 @@ export default function PenaltyEditForm({
 			if (!rowData || !rowData.penaltyCode) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				penaltyRoute + `?penaltyCode=${rowData.penaltyCode}`,
 				{
 					method: "GET",
@@ -79,7 +80,7 @@ export default function PenaltyEditForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof penaltyFormSchema>) => {
-			const response = await fetch(penaltyRoute, {
+			const response = await fetchWithSession(penaltyRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",

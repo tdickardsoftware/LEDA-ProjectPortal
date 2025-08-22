@@ -18,6 +18,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "../../ui/textarea";
 import { penaltyRoute } from "@/lib/apiRoutes";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for the form validation
 const penaltyFormSchema = z.object({
@@ -49,7 +50,7 @@ export default function PenaltyAddForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof penaltyFormSchema>) => {
-			const response = await fetch(penaltyRoute, {
+			const response = await fetchWithSession(penaltyRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

@@ -4,6 +4,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { playerRoute, placeRoute } from "@/lib/apiRoutes";
+import { fetchWithSession as _fetchWithSession } from "@/lib/getData";
 
 type ImportType = "player" | "place";
 
@@ -25,8 +26,8 @@ export default function MailingLabelsImportDialog({
 			setStatus("pending");
 			if (importBoth) {
 				const [playerRes, placeRes] = await Promise.all([
-					fetch(`${playerRoute}/playerMailList`, { method: "POST" }),
-					fetch(`${placeRoute}/placeMailList`, { method: "POST" }),
+					_fetchWithSession(`${playerRoute}/playerMailList`, { method: "POST" }),
+					_fetchWithSession(`${placeRoute}/placeMailList`, { method: "POST" }),
 				]);
 				const bothOk = playerRes.ok && placeRes.ok;
 				setStatus(bothOk ? "success" : "error");
@@ -37,7 +38,7 @@ export default function MailingLabelsImportDialog({
 					importType === "player"
 						? `${playerRoute}/playerMailList`
 						: `${placeRoute}/placeMailList`;
-				const res = await fetch(url, { method: "POST" });
+				const res = await _fetchWithSession(url, { method: "POST" });
 				setStatus(res.ok ? "success" : "error");
 				if (!res.ok) throw new Error("Import failed");
 				return res.json();

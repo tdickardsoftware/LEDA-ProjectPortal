@@ -19,6 +19,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "@/components/ui/textarea";
 import { paymentTypeRoute } from "@/lib/apiRoutes";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for the form validation
 const paymentTypeFormSchema = z.object({
@@ -51,7 +52,7 @@ export default function PaymentTypeAddForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof paymentTypeFormSchema>) => {
-			const response = await fetch(paymentTypeRoute, {
+			const response = await fetchWithSession(paymentTypeRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

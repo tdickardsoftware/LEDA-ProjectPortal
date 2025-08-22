@@ -32,6 +32,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for form validation using zod
 const seasonFormSchema = z.object({
@@ -81,7 +82,7 @@ export default function SeasonEditForm({
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof seasonFormSchema>) => {
 			values.dates = dates;
-			const response = await fetch(seasonRoute, {
+			const response = await fetchWithSession(seasonRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",

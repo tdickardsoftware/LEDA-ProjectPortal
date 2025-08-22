@@ -23,6 +23,7 @@ import { Team } from "@/lib/definitions";
 import PlayerSelector from "@/components/ui/player-selector";
 import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const teamInfoSchema = z.object({
 	ledaId: z
@@ -80,7 +81,7 @@ export default function TeamEditForm({
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof teamInfoSchema>) => {
 			const submittedValues = { ...values, memberIdList: memberIdList };
-			const response = await fetch(teamRoute, {
+			const response = await fetchWithSession(teamRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
@@ -163,7 +164,7 @@ export default function TeamEditForm({
 			return;
 		}
 		const fetchData = async () => {
-			const response = await fetch(
+			const response = await fetchWithSession(
 				teamRoute + `?ledaId=${rowData.ledaId}`,
 				{
 					method: "GET",

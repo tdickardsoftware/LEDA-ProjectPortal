@@ -29,6 +29,7 @@ import {
 	useMutation,
 	useQueryClient
 } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 //
 // Component export
@@ -103,7 +104,7 @@ export default function TrailsPageContent() {
 			if (trailsDate !== null) {
 				values.trailsDate = trailsDate;
 			}
-			return fetch(trailsRoute, {
+			return fetchWithSession(trailsRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -119,7 +120,7 @@ export default function TrailsPageContent() {
 
 	const deletePlayerMutation = useMutation({
 		mutationFn: async (value: TrailsDateData) => {
-			return fetch(trailsRoute, {
+			return fetchWithSession(trailsRoute, {
 				method: "DELETE",
 				headers: {
 					"Content-Type": "application/json",
@@ -140,7 +141,7 @@ export default function TrailsPageContent() {
 		mutationFn: async (values: TrailsDateData[]) => {
 			for (const value of values) {
 				value.trailsDate = addTrailsDate as string;
-				await fetch(trailsRoute, {
+				await fetchWithSession(trailsRoute, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",

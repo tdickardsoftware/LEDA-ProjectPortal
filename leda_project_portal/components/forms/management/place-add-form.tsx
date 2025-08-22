@@ -29,6 +29,7 @@ import { placeRoute } from "@/lib/apiRoutes";
 import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const placeFormSchema = z.object({
 	ledaId: z
@@ -163,7 +164,7 @@ export default function PlaceAddForm({
 				? { ...values, ledaId: 0 }
 				: values;
 
-			const response = await fetch(placeRoute, {
+			const response = await fetchWithSession(placeRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

@@ -29,6 +29,7 @@ import CheckboxDefault from "@/components/ui/checkbox-default";
 import { Place } from "@/lib/definitions";
 import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const placeFormSchema = z.object({
 	ledaId: z
@@ -167,7 +168,7 @@ export default function PlaceEditForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof placeFormSchema>) => {
-			const response = await fetch(placeRoute, {
+			const response = await fetchWithSession(placeRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
@@ -237,7 +238,7 @@ export default function PlaceEditForm({
 			if (!rowData || !rowData.ledaId) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				placeRoute + `?ledaId=${rowData.ledaId}`,
 				{
 					method: "GET",

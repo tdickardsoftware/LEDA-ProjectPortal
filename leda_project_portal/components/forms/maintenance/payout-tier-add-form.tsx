@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import React from "react";
 import { payoutTierRoute } from "@/lib/apiRoutes";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for the form validation
 const paymentTypeFormSchema = z.object({
@@ -52,7 +53,7 @@ export default function PayoutTierAddForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof paymentTypeFormSchema>) => {
-			const response = await fetch(payoutTierRoute, {
+			const response = await fetchWithSession(payoutTierRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

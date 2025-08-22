@@ -29,6 +29,7 @@ import CheckboxDefault from "@/components/ui/checkbox-default";
 import { PlayerMemberInfo } from "@/lib/definitions";
 import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -197,7 +198,7 @@ export default function PlayerEditInformationForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
-			const response = await fetch(playerRoute, {
+			const response = await fetchWithSession(playerRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
@@ -265,7 +266,7 @@ export default function PlayerEditInformationForm({
 		}
 
 		const fetchData = async () => {
-			const response = await fetch(
+			const response = await fetchWithSession(
 				playerRoute + `?ledaId=${rowData.ledaId}`,
 				{
 					method: "GET",
