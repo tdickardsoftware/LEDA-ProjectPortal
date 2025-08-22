@@ -43,6 +43,18 @@ export function NavUser() {
 		});
 	}
 
+	async function handleSignOutAll() {
+		try {
+			await authClient.revokeSessions();
+			// Clear session cookie in the browser as well
+			await authClient.signOut();
+			router.push("/login");
+		} catch {
+			// no-op; best-effort logout
+			router.push("/login");
+		}
+	}
+
 	// Add: delete handler that prompts the user then calls authClient.deleteUser
 	async function handleDelete() {
 		const confirmed = typeof window !== "undefined" && window.confirm(
@@ -162,6 +174,17 @@ export function NavUser() {
 							>
 								<LogOut />
 								Log out
+							</Button>
+						</DropdownMenuItem>
+
+						<DropdownMenuItem asChild>
+							<Button
+								type="button"
+								onClick={handleSignOutAll}
+								className="flex items-center gap-2 text-blue-600 hover:underline bg-transparent border-none p-0 m-0 cursor-pointer w-full text-left"
+							>
+								<LogOut />
+								Sign out of all devices
 							</Button>
 						</DropdownMenuItem>
 

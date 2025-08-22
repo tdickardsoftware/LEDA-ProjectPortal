@@ -8,9 +8,17 @@ import { transport } from "./lib/email";
 
 export const auth = betterAuth({
     database: pool,
+    session: {
+        // Shorter sessions with sliding refresh
+        // 2 days expiry, refresh window every 12 hours
+        expiresIn: 60 * 60 * 24 * 2,
+        updateAge: 60 * 60 * 12,
+    },
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,
+        // Revoke all other sessions after a password reset completes
+        revokeSessionsOnPasswordReset: true,
         sendResetPassword: async ({ user, url }) => {
             try {
                 await transport.sendMail({

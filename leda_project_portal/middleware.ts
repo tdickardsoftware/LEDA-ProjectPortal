@@ -31,7 +31,8 @@ export async function middleware(request: NextRequest) {
     let response: NextResponse | null = null;
 
     if (sessionCookie) {
-        if (publicPaths.includes(pathname)) {
+        // If authenticated, only redirect away from auth pages; allow '/' to be visited
+        if (pathname === '/login' || pathname === '/sign-up') {
             return NextResponse.redirect(new URL('/Portal', request.url));
         }
         response = NextResponse.next();
