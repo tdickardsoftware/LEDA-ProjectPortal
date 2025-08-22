@@ -129,6 +129,11 @@ export default function PortalPageContent() {
 					</Card>
 				</div>
 			</Can>
+			{ability.can("see", "Denial")  && (
+				<div className="mt-4 text-red-600">
+					You do not have permission to manage all resources.
+				</div>
+			)}
 		</div>
 	);
 }

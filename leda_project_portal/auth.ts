@@ -1,8 +1,10 @@
 import { betterAuth } from "better-auth";
 import { username } from "better-auth/plugins"
-import { nextCookies } from "better-auth/next-js"
+import { nextCookies } from "better-auth/next-js";
 import { pool } from "./lib/getPool";
 import { transport } from "./lib/email";
+
+
 
 export const auth = betterAuth({
     database: pool,
