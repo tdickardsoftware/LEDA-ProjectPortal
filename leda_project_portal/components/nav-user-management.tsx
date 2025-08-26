@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import UserSelector from "@/components/ui/user-selector";
 import { Button } from "./ui/button";
+import { userRoute } from "@/lib/apiRoutes";
+import { fetchWithSession } from "@/lib/getData";
 
 function MenuItemDialog({
   title,
@@ -67,14 +69,46 @@ function ForcePasswordResetMenuItem() {
   const selectedEmails = useMemo(() => selectedUsers.map((u) => u.email), [selectedUsers]);
   const handleUsersChange = useCallback((next: MinimalUser[]) => {
     setSelectedUsers((prev) => {
+      // If emails and usernames are identical, skip; otherwise accept update
       if (prev.length === next.length) {
-        const prevSet = new Set(prev.map((u) => u.email));
-        const same = next.every((u) => prevSet.has(u.email));
-        if (same) return prev; // no change
+        const prevMap = new Map(prev.map((u) => [u.email, u.username] as const));
+        const same = next.every((u) => prevMap.get(u.email) === u.username);
+        if (same) return prev;
       }
       return next;
     });
   }, []);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (selectedUsers.length === 0 || submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const emails = selectedUsers.map((u) => u.email);
+      const res = await fetchWithSession(userRoute, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emails, mustResetPassword: true }),
+      });
+      if (!res.ok) {
+        let message = "Failed to update users";
+        try {
+          const data = await res.json();
+          message = data?.error || data?.message || message;
+        } catch {}
+        throw new Error(message);
+      }
+      // Clear on success
+      setSelectedUsers([]);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : "Failed to submit");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const removeUser = (email: string) => {
     setSelectedUsers((prev) => prev.filter((u) => u.email !== email));
@@ -123,7 +157,9 @@ function ForcePasswordResetMenuItem() {
                     <li key={user.email} className="group flex items-center justify-between gap-2 px-3 py-2">
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium">{user.username}</div>
-                        <div className="truncate text-xs text-gray-500">{user.email}</div>
+                        {user.username?.trim().toLowerCase() !== user.email?.trim().toLowerCase() && (
+                          <div className="truncate text-xs text-gray-500">{user.email}</div>
+                        )}
                       </div>
                       <Button
                         type="button"
@@ -138,10 +174,29 @@ function ForcePasswordResetMenuItem() {
                 </ul>
               )}
             </div>
+
+            {submitError && (
+              <div className="text-sm text-red-600 px-1">{submitError}</div>
+            )}
+            
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel className="hover:bg-gray-100 border-gray-300 text-gray-700">Close</AlertDialogCancel>
+            <div className="flex justify-between w-full">
+                <AlertDialogCancel className="hover:bg-gray-100 border-gray-300 text-gray-700">Close</AlertDialogCancel>
+                {selectedUsers.length > 0 && (
+                <div className="flex justify-end">
+                    <Button
+                    type="button"
+                    disabled={submitting}
+                    onClick={handleSubmit}
+                    className="bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                    {submitting ? "Submitting..." : "Submit"}
+                    </Button>
+                </div>
+                )}
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

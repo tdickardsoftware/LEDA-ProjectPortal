@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { fetchWithSession } from "@/lib/getData";
 
 const resetSchema = z.object({
   password: z.string()
@@ -25,6 +26,7 @@ const resetSchema = z.object({
 export default function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams?.get("token") || "";
+  const email = searchParams?.get("email") || "";
   const router = useRouter();
 
   const form = useForm<z.infer<typeof resetSchema>>({
@@ -43,7 +45,37 @@ export default function ResetPasswordContent() {
     setError(null);
     setIsSubmitting(true);
     try {
+      // 1) Try to clear mustResetPassword BEFORE changing password (while session is still valid)
+      try {
+        // Prefer email from query; otherwise try session user (if available)
+        let targetEmail = email;
+        if (!targetEmail) {
+          try {
+            const s = await authClient.getSession();
+            targetEmail = (s?.data?.user?.email as string | undefined) || "";
+          } catch { /* no-op */ }
+        }
+        if (targetEmail) {
+          await fetchWithSession("/api/user", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emails: [targetEmail], mustResetPassword: false }),
+          });
+        }
+      } catch {
+        // ignore; we'll still attempt the password change
+      }
+
+      // 2) Now change the password (this may revoke sessions)
       await authClient.resetPassword({ token, newPassword: values.password });
+
+      // 3) Clear cookie client-side to stop middleware enforcement immediately
+      try {
+        const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = `mustResetPassword=; Path=/; SameSite=Lax${secure}; Max-Age=0`;
+      } catch { /* swallow */ }
+      // Ensure no active session so /login isn’t redirected to /Portal by middleware
+      try { await authClient.signOut(); } catch { /* ignore */ }
       setSubmitted(true);
       setTimeout(() => {
         router.push("/login");

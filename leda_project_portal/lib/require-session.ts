@@ -93,7 +93,6 @@ export async function requireApiSession(
         effectiveRole = emulatedRole;
       }
     }
-    console.log(effectiveRole)
     const ability = defineAbilitesFor(effectiveRole);
     if (!ability.can(action, subject)) {
       res.status(403).json({ error: "Forbidden" });

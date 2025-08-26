@@ -54,7 +54,8 @@ export default function UserSelector({
   useEffect(() => {
     // Build the selected users in current data order to keep deterministic string
     const selectedUsers = users.filter((u) => selected.includes(u.email));
-    const key = selectedUsers.map((u) => u.email).join(",");
+    // Include username in the key so changes to username will re-emit
+    const key = selectedUsers.map((u) => `${u.email}|${u.username ?? ''}`).join(",");
     if (key !== lastEmittedRef.current) {
       lastEmittedRef.current = key;
       onUsersChange(selectedUsers);
@@ -74,14 +75,17 @@ export default function UserSelector({
 
   const toggleUser = (email: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    const next = selected.includes(email)
+      ? selected.filter((x) => x !== email)
+      : [...selected, email];
     if (onSelectedEmailsChange) {
-      const next = selected.includes(email)
-        ? selected.filter((x) => x !== email)
-        : [...selected, email];
       onSelectedEmailsChange(next);
     } else {
-      setSelected((prev) => (prev.includes(email) ? prev.filter((x) => x !== email) : [...prev, email]));
+      setSelected(next);
     }
+    // Immediately emit full user objects so parent has usernames without waiting for effect
+    const nextUsers = users.filter((u) => next.includes(u.email));
+    onUsersChange(nextUsers);
   };
 
   const selectedText = selected.length > 0

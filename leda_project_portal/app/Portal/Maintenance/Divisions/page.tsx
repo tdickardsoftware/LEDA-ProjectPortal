@@ -1,6 +1,4 @@
-import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-with-button";
 import { divisionRoute } from "@/lib/apiRoutes";
 import { fetchDivisions } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/divisions";
@@ -20,20 +18,16 @@ export default async function Page() {
 					columns={columns}
 					data={await fetchDivisions()}
 					pageName="Divisions Page"
-					addDialog={
-						<DialogWithButton
-							form="DivisionAddForm"
-							title="Add Division"
-							buttonName="Add Division +"
-						/>
-					}
-					deleteDialog={
-						<AlertDialogDelete
-							buttonName="Delete Division(s)"
-							title="Delete Mention(s)"
-							apiEndpoint={divisionRoute}
-						/>
-					}
+					addDialogConfig={{
+						form: "DivisionAddForm",
+						title: "Add Division",
+						buttonName: "Add Division +",
+					}}
+					deleteDialogConfig={{
+						buttonName: "Delete Division(s)",
+						title: "Delete Division(s)",
+						apiEndpoint: divisionRoute,
+					}}
 					apiEndpoint={divisionRoute}
 				/>
 			</div>

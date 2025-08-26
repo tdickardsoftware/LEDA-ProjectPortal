@@ -91,10 +91,17 @@ export const auth = betterAuth({
                 required: true,
                 defaultValue: "User",
                 input: false
+            },
+            mustResetPassword: {
+                type: "boolean",
+                required: true,
+                defaultValue: false,
+                input: true
             }
         },
         attrs: {
-            role: true
+            role: true,
+            mustResetPassword: true
         }
     }
 })

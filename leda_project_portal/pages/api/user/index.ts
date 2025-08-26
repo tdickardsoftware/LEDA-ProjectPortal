@@ -63,8 +63,52 @@ export default async function handler(
 				error,
 			});
 		}
-	} else {
-		// Respond with a 405 status code for unsupported methods
-		res.status(405).json({ error: "Method not allowed" });
+		return;
 	}
+
+	// Handle PATCH requests (set mustResetPassword for users)
+	if (req.method === "PATCH") {
+		try {
+			const { emails, mustResetPassword } = req.body as { emails?: string[]; mustResetPassword?: boolean };
+			if (!Array.isArray(emails) || typeof mustResetPassword !== "boolean") {
+				return res.status(400).json({ error: "Invalid payload" });
+			}
+
+			// Who is making this request?
+			const sessionUserEmail =
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				((session as any)?.data?.user?.email as string | undefined) ??
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				((session as any)?.user?.email as string | undefined);
+
+			// Rules:
+			// - Admins (manage Users) can toggle for any list of emails.
+			// - A normal user can ONLY set mustResetPassword to false and ONLY for themself.
+			const isAdmin = ability.can("manage", "Users");
+
+			if (!isAdmin) {
+				if (!sessionUserEmail) return res.status(401).json({ error: "Unauthorized" });
+				const uniqueEmails = new Set(emails);
+				const selfOnly = uniqueEmails.size === 1 && uniqueEmails.has(sessionUserEmail);
+				if (!(selfOnly && mustResetPassword === false)) {
+					return res.status(403).json({ error: "Forbidden" });
+				}
+			}
+
+			// Update users
+			const result = await query<{ email: string }>(
+				'UPDATE public.user SET "mustResetPassword" = $1 WHERE email = ANY($2::text[]) RETURNING email',
+				[
+					mustResetPassword as unknown as string | number | boolean | null,
+					emails as unknown as string | number | boolean | null,
+				]
+			);
+			return res.status(200).json({ updated: result.rowCount ?? 0, emails: result.rows.map((r) => r.email) });
+		} catch (error) {
+			return res.status(500).json({ error: "Failed to update users", details: String(error) });
+		}
+	}
+
+	// Respond with a 405 status code for unsupported methods
+	res.status(405).json({ error: "Method not allowed" });
 }

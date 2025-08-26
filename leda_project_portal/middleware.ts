@@ -17,6 +17,7 @@ export async function middleware(request: NextRequest) {
         '/sign-up',
         '/login/forgot-password',
         '/login/reset-password',
+        '/login/change-required',
         '/maintenance'
     ];
 
@@ -31,9 +32,20 @@ export async function middleware(request: NextRequest) {
     let response: NextResponse | null = null;
 
     if (sessionCookie) {
-        // If authenticated, only redirect away from auth pages; allow '/' to be visited
+        const mustResetCookie = request.cookies.get('mustResetPassword')?.value === '1';
+        // If authenticated and visiting auth pages, redirect appropriately
         if (pathname === '/login' || pathname === '/sign-up') {
-            return NextResponse.redirect(new URL('/Portal', request.url));
+            return NextResponse.redirect(new URL(mustResetCookie ? '/login/change-required' : '/Portal', request.url));
+        }
+        // If user must reset, force them onto the required page unless already there or on reset/forgot
+        const allowWhileMustReset = new Set<string>([
+            '/login/change-required',
+            '/login/reset-password',
+            '/login/forgot-password',
+            '/',
+        ]);
+        if (mustResetCookie && !allowWhileMustReset.has(pathname)) {
+            return NextResponse.redirect(new URL('/login/change-required', request.url));
         }
         response = NextResponse.next();
     } else if (publicPaths.includes(pathname)) {

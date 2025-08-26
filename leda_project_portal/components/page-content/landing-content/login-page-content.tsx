@@ -64,8 +64,19 @@ export default function LoginPageContent() {
         await authClient.signIn.email(
           { email: emailOrUsername, password, callbackURL: `/Portal` },
           {
-            onSuccess: () => {
-              window.location.href = "/Portal";
+            onSuccess: async () => {
+              const session = await authClient.getSession();
+              const u = (session?.data && typeof session.data === 'object' ? (session.data as Record<string, unknown>).user : undefined) as Record<string, unknown> | undefined;
+              const mustReset = Boolean(u && typeof u === 'object' && 'mustResetPassword' in u ? u.mustResetPassword : false);
+              try {
+                const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+                if (mustReset) {
+                  document.cookie = `mustResetPassword=1; Path=/; SameSite=Lax${secure}`;
+                } else {
+                  document.cookie = `mustResetPassword=; Path=/; SameSite=Lax${secure}; Max-Age=0`;
+                }
+              } catch { /* no-op */ }
+              window.location.href = mustReset ? "/login/change-required" : "/Portal";
             },
             onError: (error: unknown) => {
               const { message, status } = getErrorInfo(error);
@@ -89,8 +100,19 @@ export default function LoginPageContent() {
         await authClient.signIn.username(
           { username: emailOrUsername, password, callbackURL: `/Portal` },
           {
-            onSuccess: () => {
-              window.location.href = "/Portal";
+            onSuccess: async () => {
+              const session = await authClient.getSession();
+              const u = (session?.data && typeof session.data === 'object' ? (session.data as Record<string, unknown>).user : undefined) as Record<string, unknown> | undefined;
+              const mustReset = Boolean(u && typeof u === 'object' && 'mustResetPassword' in u ? u.mustResetPassword : false);
+              try {
+                const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+                if (mustReset) {
+                  document.cookie = `mustResetPassword=1; Path=/; SameSite=Lax${secure}`;
+                } else {
+                  document.cookie = `mustResetPassword=; Path=/; SameSite=Lax${secure}; Max-Age=0`;
+                }
+              } catch { /* no-op */ }
+              window.location.href = mustReset ? "/login/change-required" : "/Portal";
             },
             onError: (error: unknown) => {
               const { message, status } = getErrorInfo(error);

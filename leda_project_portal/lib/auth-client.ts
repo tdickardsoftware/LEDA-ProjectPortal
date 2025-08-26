@@ -7,7 +7,8 @@ export const authClient = createAuthClient({
         usernameClient(),
         inferAdditionalFields({
             user: {
-                role: {type: "string"}
+                role: {type: "string"},
+                mustResetPassword: { type: "boolean" }
             }
         })
     ],
