@@ -27,6 +27,7 @@ import { useUserAbilities } from "@/lib/use-user-abilities";
 import React from "react";
 import { Can } from "@casl/react";
 import NavUserManagement from "@/components/nav-user-management";
+import { Spinner } from "./ui/skeleton";
 
 //
 // Define types for the nested structure
@@ -46,8 +47,9 @@ export function NavMain({ items }: { items: NavItem[] }) {
 	const { ability, loading } = useUserAbilities();
 	
 	const pathname = usePathname(); // Get the current pathname
+	
 	if (loading) {
-		return <div>Loading...</div>; // Or your loading component
+		return <Spinner />; // Or your loading component
 	}
 	// If no items are available (e.g., user cannot manage any section), render nothing
 	if (!items || items.length === 0) {

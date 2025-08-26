@@ -55,6 +55,8 @@ export const playerPaymentHistoryRoute =
 export const teamPaymentHistoryRoute = "/api/maintenance/payment/teamPayment";
 // Define route for placePaymentHistory not on the serverside
 export const placePaymentHistoryRoute = "/api/maintenance/payment/placePayment";
+// Define route for Users not on the serverside
+export const userRoute = "/api/user";
 
 //
 // Server Routes
@@ -124,3 +126,6 @@ export const teamPaymentHistoryRouteServer =
 // Define route for placePaymentHistory api
 export const placePaymentHistoryRouteServer =
 	"http://" + process.env.VERCEL_URL + placePaymentHistoryRoute;
+// Define route for user api
+export const userRouteServer =
+	"http://" + process.env.VERCEL_URL + userRoute;

@@ -647,3 +647,10 @@ export type MailingList = {
 	addressLineTwo: string;
 	type: string;
 };
+//
+// Define type to identify the shape of our data from postgres for a user
+//
+export type minimalUser = {
+	username: string;
+	email: string;
+}

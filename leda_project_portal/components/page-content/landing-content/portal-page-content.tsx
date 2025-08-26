@@ -12,12 +12,13 @@ import {
 	CardContent,
 	CardFooter,
 } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/skeleton";
 
 export default function PortalPageContent() {
 	const { ability, loading } = useUserAbilities();
 
 	if (loading) {
-		return <div>Loading...</div>; // Or your loading component
+		return <Spinner />; // Or your loading component
 	}
 
 	return (

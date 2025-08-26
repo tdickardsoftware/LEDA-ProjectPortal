@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { KeyRound, Users, Shield } from "lucide-react";
+import React, { useState, useCallback, useMemo } from "react";
+import { KeyRound, Users, Shield, X } from "lucide-react";
 import {
   SidebarMenuItem,
   SidebarMenuButton,
@@ -15,6 +15,8 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import UserSelector from "@/components/ui/user-selector";
+import { Button } from "./ui/button";
 
 function MenuItemDialog({
   title,
@@ -51,9 +53,98 @@ function MenuItemDialog({
 export default function NavUserManagement() {
   return (
     <>
-      <MenuItemDialog title="Force Password Reset" Icon={KeyRound} />
+      <ForcePasswordResetMenuItem />
       <MenuItemDialog title="Batch Account Creation" Icon={Users} />
       <MenuItemDialog title="Role Management" Icon={Shield} />
     </>
+  );
+}
+
+type MinimalUser = { username: string; email: string };
+
+function ForcePasswordResetMenuItem() {
+  const [selectedUsers, setSelectedUsers] = useState<MinimalUser[]>([]);
+  const selectedEmails = useMemo(() => selectedUsers.map((u) => u.email), [selectedUsers]);
+  const handleUsersChange = useCallback((next: MinimalUser[]) => {
+    setSelectedUsers((prev) => {
+      if (prev.length === next.length) {
+        const prevSet = new Set(prev.map((u) => u.email));
+        const same = next.every((u) => prevSet.has(u.email));
+        if (same) return prev; // no change
+      }
+      return next;
+    });
+  }, []);
+
+  const removeUser = (email: string) => {
+    setSelectedUsers((prev) => prev.filter((u) => u.email !== email));
+  };
+  const handleSelectedEmailsChange = useCallback((emails: string[]) => {
+    // Rebuild selectedUsers from currently known ones where possible; keep username when matching
+    setSelectedUsers((prev) => {
+      const prevByEmail = new Map(prev.map((u) => [u.email, u] as const));
+      const next = emails.map((email) => prevByEmail.get(email) || { email, username: email });
+      return next;
+    });
+  }, []);
+
+  return (
+    <SidebarMenuItem>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <SidebarMenuButton asChild>
+            <button type="button">
+              <KeyRound />
+              <span>Force Password Reset</span>
+            </button>
+          </SidebarMenuButton>
+        </AlertDialogTrigger>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Force Password Reset</AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <div className="space-y-3 py-1">
+            <div>
+              <UserSelector
+                onUsersChange={handleUsersChange}
+                placeholder="Select users to force reset..."
+                selectedEmails={selectedEmails}
+                onSelectedEmailsChange={handleSelectedEmailsChange}
+              />
+            </div>
+
+            <div className="max-h-56 overflow-auto border rounded-md">
+              {selectedUsers.length === 0 ? (
+                <div className="p-3 text-sm text-gray-500">No users selected.</div>
+              ) : (
+                <ul className="divide-y">
+                  {selectedUsers.map((user) => (
+                    <li key={user.email} className="group flex items-center justify-between gap-2 px-3 py-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium">{user.username}</div>
+                        <div className="truncate text-xs text-gray-500">{user.email}</div>
+                      </div>
+                      <Button
+                        type="button"
+                        aria-label={`Remove ${user.email}`}
+                        className="invisible group-hover:visible text-red-600 hover:text-red-700"
+                        onClick={() => removeUser(user.email)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel className="hover:bg-gray-100 border-gray-300 text-gray-700">Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </SidebarMenuItem>
   );
 }
