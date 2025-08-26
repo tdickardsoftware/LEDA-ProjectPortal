@@ -161,10 +161,10 @@ export default function PaymentTypeEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
+					<Button type="button" onClick={onClose} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						Back
 					</Button>
-					<Button type="submit">Update</Button>
+					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Update</Button>
 				</div>
 			</form>
 		</Form>

@@ -537,14 +537,14 @@ export default function PlaceEditForm({
 				</Tab.Group>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button type="button" onClick={prevStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === 0
 							? handleEdit
 								? "Edit"
 								: "Back"
 							: "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
+					<Button type="button" onClick={nextStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === steps.length - 1 ? "Update" : "Next"}
 					</Button>
 				</div>

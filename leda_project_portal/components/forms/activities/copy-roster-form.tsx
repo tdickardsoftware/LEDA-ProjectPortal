@@ -98,7 +98,7 @@ export default function RosterCopyForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button variant={"outline"}>Copy Roster</Button>
+					<Button variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">Copy Roster</Button>
 				</div>
 			</form>
 		</Form>

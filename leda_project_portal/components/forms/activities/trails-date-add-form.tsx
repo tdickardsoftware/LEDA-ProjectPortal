@@ -205,15 +205,16 @@ export default function TrailsDateAddForm({
 						type="button"
 						variant={"outline"}
 						onClick={() => goBack(false)}
+						className="hover:bg-gray-100 border-gray-300 text-gray-700"
 					>
 						Cancel
 					</Button>
 					{index !== undefined ? (
-						<Button type="submit" variant={"outline"}>
+						<Button type="submit" variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 							Update Player
 						</Button>
 					) : (
-						<Button type="submit" variant={"outline"}>
+						<Button type="submit" variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 							Add Player
 						</Button>
 					)}

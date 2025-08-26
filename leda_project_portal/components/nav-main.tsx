@@ -23,6 +23,10 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation"; // Import usePathname
+import { useUserAbilities } from "@/lib/use-user-abilities";
+import React from "react";
+import { Can } from "@casl/react";
+import NavUserManagement from "@/components/nav-user-management";
 
 //
 // Define types for the nested structure
@@ -39,8 +43,12 @@ type NavItem = {
 // Return all of the items for the main nav object
 //
 export function NavMain({ items }: { items: NavItem[] }) {
+	const { ability, loading } = useUserAbilities();
+	
 	const pathname = usePathname(); // Get the current pathname
-
+	if (loading) {
+		return <div>Loading...</div>; // Or your loading component
+	}
 	// If no items are available (e.g., user cannot manage any section), render nothing
 	if (!items || items.length === 0) {
 		return null;
@@ -94,6 +102,12 @@ export function NavMain({ items }: { items: NavItem[] }) {
 		<SidebarGroup>
 			<SidebarGroupLabel>Admin Tools</SidebarGroupLabel>
 			<SidebarMenu>{renderMenuItems(items)}</SidebarMenu>
+			<Can I="manage" a="Users" ability={ability}>
+				<SidebarGroupLabel>User Management</SidebarGroupLabel>
+				<SidebarMenu>
+					<NavUserManagement />
+				</SidebarMenu>
+			</Can>
 		</SidebarGroup>
 	);
 }
