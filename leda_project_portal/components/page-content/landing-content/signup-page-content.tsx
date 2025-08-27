@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import React from "react";
 import { authClient } from "@/lib/auth-client";
 import { Check, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { userRoute } from "@/lib/apiRoutes";
 
 // Password requirements: min 8 chars, 1 special char, 1 number, 1 uppercase
 const signupSchema = z.object({
@@ -34,6 +36,10 @@ const signupSchema = z.object({
 
 export default function SignupPageContent() {
 
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams?.get("token") || "";
+  const inviteEmail = (searchParams?.get("email") || "").trim().toLowerCase();
+
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -50,6 +56,59 @@ export default function SignupPageContent() {
   const [signupError, setSignupError] = React.useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = React.useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
+  const [inviteStatus, setInviteStatus] = React.useState<"idle" | "checking" | "valid" | "expired" | "invalid">("idle");
+
+  // If token/email present, validate the invite against the ot-email API
+  React.useEffect(() => {
+    let cancelled = false;
+    async function validateInvite() {
+      if (!inviteToken || !inviteEmail) return;
+      setInviteStatus("checking");
+      setSignupError(null);
+      try {
+        // Prefill the email field with the invite email
+        form.setValue("email", inviteEmail, { shouldDirty: false });
+        const res = await fetch(`${userRoute}/ot-email?email=${encodeURIComponent(inviteEmail)}`, { method: "GET" });
+        if (!res.ok) {
+          if (!cancelled) {
+            setInviteStatus("invalid");
+            setSignupError("Invalid or unavailable invitation. Please contact an administrator for a new link.");
+          }
+          return;
+        }
+        const rows: Array<{ email: string; token: string; creationDateTime: string; expirationDateTime: string }> = await res.json();
+        const match = rows.find((r) => r.token === inviteToken);
+        if (!match) {
+          if (!cancelled) {
+            setInviteStatus("invalid");
+            setSignupError("Invitation link is invalid or already used. Please contact an administrator for a new link.");
+          }
+          return;
+        }
+        const exp = new Date(match.expirationDateTime);
+        const now = new Date();
+        if (isNaN(exp.getTime()) || exp.getTime() <= now.getTime()) {
+          // Expired: notify and delete token row(s) for this email
+          try { await fetch(`${userRoute}/ot-email?email=${encodeURIComponent(inviteEmail)}`, { method: "DELETE" }); } catch {}
+          if (!cancelled) {
+            setInviteStatus("expired");
+            setSignupError("This invitation link has expired. Please contact an administrator to send a new email.");
+          }
+          return;
+        }
+        if (!cancelled) setInviteStatus("valid");
+      } catch {
+        if (!cancelled) {
+          setInviteStatus("invalid");
+          setSignupError("Unable to validate invitation. Please try again or contact support.");
+        }
+      }
+    }
+    validateInvite();
+    return () => { cancelled = true; };
+    // We intentionally exclude form from deps to avoid resets
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteToken, inviteEmail]);
 
   // Live password requirement checks
   const pw = form.watch("password");
@@ -75,6 +134,10 @@ export default function SignupPageContent() {
     setSignupError(null);
     setIsSubmitting(true);
     try {
+      // If invitation exists, ensure it's valid before proceeding
+      if (inviteToken && inviteEmail && inviteStatus !== "valid") {
+        throw new Error("Invitation is invalid or expired.");
+      }
       await authClient.signUp.email({
         username: values.username,
         email: values.email,
@@ -87,6 +150,12 @@ export default function SignupPageContent() {
         mustResetPassword: false,
         callbackURL: `/Portal`
       });
+      // Delete the token row after successful signup (no auth required)
+      if (inviteToken && inviteEmail) {
+        try {
+          await fetch(`${userRoute}/ot-email?email=${encodeURIComponent(inviteEmail)}`, { method: "DELETE" });
+        } catch { /* ignore */ }
+      }
       setSignupSuccess(true); // Show success message
     } catch (err: unknown) {
       // If error response has status 422, show the error
@@ -229,7 +298,11 @@ export default function SignupPageContent() {
               )}
             />
             
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSubmitting || (Boolean(inviteToken && inviteEmail) && inviteStatus !== "valid")}
+            >
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
                   <svg className="animate-spin h-4 w-4 mr-2 text-white" viewBox="0 0 24 24">

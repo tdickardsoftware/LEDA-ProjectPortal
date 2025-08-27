@@ -1,0 +1,46 @@
+import { NextApiRequest, NextApiResponse } from "next";
+import { requireApiSession } from "@/lib/require-session";
+import { transport } from "@/lib/email";
+
+function getBaseUrl(req: NextApiRequest) {
+  const proto = (req.headers["x-forwarded-proto"] as string) || "";
+  const host = (req.headers["x-forwarded-host"] as string) || req.headers.host || "";
+  if (proto && host) return `${proto}://${host}`;
+  if (req.headers.origin) return String(req.headers.origin);
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  await requireApiSession(req, res);
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    const { email, token } = (req.body ?? {}) as { email?: string; token?: string };
+    if (!email || !token) {
+      return res.status(400).json({ error: "Missing email or token" });
+    }
+    const base = getBaseUrl(req);
+  const link = `${base}/sign-up/?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+
+    await transport.sendMail({
+      from: `Office <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: "Create your account",
+      html: `
+        <p>Hello,</p>
+        <p>An administrator has invited you to create an account. Click the link below to complete your registration:</p>
+        <p><a href="${link}" target="_blank" rel="noopener noreferrer">Create your account</a></p>
+        <p>If the button doesn't work, copy and paste this URL into your browser:</p>
+        <p><code>${link}</code></p>
+      `,
+    });
+
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to send invite", details: String(error) });
+  }
+}

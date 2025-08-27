@@ -48,6 +48,17 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/login/change-required', request.url));
         }
         response = NextResponse.next();
+    } else if (pathname === '/sign-up') {
+        // If sign-up is disabled, only allow access when both token and email are provided
+        const signUpDisabled = process.env.DISABLE_SIGN_UP === 'true';
+        if (signUpDisabled) {
+            const token = request.nextUrl.searchParams.get('token');
+            const email = request.nextUrl.searchParams.get('email');
+            if (!token || !email) {
+                return NextResponse.redirect(new URL('/login', request.url));
+            }
+        }
+        response = NextResponse.next();
     } else if (publicPaths.includes(pathname)) {
         response = NextResponse.next();
     } else {

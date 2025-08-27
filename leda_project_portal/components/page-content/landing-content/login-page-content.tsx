@@ -32,6 +32,10 @@ export default function LoginPageContent() {
       password: "",
     },
   });
+  // Respect DISABLE_SIGN_UP (prefer public var); treat only 'true' as enabled flag
+  const disableSignUp =
+    process.env.NEXT_PUBLIC_DISABLE_SIGN_UP === 'true' ||
+    process.env.DISABLE_SIGN_UP === 'true';
 
   function getErrorInfo(err: unknown): { message: string; status?: number } {
     if (err instanceof Error) {
@@ -181,7 +185,7 @@ export default function LoginPageContent() {
               )}
             />
             <div className="flex justify-between mb-2">
-              {Boolean(process.env.DISABLE_SIGN_UP) == false && (
+              {!disableSignUp && (
                 <Link href="/sign-up" className="text-sm text-blue-600 hover:underline">
                   Create Account
                 </Link>
