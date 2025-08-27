@@ -4,7 +4,8 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+// removed Input in favor of PasswordInput
+import PasswordInput from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { Check, X } from "lucide-react";
@@ -152,7 +153,7 @@ export default function ResetPasswordContent() {
                 <FormItem>
                   <FormLabel>New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Enter new password" {...field} disabled={isSubmitting} />
+                    <PasswordInput placeholder="Enter new password" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                   <div className="mt-2 grid grid-cols-2 gap-y-1 gap-x-4">
@@ -171,7 +172,7 @@ export default function ResetPasswordContent() {
                 <FormItem>
                   <FormLabel>Confirm New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Re-enter new password" {...field} disabled={isSubmitting} />
+                    <PasswordInput placeholder="Re-enter new password" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                   <div className="mt-2">
