@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { authClient } from "@/lib/auth-client";
+import { Check, X } from "lucide-react";
 
 // Password requirements: min 8 chars, 1 special char, 1 number, 1 uppercase
 const signupSchema = z.object({
@@ -49,6 +50,26 @@ export default function SignupPageContent() {
   const [signupSuccess, setSignupSuccess] = React.useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
 
+  // Live password requirement checks
+  const pw = form.watch("password");
+  const cpw = form.watch("confirmPassword");
+  const reqHasMin = (pw?.length ?? 0) >= 8;
+  const reqHasUpper = /[A-Z]/.test(pw || "");
+  const reqHasNumber = /[0-9]/.test(pw || "");
+  const reqHasSpecial = /[^A-Za-z0-9]/.test(pw || "");
+  const reqMatches = !!pw && pw === cpw;
+
+  const Requirement = ({ ok, label }: { ok: boolean; label: string }) => (
+    <div className="flex items-center text-xs gap-2">
+      {ok ? (
+        <Check className="h-3.5 w-3.5 text-green-600" aria-hidden />
+      ) : (
+        <X className="h-3.5 w-3.5 text-gray-400" aria-hidden />
+      )}
+      <span className={ok ? "text-green-700" : "text-gray-600"}>{label}</span>
+    </div>
+  );
+
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     setSignupError(null);
     setIsSubmitting(true);
@@ -60,6 +81,9 @@ export default function SignupPageContent() {
         name: values.middleInitial
           ? `${values.firstName} ${values.middleInitial} ${values.lastName}`
           : `${values.firstName} ${values.lastName}`,
+        // Additional fields required by inferred client types
+        role: "User",
+        mustResetPassword: false,
         callbackURL: `/Portal`
       });
       setSignupSuccess(true); // Show success message
@@ -178,8 +202,11 @@ export default function SignupPageContent() {
                     <Input type="password" placeholder="Enter your password" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
-                  <div className="text-xs text-gray-500 mt-1">
-                    Password must be at least 8 characters, include an uppercase letter, a number, and a special character.
+                  <div className="mt-2 grid grid-cols-2 gap-y-1 gap-x-4">
+                    <Requirement ok={reqHasMin} label="At least 8 characters" />
+                    <Requirement ok={reqHasUpper} label="Uppercase letter" />
+                    <Requirement ok={reqHasNumber} label="Number" />
+                    <Requirement ok={reqHasSpecial} label="Special character" />
                   </div>
                 </FormItem>
               )}
@@ -194,6 +221,9 @@ export default function SignupPageContent() {
                     <Input type="password" placeholder="Re-enter your password" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
+                  <div className="mt-2">
+                    <Requirement ok={reqMatches} label="Passwords match" />
+                  </div>
                 </FormItem>
               )}
             />

@@ -7,6 +7,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React from "react";
+import { Check, X } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { fetchWithSession } from "@/lib/getData";
@@ -40,6 +41,26 @@ export default function ResetPasswordContent() {
   const [submitted, setSubmitted] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Live password requirement checks
+  const passwordValue = form.watch("password");
+  const confirmValue = form.watch("confirmPassword");
+  const reqHasMin = (passwordValue?.length ?? 0) >= 8;
+  const reqHasUpper = /[A-Z]/.test(passwordValue || "");
+  const reqHasNumber = /[0-9]/.test(passwordValue || "");
+  const reqHasSpecial = /[^A-Za-z0-9]/.test(passwordValue || "");
+  const reqMatches = !!passwordValue && passwordValue === confirmValue;
+
+  const Requirement = ({ ok, label }: { ok: boolean; label: string }) => (
+    <div className="flex items-center text-xs gap-2">
+      {ok ? (
+        <Check className="h-3.5 w-3.5 text-green-600" aria-hidden />
+      ) : (
+        <X className="h-3.5 w-3.5 text-gray-400" aria-hidden />
+      )}
+      <span className={ok ? "text-green-700" : "text-gray-600"}>{label}</span>
+    </div>
+  );
 
   async function onSubmit(values: z.infer<typeof resetSchema>) {
     setError(null);
@@ -134,8 +155,11 @@ export default function ResetPasswordContent() {
                     <Input type="password" placeholder="Enter new password" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
-                  <div className="text-xs text-gray-500 mt-1">
-                    Password must be at least 8 characters, include an uppercase letter, a number, and a special character.
+                  <div className="mt-2 grid grid-cols-2 gap-y-1 gap-x-4">
+                    <Requirement ok={reqHasMin} label="At least 8 characters" />
+                    <Requirement ok={reqHasUpper} label="Uppercase letter" />
+                    <Requirement ok={reqHasNumber} label="Number" />
+                    <Requirement ok={reqHasSpecial} label="Special character" />
                   </div>
                 </FormItem>
               )}
@@ -150,6 +174,9 @@ export default function ResetPasswordContent() {
                     <Input type="password" placeholder="Re-enter new password" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
+                  <div className="mt-2">
+                    <Requirement ok={reqMatches} label="Passwords match" />
+                  </div>
                 </FormItem>
               )}
             />
