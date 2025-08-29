@@ -663,3 +663,10 @@ export type EmailOneTimeToken = {
 	creationDateTime: Date;
 	expirationDateTime: Date;
 }
+//
+// Define type to identify the shape of our data from postgres for a user role
+//
+export type UserRole = {
+	username: string;
+	role: string;
+}
