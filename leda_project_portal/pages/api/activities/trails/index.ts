@@ -3,12 +3,15 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { TrailsDateData } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	// Handle GET requests
 	if (req.method === "GET") {
 		try {

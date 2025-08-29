@@ -167,7 +167,7 @@ export default function SchedulingEditMatchupForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">Update Matchup</Button>
+					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Update Matchup</Button>
 				</div>
 			</form>
 		</Form>

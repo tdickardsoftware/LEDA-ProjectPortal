@@ -29,6 +29,7 @@ import CheckboxDefault from "@/components/ui/checkbox-default";
 import { PlayerMemberInfo } from "@/lib/definitions";
 import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -197,7 +198,7 @@ export default function PlayerEditInformationForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
-			const response = await fetch(playerRoute, {
+			const response = await fetchWithSession(playerRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
@@ -265,7 +266,7 @@ export default function PlayerEditInformationForm({
 		}
 
 		const fetchData = async () => {
-			const response = await fetch(
+			const response = await fetchWithSession(
 				playerRoute + `?ledaId=${rowData.ledaId}`,
 				{
 					method: "GET",
@@ -655,14 +656,14 @@ export default function PlayerEditInformationForm({
 				</Tab.Group>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button type="button" onClick={prevStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === 0
 							? handleEdit
 								? "Edit"
 								: "Back"
 							: "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
+					<Button type="button" onClick={nextStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === steps.length - 1 ? "Update" : "Next"}
 					</Button>
 				</div>

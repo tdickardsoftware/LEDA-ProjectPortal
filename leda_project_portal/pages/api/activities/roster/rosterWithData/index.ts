@@ -1,11 +1,13 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { Roster } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
 
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	await requireApiSession(req, res);
 	if (req.method === "GET") {
 		try {
 			const result = await query<Roster>(

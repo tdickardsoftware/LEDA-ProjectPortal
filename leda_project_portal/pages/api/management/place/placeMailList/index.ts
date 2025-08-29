@@ -3,12 +3,14 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import {  MailingList } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
+    await requireApiSession(req, res);
     // Handle POST requests
     if (req.method === "POST") {
         try {

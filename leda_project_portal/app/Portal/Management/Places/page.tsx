@@ -1,7 +1,4 @@
-import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-with-button";
-import CustomLink from "@/components/ui/custom-link";
 import { placeRoute } from "@/lib/apiRoutes";
 import { fetchPlaces } from "@/lib/getData";
 import { columns } from "@/schemas/managment/places";
@@ -14,42 +11,37 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-	return (
-		<>
-			<div className="container mx-auto py-10">
-				<DataTable
-					columns={columns}
-					data={await fetchPlaces()}
-					pageName="Places Page"
-					addDialog={
-						<DialogWithButton
-							form="PlaceAddForm"
-							title="Add Place"
-							buttonName="Add Place +"
-						/>
-					}
-					deleteDialog={
-						<AlertDialogDelete
-							buttonName="Delete Place"
-							title="Delete Place"
-							apiEndpoint={placeRoute}
-						/>
-					}
-					editDialog={
-						<DialogWithButton
-							form="PlaceEditForm"
-							title="Edit Place"
-							buttonName="Edit Place"
-						/>
-					}
-					viewLink={
-						<CustomLink linkName="View Place" parentPage="Places" />
-					}
-					defaultSort="ledaId"
-					apiEndpoint={placeRoute}
-					filter={true}
-				/>
-			</div>
-		</>
-	);
+	 return (
+		 <>
+			 <div className="container mx-auto py-10">
+				 <DataTable
+					 columns={columns}
+					 data={await fetchPlaces()}
+					 pageName="Places Page"
+					 addDialogConfig={{
+						 form: "PlaceAddForm",
+						 title: "Add Place",
+						 buttonName: "Add Place +"
+					 }}
+					 deleteDialogConfig={{
+						 buttonName: "Delete Place",
+						 title: "Delete Place",
+						 apiEndpoint: placeRoute
+					 }}
+					 editDialogConfig={{
+						 form: "PlaceEditForm",
+						 title: "Edit Place",
+						 buttonName: "Edit Place"
+					 }}
+					 viewLinkConfig={{
+						 linkName: "View Place",
+						 parentPage: "Places"
+					 }}
+					 defaultSort="ledaId"
+					 apiEndpoint={placeRoute}
+					 filter={true}
+				 />
+			 </div>
+		 </>
+	 );
 }

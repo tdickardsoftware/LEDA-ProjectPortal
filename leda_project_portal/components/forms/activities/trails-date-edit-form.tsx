@@ -19,6 +19,7 @@ import { trailsRoute } from "@/lib/apiRoutes";
 import { TrailsDateData } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const TrailsDateDataFormSchema = z.object({
 	singlesPlace: z.number().positive().optional(),
@@ -54,7 +55,7 @@ export default function TrailsDateEditForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof TrailsDateDataFormSchema>) => {
-			const response = await fetch(trailsRoute, {
+			const response = await fetchWithSession(trailsRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
@@ -211,7 +212,7 @@ export default function TrailsDateEditForm({
 					</div>
 				</div>
 				<div className="flex items-center justify-center">
-					<Button type="submit" variant={"outline"}>
+					<Button type="submit" variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						Update
 					</Button>
 				</div>

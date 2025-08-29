@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { playerRoute, placeRoute } from "@/lib/apiRoutes";
 import { PopoverMultiSelect } from "@/components/ui/popover-multiselect";
 import { MailingList } from "@/lib/definitions";
+import { fetchWithSession } from "@/lib/getData";
 
 export default function MailingLabelsAddDialog({
 	playerLedaIds,
@@ -33,7 +34,7 @@ export default function MailingLabelsAddDialog({
 
 	const mutation = useMutation({
 		mutationFn: async (mailingLabels: MailingList[]) => {
-			const res = await fetch("/api/reports/mailingLabels", {
+			const res = await fetchWithSession("/api/reports/mailingLabels", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(mailingLabels),

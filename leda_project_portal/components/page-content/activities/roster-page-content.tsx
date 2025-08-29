@@ -41,6 +41,7 @@ import {
 	useMutation, 
 	useQueryClient 
 } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define types for better code readability
 type TeamInfo = {
@@ -91,7 +92,7 @@ type ScheduleData = Record<
 const fetchRoster = async (seasonCode: string | null): Promise<{teamInformation: RosterData} | null> => {
 	if (!seasonCode) return null;
 	
-	const result = await fetch(`${rosterRoute}?seasonCode=${seasonCode}`, {
+	const result = await fetchWithSession(`${rosterRoute}?seasonCode=${seasonCode}`, {
 		method: "GET",
 		headers: {
 			"Content-Type": "application/json",
@@ -110,7 +111,7 @@ const fetchRoster = async (seasonCode: string | null): Promise<{teamInformation:
 };
 
 const updateRoster = async ({seasonCode, data}: {seasonCode: string, data: RosterData}): Promise<void> => {
-	const response = await fetch(rosterRoute, {
+	const response = await fetchWithSession(rosterRoute, {
 		method: "PUT",
 		headers: {
 			"Content-Type": "application/json",
@@ -127,7 +128,7 @@ const updateRoster = async ({seasonCode, data}: {seasonCode: string, data: Roste
 };
 
 const saveRoster = async ({seasonCode, data}: {seasonCode: string, data: RosterData}): Promise<void> => {
-	const response = await fetch(rosterRoute, {
+	const response = await fetchWithSession(rosterRoute, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -144,7 +145,7 @@ const saveRoster = async ({seasonCode, data}: {seasonCode: string, data: RosterD
 };
 
 const deleteRoster = async (seasonCode: string): Promise<void> => {
-	const response = await fetch(`${rosterRoute}?seasonCode=${seasonCode}`, {
+	const response = await fetchWithSession(`${rosterRoute}?seasonCode=${seasonCode}`, {
 		method: "DELETE",
 		headers: {
 			"Content-Type": "application/json",
@@ -157,7 +158,7 @@ const deleteRoster = async (seasonCode: string): Promise<void> => {
 };
 
 const fetchSchedule = async (seasonCode: string): Promise<{scheduleData: ScheduleData} | null> => {
-	const response = await fetch(`${scheduleRoute}?seasonCode=${seasonCode}`, {
+	const response = await fetchWithSession(`${scheduleRoute}?seasonCode=${seasonCode}`, {
 		method: "GET",
 		headers: {
 			"Content-Type": "application/json",
@@ -178,7 +179,7 @@ const updateSchedule = async ({
 	seasonCode: string, 
 	data: ScheduleData
 }): Promise<void> => {
-	const response = await fetch(scheduleRoute, {
+	const response = await fetchWithSession(scheduleRoute, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",

@@ -13,6 +13,7 @@ import {
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 interface AlertDialogDeleteProps {
 	buttonName: string;
@@ -44,7 +45,7 @@ export default function AlertDialogDelete({
 	const deleteMutation = useMutation({
 		mutationFn: async () => {
 			for (let j = 0; j < rowData.length; j++) {
-				await fetch(apiEndpoint, {
+				await fetchWithSession(apiEndpoint, {
 					method: "DELETE",
 					headers: {
 						"Content-Type": "application/json",

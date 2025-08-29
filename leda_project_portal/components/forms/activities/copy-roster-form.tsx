@@ -10,6 +10,7 @@ import React from "react";
 import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { rosterRoute } from "@/lib/apiRoutes";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for form validation using zod
 const divisionFormSchema = z.object({
@@ -42,7 +43,7 @@ export default function RosterCopyForm({
 
 	const copyRosterMutation = useMutation({
 		mutationFn: async (values: z.infer<typeof divisionFormSchema>) => {
-			const response = await fetch(rosterRoute + "/rosterUpserter", {
+			const response = await fetchWithSession(rosterRoute + "/rosterUpserter", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -97,7 +98,7 @@ export default function RosterCopyForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button variant={"outline"}>Copy Roster</Button>
+					<Button variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">Copy Roster</Button>
 				</div>
 			</form>
 		</Form>

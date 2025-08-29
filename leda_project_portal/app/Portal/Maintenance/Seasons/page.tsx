@@ -1,7 +1,4 @@
-import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-with-button";
-import CustomLink from "@/components/ui/custom-link";
 import { seasonRoute } from "@/lib/apiRoutes";
 import { fetchSeasons } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/seasons";
@@ -14,43 +11,35 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-	return (
-		<>
-			<div className="container mx-auto py-10">
-				<DataTable
-					columns={columns}
-					data={await fetchSeasons()}
-					pageName="Seasons Page"
-					addDialog={
-						<DialogWithButton
-							form="SeasonAddForm"
-							title="Add Season"
-							buttonName="Add Season +"
-						/>
-					}
-					deleteDialog={
-						<AlertDialogDelete
-							buttonName="Delete Season(s)"
-							title="Delete Season(s)"
-							apiEndpoint={seasonRoute}
-						/>
-					}
-					editDialog={
-						<DialogWithButton
-							form="SeasonEditForm"
-							title="Edit Season"
-							buttonName="Edit Season"
-						/>
-					}
-					viewLink={
-						<CustomLink
-							linkName="View Season"
-							parentPage="Seasons"
-						/>
-					}
-					apiEndpoint={seasonRoute}
-				/>
-			</div>
-		</>
-	);
+	 return (
+		 <>
+			 <div className="container mx-auto py-10">
+				 <DataTable
+					 columns={columns}
+					 data={await fetchSeasons()}
+					 pageName="Seasons Page"
+					 addDialogConfig={{
+						 form: "SeasonAddForm",
+						 title: "Add Season",
+						 buttonName: "Add Season +"
+					 }}
+					 deleteDialogConfig={{
+						 buttonName: "Delete Season(s)",
+						 title: "Delete Season(s)",
+						 apiEndpoint: seasonRoute
+					 }}
+					 editDialogConfig={{
+						 form: "SeasonEditForm",
+						 title: "Edit Season",
+						 buttonName: "Edit Season"
+					 }}
+					 viewLinkConfig={{
+						 linkName: "View Season",
+						 parentPage: "Seasons"
+					 }}
+					 apiEndpoint={seasonRoute}
+				 />
+			 </div>
+		 </>
+	 );
 }

@@ -1,7 +1,4 @@
-import AlertDialogDelete from "@/components/alert-dialog-delete";
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-with-button";
-import CustomLink from "@/components/ui/custom-link";
 import { teamRoute } from "@/lib/apiRoutes";
 import { fetchTeams } from "@/lib/getData";
 import { columns } from "@/schemas/managment/teams";
@@ -14,42 +11,37 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-	return (
-		<>
-			<div className="container mx-auto py-10">
-				<DataTable
-					columns={columns}
-					data={await fetchTeams()}
-					pageName="Teams Page"
-					addDialog={
-						<DialogWithButton
-							form="TeamAddForm"
-							title="Add Team"
-							buttonName="Add Team +"
-						/>
-					}
-					deleteDialog={
-						<AlertDialogDelete
-							buttonName="Delete Team"
-							title="Delete Team"
-							apiEndpoint={teamRoute}
-						/>
-					}
-					editDialog={
-						<DialogWithButton
-							form="TeamEditForm"
-							title="Edit Team"
-							buttonName="Edit Team"
-						/>
-					}
-					viewLink={
-						<CustomLink linkName="View Team" parentPage="Teams" />
-					}
-					apiEndpoint={teamRoute}
-					defaultSort="ledaId"
-					filter={true}
-				/>
-			</div>
-		</>
-	);
+	 return (
+		 <>
+			 <div className="container mx-auto py-10">
+				 <DataTable
+					 columns={columns}
+					 data={await fetchTeams()}
+					 pageName="Teams Page"
+					 addDialogConfig={{
+						 form: "TeamAddForm",
+						 title: "Add Team",
+						 buttonName: "Add Team +"
+					 }}
+					 deleteDialogConfig={{
+						 buttonName: "Delete Team",
+						 title: "Delete Team",
+						 apiEndpoint: teamRoute
+					 }}
+					 editDialogConfig={{
+						 form: "TeamEditForm",
+						 title: "Edit Team",
+						 buttonName: "Edit Team"
+					 }}
+					 viewLinkConfig={{
+						 linkName: "View Team",
+						 parentPage: "Teams"
+					 }}
+					 apiEndpoint={teamRoute}
+					 defaultSort="ledaId"
+					 filter={true}
+				 />
+			 </div>
+		 </>
+	 );
 }

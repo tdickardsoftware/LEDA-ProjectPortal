@@ -647,3 +647,26 @@ export type MailingList = {
 	addressLineTwo: string;
 	type: string;
 };
+//
+// Define type to identify the shape of our data from postgres for a user
+//
+export type minimalUser = {
+	username: string;
+	email: string;
+}
+//
+// Define type to identify the shape of our data from postgres for an email one time token
+//
+export type EmailOneTimeToken = {
+	email: string;
+	token: string;
+	creationDateTime: Date;
+	expirationDateTime: Date;
+}
+//
+// Define type to identify the shape of our data from postgres for a user role
+//
+export type UserRole = {
+	username: string;
+	role: string;
+}

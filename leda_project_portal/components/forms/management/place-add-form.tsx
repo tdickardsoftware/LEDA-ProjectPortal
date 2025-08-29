@@ -28,8 +28,8 @@ import { InputDefault } from "../../ui/form-input-default";
 import { placeRoute } from "@/lib/apiRoutes";
 import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
-import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const placeFormSchema = z.object({
 	ledaId: z
@@ -164,7 +164,7 @@ export default function PlaceAddForm({
 				? { ...values, ledaId: 0 }
 				: values;
 
-			const response = await fetch(placeRoute, {
+			const response = await fetchWithSession(placeRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -494,10 +494,10 @@ export default function PlaceAddForm({
 				)}
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button type="button" onClick={prevStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === 0 ? "Cancel" : "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
+					<Button type="button" onClick={nextStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === steps.length - 1 ? "Submit" : "Next"}
 					</Button>
 				</div>

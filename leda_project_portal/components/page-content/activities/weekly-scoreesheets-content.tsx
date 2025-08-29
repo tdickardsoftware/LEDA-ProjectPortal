@@ -68,6 +68,7 @@ import { DialogDescription } from "@radix-ui/react-dialog";
 import { isMatchupValid } from "@/utils/matchupValidation";
 // Import React Query hooks
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Utility function: Deep merge two objects
 const deepMerge = <
@@ -214,24 +215,24 @@ const generateEmptyMatchupData = (
 
 // API fetch functions for React Query
 const fetchSchedule = async (seasonCode: string) => {
-	const response = await fetch(scheduleRoute + `?seasonCode=${seasonCode}`);
+	const response = await fetchWithSession(scheduleRoute + `?seasonCode=${seasonCode}`);
 	return response.json();
 };
 
 const fetchTeam = async (teamId: string) => {
 	if (!teamId) return null;
-	const response = await fetch(teamRoute + `?ledaId=${teamId}`);
+	const response = await fetchWithSession(teamRoute + `?ledaId=${teamId}`);
 	return response.json();
 };
 
 const fetchPlayer = async (playerId: string) => {
-	const response = await fetch(playerRoute + `?ledaId=${playerId}`);
+	const response = await fetchWithSession(playerRoute + `?ledaId=${playerId}`);
 	return response.json();
 };
 
 const fetchScoresheet = async (seasonCode: string, weekNumber: string) => {
 	if (!seasonCode || !weekNumber) return { scoresheetData: {} };
-	const response = await fetch(
+	const response = await fetchWithSession(
 		`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&weekNumber=${weekNumber}`
 	);
 	if (!response.ok) return { scoresheetData: {} };
@@ -244,7 +245,7 @@ const saveTeamPoints = async (data: {
 	ledaId: string;
 	totalPoints: number;
 }) => {
-	const response = await fetch(`${weeklyScoresheetsRoute}/teamPoints`, {
+	const response = await fetchWithSession(`${weeklyScoresheetsRoute}/teamPoints`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -273,7 +274,7 @@ const savePlayerPoints = async (data: {
 		}
 	>;
 }) => {
-	const response = await fetch(`${weeklyScoresheetsRoute}/playerPoints`, {
+	const response = await fetchWithSession(`${weeklyScoresheetsRoute}/playerPoints`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -295,7 +296,7 @@ const createMentionHistory = async (data: {
 	count?: number;
 	teamId?: string;
 }) => {
-	const response = await fetch(mentionPlayerHistoryRoute, {
+	const response = await fetchWithSession(mentionPlayerHistoryRoute, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -320,7 +321,7 @@ const updateMentionHistory = async (data: {
 	count?: number;
 	teamId?: string;
 }) => {
-	const response = await fetch(mentionPlayerHistoryRoute, {
+	const response = await fetchWithSession(mentionPlayerHistoryRoute, {
 		method: "PUT",
 		headers: {
 			"Content-Type": "application/json",
@@ -344,7 +345,7 @@ const deleteMentionHistory = async (data: {
 	notes: string;
 	teamId?: string;
 }) => {
-	const response = await fetch(mentionPlayerHistoryRoute, {
+	const response = await fetchWithSession(mentionPlayerHistoryRoute, {
 		method: "DELETE",
 		headers: {
 			"Content-Type": "application/json",
@@ -512,7 +513,7 @@ export default function WeeklyScoresheetsContent({
 		scoresheetData: FormattedScoreData;
 		finishedScoresheet: boolean;
 	}) => {
-		const response = await fetch(weeklyScoresheetsRoute, {
+		const response = await fetchWithSession(weeklyScoresheetsRoute, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

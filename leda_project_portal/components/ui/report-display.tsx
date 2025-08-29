@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Loader2, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { fetchWithSession } from "@/lib/getData";
 
 interface ColumnDef<T> {
 	key: string;
@@ -55,7 +56,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 			if (!apiRoute) {
 				return [];
 			}
-			const response = await fetch(apiRoute);
+			const response = await fetchWithSession(apiRoute);
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -132,7 +133,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 				addressLineOne: string;
 				addressLineTwo: string;
 			};
-			const res = await fetch(apiRoute, {
+			const res = await fetchWithSession(apiRoute, {
 				method: "DELETE",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({

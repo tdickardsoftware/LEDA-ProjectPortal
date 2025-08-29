@@ -11,6 +11,7 @@ import React from "react";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { divisionRoute } from "@/lib/apiRoutes";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for form validation using zod
 const divisionFormSchema = z.object({
@@ -41,7 +42,7 @@ export default function DivisionAddForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof divisionFormSchema>) => {
-			const response = await fetch(divisionRoute, {
+			const response = await fetchWithSession(divisionRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -52,11 +53,18 @@ export default function DivisionAddForm({
 				if (response.status === 422) {
 					setDivisionNameExists(true);
 				}
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
+				let errorMessage = `HTTP error! status: ${response.status}`;
+				try {
+					const errorData = await response.json();
+					// prefer server-provided message if present
+					errorMessage =
+						(errorData?.message as string | undefined) ||
+						(errorData?.error as string | undefined) ||
+						errorMessage;
+				} catch {
+					// ignore JSON parse errors and use default message
+				}
+				throw new Error(errorMessage);
 			}
 			return await response.json();
 		},
@@ -104,7 +112,7 @@ export default function DivisionAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">Add</Button>
+					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Add</Button>
 				</div>
 			</form>
 		</Form>

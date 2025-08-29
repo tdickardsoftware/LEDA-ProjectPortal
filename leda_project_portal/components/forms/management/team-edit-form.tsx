@@ -23,6 +23,7 @@ import { Team } from "@/lib/definitions";
 import PlayerSelector from "@/components/ui/player-selector";
 import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const teamInfoSchema = z.object({
 	ledaId: z
@@ -80,7 +81,7 @@ export default function TeamEditForm({
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof teamInfoSchema>) => {
 			const submittedValues = { ...values, memberIdList: memberIdList };
-			const response = await fetch(teamRoute, {
+			const response = await fetchWithSession(teamRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
@@ -163,7 +164,7 @@ export default function TeamEditForm({
 			return;
 		}
 		const fetchData = async () => {
-			const response = await fetch(
+			const response = await fetchWithSession(
 				teamRoute + `?ledaId=${rowData.ledaId}`,
 				{
 					method: "GET",
@@ -337,14 +338,14 @@ export default function TeamEditForm({
 				</Tab.Group>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button type="button" onClick={prevStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === 0
 							? handleRefresh
 								? "Back"
 								: "Cancel"
 							: "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
+					<Button type="button" onClick={nextStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === steps.length - 1 ? "Update" : "Next"}
 					</Button>
 				</div>

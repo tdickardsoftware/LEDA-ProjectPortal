@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { peopleTypeRoute } from "@/lib/apiRoutes";
 import { PeopleType } from "@/lib/definitions";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const peopleTypeFormSchema = z.object({
 	peopleTypeCode: z
@@ -56,7 +57,7 @@ export default function PeopleTypeEditForm({
 			return;
 		}
 		const fetchData = async () => {
-			const response = await fetch(
+			const response = await fetchWithSession(
 				peopleTypeRoute + `?peopleTypeCode=${rowData.peopleTypeCode}`,
 				{
 					method: "GET",
@@ -81,7 +82,7 @@ export default function PeopleTypeEditForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof peopleTypeFormSchema>) => {
-			const response = await fetch(peopleTypeRoute, {
+			const response = await fetchWithSession(peopleTypeRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
@@ -163,10 +164,10 @@ export default function PeopleTypeEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
+					<Button type="button" onClick={onClose} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						Back
 					</Button>
-					<Button type="submit">Update</Button>
+					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Update</Button>
 				</div>
 			</form>
 		</Form>

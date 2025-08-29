@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { mentionRoute } from "@/lib/apiRoutes";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for form validation using zod
 const mentionFormSchema = z.object({
@@ -58,7 +59,7 @@ export default function MentionAddForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof mentionFormSchema>) => {
-			const response = await fetch(mentionRoute, {
+			const response = await fetchWithSession(mentionRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -175,7 +176,7 @@ export default function MentionAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">Add</Button>
+					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Add</Button>
 				</div>
 			</form>
 		</Form>

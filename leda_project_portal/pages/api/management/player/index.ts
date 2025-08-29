@@ -4,6 +4,7 @@ import { Player, PlayerMemberInfo } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import getNextLedaId from "@/lib/getNextLedaId";
 import { DatabaseError } from "pg";
+import { requireApiSession } from "@/lib/require-session";
 
 /**
  * API handler for managing player information.
@@ -13,6 +14,7 @@ export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	await requireApiSession(req, res);
 	if (req.method === "GET") {
 		try {
 			if (req.query.ledaId) {

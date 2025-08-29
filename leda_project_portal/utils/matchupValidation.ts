@@ -6,7 +6,7 @@ import { FormattedScoreData } from "@/lib/weekly-scoresheet-definitions";
  * This function validates that a matchup has all required data populated:
  * - Team information exists for both teams
  * - Team members exist
- * - Game stats are recorded
+ * - Game stats are recorded AND at least one member has participated in a game
  * - Game information exists
  * - Team points are calculated
  */
@@ -39,6 +39,8 @@ export const isMatchupValid = (
 			return false;
 		}
 
+		let hasParticipation = false;
+
 		// Check both teams have necessary data
 		for (const teamId of teamIds) {
 			const team = matchupData.teamInformation[teamId];
@@ -66,7 +68,17 @@ export const isMatchupValid = (
 				if (gameStatsValues.length === 0) {
 					return false;
 				}
+
+				// Ensure at least one game is marked as participated (true)
+				if (gameStatsValues.some((v) => v === true)) {
+					hasParticipation = true;
+				}
 			}
+		}
+
+		// If no member has participated in any game, do not mark as complete
+		if (!hasParticipation) {
+			return false;
 		}
 
 		// Check if game information exists

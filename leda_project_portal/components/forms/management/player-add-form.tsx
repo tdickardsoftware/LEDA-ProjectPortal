@@ -26,8 +26,8 @@ import PlayerTypeSelector from "@/components/ui/player-type-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
-import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
@@ -137,7 +137,7 @@ export default function PlayerAddInformationForm({
 				? { ...values, ledaId: 0 }
 				: values;
 
-			const response = await fetch(playerRoute, {
+			const response = await fetchWithSession(playerRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -605,10 +605,10 @@ export default function PlayerAddInformationForm({
 				)}
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button type="button" onClick={prevStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === 0 ? "Cancel" : "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
+					<Button type="button" onClick={nextStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						{currentStep === steps.length - 1 ? "Submit" : "Next"}
 					</Button>
 				</div>

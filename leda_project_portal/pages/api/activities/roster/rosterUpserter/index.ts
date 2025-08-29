@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 
 type RosterUpserter = {
 	sourceSeasonCode: string;
@@ -9,6 +10,8 @@ export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	if (req.method === "POST") {
 		const data = req.body as RosterUpserter;
 		try {

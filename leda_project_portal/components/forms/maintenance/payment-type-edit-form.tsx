@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { paymentTypeRoute } from "@/lib/apiRoutes";
 import { PaymentType } from "@/lib/definitions";
 import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const paymentTypeFormSchema = z.object({
 	paymentType: z.string().min(1, { message: "Payment Type is required." }),
@@ -54,7 +55,7 @@ export default function PaymentTypeEditForm({
 			if (!rowData || !rowData.paymentType) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				paymentTypeRoute + `?paymentType=${rowData.paymentType}`,
 				{
 					method: "GET",
@@ -79,7 +80,7 @@ export default function PaymentTypeEditForm({
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof paymentTypeFormSchema>) => {
-			const response = await fetch(paymentTypeRoute, {
+			const response = await fetchWithSession(paymentTypeRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
@@ -160,10 +161,10 @@ export default function PaymentTypeEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
+					<Button type="button" onClick={onClose} className="hover:bg-gray-100 border-gray-300 text-gray-700">
 						Back
 					</Button>
-					<Button type="submit">Update</Button>
+					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Update</Button>
 				</div>
 			</form>
 		</Form>

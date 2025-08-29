@@ -8,6 +8,7 @@ import {
 	ScheduleApiResponse 
 } from '@/lib/schedule';
 import { rosterRoute, scheduleRoute, seasonRoute } from '@/lib/apiRoutes';
+import { fetchWithSession } from '@/lib/getData';
 
 // Helper fetchers
 const fetchRoster = async (seasonCode: string) => {
@@ -123,7 +124,7 @@ export function useScheduleData() {
 	const saveMutation = useMutation({
 		mutationFn: async (data: { seasonCode: string, scheduleData: ScheduleData }) => {
 			const processedMatchData = ensureSubdivisionIsolation(data.scheduleData);
-			await fetch(scheduleRoute, {
+			await fetchWithSession(scheduleRoute, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

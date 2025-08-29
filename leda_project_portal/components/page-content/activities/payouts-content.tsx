@@ -42,6 +42,7 @@ import {
 	useMutation,
 	useQueryClient,
 } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define types for roster data structure
 type TeamInfo = {
@@ -350,7 +351,7 @@ export default function PayoutsContent() {
 	// --- TanStack Mutation: Save payouts data ---
 	const savePayoutsMutation = useMutation({
 		mutationFn: async (payload: { seasonCode: string | null; payoutsData: PayoutsData }) => {
-			const response = await fetch(payoutRoute, {
+			const response = await fetchWithSession(payoutRoute, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(payload),
@@ -391,7 +392,7 @@ export default function PayoutsContent() {
 			const { seasonCode, weekCount, teamIdsBySubdivision, divisionsData, payoutsData } = params;
 			const newPayoutsData = { ...payoutsData };
 			for (const subdivision of Object.keys(teamIdsBySubdivision)) {
-				const response = await fetch(
+				const response = await fetchWithSession(
 					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${weekCount}&teamLedaIds=${teamIdsBySubdivision[subdivision]}`,
 					{ method: "GET", headers: { "Content-Type": "application/json" } }
 				);

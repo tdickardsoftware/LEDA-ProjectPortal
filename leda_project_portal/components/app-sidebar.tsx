@@ -6,18 +6,7 @@
 // Imports
 //
 import * as React from "react";
-import {
-	Book,
-	FileText,
-	Frame,
-	LifeBuoy,
-	Map,
-	PieChart,
-	Send,
-	Wrench,
-	ListCheck,
-	Target,
-} from "lucide-react";
+import { Book, FileText, Frame, LifeBuoy, Map, PieChart, Send, Wrench, ListCheck } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -30,15 +19,11 @@ import {
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { useUserAbilities } from "@/lib/use-user-abilities";
 //
 // Define data for sidenav bar
 //
 const data = {
-	user: {
-		name: "Tyler Dickard",
-		email: "tdickardsoftware@gmail.com",
-		avatar: "/avatars/shadcn.jpg",
-	},
 	navMain: [
 		{
 			title: "Management",
@@ -187,6 +172,28 @@ const data = {
 // Return sidenav object
 //
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+	const { ability, loading } = useUserAbilities();
+	// Access sidebar collapsed/expanded state via data attributes for conditional rendering
+	// We'll render both images and toggle via CSS to avoid re-renders.
+
+	// Filter top-level groups based on manage permission
+	const filteredNav = React.useMemo(() => {
+		// While loading, show nothing to avoid flicker/leak
+		if (loading) return [] as typeof data.navMain;
+		return data.navMain.filter((group) => {
+			// Map group title to Subjects
+			const subject = (group.title === "Management"
+				? "Management"
+				: group.title === "Maintenance"
+				? "Maintenance"
+				: group.title === "Reports"
+				? "Reports"
+				: group.title === "Activities"
+				? "Activities"
+				: "all");
+			return ability.can("manage", subject);
+		});
+	}, [ability, loading]);
 	return (
 		<Sidebar collapsible="icon" {...props} className="w-auto max-w-[300px]">
 			<SidebarHeader>
@@ -194,15 +201,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg" asChild>
 							<Link href="/">
-								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-									<Target className="size-8" />
+								<div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden bg-sidebar-primary">
+									{/* Expanded state: show full JPG */}
+									{/* eslint-disable-next-line @next/next/no-img-element */}
+									<img
+										src="/LEDA_logo.jpg"
+										alt="LEDA"
+										className="h-full w-full object-cover group-data-[collapsible=icon]:hidden"
+									/>
+									{/* Collapsed state: show ICO for better look */}
+									{/* eslint-disable-next-line @next/next/no-img-element */}
+									<img
+										src="/leda-reports-logo.ico"
+										alt="LEDA"
+										className="hidden h-full w-full object-cover group-data-[collapsible=icon]:block"
+									/>
 								</div>
 								<div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
 									<span className="truncate font-semibold">
 										Lake Erie Dart Association
 									</span>
 									<span className="truncate text-xs">
-										portal
+										Portal
 									</span>
 								</div>
 							</Link>
@@ -211,10 +231,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent className="w-full overflow-hidden">
-				<NavMain items={data.navMain} />
+				<NavMain items={filteredNav} />
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={data.user} />
+				<NavUser />
 			</SidebarFooter>
 		</Sidebar>
 	);
