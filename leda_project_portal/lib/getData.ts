@@ -6,6 +6,7 @@ import {
 	Player,
 	PlayerMemberInfo,
 	Team,
+	// ...existing code...
 	Place,
 	Division,
 	Mention,
@@ -190,6 +191,39 @@ export async function fetchTeam(ledaId: string) {
 	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Team Information");
+	}
+}
+
+//
+// Fetch members for a specific team (memberInfo endpoint)
+//
+export interface TeamMemberInfoRecord {
+	fullName: string;
+	ledaId: string;
+	isCaptain: boolean;
+	cannotBeCaptain: boolean;
+	badStanding: boolean;
+}
+
+export async function fetchTeamMembers(ledaId: string): Promise<TeamMemberInfoRecord[]> {
+	try {
+		const response = await fetchWithSession(`${teamRoute}/memberInfo?ledaId=${ledaId}`);
+		if (!response.ok) {
+			if (response.status === 404) return [];
+			throw new Error("Network response was not ok");
+		}
+		const data = await response.json();
+		return (data as TeamMemberInfoRecord[]).map(m => ({
+			fullName: m.fullName,
+			ledaId: m.ledaId,
+			isCaptain: m.isCaptain,
+			cannotBeCaptain: m.cannotBeCaptain,
+			badStanding: m.badStanding,
+		}));
+	} catch (error) {
+		rethrowNextRedirect(error);
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Team Member Information");
 	}
 }
 //
