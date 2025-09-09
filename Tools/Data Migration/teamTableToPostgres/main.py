@@ -9,11 +9,10 @@ def parse_date(raw: str) -> str:
     if not raw or raw.strip() == '':
         return '1970-01-01 00:00:00'
     raw = raw.strip()
-    # Normalize possible M/D/YYYY H:M(:S) patterns
     fmts = [
         '%m/%d/%Y %H:%M:%S',
         '%m/%d/%Y %H:%M',
-        '%m/%d/%Y %H:%M:%S',  # duplicate safe
+        '%m/%d/%Y %H:%M:%S',
         '%m/%d/%Y',
     ]
     for f in fmts:
@@ -22,7 +21,6 @@ def parse_date(raw: str) -> str:
             return dt.strftime('%Y-%m-%d %H:%M:%S')
         except ValueError:
             continue
-    # Some rows might be in D/M/YYYY style; fallback to dateutil if available
     try:
         from dateutil import parser  # type: ignore
         dt = parser.parse(raw)
@@ -34,10 +32,8 @@ def parse_date(raw: str) -> str:
 def sanitize(s: str) -> str:
     if s is None:
         return ''
-    # Collapse CR/LF to spaces
     s = re.sub(r'[\r\n]+', ' ', s)
     s = s.strip()
-    # Escape single quotes for SQL
     return s.replace("'", "''")
 
 
@@ -54,7 +50,6 @@ def load_team_players(players_csv: str) -> Dict[int, List[str]]:
             if not player_no:
                 continue
             mapping.setdefault(team_no, []).append(player_no)
-    # Sort player numbers numerically (as strings but by int value)
     for k in list(mapping.keys()):
         mapping[k] = sorted(mapping[k], key=lambda x: int(x))
     return mapping
@@ -71,7 +66,6 @@ def build_member_json(player_ids: List[str], captain_id: str | None) -> str:
 
 
 def dict_reader_fallback(path: str) -> List[Dict[str, str]]:
-    """Return all rows from a CSV trying several encodings to avoid decode errors."""
     encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin-1']
     for enc in encodings:
         try:
@@ -79,16 +73,13 @@ def dict_reader_fallback(path: str) -> List[Dict[str, str]]:
                 return list(csv.DictReader(f))
         except UnicodeDecodeError:
             continue
-    # Last resort with replacement chars
     with open(path, newline='', encoding='latin-1', errors='replace') as f:
         return list(csv.DictReader(f))
 
 
 def generate_insert(place_csv: str, players_csv: str, output_sql: str) -> None:
     team_players = load_team_players(players_csv)
-
     rows_sql: List[str] = []
-    # Use fallback reader to avoid UnicodeDecodeError
     place_rows = dict_reader_fallback(place_csv)
     for row in place_rows:
         id_raw = row.get('ID Number') or row.get('ID Number'.lower())
@@ -97,15 +88,16 @@ def generate_insert(place_csv: str, players_csv: str, output_sql: str) -> None:
         team_id = int(id_raw)
         if team_id not in team_players:
             continue
-        team_name = sanitize(row.get('Place Name', '') or '')
+        # Support both legacy and team column names
+        team_name = sanitize(row.get('Team Name') or row.get('Place Name') or '')
         established_date = parse_date(row.get('Establish Date', '') or row.get('Establish Date'.lower(), ''))
-        memo = sanitize(row.get('Place Memo', '') or '')
-        last_fee = sanitize(row.get('Last Bar Fee Payment', '') or '')  # text NOT NULL, empty ok
-        contact_id = row.get('Contact Id') or row.get('Contact Id'.lower())
-        if contact_id and not contact_id.isdigit():
-            contact_id = None
-        member_json = build_member_json(team_players[team_id], contact_id)
-        # Escape JSON single quotes (unlikely) then add ::json cast
+        memo = sanitize(row.get('Team Memo') or row.get('Place Memo') or '')
+        last_fee = sanitize(row.get('Last Team Fee Payment') or row.get('Last Bar Fee Payment') or '')
+        # Captain comes from Last Captain Id Number column
+        captain_id = row.get('Last Captain Id Number') or row.get('Last Captain Id Number'.lower())
+        if captain_id and not captain_id.isdigit():
+            captain_id = None
+        member_json = build_member_json(team_players[team_id], captain_id)
         member_json_sql = member_json.replace("'", "''")
         value = f"({team_id},'{team_name}','{established_date}','{memo}','{last_fee}','{member_json_sql}'::json)"
         rows_sql.append(value)
@@ -126,7 +118,7 @@ def generate_insert(place_csv: str, players_csv: str, output_sql: str) -> None:
 
 def main():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    place_csv = os.path.join(base_dir, 'Working', 'leda_place_table_export.csv')
+    place_csv = os.path.join(base_dir, 'Working', 'leda_teams_table_export.csv')
     players_csv = os.path.join(base_dir, 'Lookups', 'leda_latest_team_players.csv')
     output_sql = os.path.join(base_dir, 'Output', 'insert_leda_team_info.sql')
 
