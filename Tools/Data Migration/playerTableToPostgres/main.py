@@ -3,6 +3,8 @@ from pathlib import Path
 from datetime import datetime, date
 import argparse
 import sys
+import pandas as pd
+from tqdm import tqdm
 
 REQUIRED_PLAYER_TEXT_FIELDS = [
     "lastName", "firstName", "addressOne", "city", "state", "zip",
@@ -161,20 +163,19 @@ def render_membership_values(rec: dict) -> str:
 def process(csv_path: Path, out_dir: Path, limit: int | None = None) -> None:
     player_values = []
     membership_values = []
-    with csv_path.open(newline='', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        for i, row in enumerate(reader):
-            if limit is not None and i >= limit:
-                break
-            if not row.get("ID Number"):
-                continue
-            try:
-                player_rec = build_player_record(row)
-                membership_rec = build_membership_record(row)
-                player_values.append(render_player_values(player_rec))
-                membership_values.append(render_membership_values(membership_rec))
-            except Exception as e:
-                print(f"Row {i+1} (ID {row.get('ID Number')}): Error {e}", file=sys.stderr)
+    df = pd.read_csv(csv_path, encoding='utf-8-sig').fillna('')
+    if limit is not None:
+        df = df.head(limit)
+    for i, row in enumerate(tqdm(df.to_dict(orient='records'), desc='Processing rows')):
+        if not row.get("ID Number"):
+            continue
+        try:
+            player_rec = build_player_record(row)
+            membership_rec = build_membership_record(row)
+            player_values.append(render_player_values(player_rec))
+            membership_values.append(render_membership_values(membership_rec))
+        except Exception as e:
+            print(f"Row {i+1} (ID {row.get('ID Number')}): Error {e}", file=sys.stderr)
     out_dir.mkdir(parents=True, exist_ok=True)
     if player_values:
         player_sql = (

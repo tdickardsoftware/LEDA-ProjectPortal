@@ -2,6 +2,7 @@ import os
 import csv
 import sys
 from typing import List, Optional
+from tqdm import tqdm 
 
 try:
     import pandas as pd  # type: ignore
@@ -235,8 +236,8 @@ def main():
 
     # Use itertuples for speed
     col_index = {c: i for i, c in enumerate(df.columns)}
-    for idx, row in enumerate(df.itertuples(index=False, name=None), start=1):
-        # Access by index for performance
+   
+    for idx, row in enumerate(tqdm(df.itertuples(index=False, name=None), total=total_rows, desc='Processing rows'), start=1):
         ha_val = ''
         if ha_flag_col:
             ha_val = str(row[col_index[ha_flag_col]]).strip().upper()
@@ -251,9 +252,6 @@ def main():
         player_number = str(row[col_index[player_col]]).strip()
         if season_code and player_number and team_number:
             output_records.append({'SeasonCode': season_code, 'PlayerNumber': player_number, 'TeamNumber': team_number})
-        # Update progress every 1% or last row
-        if idx == total_rows or idx % max(1, total_rows // 100) == 0:
-            progress_bar(idx, total_rows)
 
     if not output_records:
         print('No records produced after processing.')

@@ -1,9 +1,10 @@
-import csv
 import json
 import os
 import re
 from datetime import datetime
 from typing import Dict, List, Any
+import pandas as pd
+from tqdm import tqdm
 
 def parse_date(raw: str) -> str:
     if not raw or raw.strip() == '':
@@ -39,17 +40,16 @@ def sanitize(s: str) -> str:
 
 def load_team_players(players_csv: str) -> Dict[int, List[str]]:
     mapping: Dict[int, List[str]] = {}
-    with open(players_csv, newline='', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            try:
-                team_no = int(row['TeamNumber'])
-            except (KeyError, ValueError):
-                continue
-            player_no = row.get('PlayerNumber')
-            if not player_no:
-                continue
-            mapping.setdefault(team_no, []).append(player_no)
+    df = pd.read_csv(players_csv, encoding='utf-8-sig').fillna('')
+    for _, row in df.iterrows():
+        try:
+            team_no = int(row['TeamNumber'])
+        except (KeyError, ValueError):
+            continue
+        player_no = row.get('PlayerNumber')
+        if not player_no:
+            continue
+        mapping.setdefault(team_no, []).append(player_no)
     for k in list(mapping.keys()):
         mapping[k] = sorted(mapping[k], key=lambda x: int(x))
     return mapping
@@ -69,19 +69,19 @@ def dict_reader_fallback(path: str) -> List[Dict[str, str]]:
     encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin-1']
     for enc in encodings:
         try:
-            with open(path, newline='', encoding=enc) as f:
-                return list(csv.DictReader(f))
-        except UnicodeDecodeError:
+            df = pd.read_csv(path, encoding=enc).fillna('')
+            return df.to_dict(orient='records')
+        except Exception:
             continue
-    with open(path, newline='', encoding='latin-1', errors='replace') as f:
-        return list(csv.DictReader(f))
+    df = pd.read_csv(path, encoding='latin-1', errors='replace').fillna('')
+    return df.to_dict(orient='records')
 
 
 def generate_insert(place_csv: str, players_csv: str, output_sql: str) -> None:
     team_players = load_team_players(players_csv)
     rows_sql: List[str] = []
     place_rows = dict_reader_fallback(place_csv)
-    for row in place_rows:
+    for row in tqdm(place_rows, desc='Processing teams'):
         id_raw = row.get('ID Number') or row.get('ID Number'.lower())
         if not id_raw or not id_raw.isdigit():
             continue
