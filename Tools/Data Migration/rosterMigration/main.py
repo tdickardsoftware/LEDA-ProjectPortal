@@ -16,8 +16,7 @@ except UnicodeDecodeError:
 # Build teamId -> teamName lookup
 tid_to_name = dict(zip(teams_df['ID Number'], teams_df['Team Name']))
 
-def build_team_info(season_code):
-    season_df = schedule_df[schedule_df['Season Code'] == season_code]
+def build_team_info(season_df):
     team_info = {}
     for division in season_df['Division'].unique():
         div_df = season_df[season_df['Division'] == division]
@@ -39,15 +38,15 @@ def build_team_info(season_code):
     return team_info
 
 if __name__ == "__main__":
-    season_codes = schedule_df['Season Code'].unique()
+    schedule_df['Season Code'] = schedule_df['Season Code'].astype(str).str.upper()
     rows = []
-    for season_code in tqdm(season_codes, desc="Processing season codes"):
-        team_info_json = build_team_info(season_code)
+    for season_code, season_df in tqdm(schedule_df.groupby('Season Code'), desc="Processing season codes"):
+        team_info_json = build_team_info(season_df)
         # Escape single quotes for SQL
         json_str = json.dumps(team_info_json).replace("'", "''")
-        rows.append(f"('{str(season_code).upper()}', '{json_str}')")
+        rows.append(f"('{season_code}', '{json_str}')")
     # Build the insert statement
-    insert_sql = "INSERT INTO public.leda_roster_info (seasonCode, teamInformation) VALUES\n" + ",\n".join(rows) + ";"
+    insert_sql = "INSERT INTO public.leda_roster_info (\"seasonCode\", \"teamInformation\") VALUES\n" + ",\n".join(rows) + ";"
     # Write to file
     with open("Output/leda_roster_info_insert.sql", "w", encoding="utf-8") as f:
         f.write(insert_sql)
