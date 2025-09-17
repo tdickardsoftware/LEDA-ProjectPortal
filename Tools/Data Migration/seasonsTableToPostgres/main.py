@@ -4,8 +4,9 @@ from tqdm import tqdm
 import os
 
 # Input and output paths
-input_path = r"f:\LEDA-ProjectPortal\Tools\Data Migration\seasonsTableToPostgres\Working\leda_seasons_table_export.csv"
-output_path = r"f:\LEDA-ProjectPortal\Tools\Data Migration\seasonsTableToPostgres\Output\output_seasons_insert.sql"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+input_path = os.path.join(script_dir, 'Working', 'leda_seasons_table_export.csv')
+output_path = os.path.join(script_dir, 'Output', 'output_seasons_insert.sql')
 
 # Read CSV
 # Remove comment lines if present
