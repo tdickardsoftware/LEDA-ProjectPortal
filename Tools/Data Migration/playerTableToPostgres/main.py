@@ -79,7 +79,7 @@ def build_player_record(row: dict) -> dict:
         "ledaId": row.get("ID Number"),
         "lastName": clean_text(row.get("Last Name"), True),
         "firstName": clean_text(row.get("First Name"), True),
-        "middleInitial": clean_text(row.get("Middle Initial"), True)[:1],
+        "middleInitial": clean_text(row.get("Middle Initial"), False)[:1],  # not required, blank if missing
         "addressOne": clean_text(row.get("Address 1"), True),
         "addressTwo": clean_text(row.get("Address 2"), False),
         "city": clean_text(row.get("City"), True),
@@ -92,7 +92,7 @@ def build_player_record(row: dict) -> dict:
         "dateOfBirth": dob,
     }
 
-    # Ensure required text fields not blank
+    # Ensure required text fields not blank (middleInitial not required)
     for k in REQUIRED_PLAYER_TEXT_FIELDS:
         if record[k] == "":
             record[k] = "UNKNOWN"
