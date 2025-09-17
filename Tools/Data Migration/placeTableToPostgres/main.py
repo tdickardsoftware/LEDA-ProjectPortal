@@ -3,8 +3,6 @@ from pathlib import Path
 from datetime import datetime, date
 import argparse
 import sys
-import pandas as pd
-from tqdm import tqdm
 
 REQUIRED_TEXT = [
     'name','addressOne','city','state','zip','phoneNumber','lastBarFeePayment','placeType'
@@ -126,20 +124,16 @@ def process(csv_path: Path, out_dir: Path, batch: int | None = None, encoding: s
     last_error = None
     for enc in encodings_to_try:
         try:
-            try:
-                df = pd.read_csv(csv_path, encoding=enc)
-            except Exception as e:
-                last_error = e
-                continue
-            if 'ID Number' not in df.columns:
-                continue
-            df = df[df['ID Number'].notnull()]
-            for idx, row in tqdm(df.iterrows(), total=len(df), desc='Processing rows'):
-                try:
-                    rec = build_record(row)
-                    rows_sql.append(record_values_sql(rec))
-                except Exception as e:
-                    print(f"Row {idx+1} ID {row.get('ID Number')}: {e}", file=sys.stderr)
+            with csv_path.open(newline='', encoding=enc) as f:
+                reader = csv.DictReader(f)
+                for idx, row in enumerate(reader):
+                    if not row.get('ID Number'):
+                        continue
+                    try:
+                        rec = build_record(row)
+                        rows_sql.append(record_values_sql(rec))
+                    except Exception as e:
+                        print(f"Row {idx+1} ID {row.get('ID Number')}: {e}", file=sys.stderr)
             if rows_sql:
                 if enc != encoding:
                     print(f"Used fallback encoding '{enc}'", file=sys.stderr)
