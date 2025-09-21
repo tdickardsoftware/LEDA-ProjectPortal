@@ -5,16 +5,23 @@ from tqdm import tqdm
 # File paths
 schedule_path = r"Working/leda_schedule_table_export.csv"
 teams_path = r"Lookup/leda_teams_table_export.csv"
+roster_header_path = r"Lookup/leda_roster_header_export.csv"
 
-# Read CSVs
 schedule_df = pd.read_csv(schedule_path)
 try:
     teams_df = pd.read_csv(teams_path, encoding='utf-8')
 except UnicodeDecodeError:
     teams_df = pd.read_csv(teams_path, encoding='latin1')
 
+# Read roster header CSV for placeId lookup
+roster_header_df = pd.read_csv(roster_header_path)
+
+
 # Build teamId -> teamName lookup
 tid_to_name = dict(zip(teams_df['ID Number'], teams_df['Team Name']))
+
+# Build teamId -> placeId lookup from roster header
+tid_to_placeid = dict(zip(roster_header_df['Team ID Number'], roster_header_df['Bar ID Number']))
 
 def build_team_info(season_df):
     team_info = {}
@@ -28,9 +35,10 @@ def build_team_info(season_df):
                 letter = row['Team Letter']
                 tid = row['Team ID Number']
                 tname = tid_to_name.get(tid, "Unknown")
+                place_id = tid_to_placeid.get(tid, "Unknown")
                 teams[letter] = {
                     "teamId": str(tid),
-                    "placeId": str(subdiv),
+                    "placeId": str(place_id),
                     "teamName": tname
                 }
             subdivisions[f"Subdivision {subdiv}"] = teams
