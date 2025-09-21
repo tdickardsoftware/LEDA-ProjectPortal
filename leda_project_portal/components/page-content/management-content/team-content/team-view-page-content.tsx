@@ -76,6 +76,7 @@ export default function TeamPageContent({
 	const {
 		data: paymentStatusData = [],
 		isFetching: paymentStatusLoading,
+		error: paymentStatusError,
 		refetch: refetchPaymentStatus,
 	} = useQuery<{
 		ledaId: string;
@@ -88,20 +89,42 @@ export default function TeamPageContent({
 		],
 		enabled: !!paymentSeasonCode && memberDetails.length > 0 && showPaymentPopover,
 		queryFn: async () => {
-			const results = await Promise.all(
-				memberDetails.map(async (member) => {
+			// Use sequential fetching instead of Promise.all to prevent overwhelming the server
+			const results = [];
+			for (const member of memberDetails) {
+				try {
 					const res = await fetch(
 						`${playerPaymentHistoryRoute}/viewData?seasonCode=${paymentSeasonCode}&ledaId=${member.ledaId}`
 					);
+					
+					if (!res.ok) {
+						console.error(`Error fetching payment status for ledaId ${member.ledaId}: ${res.status}`);
+						// Add a record with null status rather than failing the whole query
+						results.push({
+							ledaId: member.ledaId,
+							status: null
+						});
+						continue;
+					}
+					
 					const data = await res.json();
-					return {
+					results.push({
 						ledaId: member.ledaId,
 						status: data?.status || null,
-					};
-				})
-			);
+					});
+				} catch (err) {
+					console.error(`Error processing payment status for ledaId ${member.ledaId}:`, err);
+					// Still add a record with null status
+					results.push({
+						ledaId: member.ledaId,
+						status: null
+					});
+				}
+			}
 			return results;
 		},
+		retry: 1, // Only retry once to avoid hammering the server
+		retryDelay: 1000, // Wait 1 second between retries
 	});
 
 	const handleEdit = () => {
@@ -257,6 +280,11 @@ export default function TeamPageContent({
 												Current Season?
 											</span>
 										</div>
+										{paymentStatusError && (
+											<div className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
+												Error loading payment statuses. Please try again.
+											</div>
+										)}
 										<Button
 											onClick={handleShowPaymentStatus}
 											disabled={
