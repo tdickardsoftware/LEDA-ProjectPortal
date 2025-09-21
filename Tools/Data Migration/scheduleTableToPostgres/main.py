@@ -1,4 +1,4 @@
-import pandas as pd
+import csv
 import json
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
@@ -8,20 +8,23 @@ schedule_csv = r'Working\leda_schedule_table_export.csv'
 lookup_csv = r'Lookup\leda_teams_table_export.csv'
 output_sql = r'Output\leda_schedule_insert.sql'
 
-# Read schedule and lookup CSVs
-schedule_df = pd.read_csv(schedule_csv)
-lookup_df = pd.read_csv(lookup_csv)
+# Read schedule and lookup CSVs using csv module
+def read_csv_dicts(filepath):
+    with open(filepath, 'r', encoding='latin1') as f:
+        reader = csv.DictReader(f)
+        return list(reader)
+
+schedule_rows = read_csv_dicts(schedule_csv)
+lookup_rows = read_csv_dicts(lookup_csv)
 
 # Build team name lookup: {teamId: teamName}
 team_lookup = {}
-if not lookup_df.empty:
-    for _, row in lookup_df.iterrows():
-        team_lookup[str(row['ID Number'])] = row['Team Name']
+for row in lookup_rows:
+    team_lookup[str(row['ID Number'])] = row['Team Name']
 
-# Helper: get team name by id, escape single quotes for SQL
+# Helper: get team name by id
 def get_team_name(team_id):
-    name = team_lookup.get(str(team_id), "")
-    return name.replace("'", "''")
+    return team_lookup.get(str(team_id), "")
 
 # Helper: get home/away (home if team letter is uppercase)
 def is_home(team_letter, opponent_letter):
@@ -32,35 +35,36 @@ def get_match_date(week_num):
     from datetime import datetime, timedelta
     base_date = datetime(2024, 1, 3)
     match_date = base_date + timedelta(days=7*(week_num-1))
-    # Use %m/%d/%Y and strip leading zeros
     return f"{match_date.month}/{match_date.day}/{match_date.year}"
 
 # Normalize season codes to uppercase
-schedule_df['Season Code'] = schedule_df['Season Code'].str.upper()
+for row in schedule_rows:
+    row['Season Code'] = row['Season Code'].upper()
 
 def process_season(season):
-    season_df = schedule_df[schedule_df['Season Code'] == season]
-    divisions = season_df['Division'].unique()
+    season_rows = [r for r in schedule_rows if r['Season Code'] == season]
+    divisions = sorted(set(r['Division'] for r in season_rows))
     schedule_json = {}
     for division in tqdm(divisions, desc=f"Season {season} divisions", leave=False):
-        div_df = season_df[season_df['Division'] == division]
-        subdivisions = div_df['Subdivision'].unique()
+        div_rows = [r for r in season_rows if r['Division'] == division]
+        subdivisions = sorted(set(str(r['Subdivision']) for r in div_rows))
         division_obj = {}
         for subdivision in tqdm(subdivisions, desc=f"Season {season} {division} subdivisions", leave=False):
-            sub_df = div_df[div_df['Subdivision'] == subdivision]
+            sub_rows = [r for r in div_rows if str(r['Subdivision']) == subdivision]
             subdivision_obj = {}
-            for _, team_row in tqdm(sub_df.iterrows(), total=len(sub_df), desc=f"Season {season} {division} Subdiv {subdivision} teams", leave=False):
+            for team_row in tqdm(sub_rows, total=len(sub_rows), desc=f"Season {season} {division} Subdiv {subdivision} teams", leave=False):
                 team_letter = team_row['Team Letter']
                 team_id = team_row['Team ID Number']
                 team_name = get_team_name(team_id)
                 matches_obj = {}
-                for week in range(1, int(team_row['Number of Weeks'])+1):
-                    opp_letter = team_row[f'Week {week} Opponent']
-                    if pd.isna(opp_letter) or opp_letter == '':
+                num_weeks = int(team_row['Number of Weeks'])
+                for week in range(1, num_weeks+1):
+                    opp_letter = team_row.get(f'Week {week} Opponent', '')
+                    if opp_letter is None or opp_letter == '':
                         continue
                     # Find opponent team id in same subdivision
-                    opp_row = sub_df[sub_df['Team Letter'].str.upper() == str(opp_letter).upper()]
-                    opp_id = opp_row['Team ID Number'].values[0] if not opp_row.empty else ""
+                    opp_row = next((r for r in sub_rows if str(r['Team Letter']).upper() == str(opp_letter).upper()), None)
+                    opp_id = opp_row['Team ID Number'] if opp_row else ""
                     match_key = f'Date{week}'
                     matches_obj[match_key] = {
                         "matchDate": get_match_date(week),
@@ -77,12 +81,10 @@ def process_season(season):
                 }
             division_obj[f"Subdivision {subdivision}"] = subdivision_obj
         schedule_json[division] = division_obj
-    # Ensure season code is upper in output
     return f"('{season.upper()}', '{json.dumps(schedule_json, separators=(',', ':'))}')"
 
-
 # Group by seasonCode (already normalized to upper)
-seasons = schedule_df['Season Code'].unique()
+seasons = sorted(set(r['Season Code'] for r in schedule_rows))
 values = []
 
 with ThreadPoolExecutor() as executor:
