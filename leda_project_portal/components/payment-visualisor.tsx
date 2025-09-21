@@ -140,6 +140,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 	const totalPages = Math.ceil(payments.length / recordsPerPage);
 
 	const refreshPayments = () => {
+		setCurrentPage(1); // Reset to first page
 		refetchPayments();
 		refetchDates();
 		queryClient.invalidateQueries({ queryKey: ['paymentHistory'] });
@@ -152,12 +153,14 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 		setSelectedPaymentType(undefined);
 		setAppliedPaymentType(undefined);
 		setFilterOpen(false);
+		setCurrentPage(1); // Reset to first page
 	};
 
 	// Function to apply the selected filter
 	const applyFilter = () => {
 		setAppliedPaymentType(selectedPaymentType);
 		setFilterOpen(false);
+		setCurrentPage(1); // Reset to first page
 	};
 
 	// Function to delete a payment record
@@ -216,7 +219,10 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 				<div className="flex gap-2">
 					<Select
 						value={selectedDate}
-						onValueChange={setSelectedDate}
+						onValueChange={(value) => {
+							setSelectedDate(value);
+							setCurrentPage(1); // Reset to first page when date changes
+						}}
 					>
 						<SelectTrigger className="w-[200px] border-gray-400 text-gray-700">
 							<SelectValue placeholder="Filter by date" />
@@ -249,7 +255,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 
 									return (
 										<SelectItem
-											key={`${date.paymentDate}-${index}`}
+											key={`date-${dateStr || date.paymentDate}-${index}-${type}`}
 											value={dateStr || date.paymentDate}
 											className="hover:bg-gray-300"
 										>
@@ -350,10 +356,10 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 			) : payments.length > 0 ? (
 				<>
 					<Accordion type="single" collapsible className="w-full">
-						{currentRecords.map((payment: PaymentHistory) => (
+						{currentRecords.map((payment: PaymentHistory, index: number) => (
 							<AccordionItem
-								key={payment.paymentNbr}
-								value={`payment-${payment.paymentNbr}`}
+								key={`${payment.paymentNbr}-${index}-${payment.ledaId || ''}`}
+								value={`payment-${payment.paymentNbr}-${index}`}
 							>
 								<AccordionTrigger className="flex flex-row w-full text-left px-4 py-2 hover:bg-gray-50 gap-6">
 									<div className="flex flex-col">
@@ -511,31 +517,37 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 							>
 								Previous
 							</Button>
-							{Array.from(
-								{ length: Math.min(5, totalPages) },
-								(_, i) => {
-									// Show current page and two pages on either side if possible
-									const pageNum = Math.min(
-										Math.max(currentPage - 2 + i, 1),
-										totalPages
-									);
-									return (
-										<Button
-											key={pageNum}
-											onClick={() =>
-												setCurrentPage(pageNum)
-											}
-											className={`px-3 py-1 rounded ${
-												currentPage === pageNum
-													? " bg-gray-300 hover:bg-gray-100 border-gray-300 text-gray-700"
-													: "bg-gray-200 hover:bg-gray-100 border-gray-300 text-gray-700"
-											}`}
-										>
-											{pageNum}
-										</Button>
-									);
+							{(() => {
+								// Create a Set to track which page numbers we've already rendered
+								const renderedPages = new Set();
+								// Calculate a reasonable range of pages to show
+								const startPage = Math.max(1, currentPage - 2);
+								const endPage = Math.min(totalPages, startPage + 4);
+								
+								// Generate buttons for the range
+								const pageButtons = [];
+								
+								for (let i = startPage; i <= endPage; i++) {
+									if (!renderedPages.has(i)) {
+										renderedPages.add(i);
+										pageButtons.push(
+											<Button
+												key={`page-${i}-${type}`}
+												onClick={() => setCurrentPage(i)}
+												className={`px-3 py-1 rounded ${
+													currentPage === i
+														? "bg-gray-300 hover:bg-gray-100 border-gray-300 text-gray-700"
+														: "bg-gray-200 hover:bg-gray-100 border-gray-300 text-gray-700"
+												}`}
+											>
+												{i}
+											</Button>
+										);
+									}
 								}
-							)}
+								
+								return pageButtons;
+							})()}
 							<Button
 								onClick={() =>
 									setCurrentPage((prev) =>
