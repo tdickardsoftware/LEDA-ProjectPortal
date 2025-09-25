@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
+import { MentionPlayerHistory } from "@/lib/definitions";
 import { X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SeasonCodeSelector from "@/components/ui/roster-season-code-selector";
@@ -63,12 +64,13 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-import MentionForm from "@/components/forms/activities/mentions-form";
+import MentionSelector from "@/components/ui/mentions-selector";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { isMatchupValid } from "@/utils/matchupValidation";
 // Import React Query hooks
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
+import { useForm, FormProvider } from "react-hook-form";
 
 // Utility function: Deep merge two objects
 const deepMerge = <
@@ -355,11 +357,51 @@ const deleteMentionHistory = async (data: {
 	return response.json();
 };
 
+// Simple wrapper component for MentionSelector that doesn't require React Hook Form
+function MentionSelectorWrapper({ 
+	onMentionChange, 
+	initialValue 
+}: { 
+	onMentionChange: (value: {
+		mentionCode: string;
+		desc: string;
+		points: string;
+		mentionBasis: string;
+	}) => void;
+	initialValue?: {
+		mentionCode: string;
+		desc: string;
+		points: string;
+		mentionBasis: string;
+	} | null;
+}) {
+	// Use the imported useForm hook
+	const form = useForm({
+		defaultValues: {
+			mentionData: initialValue || {}
+		}
+	});
+
+	return (
+		<FormProvider {...form}>
+			<MentionSelector
+				control={form.control}
+				name="mentionData"
+				label=""
+				disabled={false}
+				handleMentionChange={onMentionChange}
+			/>
+		</FormProvider>
+	);
+}
+
 export default function WeeklyScoresheetsContent({
 	renderSeasonCode,
-}: {
-	renderSeasonCode?: string;
-}) {
+	}: {
+		renderSeasonCode?: string;
+	}) {
+		// Local state for mentions for the currently selected player
+		const [currentPlayerMentions, setCurrentPlayerMentions] = useState<MentionPlayerHistory[] | null>(null);
 	// Initialize the React Query client
 	const queryClient = useQueryClient();
 
@@ -433,6 +475,17 @@ export default function WeeklyScoresheetsContent({
 		count: number;
 	} | null>(null);
 
+	// Mention form state
+	const [selectedMentionData, setSelectedMentionData] = useState<{
+		mentionCode: string;
+		desc: string;
+		points: string;
+		mentionBasis: string;
+	} | null>(null);
+	const [mentionPoints, setMentionPoints] = useState<number>(0);
+	const [mentionCount, setMentionCount] = useState<number>(0);
+	const [mentionNotes, setMentionNotes] = useState<string>("");
+
 	// React Query hooks
 	// Schedule data query
 	const { data: scheduleData, isLoading: isScheduleLoading } = useQuery({
@@ -466,6 +519,16 @@ export default function WeeklyScoresheetsContent({
 	});
 
 	// Player data queries
+// Mentions data queries for current matchup players
+// Removed getMentionsForPlayers function - no longer needed since mentions are fetched on-demand
+
+// homePlayerIds and awayPlayerIds must be defined after homeTeamPlayerData and awayTeamPlayerData
+	// ...existing code for useQuery hooks for homeTeamPlayerData and awayTeamPlayerData...
+
+	// Removed homeMentionsByPlayer and awayMentionsByPlayer state - no longer needed since mentions are fetched on-demand
+
+
+	
 	const { data: homeTeamPlayerData, isLoading: isHomePlayersLoading } = useQuery({
 		queryKey: ["teamPlayers", selectedHomeTeamId],
 		queryFn: async () => {
@@ -499,7 +562,12 @@ export default function WeeklyScoresheetsContent({
 		enabled: !!awayTeamData && !!awayTeamData.memberIdList,
 		staleTime: 1000 * 60 * 10, // 10 minutes
 	});
+	// Local state for mentions by player (must be after player data queries)
+// Declare only once, after player data queries
 
+// ...existing code for useQuery hooks for homeTeamPlayerData and awayTeamPlayerData...
+
+// Removed automatic mention fetching - mentions are now only fetched when user clicks mention button
 	// Save scoresheet function must be defined before useMutation
 	// API call to actually save the scoresheet to the backend
 	const saveScoresheetApi = async ({
@@ -551,13 +619,9 @@ export default function WeeklyScoresheetsContent({
 			// Fetch existing scoresheet data (using cached data from React Query)
 			const existingData = scoresheetData?.scoresheetData || {};
 			let completeData: FormattedScoreData = data;
-			let previousData: FormattedScoreData | null = null;
 
 			// If there's existing data, merge it with our new data
 			if (Object.keys(existingData).length > 0) {
-				// Store previous data for mention history comparison
-				previousData = JSON.parse(JSON.stringify(existingData));
-
 				// For the current matchup, use our new data completely
 				// but merge with other matchups that might exist
 				
@@ -609,15 +673,16 @@ export default function WeeklyScoresheetsContent({
 					totalPoints: parseInt(matchupData.teamPoints.awayPoints),
 				});
 
-				// Process players and their mentions
-				await processMentionHistory(
-					matchupData,
-					previousData,
-					selectedDivision,
-					selectedSubdivision,
-					matchupKey,
-					parseInt(selectedWeek)
-				);
+				// Note: Mentions are now saved directly when users add/edit/delete them,
+				// so we don't need to process them during scoresheet save
+				// await processMentionHistory(
+				// 	matchupData,
+				// 	previousData,
+				// 	selectedDivision,
+				// 	selectedSubdivision,
+				// 	matchupKey,
+				// 	parseInt(selectedWeek)
+				// );
 
 				// Save player points for each player in the home team
 				const homePlayers = matchupData.teamInformation[selectedHomeTeamId].teamMembers;
@@ -702,6 +767,21 @@ export default function WeeklyScoresheetsContent({
 	const awayTeamInformation = awayTeamData as Team | undefined;
 	const homeTeamPlayerInformation = homeTeamPlayerData as Player[] | undefined;
 	const awayTeamPlayerInformation = awayTeamPlayerData as Player[] | undefined;
+
+	// Handle edit mode population
+	useEffect(() => {
+		if (mentionEditMode && currentEditingMention) {
+			setSelectedMentionData({
+				mentionCode: currentEditingMention.code,
+				desc: currentEditingMention.desc,
+				points: currentEditingMention.points.toString(),
+				mentionBasis: "",
+			});
+			setMentionPoints(currentEditingMention.points);
+			setMentionCount(currentEditingMention.count || 0);
+			setMentionNotes(currentEditingMention.notes || "");
+		}
+	}, [mentionEditMode, currentEditingMention]);
 
 	// Use renderSeasonCode if provided
 	useEffect(() => {
@@ -1098,21 +1178,7 @@ export default function WeeklyScoresheetsContent({
 					}
 				}
 
-				// Add mention points to total
-				const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-				const playerMentions =
-					formattedScoreData?.[selectedDivision]?.[
-						selectedSubdivision
-					]?.[matchupKey]?.teamInformation?.[selectedHomeTeamId]
-						?.teamMembers?.[String(player.ledaId)]?.mentions;
-
-				if (playerMentions && Object.keys(playerMentions).length > 0) {
-					const mentionPoints = Object.values(playerMentions).reduce(
-						(sum, mention) => sum + mention.points,
-						0
-					);
-					totalPoints += mentionPoints;
-				}
+				// Mention points will be calculated from the scoresheet data structure when saved
 
 				homePlayerPoints.push({
 					playerId: String(player.ledaId),
@@ -1145,21 +1211,7 @@ export default function WeeklyScoresheetsContent({
 					}
 				}
 
-				// Add mention points to total
-				const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-				const playerMentions =
-					formattedScoreData?.[selectedDivision]?.[
-						selectedSubdivision
-					]?.[matchupKey]?.teamInformation?.[selectedAwayTeamId]
-						?.teamMembers?.[String(player.ledaId)]?.mentions;
-
-				if (playerMentions && Object.keys(playerMentions).length > 0) {
-					const mentionPoints = Object.values(playerMentions).reduce(
-						(sum, mention) => sum + mention.points,
-						0
-					);
-					totalPoints += mentionPoints;
-				}
+				// Mention points will be calculated from the scoresheet data structure when saved
 
 				awayPlayerPoints.push({
 					playerId: String(player.ledaId),
@@ -1189,12 +1241,12 @@ export default function WeeklyScoresheetsContent({
 											acc[player.ledaId] = {
 												name: player.fullName,
 												gameStats: homeTeamGameData[player.ledaId] || {},
-												// mentions will be merged in deepMerge if present
 												gamePoints: String(
 													homePlayerPoints.find(
 														(p) => p.playerId === String(player.ledaId)
 													)?.totalPoints || 0
 												),
+												// Note: Mentions are now handled separately in the database
 											};
 											return acc;
 										},
@@ -1203,15 +1255,6 @@ export default function WeeklyScoresheetsContent({
 												name: string;
 												gameStats: Record<string, boolean>;
 												gamePoints: string;
-												mentions?: {
-													[mentionId: string]: {
-														mentionCode: string;
-														desc: string;
-														points: number;
-														notes?: string;
-														count?: number;
-													};
-												};
 											};
 										}
 									) || {},
@@ -1232,12 +1275,12 @@ export default function WeeklyScoresheetsContent({
 											acc[player.ledaId] = {
 												name: player.fullName,
 												gameStats: awayTeamGameData[player.ledaId] || {},
-												// mentions will be merged in deepMerge if present
 												gamePoints: String(
 													awayPlayerPoints.find(
 														(p) => p.playerId === String(player.ledaId)
 													)?.totalPoints || 0
 												),
+												// Note: Mentions are now handled separately in the database
 											};
 											return acc;
 										},
@@ -1246,15 +1289,6 @@ export default function WeeklyScoresheetsContent({
 												name: string;
 												gameStats: Record<string, boolean>;
 												gamePoints: string;
-												mentions?: {
-													[mentionId: string]: {
-														mentionCode: string;
-														desc: string;
-														points: number;
-														notes?: string;
-														count?: number;
-													};
-												};
 											};
 										}
 									) || {},
@@ -1306,103 +1340,8 @@ export default function WeeklyScoresheetsContent({
 	};
 
 	// Process mention history using React Query mutations
-	const processMentionHistory = async (
-		matchupData: FormattedScoreData[string][string][string],
-		previousData: FormattedScoreData | null,
-		division: string,
-		subdivision: string,
-		matchupKey: string,
-		weekNum: number
-	) => {
-		// Process both teams
-		const teamIds = [selectedHomeTeamId, selectedAwayTeamId];
-
-		for (const teamId of teamIds) {
-			const teamMembers = matchupData.teamInformation[teamId]?.teamMembers || {};
-
-			// Process each player in the team
-			for (const playerId in teamMembers) {
-				const player = teamMembers[playerId];
-				const currentMentions = player.mentions || {};
-
-				// Get previous mentions for this player if they exist
-				const previousMentions =
-					previousData?.[division]?.[subdivision]?.[matchupKey]
-						?.teamInformation?.[teamId]?.teamMembers?.[playerId]
-						?.mentions || {};
-
-				// Track which mentions were processed to identify deletions
-				const processedMentionIds = new Set<string>();
-
-				// Process current mentions - add new or update existing
-				for (const mentionId in currentMentions) {
-					const mention = currentMentions[mentionId];
-					processedMentionIds.add(mentionId);
-
-					// If this mention exists in previous data, it's an update
-					if (previousMentions[mentionId]) {
-						// Check if anything changed
-						const prevMention = previousMentions[mentionId];
-						if (
-							prevMention.mentionCode !== mention.mentionCode ||
-							prevMention.desc !== mention.desc ||
-							prevMention.points !== mention.points ||
-							prevMention.notes !== mention.notes
-						) {
-							// Update the mention history using React Query mutation
-							await updateMentionHistoryMutation.mutateAsync({
-								ledaId: playerId,
-								mentionId,
-								mentionCode: mention.mentionCode,
-								mentionDesc: mention.desc,
-								mentionPoints: mention.points,
-								seasonCode,
-								weekNum,
-								notes: mention.notes || "",
-								count: mention.count || 0,
-								teamId: teamId,
-							});
-						}
-					} else {
-						// This is a new mention, add it to history using React Query mutation
-						await createMentionHistoryMutation.mutateAsync({
-							ledaId: playerId,
-							mentionId,
-							mentionCode: mention.mentionCode,
-							mentionDesc: mention.desc,
-							mentionPoints: mention.points,
-							seasonCode,
-							weekNum,
-							notes: mention.notes || "",
-							count: mention.count || 0,
-							teamId: teamId,
-						});
-					}
-				}
-
-				// Check for deleted mentions
-				for (const mentionId in previousMentions) {
-					if (!processedMentionIds.has(mentionId)) {
-						// This mention was deleted, remove it from history using React Query mutation
-						await deleteMentionHistoryMutation.mutateAsync({
-							ledaId: playerId,
-							mentionId,
-							seasonCode,
-							weekNum,
-							mentionCode: "",
-							mentionDesc: "",
-							mentionPoints: 0,
-							notes: "",
-							teamId: teamId,
-						});
-					}
-				}
-			}
-		}
-	};
-
-	// The rest of the functions (penalty management, mention management, etc.) can remain mostly unchanged
-	// as they're primarily operating on local state
+	// Note: processMentionHistory function was removed since mentions are now
+	// saved directly to the database when users add/edit/delete them
 
 	const resetScoresheet = () => {
 		if (
@@ -1727,7 +1666,7 @@ export default function WeeklyScoresheetsContent({
 		}
 	};
 
-	const handleMentionClick = (playerId: string, teamId: string) => {
+	const handleMentionClick = async (playerId: string, teamId: string) => {
 		// Find the player name based on the ID
 		let playerName = "";
 		let teamName = "";
@@ -1754,38 +1693,42 @@ export default function WeeklyScoresheetsContent({
 			teamName: teamName,
 		});
 
-		// Log useful debug information
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-		console.log(
-			"Opening mentions dialog for:",
-			playerName,
-			"Team:",
-			teamName
-		);
-		console.log("Current matchup:", matchupKey);
-		console.log("Team ID:", teamId, "Player ID:", playerId);
-
-		if (formattedScoreData) {
-			// Log the path to help debug
-			console.log("Division:", selectedDivision);
-			console.log("Subdivision:", selectedSubdivision);
-
-			// Check if mentions exist
-			const mentions =
-				formattedScoreData?.[selectedDivision]?.[selectedSubdivision]?.[
-					matchupKey
-				]?.teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions;
-
-			console.log("Existing mentions:", mentions);
+		// Fetch mentions for this player only when the dialog is opened
+		if (seasonCode && selectedWeek && teamId && playerId) {
+			try {
+				const response = await fetch(
+					`/api/maintenance/mention/mentionHistory?ledaId=${playerId}&seasonCode=${seasonCode}&weekNum=${selectedWeek}&teamId=${teamId}`
+				);
+				if (response.ok) {
+					const mentions = await response.json();
+					setCurrentPlayerMentions(mentions);
+					
+					// Update mention counter to account for existing mentions from database
+					if (mentions && mentions.length > 0) {
+						const existingMentionIds = mentions
+							.map((mention: MentionPlayerHistory) => parseInt(mention.mentionId))
+							.filter((id: number) => !isNaN(id));
+						
+						if (existingMentionIds.length > 0) {
+							const maxExistingId = Math.max(...existingMentionIds);
+							const playerMentionKey = `${teamId}-${playerId}`;
+							setMentionCounters(prev => ({
+								...prev,
+								[playerMentionKey]: Math.max(prev[playerMentionKey] || 0, maxExistingId)
+							}));
+						}
+					}
+				} else {
+					setCurrentPlayerMentions([]);
+				}
+			} catch {
+				setCurrentPlayerMentions([]);
+			}
+		} else {
+			setCurrentPlayerMentions([]);
 		}
 
-		// Force the dialog to show properly by using a small delay
-		// This ensures React has time to process state updates
-		setMentionDialogOpen(false); // First close in case it was open
-
-		setTimeout(() => {
-			setMentionDialogOpen(true); // Then open with a slight delay
-		}, 10);
+		setMentionDialogOpen(true);
 	};
 
 	const handleMentionEditing = (
@@ -1793,33 +1736,21 @@ export default function WeeklyScoresheetsContent({
 		teamId: string,
 		mentionId: string
 	) => {
-		if (!formattedScoreData) return;
+		if (!currentPlayerMentions) return;
 
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+		// Find the mention in the current player mentions array
+		const mention = currentPlayerMentions.find(
+			(m) => m.mentionId === mentionId
+		);
 
-		// Check if the mention exists
-		if (
-			formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[
-				matchupKey
-			]?.teamInformation?.[teamId]?.teamMembers?.[playerId]?.mentions?.[
-				mentionId
-			]
-		) {
-			// Get the mention data
-			const mention =
-				formattedScoreData[selectedDivision][selectedSubdivision][
-					matchupKey
-				].teamInformation[teamId].teamMembers[playerId].mentions![
-					mentionId
-				];
-
+		if (mention) {
 			// Set up the editing state
 			setMentionEditMode(true);
 			setCurrentEditingMention({
 				id: mentionId,
 				code: mention.mentionCode,
-				desc: mention.desc,
-				points: mention.points,
+				desc: mention.mentionDesc,
+				points: mention.mentionPoints,
 				notes: mention.notes || "",
 				count: mention.count || 0,
 			});
@@ -1855,7 +1786,7 @@ export default function WeeklyScoresheetsContent({
 		}
 	};
 
-	const updateMention = (
+	const updateMention = async (
 		mentionId: string,
 		mentionCode: string,
 		desc: string,
@@ -1863,184 +1794,165 @@ export default function WeeklyScoresheetsContent({
 		count: number,
 		notes?: string
 	) => {
-		if (!formattedScoreData || !selectedPlayerForMention) return;
+		if (!selectedPlayerForMention || !currentPlayerMentions || !seasonCode || !selectedWeek) return;
 
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
 		const playerId = selectedPlayerForMention.id;
 		const teamId = selectedPlayerForMention.teamId;
 
-		// Create a copy of the current formatted score data
-		const updatedData = { ...formattedScoreData };
-
-		// Check if the mention exists before attempting to update
-		if (
-			updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]
-				?.teamInformation?.[teamId]?.teamMembers?.[playerId]
-				?.mentions?.[mentionId]
-		) {
-			// Update the existing mention with the new values
-			updatedData[selectedDivision][selectedSubdivision][
-				matchupKey
-			].teamInformation[teamId].teamMembers[playerId].mentions![
-				mentionId
-			] = {
+		try {
+			// Update the mention directly in the database
+			await updateMentionHistoryMutation.mutateAsync({
+				ledaId: playerId,
+				mentionId: mentionId,
 				mentionCode: mentionCode,
-				desc: desc,
-				points: points,
+				mentionDesc: desc,
+				mentionPoints: points,
+				seasonCode: seasonCode,
+				weekNum: typeof selectedWeek === 'string' ? parseInt(selectedWeek) : selectedWeek,
 				notes: notes || "",
 				count: count || 0,
-			};
+				teamId: teamId,
+			});
 
-			// Update state
-			setFormattedScoreData(updatedData);
+			// Update the current player mentions to reflect the changes
+			const updatedMentions = currentPlayerMentions.map((mention) =>
+				mention.mentionId === mentionId
+					? {
+							...mention,
+							mentionCode: mentionCode,
+							mentionDesc: desc,
+							mentionPoints: points,
+							notes: notes || "",
+							count: count || 0,
+					  }
+					: mention
+			);
+			setCurrentPlayerMentions(updatedMentions);
 
 			// Reset editing state
 			setMentionEditMode(false);
 			setCurrentEditingMention(null);
 
-			// Mark data as changed
-			handleDataChange();
+			// Note: We don't update formattedScoreData or call handleDataChange()
+			// This means the mention is updated in database but doesn't trigger "unsaved changes"
+		} catch (error) {
+			console.error("Failed to update mention:", error);
+			// Could show a toast notification here
 		}
 	};
 
-	const handleMentionSubmit = (
+	const handleMentionSubmit = async (
 		mentionCode: string,
 		desc: string,
 		points: number,
 		count: number,
 		notes?: string
 	) => {
-		if (!formattedScoreData || !selectedPlayerForMention) {
-			// Initialize data if needed
-			if (!formattedScoreData) setFormattedScoreData({});
+		console.log("handleMentionSubmit called with:", { mentionCode, desc, points, count, notes });
+		console.log("selectedPlayerForMention:", selectedPlayerForMention);
+		console.log("seasonCode:", seasonCode);
+		console.log("selectedWeek:", selectedWeek);
+		
+		if (!selectedPlayerForMention || !seasonCode || !selectedWeek) {
+			console.log("Missing required data, returning early");
 			return;
 		}
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+
 		const playerId = selectedPlayerForMention.id;
 		const teamId = selectedPlayerForMention.teamId;
 
-		// Create a copy of the current formatted score data
-		const updatedData = { ...formattedScoreData };
-
-		// Ensure the necessary nested structure exists
-		if (!updatedData[selectedDivision]) {
-			updatedData[selectedDivision] = {};
-		}
-
-		if (!updatedData[selectedDivision][selectedSubdivision]) {
-			updatedData[selectedDivision][selectedSubdivision] = {};
-		}
-
-		if (!updatedData[selectedDivision][selectedSubdivision][matchupKey]) {
-			updatedData[selectedDivision][selectedSubdivision][matchupKey] = {
-				teamInformation: {},
-				gameInformation: {},
-				teamPoints: { homePoints: "0", awayPoints: "0" },
-			};
-		}
-
-		// Find the right team to add the mention to
-		const teamKey = teamId;
-		const isHomeTeam = teamId === selectedHomeTeamId;
-
-		if (
-			!updatedData[selectedDivision][selectedSubdivision][matchupKey]
-				.teamInformation[teamKey]
-		) {
-			updatedData[selectedDivision][selectedSubdivision][
-				matchupKey
-			].teamInformation[teamKey] = {
-				teamLetter: isHomeTeam
-					? selectedHomeLetter
-					: selectedAwayLetter,
-				teamName: isHomeTeam
-					? homeTeamInformation?.teamName || ""
-					: awayTeamInformation?.teamName || "",
-				home: isHomeTeam,
-				teamMembers: {},
-				penalties: {},
-			};
-		}
-
-		// Ensure the team members object exists
-		if (
-			!updatedData[selectedDivision][selectedSubdivision][matchupKey]
-				.teamInformation[teamKey].teamMembers[playerId]
-		) {
-			const playerName = selectedPlayerForMention.name;
-			const gameStats: Record<string, boolean> = {};
-
-			// Initialize game stats if needed
-			for (let i = 1; i <= 11; i++) {
-				const gameKey = `Game ${i}`;
-				gameStats[gameKey] = isHomeTeam
-					? homeTeamGameData[playerId]?.[gameKey] || false
-					: awayTeamGameData[playerId]?.[gameKey] || false;
-			}
-
-			updatedData[selectedDivision][selectedSubdivision][
-				matchupKey
-			].teamInformation[teamKey].teamMembers[playerId] = {
-				name: playerName,
-				gameStats: gameStats,
-				gamePoints: "0",
-			};
-		}
-
-		// Ensure the mentions object exists
-		if (
-			!updatedData[selectedDivision][selectedSubdivision][matchupKey]
-				.teamInformation[teamKey].teamMembers[playerId].mentions
-		) {
-			updatedData[selectedDivision][selectedSubdivision][
-				matchupKey
-			].teamInformation[teamKey].teamMembers[playerId].mentions = {};
-		}
-
 		// Get or initialize mention counter for this player
 		const playerMentionKey = `${teamId}-${playerId}`;
-		const currentCounter = mentionCounters[playerMentionKey] || 0;
+		let currentCounter = mentionCounters[playerMentionKey] || 0;
+		
+		// Also check existing mentions in currentPlayerMentions to ensure proper sequencing
+		if (currentPlayerMentions && currentPlayerMentions.length > 0) {
+			const existingMentionIds = currentPlayerMentions
+				.filter(mention => 
+					mention.ledaId === playerId && 
+					mention.teamId != null && 
+					mention.teamId.toString() === teamId
+				)
+				.map(mention => parseInt(mention.mentionId))
+				.filter(id => !isNaN(id));
+			
+			if (existingMentionIds.length > 0) {
+				const maxExistingId = Math.max(...existingMentionIds);
+				currentCounter = Math.max(currentCounter, maxExistingId);
+			}
+		}
+		
 		const newCounter = currentCounter + 1;
 
-		// Add the new mention using the counter as the key
-		updatedData[selectedDivision][selectedSubdivision][
-			matchupKey
-		].teamInformation[teamKey].teamMembers[playerId].mentions![
-			newCounter.toString()
-		] = {
-			mentionCode,
-			desc,
-			points,
-			notes: notes || "",
-			count: count || 0,
-		};
 		// Update the mention counter state
 		setMentionCounters({
 			...mentionCounters,
 			[playerMentionKey]: newCounter,
 		});
 
-		// Update state with the new data
-		setFormattedScoreData(updatedData);
-		setTimeout(() => {
-			console.log(formattedScoreData);
-		}, 0);
-		// Temporarily close and reopen the dialog to force a refresh
-		setMentionDialogOpen(false);
-		setTimeout(() => {
-			setMentionDialogOpen(true);
-		}, 50);
+		try {
+			// Add the mention directly to the database
+			console.log("Calling createMentionHistoryMutation with:", {
+				ledaId: playerId,
+				mentionId: newCounter.toString(),
+				mentionCode: mentionCode,
+				mentionDesc: desc,
+				mentionPoints: points,
+				seasonCode: seasonCode,
+				weekNum: typeof selectedWeek === 'string' ? parseInt(selectedWeek) : selectedWeek,
+				notes: notes || "",
+				count: count || 0,
+				teamId: teamId,
+			});
+			
+			const result = await createMentionHistoryMutation.mutateAsync({
+				ledaId: playerId,
+				mentionId: newCounter.toString(),
+				mentionCode: mentionCode,
+				mentionDesc: desc,
+				mentionPoints: points,
+				seasonCode: seasonCode,
+				weekNum: typeof selectedWeek === 'string' ? parseInt(selectedWeek) : selectedWeek,
+				notes: notes || "",
+				count: count || 0,
+				teamId: teamId,
+			});
+			
+			console.log("Mutation result:", result);
 
-		// Mark data as changed to enable save button
-		handleDataChange();
+			// Add the new mention to currentPlayerMentions for UI display
+			if (currentPlayerMentions && selectedPlayerForMention) {
+				const newMention: MentionPlayerHistory = {
+					mentionId: newCounter.toString(),
+					ledaId: selectedPlayerForMention.id,
+					mentionCode: mentionCode,
+					mentionDesc: desc,
+					mentionPoints: points,
+					notes: notes || "",
+					count: count || 0,
+					seasonCode: seasonCode,
+					weekNum: typeof selectedWeek === 'string' ? parseInt(selectedWeek) : selectedWeek || 1,
+					teamId: parseInt(selectedPlayerForMention.teamId),
+				};
+				setCurrentPlayerMentions([...currentPlayerMentions, newMention]);
+			}
+
+			// Note: We don't update formattedScoreData or call handleDataChange()
+			// This means the mention is saved to database but doesn't trigger "unsaved changes"
+			console.log("Mention added successfully!");
+		} catch (error) {
+			console.error("Failed to add mention:", error);
+			console.error("Error details:", error);
+			// Could show a toast notification here
+		}
 	};
 
-	const handleMentionDelete = (
+	const handleMentionDelete = async (
 		playerId: string,
 		teamId: string,
 		mentionId: string
 	) => {
-		if (!formattedScoreData) return;
+		if (!currentPlayerMentions || !seasonCode || !selectedWeek) return;
 
 		// Add confirmation dialog
 		if (
@@ -2051,29 +1963,31 @@ export default function WeeklyScoresheetsContent({
 			return; // Exit if user cancels
 		}
 
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+		try {
+			// Delete the mention directly from the database
+			await deleteMentionHistoryMutation.mutateAsync({
+				ledaId: playerId,
+				mentionId: mentionId,
+				seasonCode: seasonCode,
+				weekNum: typeof selectedWeek === 'string' ? parseInt(selectedWeek) : selectedWeek,
+				mentionCode: "", // Required by API but not used for deletion
+				mentionDesc: "",
+				mentionPoints: 0,
+				notes: "",
+				teamId: teamId,
+			});
 
-		// Create a copy of the current formatted score data
-		const updatedData = { ...formattedScoreData };
+			// Update the current player mentions to reflect the deletion
+			const updatedMentions = currentPlayerMentions.filter(
+				(mention) => mention.mentionId !== mentionId
+			);
+			setCurrentPlayerMentions(updatedMentions);
 
-		// Check if the mention exists before attempting to remove
-		if (
-			updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]
-				?.teamInformation?.[teamId]?.teamMembers?.[playerId]
-				?.mentions?.[mentionId]
-		) {
-			// Remove the mention
-			delete updatedData[selectedDivision][selectedSubdivision][
-				matchupKey
-			].teamInformation[teamId].teamMembers[playerId].mentions![
-				mentionId
-			];
-
-			// Update state
-			setFormattedScoreData(updatedData);
-
-			// Mark data as changed
-			handleDataChange();
+			// Note: We don't update formattedScoreData or call handleDataChange()
+			// This means the mention is deleted from database but doesn't trigger "unsaved changes"
+		} catch (error) {
+			console.error("Failed to delete mention:", error);
+			// Could show a toast notification here
 		}
 	};
 
@@ -2961,6 +2875,11 @@ export default function WeeklyScoresheetsContent({
 				onOpenChange={(open) => {
 					setMentionDialogOpen(open);
 					if (!open) {
+						// Reset form state when closing
+						setSelectedMentionData(null);
+						setMentionPoints(0);
+						setMentionCount(0);
+						setMentionNotes("");
 						setMentionEditMode(false);
 						setCurrentEditingMention(null);
 					}
@@ -2976,133 +2895,210 @@ export default function WeeklyScoresheetsContent({
 							On Team: {selectedPlayerForMention?.teamName}
 						</DialogDescription>
 					</DialogHeader>
-					<MentionForm
-						handleMentionSubmit={handleMentionSubmit}
-						isEditMode={mentionEditMode}
-						initialMention={currentEditingMention}
-						updateMention={(
-							mentionId,
-							mentionCode,
-							desc,
-							points,
-							notes,
-							count
-						) =>
-							updateMention(
-								mentionId,
-								mentionCode,
-								desc,
-								points,
-								count || 0,
-								notes
-							)
-						}
-					/>
+					{/* Mention form with MentionSelector */}
+					<div className="space-y-4">
+						<div>
+							<label className="block text-sm font-medium mb-2">
+								Select Mention *
+							</label>
+							{/* Create a simple wrapper for MentionSelector */}
+							<MentionSelectorWrapper 
+								onMentionChange={(value) => {
+									console.log("MentionSelector change:", value);
+									setSelectedMentionData(value);
+									// Auto-populate points from selector
+									const pointsValue = parseInt(value.points);
+									if (!isNaN(pointsValue)) {
+										setMentionPoints(pointsValue);
+									}
+								}}
+								initialValue={selectedMentionData}
+							/>
+							
+							{/* Display selected mention info */}
+							{selectedMentionData && (
+								<div className="mt-2 p-3 bg-gray-50 border rounded">
+									<div className="text-sm">
+										<div><strong>Code:</strong> {selectedMentionData.mentionCode}</div>
+										<div><strong>Description:</strong> {selectedMentionData.desc}</div>
+										<div><strong>Default Points:</strong> {selectedMentionData.points}</div>
+									</div>
+								</div>
+							)}
+						</div>
+						
+						<div className="flex gap-4">
+							<div className="flex-1">
+								<label className="block text-sm font-medium mb-2">
+									Points *
+								</label>
+								<input
+									type="number"
+									value={mentionPoints}
+									onChange={(e) => setMentionPoints(parseInt(e.target.value) || 0)}
+									className="w-full p-2 border rounded"
+									placeholder="Points"
+								/>
+							</div>
+							<div className="flex-1">
+								<label className="block text-sm font-medium mb-2">
+									Count/Darts
+								</label>
+								<input
+									type="number"
+									value={mentionCount}
+									onChange={(e) => setMentionCount(parseInt(e.target.value) || 0)}
+									className="w-full p-2 border rounded"
+									placeholder="Count"
+								/>
+							</div>
+						</div>
+						
+						<div>
+							<label className="block text-sm font-medium mb-2">
+								Notes
+							</label>
+							<textarea
+								value={mentionNotes}
+								onChange={(e) => setMentionNotes(e.target.value)}
+								className="w-full p-2 border rounded"
+								rows={3}
+								placeholder="Additional notes"
+							/>
+						</div>
+						
+						<div className="flex justify-center gap-2">
+							<Button
+								type="button"
+								onClick={() => {
+									console.log("Add/Update button clicked!");
+									
+									const mentionCode = selectedMentionData?.mentionCode || "";
+									const mentionDesc = selectedMentionData?.desc || "";
+									
+									console.log("Form values:", {
+										mentionCode,
+										mentionDesc,
+										mentionPoints,
+										mentionCount,
+										mentionNotes
+									});
+									
+									if (!mentionCode || !mentionDesc) {
+										alert("Please fill in Mention Code and Description");
+										return;
+									}
+									
+									if (mentionEditMode && currentEditingMention) {
+										updateMention(
+											currentEditingMention.id,
+											mentionCode,
+											mentionDesc,
+											mentionPoints,
+											mentionCount,
+											mentionNotes
+										);
+									} else {
+										handleMentionSubmit(
+											mentionCode,
+											mentionDesc,
+											mentionPoints,
+											mentionCount,
+											mentionNotes
+										);
+									}
+									
+									// Reset form state
+									setSelectedMentionData(null);
+									setMentionPoints(0);
+									setMentionCount(0);
+									setMentionNotes("");
+									
+									// Close dialog
+									setMentionDialogOpen(false);
+									setMentionEditMode(false);
+									setCurrentEditingMention(null);
+								}}
+								className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+							>
+								{mentionEditMode ? "Update Mention" : "Add Mention"}
+							</Button>
+							<Button
+								type="button"
+								onClick={() => {
+									setMentionDialogOpen(false);
+									setMentionEditMode(false);
+									setCurrentEditingMention(null);
+								}}
+								className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+							>
+								Cancel
+							</Button>
+						</div>
+					</div>
 
 					{/* Render existing mentions */}
-					{selectedPlayerForMention && formattedScoreData && (
+					{selectedPlayerForMention && (
 						<>
 							<div className="space-y-2">
 								<h3 className="font-semibold">
 									Existing Mentions
 								</h3>
-								{(() => {
-									// Debugging: Log the formattedScoreData structure
-									console.log(
-										"Formatted Score Data:",
-										formattedScoreData
-									);
-
-									const mentions =
-										formattedScoreData?.[
-											selectedDivision
-										]?.[selectedSubdivision]?.[
-											`${selectedHomeLetter} - ${selectedAwayLetter}`
-										]?.teamInformation?.[
-											selectedPlayerForMention.teamId
-										]?.teamMembers?.[
-											selectedPlayerForMention.id
-										]?.mentions;
-
-									// Debugging: Log the mentions object
-									console.log(
-										"Mentions for Player:",
-										mentions
-									);
-
-									if (
-										mentions &&
-										Object.keys(mentions).length > 0
-									) {
-										return (
-											<div className="space-y-2 max-h-60 overflow-y-auto">
-												{Object.entries(mentions).map(
-													([id, mention]) => (
-														<div
-															key={id}
-															className="p-3 border rounded-md bg-gray-50 shadow-sm group relative"
-														>
-															<div className="flex justify-between items-start">
-																<span className="font-semibold text-blue-600">
-																	{
-																		mention.mentionCode
-																	}
-																</span>
-																<div className="flex items-center">
-																	<span className="text-green-600 font-bold">
-																		{
-																			mention.points
-																		}{" "}
-																		pts
-																	</span>
-																	<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-																		<Pencil
-																			className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700"
-																			onClick={() =>
-																				handleMentionEditing(
-																					selectedPlayerForMention.id,
-																					selectedPlayerForMention.teamId,
-																					id
-																				)
-																			}
-																		/>
-																		<X
-																			className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700"
-																			onClick={() =>
-																				handleMentionDelete(
-																					selectedPlayerForMention.id,
-																					selectedPlayerForMention.teamId,
-																					id
-																				)
-																			}
-																		/>
-																	</div>
-																</div>
-															</div>
-															<p className="text-sm mt-1">
-																{mention.desc}
-															</p>
-															{mention.notes && (
-																<p className="text-sm text-gray-600 mt-1 italic">
-																	Notes:{" "}
-																	{
-																		mention.notes
-																	}
-																</p>
-															)}
+								{currentPlayerMentions && currentPlayerMentions.length > 0 ? (
+									<div className="space-y-2 max-h-60 overflow-y-auto">
+										{currentPlayerMentions.map((mention) => (
+											<div
+												key={mention.mentionId}
+												className="p-3 border rounded-md bg-gray-50 shadow-sm group relative"
+											>
+												<div className="flex justify-between items-start">
+													<span className="font-semibold text-blue-600">
+														{mention.mentionCode}
+													</span>
+													<div className="flex items-center">
+														<span className="text-green-600 font-bold">
+															{mention.mentionPoints} pts
+														</span>
+														<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+															<Pencil
+																className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700"
+																onClick={() =>
+																	handleMentionEditing(
+																		selectedPlayerForMention.id,
+																		selectedPlayerForMention.teamId,
+																		mention.mentionId
+																	)
+																}
+															/>
+															<X
+																className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700"
+																onClick={() =>
+																	handleMentionDelete(
+																		selectedPlayerForMention.id,
+																		selectedPlayerForMention.teamId,
+																		mention.mentionId
+																	)
+																}
+															/>
 														</div>
-													)
+													</div>
+												</div>
+												<p className="text-sm mt-1">
+													{mention.mentionDesc}
+												</p>
+												{mention.notes && (
+													<p className="text-sm text-gray-600 mt-1 italic">
+														Notes: {mention.notes}
+													</p>
 												)}
 											</div>
-										);
-									} else {
-										return (
-											<p className="text-gray-500 text-sm italic">
-												No mentions have been added yet
-											</p>
-										);
-									}
-								})()}
+										))}
+									</div>
+								) : (
+									<p className="text-gray-500 text-sm italic">
+										No mentions have been added yet
+									</p>
+								)}
 							</div>
 						</>
 					)}
