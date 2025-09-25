@@ -26,9 +26,9 @@ for row in lookup_rows:
 def get_team_name(team_id):
     return team_lookup.get(str(team_id), "")
 
-# Helper: get home/away (home if team letter is uppercase)
+# Helper: get home/away (home if opponent letter is uppercase)
 def is_home(team_letter, opponent_letter):
-    return team_letter.isupper()
+    return opponent_letter.isupper()
 
 # Helper: get match date (Week N: Jan 3 + 7*(N-1) days, 2024 season assumed)
 def get_match_date(week_num):
@@ -81,7 +81,9 @@ def process_season(season):
                 }
             division_obj[f"Subdivision {subdivision}"] = subdivision_obj
         schedule_json[division] = division_obj
-    return f"('{season.upper()}', '{json.dumps(schedule_json, separators=(',', ':'))}')"
+    # Properly escape the JSON string for SQL insertion
+    json_string = json.dumps(schedule_json, separators=(',', ':')).replace("'", "''")
+    return f"('{season.upper()}', '{json_string}')"
 
 # Group by seasonCode (already normalized to upper)
 seasons = sorted(set(r['Season Code'] for r in schedule_rows))
@@ -91,7 +93,7 @@ with ThreadPoolExecutor() as executor:
     results = list(tqdm(executor.map(process_season, seasons), total=len(seasons), desc="Processing seasons"))
     values.extend(results)
 
-# Write output SQL
+# Write output SQL with properly escaped JSON
 with open(output_sql, 'w', encoding='utf-8') as f:
     f.write("INSERT INTO public.leda_schedule (\"seasonCode\", \"scheduleData\") VALUES\n")
     f.write(",\n".join(values))
