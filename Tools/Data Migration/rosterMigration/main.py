@@ -35,7 +35,7 @@ def build_team_info(season_df):
                 letter = row['Team Letter']
                 tid = row['Team ID Number']
                 tname = tid_to_name.get(tid, "Unknown")
-                place_id = tid_to_placeid.get(tid, "Unknown")
+                place_id = tid_to_placeid.get(tid, 0)
                 teams[letter] = {
                     "teamId": str(tid),
                     "placeId": str(place_id),
