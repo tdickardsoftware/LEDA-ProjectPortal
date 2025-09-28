@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, JSX } from "react";
+import { useState, useCallback, useEffect, useRef, JSX } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
@@ -117,6 +117,7 @@ export default function ListsReportLandingContent() {
 	const [selectedReport, setSelectedReport] = useState<string>("");
 	const [seasonCode, setSeasonCode] = useState<string>("");
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
+	const prevSeasonCodeRef = useRef<string>("");
 	const [needsDivisionSelector, setNeedsDivisionSelector] = useState<boolean>(false);
 	const [allDivisions, setAllDivisions] = useState<boolean>(true);
 	const [selectedDivisions, setSelectedDivisions] = useState<string>("");
@@ -209,19 +210,30 @@ export default function ListsReportLandingContent() {
 	// Set the effective divisions string based on whether allDivisions is true or not
 	const effectiveDivisionsString = allDivisions ? allDivisionsString : selectedDivisions;
 
-	// Sorting logic for mailingLabels
+	// Optimized sorting logic for mailingLabels - only compute when we have data
 	const sortedMailingLabels = React.useMemo(() => {
-		if (!selectedReport.includes("mailingLabels") || !Array.isArray(reportData)) return reportData;
-		const data = [...(reportData as MailingList[])];
+		// Early returns to avoid unnecessary processing
+		if (!selectedReport.includes("mailingLabels")) return [];
+		if (!Array.isArray(reportData) || reportData.length === 0) return [];
+		
+		const data = reportData as MailingList[];
+		
+		// Only sort if we actually need to display sorted data
 		if (sortByZip) {
-			return data.sort((a, b) => {
-				const zipA = (a.addressLineTwo ?? "").slice(-5);
-				const zipB = (b.addressLineTwo ?? "").slice(-5);
+			// More efficient zip code extraction and comparison
+			return [...data].sort((a, b) => {
+				const zipA = a.addressLineTwo?.slice(-5) || "";
+				const zipB = b.addressLineTwo?.slice(-5) || "";
 				return zipA.localeCompare(zipB);
 			});
 		}
-		// Default: sort by name
-		return data.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+		
+		// Default: sort by name (more efficient)
+		return [...data].sort((a, b) => {
+			const nameA = a.name || "";
+			const nameB = b.name || "";
+			return nameA.localeCompare(nameB);
+		});
 	}, [reportData, selectedReport, sortByZip]);
 
 	// Only sort mailing labels by name after fetching data
@@ -230,6 +242,29 @@ export default function ListsReportLandingContent() {
 			setSortByZip(false);
 		}
 	}, [mailingLabelsImported]);
+
+	// Reset data fetched state when seasonCode actually changes to a different value
+	useEffect(() => {
+		if (seasonCode !== prevSeasonCodeRef.current && prevSeasonCodeRef.current !== "") {
+			setDataFetched(false);
+			setReportData([]);
+		}
+		prevSeasonCodeRef.current = seasonCode;
+	}, [seasonCode]);
+
+	// Reset data when other key parameters change
+	useEffect(() => {
+		setDataFetched(false);
+		setReportData([]);
+	}, [selectedDivisions, allDivisions, subdivisionMin, subdivisionMax, joinDate, goodStanding, badStanding, lifeMember, fiscalYear, filterBySeason, filterByJoinDate]);
+
+	// Reset data when switching between filter types
+	useEffect(() => {
+		if (filterBySeason !== filterByJoinDate) {
+			setDataFetched(false);
+			setReportData([]);
+		}
+	}, [filterBySeason, filterByJoinDate]);
 
 	const renderReportContent = () => {
 		// Show loading state for season data when needed
@@ -574,23 +609,7 @@ export default function ListsReportLandingContent() {
 			);
 		}
 
-		if (selectedReport.includes("mailingLabels")) {
-			return (
-				<ReportDisplay<MailingList>
-					apiRoute={selectedReport}
-					columns={mailingLabelsColumns}
-					className="h-full"
-					onDataFetch={data => {
-						// Always sort by name by default
-						setReportData(data);
-						setDataFetched(true);
-						if (mailingLabelsImported) setMailingLabelsImported(false);
-					}}
-					mailingLabelsImported={mailingLabelsImported}
-					// Use sortedMailingLabels for display if sorting is selected
-				/>
-			);
-		}
+
 		// Here you can use effectiveDivisionsString when making API calls for reports
 		// that need division information
 		
@@ -616,6 +635,7 @@ export default function ListsReportLandingContent() {
 	const renderPDFDownload = () => {
 		const seasonCodeDesc = seasonData?.desc || "";
 
+		// Enhanced validation to prevent PDF generation during data fetching
 		if (
 			!selectedReport ||
 			(
@@ -624,7 +644,40 @@ export default function ListsReportLandingContent() {
 			)
 		) return null;
 
-		if (!dataFetched) {
+		// Don't render PDF download while data is being fetched or if no data is available
+		if (!dataFetched || !reportData || !Array.isArray(reportData) || reportData.length === 0) {
+			if (!dataFetched) {
+				return (
+					<div className="flex items-center justify-center h-full px-4 py-2">
+						<svg
+							className="animate-spin -ml-1 mr-2 h-4 w-4 text-black"
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+						>
+							<circle
+								className="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								strokeWidth="4"
+							></circle>
+							<path
+								className="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+						<span className="text-gray-600">Loading data...</span>
+					</div>
+				);
+			}
+			return null;
+		}
+
+		// Additional check for season data loading state
+		if (filterBySeason && needSeasonCode && isSeasonLoading) {
 			return (
 				<div className="flex items-center justify-center h-full px-4 py-2">
 					<svg
@@ -644,66 +697,30 @@ export default function ListsReportLandingContent() {
 						<path
 							className="opacity-75"
 							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 						></path>
 					</svg>
-					<span className="text-gray-600">Loading data...</span>
+					<span className="text-gray-600">Loading season data...</span>
 				</div>
 			);
 		}
-		if (!reportData.length) return null;
 
 		let document: JSX.Element | null = null;
 		let fileName = "";
 
-		if (selectedReport.includes("captainReport")) {
-			document = (
-				<ListsReportCaptainsReport
-					data={reportData as ListsCaptains[]}
-					desc={seasonCodeDesc}
-				/>
-			);
-			fileName = `captains-list-${seasonCode}-${new Date()
-				.toLocaleDateString("en-US", {
-					timeZone: "America/New_York",
-					month: "2-digit",
-					day: "2-digit",
-					year: "numeric",
-				})
-				.replace(/\//g, "")}.pdf`;
-		} else if (selectedReport.includes("electionList")) {
-			document = (
-				<ListsReportElectionListReport
-					data={reportData as ListsElectionList[]}
-					desc={`Fiscal Year: ${fiscalYear}`}
-				/>
-			);
-			fileName = `election-list-${fiscalYear}-${new Date()
-				.toLocaleDateString("en-US", {
-					timeZone: "America/New_York",
-					month: "2-digit",
-					day: "2-digit",
-					year: "numeric",
-				})
-				.replace(/\//g, "")}.pdf`;
-		} else if (selectedReport.includes("membershipList")) {
-			if (filterByJoinDate) {
+		// Validate data before creating PDF document
+		try {
+			if (selectedReport.includes("captainReport")) {
+				const captainsData = reportData as ListsCaptains[];
+				if (!Array.isArray(captainsData) || captainsData.length === 0) return null;
+				
 				document = (
-					<ListsReportMembershipListJoinDateReport
-						data={reportData as ListsMembership[]}
-						desc={
-							joinDate
-								? `Established Date: ${joinDate.toLocaleDateString("en-US", {
-										timeZone: "America/New_York",
-										month: "2-digit",
-										day: "2-digit",
-										year: "numeric",
-								  })}`
-								: ""
-						}
+					<ListsReportCaptainsReport
+						data={captainsData}
+						desc={seasonCodeDesc}
 					/>
 				);
-				fileName = `membership-list-established-date-${joinDate ? joinDate.toISOString().split("T")[0] : "unknown"}-${new Date()
+				fileName = `captains-list-${seasonCode}-${new Date()
 					.toLocaleDateString("en-US", {
 						timeZone: "America/New_York",
 						month: "2-digit",
@@ -711,14 +728,157 @@ export default function ListsReportLandingContent() {
 						year: "numeric",
 					})
 					.replace(/\//g, "")}.pdf`;
-			} else {
+			} else if (selectedReport.includes("electionList")) {
+				const electionData = reportData as ListsElectionList[];
+				if (!Array.isArray(electionData) || electionData.length === 0) return null;
+				
 				document = (
-					<ListsReportMembershipListSeasonReport
-						data={reportData as ListsMembership[]}
-						desc={seasonCodeDesc}
+					<ListsReportElectionListReport
+						data={electionData}
+						desc={`Fiscal Year: ${fiscalYear}`}
 					/>
 				);
-				fileName = `membership-list-season-${seasonCode}-${new Date()
+				fileName = `election-list-${fiscalYear}-${new Date()
+					.toLocaleDateString("en-US", {
+						timeZone: "America/New_York",
+						month: "2-digit",
+						day: "2-digit",
+						year: "numeric",
+					})
+					.replace(/\//g, "")}.pdf`;
+			} else if (selectedReport.includes("membershipList")) {
+				const membershipData = reportData as ListsMembership[];
+				if (!Array.isArray(membershipData) || membershipData.length === 0) return null;
+				
+				if (filterByJoinDate) {
+					if (!joinDate) return null; // Additional validation for joinDate
+					document = (
+						<ListsReportMembershipListJoinDateReport
+							data={membershipData}
+							desc={`Established Date: ${joinDate.toLocaleDateString("en-US", {
+								timeZone: "America/New_York",
+								month: "2-digit",
+								day: "2-digit",
+								year: "numeric",
+							})}`}
+						/>
+					);
+					fileName = `membership-list-established-date-${joinDate.toISOString().split("T")[0]}-${new Date()
+						.toLocaleDateString("en-US", {
+							timeZone: "America/New_York",
+							month: "2-digit",
+							day: "2-digit",
+							year: "numeric",
+						})
+						.replace(/\//g, "")}.pdf`;
+				} else {
+					document = (
+						<ListsReportMembershipListSeasonReport
+							data={membershipData}
+							desc={seasonCodeDesc}
+						/>
+					);
+					fileName = `membership-list-season-${seasonCode}-${new Date()
+						.toLocaleDateString("en-US", {
+							timeZone: "America/New_York",
+							month: "2-digit",
+							day: "2-digit",
+							year: "numeric",
+						})
+						.replace(/\//g, "")}.pdf`;
+				}
+			} else if (selectedReport.includes("placesReport")) {
+				const placesData = reportData as ListsPlaces[];
+				if (!Array.isArray(placesData) || placesData.length === 0) return null;
+				
+				if (filterByJoinDate) {
+					if (!joinDate) return null; // Additional validation for joinDate
+					document = (
+						<ListsReportPlacesListJoinDateReport
+							data={placesData}
+							desc={`Established Date: ${joinDate.toLocaleDateString("en-US", {
+								timeZone: "America/New_York",
+								month: "2-digit",
+								day: "2-digit",
+								year: "numeric",
+							})}`}
+						/>
+					);
+					fileName = `places-list-established-date-${joinDate.toISOString().split("T")[0]}-${new Date()
+						.toLocaleDateString("en-US", {
+							timeZone: "America/New_York",
+							month: "2-digit",
+							day: "2-digit",
+							year: "numeric",
+						})
+						.replace(/\//g, "")}.pdf`;
+				} else {
+					document = (
+						<ListsReportPlacesListSeasonReport
+							data={placesData}
+							desc={seasonCodeDesc}
+						/>
+					);
+					fileName = `places-list-season-${seasonCode}-${new Date()
+						.toLocaleDateString("en-US", {
+							timeZone: "America/New_York",
+							month: "2-digit",
+							day: "2-digit",
+							year: "numeric",
+						})
+						.replace(/\//g, "")}.pdf`;
+				}
+			} else if (selectedReport.includes("teamReportLists")) {
+				const teamsData = reportData as ListsTeams[];
+				if (!Array.isArray(teamsData) || teamsData.length === 0) return null;
+				
+				if (filterByJoinDate) {
+					if (!joinDate) return null; // Additional validation for joinDate
+					document = (
+						<ListsReportTeamsListJoinDateReport
+							data={teamsData}
+							desc={`Established Date: ${joinDate.toLocaleDateString("en-US", {
+								timeZone: "America/New_York",
+								month: "2-digit",
+								day: "2-digit",
+								year: "numeric",
+							})}`}
+						/>
+					);
+					fileName = `teams-list-established-date-${joinDate.toISOString().split("T")[0]}-${new Date()
+						.toLocaleDateString("en-US", {
+							timeZone: "America/New_York",
+							month: "2-digit",
+							day: "2-digit",
+							year: "numeric",
+						})
+						.replace(/\//g, "")}.pdf`;
+				} else {
+					document = (
+						<ListsReportTeamsListSeasonReport
+							data={teamsData}
+							desc={seasonCodeDesc}
+						/>
+					);
+					fileName = `teams-list-season-${seasonCode}-${new Date()
+						.toLocaleDateString("en-US", {
+							timeZone: "America/New_York",
+							month: "2-digit",
+							day: "2-digit",
+							year: "numeric",
+						})
+						.replace(/\//g, "")}.pdf`;
+				}
+			} else if (selectedReport.includes("mailingLabels")) {
+				const mailingData = sortedMailingLabels as MailingList[];
+				if (!Array.isArray(mailingData) || mailingData.length === 0) return null;
+				
+				document = (
+					<ListsReportMailingLabels
+						data={mailingData}
+					/>
+				);
+				fileName = `mailing-labels-${new Date()
 					.toLocaleDateString("en-US", {
 						timeZone: "America/New_York",
 						month: "2-digit",
@@ -727,102 +887,9 @@ export default function ListsReportLandingContent() {
 					})
 					.replace(/\//g, "")}.pdf`;
 			}
-		} else if (selectedReport.includes("placesReport")) {
-			if (filterByJoinDate) {
-				document = (
-					<ListsReportPlacesListJoinDateReport
-						data={reportData as ListsPlaces[]}
-						desc={
-							joinDate
-								? `Established Date: ${joinDate.toLocaleDateString("en-US", {
-										timeZone: "America/New_York",
-										month: "2-digit",
-										day: "2-digit",
-										year: "numeric",
-								  })}`
-								: ""
-						}
-					/>
-				);
-				fileName = `places-list-established-date-${joinDate ? joinDate.toISOString().split("T")[0] : "unknown"}-${new Date()
-					.toLocaleDateString("en-US", {
-						timeZone: "America/New_York",
-						month: "2-digit",
-						day: "2-digit",
-						year: "numeric",
-					})
-					.replace(/\//g, "")}.pdf`;
-			} else {
-				document = (
-					<ListsReportPlacesListSeasonReport
-						data={reportData as ListsPlaces[]}
-						desc={seasonCodeDesc}
-					/>
-				);
-				fileName = `places-list-season-${seasonCode}-${new Date()
-					.toLocaleDateString("en-US", {
-						timeZone: "America/New_York",
-						month: "2-digit",
-						day: "2-digit",
-						year: "numeric",
-					})
-					.replace(/\//g, "")}.pdf`;
-			}
-		} else if (selectedReport.includes("teamReportLists")) {
-			if (filterByJoinDate) {
-				document = (
-					<ListsReportTeamsListJoinDateReport
-						data={reportData as ListsTeams[]}
-						desc={
-							joinDate
-								? `Established Date: ${joinDate.toLocaleDateString("en-US", {
-										timeZone: "America/New_York",
-										month: "2-digit",
-										day: "2-digit",
-										year: "numeric",
-								  })}`
-								: ""
-						}
-					/>
-				);
-				fileName = `teams-list-established-date-${joinDate ? joinDate.toISOString().split("T")[0] : "unknown"}-${new Date()
-					.toLocaleDateString("en-US", {
-						timeZone: "America/New_York",
-						month: "2-digit",
-						day: "2-digit",
-						year: "numeric",
-					})
-					.replace(/\//g, "")}.pdf`;
-			} else {
-				document = (
-					<ListsReportTeamsListSeasonReport
-						data={reportData as ListsTeams[]}
-						desc={seasonCodeDesc}
-					/>
-				);
-				fileName = `teams-list-season-${seasonCode}-${new Date()
-					.toLocaleDateString("en-US", {
-						timeZone: "America/New_York",
-						month: "2-digit",
-						day: "2-digit",
-						year: "numeric",
-					})
-					.replace(/\//g, "")}.pdf`;
-			}
-		} else if (selectedReport.includes("mailingLabels")) {
-			document = (
-				<ListsReportMailingLabels
-					data={sortedMailingLabels as MailingList[]}
-				/>
-			);
-			fileName = `mailing-labels-${new Date()
-				.toLocaleDateString("en-US", {
-					timeZone: "America/New_York",
-					month: "2-digit",
-					day: "2-digit",
-					year: "numeric",
-				})
-				.replace(/\//g, "")}.pdf`;
+		} catch (error) {
+			console.error("Error generating PDF document:", error);
+			return null;
 		}
 
 		if (!document) return null;
@@ -889,25 +956,27 @@ export default function ListsReportLandingContent() {
 		queryClient.invalidateQueries({ queryKey: [selectedReport] });
 	};
 
-	// Get player and place ledaIds from reportData if mailingLabels
-	type MailingLabelRow = {
-		ledaId: string;
-		type: string;
-		// ...other fields...
-	};
+	// Memoized computation of player and place ledaIds from reportData
+	const { playerLedaIds, placeLedaIds } = React.useMemo(() => {
+		if (!selectedReport.includes("mailingLabels") || !Array.isArray(reportData)) {
+			return { playerLedaIds: [], placeLedaIds: [] };
+		}
 
-	const playerLedaIds: string[] =
-		selectedReport.includes("mailingLabels") && Array.isArray(reportData)
-			? (reportData as MailingLabelRow[])
-					.filter((row) => row.type === "PLAYER")
-					.map((row) => row.ledaId)
-			: [];
-	const placeLedaIds: string[] =
-		selectedReport.includes("mailingLabels") && Array.isArray(reportData)
-			? (reportData as MailingLabelRow[])
-					.filter((row) => row.type === "PLACE")
-					.map((row) => row.ledaId)
-			: [];
+		const data = reportData as Array<{ ledaId: string; type: string }>;
+		const players: string[] = [];
+		const places: string[] = [];
+
+		// Single pass through data for better performance
+		for (const row of data) {
+			if (row.type === "PLAYER") {
+				players.push(row.ledaId);
+			} else if (row.type === "PLACE") {
+				places.push(row.ledaId);
+			}
+		}
+
+		return { playerLedaIds: players, placeLedaIds: places };
+	}, [selectedReport, reportData]);
 
 	return (
 		<div className="flex flex-col h-full">
@@ -1255,14 +1324,10 @@ export default function ListsReportLandingContent() {
 							apiRoute={selectedReport}
 							columns={mailingLabelsColumns}
 							className="h-full"
-							onDataFetch={data => {
-								setReportData(data);
-								setDataFetched(true);
-								if (mailingLabelsImported) setMailingLabelsImported(false);
-							}}
+							onDataFetch={handleDataFetch}
 							mailingLabelsImported={mailingLabelsImported}
-							// Use sortedMailingLabels for display
-							dataOverride={sortedMailingLabels as MailingList[]}
+							// Only use sortedMailingLabels when we have actual data to prevent circular dependency
+							{...(reportData.length > 0 ? { dataOverride: sortedMailingLabels as MailingList[] } : {})}
 						/>
 						: renderReportContent()
 					}

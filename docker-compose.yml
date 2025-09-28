@@ -12,3 +12,8 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_USER=admin
       - POSTGRES_DB=leda_db
+    deploy:
+      resources:
+        limits:
+          cpus: '6'
+          memory: 12G

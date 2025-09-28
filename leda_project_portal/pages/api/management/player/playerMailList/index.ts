@@ -2,7 +2,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import {  MailingList } from "@/lib/definitions";
-import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
@@ -19,17 +18,42 @@ export default async function handler(
                 'SELECT "ledaId", name, "addressLineOne", "addressLineTwo", "type" FROM public.leda_player_mailing_list'
             );
             
-            for (const row of result.rows) {
-                queryPost(
-                    'INSERT INTO public.leda_mailing_labels ("ledaId", name, "addressLineOne", "addressLineTwo", "type") VALUES ($1, $2, $3, $4, $5) ON CONFLICT ("ledaId", "name", "addressLineOne", "addressLineTwo", "type") DO NOTHING',
-                    [row.ledaId, row.name, row.addressLineOne, row.addressLineTwo, row.type]
-                );
+            if (result.rows.length === 0) {
+                return res.status(200).json({ message: "No mailing labels to import" });
             }
-            return res.status(200).json({ message: "Mailing labels imported successfully" });
+
+            // Batch INSERT operation instead of individual queries
+            const values = result.rows.map(row => [
+                row.ledaId, 
+                row.name, 
+                row.addressLineOne, 
+                row.addressLineTwo, 
+                row.type
+            ]);
+
+            // Create parameterized placeholders for batch insert
+            const placeholders = values
+                .map((_, i) => `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`)
+                .join(", ");
+
+            const flatValues = values.flat();
+
+            // Single batch INSERT with ON CONFLICT handling
+            await query(
+                `INSERT INTO public.leda_mailing_labels ("ledaId", name, "addressLineOne", "addressLineTwo", "type")
+                 VALUES ${placeholders}
+                 ON CONFLICT ("ledaId", name, "addressLineOne", "addressLineTwo", "type") DO NOTHING`,
+                flatValues
+            );
+
+            return res.status(200).json({ 
+                message: "Mailing labels imported successfully", 
+                count: result.rows.length 
+            });
         } catch (error) {
             // Handle any errors that occur during the query
             res.status(500).json({
-                message: "Failed to fetch mailing labels",
+                message: "Failed to import mailing labels",
                 error,
             });
         }

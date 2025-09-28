@@ -22,10 +22,16 @@ export default async function handler(
                     .map((division) => `'${division.trim()}'`)
                     .join(",");
 
-                const result = await query<ListsMembership>(
-                    `SELECT "playerId", "fullName", "phoneNumber", email, "addressOne", "addressTwo", city, state, zip, "divisionInfo" FROM public.leda_reports_lists_member_list WHERE "seasonCode" = $1 AND "division" IN (${formattedDivisions}) AND "subdivision" BETWEEN $2 AND $3`,
-                    [req.query.seasonCode as string, req.query.minSubdivision as string, req.query.maxSubdivision as string]
-                );
+                // Add query timeout to prevent hanging
+                const result = await Promise.race([
+                    query<ListsMembership>(
+                        `SELECT "playerId", "fullName", "phoneNumber", email, "addressOne", "addressTwo", city, state, zip, "divisionInfo" FROM public.leda_reports_lists_member_list WHERE "seasonCode" = $1 AND "division" IN (${formattedDivisions}) AND "subdivision" BETWEEN $2 AND $3`,
+                        [req.query.seasonCode as string, req.query.minSubdivision as string, req.query.maxSubdivision as string]
+                    ),
+                    new Promise<never>((_, reject) => 
+                        setTimeout(() => reject(new Error('Query timeout after 30 seconds')), 30000)
+                    )
+                ]);
                 // Respond with the query result
                 res.status(200).json(result.rows);
             } else if (req.query.establishedDate && req.query.goodStanding && req.query.badStanding && req.query.lifetimeMember) {
@@ -57,20 +63,26 @@ export default async function handler(
 
                 if (goodStanding && badStanding) {
                     // No standing filter, include all
-                    result = await query<ListsMembership>(
-                        baseQuery,
-                        [establishedDate]
-                    );
+                    result = await Promise.race([
+                        query<ListsMembership>(baseQuery, [establishedDate]),
+                        new Promise<never>((_, reject) => 
+                            setTimeout(() => reject(new Error('Query timeout after 30 seconds')), 30000)
+                        )
+                    ]);
                 } else if (goodStanding) {
-                    result = await query<ListsMembership>(
-                        baseQuery + ` AND "badStanding" = false`,
-                        [establishedDate]
-                    );
+                    result = await Promise.race([
+                        query<ListsMembership>(baseQuery + ` AND "badStanding" = false`, [establishedDate]),
+                        new Promise<never>((_, reject) => 
+                            setTimeout(() => reject(new Error('Query timeout after 30 seconds')), 30000)
+                        )
+                    ]);
                 } else if (badStanding) {
-                    result = await query<ListsMembership>(
-                        baseQuery + ` AND "badStanding" = true`,
-                        [establishedDate]
-                    );
+                    result = await Promise.race([
+                        query<ListsMembership>(baseQuery + ` AND "badStanding" = true`, [establishedDate]),
+                        new Promise<never>((_, reject) => 
+                            setTimeout(() => reject(new Error('Query timeout after 30 seconds')), 30000)
+                        )
+                    ]);
                 } else {
                     // Neither selected, return empty array
                     res.status(200).json([]);
