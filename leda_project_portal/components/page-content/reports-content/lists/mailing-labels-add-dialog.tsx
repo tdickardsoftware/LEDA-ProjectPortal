@@ -9,26 +9,15 @@ import { MailingList } from "@/lib/definitions";
 import { fetchWithSession } from "@/lib/getData";
 
 export default function MailingLabelsAddDialog({
-	playerLedaIds,
-	placeLedaIds,
 	onAddSuccess,
 }: {
-	playerLedaIds: string[];
-	placeLedaIds: string[];
 	onAddSuccess?: () => void;
 }) {
 	const [open, setOpen] = useState(false);
 
-	const playerAlreadySelected = playerLedaIds.length > 0 ? playerLedaIds.join(",") : "";
-	const placeAlreadySelected = placeLedaIds.length > 0 ? placeLedaIds.join(",") : "";
-
-	const playerApi = playerAlreadySelected
-		? `${playerRoute}/playerMailList?alreadySelected=${playerAlreadySelected}`
-		: `${playerRoute}/playerMailList`;
-
-	const placeApi = placeAlreadySelected
-		? `${placeRoute}/placeMailList?alreadySelected=${placeAlreadySelected}`
-		: `${placeRoute}/placeMailList`;
+	// Use efficient API endpoints that exclude records already in mailing_labels table
+	const getPlayerApi = () => `${playerRoute}/playerMailList?availableOnly=true`;
+	const getPlaceApi = () => `${placeRoute}/placeMailList?availableOnly=true`;
 	const [selectedPlayers, setSelectedPlayers] = useState<MailingList[]>([]);
 	const [selectedPlaces, setSelectedPlaces] = useState<MailingList[]>([]);
 
@@ -69,28 +58,32 @@ export default function MailingLabelsAddDialog({
 				Add
 			</Button>
 			<AlertDialog open={open} onOpenChange={setOpen}>
-				<AlertDialogContent className="bg-white min-w-[600px]">
+				<AlertDialogContent className="bg-white min-w-[800px] max-w-[900px]">
 					<AlertDialogHeader>
 						<AlertDialogTitle>Add Player/Place</AlertDialogTitle>
 					</AlertDialogHeader>
 					<div className="flex gap-8">
 						<div className="flex-1">
-							<PopoverMultiSelect
-								apiRoute={playerApi}
-								label="Players"
-								selected={selectedPlayers}
-								setSelected={setSelectedPlayers}
-								type="PLAYER"
-							/>
+							{open && (
+								<PopoverMultiSelect
+									apiRoute={getPlayerApi()}
+									label="Players"
+									selected={selectedPlayers}
+									setSelected={setSelectedPlayers}
+									type="PLAYER"
+								/>
+							)}
 						</div>
 						<div className="flex-1">
-							<PopoverMultiSelect
-								apiRoute={placeApi}
-								label="Places"
-								selected={selectedPlaces}
-								setSelected={setSelectedPlaces}
-								type="PLACE"
-							/>
+							{open && (
+								<PopoverMultiSelect
+									apiRoute={getPlaceApi()}
+									label="Places"
+									selected={selectedPlaces}
+									setSelected={setSelectedPlaces}
+									type="PLACE"
+								/>
+							)}
 						</div>
 					</div>
 					<AlertDialogFooter>

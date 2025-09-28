@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Checkbox } from "@/components/ui/checkbox";
 import ReportDivisionSelector from "@/components/ui/report-division-selector";
+
 import { seasonRoute, rosterRoute } from "@/lib/apiRoutes";
 import { ListsCaptains, ListsElectionList, ListsMembership, ListsPlaces, ListsTeams, MailingList, RosterDivision } from "@/lib/definitions";
 import ReportDisplay from "@/components/ui/report-display";
@@ -956,28 +957,7 @@ export default function ListsReportLandingContent() {
 		queryClient.invalidateQueries({ queryKey: [selectedReport] });
 	};
 
-	// Memoized computation of player and place ledaIds from reportData
-	const { playerLedaIds, placeLedaIds } = React.useMemo(() => {
-		if (!selectedReport.includes("mailingLabels") || !Array.isArray(reportData)) {
-			return { playerLedaIds: [], placeLedaIds: [] };
-		}
-
-		const data = reportData as Array<{ ledaId: string; type: string }>;
-		const players: string[] = [];
-		const places: string[] = [];
-
-		// Single pass through data for better performance
-		for (const row of data) {
-			if (row.type === "PLAYER") {
-				players.push(row.ledaId);
-			} else if (row.type === "PLACE") {
-				places.push(row.ledaId);
-			}
-		}
-
-		return { playerLedaIds: players, placeLedaIds: places };
-	}, [selectedReport, reportData]);
-
+	// Function to compute player and place ledaIds only when needed
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex justify-between">
@@ -1039,16 +1019,18 @@ export default function ListsReportLandingContent() {
 												<ImportIcon className="mr-2 h-4 w-4" />
 												Import
 											</Button>
-											<MailingLabelsImportDialog
-												open={importDialogOpen}
-												onOpenChange={setImportDialogOpen}
-												onImportSuccess={handleImportSuccess}
-											/>
 											<MailingLabelsAddDialog
-												playerLedaIds={playerLedaIds}
-												placeLedaIds={placeLedaIds}
-												onAddSuccess={() => setMailingLabelsImported(true)}
+												onAddSuccess={() => {
+													setMailingLabelsImported(true);
+												}}
 											/>
+											{importDialogOpen && (
+												<MailingLabelsImportDialog
+													open={importDialogOpen}
+													onOpenChange={setImportDialogOpen}
+													onImportSuccess={handleImportSuccess}
+												/>
+											)}
 											{/* Sorting checkboxes next to Add button */}
 											<div className="flex items-center gap-4 ml-4">
 												<Checkbox
