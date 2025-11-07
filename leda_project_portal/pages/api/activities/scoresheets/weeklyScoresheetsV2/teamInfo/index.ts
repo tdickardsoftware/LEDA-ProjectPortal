@@ -61,11 +61,12 @@ export default async function handler(
                 if (homeResult) {
 
                     const opposingResult = await query<WeeklyScoresheetsTeamInfo>(
-                        `SELECT * FROM public.leda_weekly_scoresheets_team_info WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "teamId" = $3`,
+                        `SELECT * FROM public.leda_weekly_scoresheets_team_info WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "teamId" = $3 AND "opposingTeamId" = $4`,
                         [
                             req.query.seasonCode as string,
                             req.query.weekNum as string,
-                            homeResult.opposingTeamId
+                            homeResult.opposingTeamId,
+                            homeResult.teamId
                         ]
                     );
                     const awayResult = opposingResult.rows[0];
