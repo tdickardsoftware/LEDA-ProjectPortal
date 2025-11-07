@@ -713,3 +713,11 @@ export type WeeklyScoresheetsPlayerInfo = {
 	gameStats: JSON;
 	mentions: JSON;
 }
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets matchup info
+//
+export type WeeklyScoresheetsMatchupInfo = {
+	seasonCode: string;
+	weekNum: number;
+	matchupData: JSON;
+};
