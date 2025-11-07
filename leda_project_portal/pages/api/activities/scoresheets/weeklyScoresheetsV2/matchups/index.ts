@@ -28,7 +28,7 @@ export default async function handler(
 		} catch (error) {
 			// Handle any errors that occur during the query
 			res.status(500).json({
-				message: "Failed to fetch season code ",
+				message: "Failed to fetch matchups ",
 				error,
 			});
 		}
