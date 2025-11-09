@@ -31,5 +31,33 @@ export default async function handler(
             res.status(500).json({ message: "Failed to insert/update game info", error });
         }
         
+    } else if (req.method === "GET") {
+        if (req.query.seasonCode && req.query.weekNum && req.query.division && req.query.subdivision && req.query.homeTeamId && req.query.awayTeamId) {
+            const queryGet = `SELECT * FROM public.leda_weekly_scoresheets_team_game_info WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "division" = $3 AND "subdivision" = $4 AND "homeTeamId" = $5 AND "awayTeamId" = $6`;
+            try {
+                const result = await query<WeeklyScoresheetsGameInfo>(
+                    queryGet,
+                    [
+                        req.query.seasonCode as string,
+                        req.query.weekNum as string,
+                        req.query.division as string,
+                        req.query.subdivision as string,
+                        req.query.homeTeamId as string,
+                        req.query.awayTeamId as string
+                    ]
+                );
+                if (result.rows.length === 0) {
+                    res.status(204).json({ message: "No Game Info Found, Not Created Yet." });
+                } else {
+                    res.status(200).json(result.rows);
+                }
+            } catch (error) {
+                res.status(500).json({ message: "Failed to fetch game info", error });
+            }
+        } else {
+            res.status(400).json({ error: "seasonCode, weekNum, division, subdivision, homeTeamId, and awayTeamId are required" });
+        }
+    } else {
+        res.status(405).json({ error: "Method not allowed" });
     }
 }

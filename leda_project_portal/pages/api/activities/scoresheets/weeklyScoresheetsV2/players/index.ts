@@ -42,5 +42,28 @@ export default async function handler(
         } catch (error) {
             res.status(500).json({ message: "Failed to insert/update player info", error });
         }
+    } else if (req.method === "GET") {
+        if (req.query.seasonCode && req.query.weekNum && req.query.teamId) {
+            const queryGet = `SELECT * FROM public.leda_weekly_scoresheets_player_info WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "teamId" = $3`;
+            try {
+                const result = await query<WeeklyScoresheetsPlayerInfo>(
+                    queryGet,
+                    [
+                        req.query.seasonCode as string,
+                        req.query.weekNum as string,
+                        req.query.teamId as string
+                    ]
+                );
+                if (result.rows.length === 0) {
+                    res.status(204).json({ message: "No Player Info Found, Not Created Yet." });
+                } else {
+                    res.status(200).json(result.rows);
+                }
+            } catch (error) {
+                res.status(500).json({ message: "Failed to fetch player info", error });
+            }
+        } else {
+            res.status(400).json({ error: "seasonCode, weekNum, and teamId are required" });
+        }
     }
 }
