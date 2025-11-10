@@ -217,7 +217,7 @@ def main():
         "Z": "NF"
     }
     # Load penalty points from Working/leda_penalty_points_export.csv
-    penalty_lookup_path = os.path.join('Working', 'leda_penalty_points_export.csv')
+    penalty_lookup_path = os.path.join('Lookups', 'leda_penalty_points_export.csv')
     penalties_by_key = {}
     if os.path.exists(penalty_lookup_path):
         def map_penalty_code(type_val, letter_val):
@@ -302,7 +302,10 @@ def main():
                     name = f"{prow['First Name']} {prow['Middle Initial'] + ' ' if prow['Middle Initial'] else ''}{prow['Last Name']}".strip()
                     player_names[pid] = name
     input_csv = 'Working/leda_weekly_scoresheets_table.csv'
-    sql_output_file = 'Output/scoresheets_inserts.sql'
+    # New multi-table output files
+    player_info_output = 'Output/weekly_scoresheets_player_info_inserts.sql'
+    team_game_info_output = 'Output/weekly_scoresheets_team_game_info_inserts.sql'
+    team_info_output = 'Output/weekly_scoresheets_team_info_inserts.sql'
 
     grouped = defaultdict(list)
     with open(input_csv, newline='', encoding='utf-8') as csvfile:
@@ -324,8 +327,20 @@ def main():
             grouped[key].append(row)
 
     def process_week(args):
+        """Process a (season, week) group into three sets of insert value rows for:
+        - leda_weekly_scoresheets_player_info
+        - leda_weekly_scoresheets_team_game_info
+        - leda_weekly_scoresheets_team_info
+        """
         (season, week), rows = args
-        scoresheet = defaultdict(lambda: defaultdict(dict))
+        try:
+            week_int = int(week)
+        except Exception:
+            week_int = int(str(week).strip() or 0)
+        player_values = []
+        team_game_values = []
+        team_info_values = []
+
         # Group rows by matchup (home/away team letters) and by team (home/away)
         matchups = {}
         for row in rows:
@@ -334,57 +349,29 @@ def main():
             matchup = f"{row['Home Team Letter']} - {row['Away Team Letter']}"
             if (division, subdivision, matchup) not in matchups:
                 matchups[(division, subdivision, matchup)] = {'home': [], 'away': []}
-            if row.get('Home or Away', '').strip().upper() == 'H':
+            hoa = row.get('Home or Away', '').strip().upper()
+            if hoa == 'H':
                 matchups[(division, subdivision, matchup)]['home'].append(row)
-            elif row.get('Home or Away', '').strip().upper() == 'A':
+            elif hoa == 'A':
                 matchups[(division, subdivision, matchup)]['away'].append(row)
 
         for (division, subdivision, matchup), teams in matchups.items():
-            # Format subdivision as 'Subdivision X'
             formatted_subdivision = f"Subdivision {subdivision}" if not str(subdivision).startswith("Subdivision ") else subdivision
-            def build_team_info(team_rows, prefix, is_home):
-                team_id = get_team_id(team_rows[0], prefix) if team_rows else ''
-                team_letter = get_team_letter(team_rows[0], prefix) if team_rows else ''
-                # Lookup team name from team_names dict
-                team_name = team_names.get(str(team_id), "")
-                # Aggregate all player numbers for this team
-                team_members = {}
-                for row in team_rows:
-                    player_id = str(row.get('Player Number', '')).strip()
-                    if player_id:
-                        name = player_names.get(player_id, "UNKNOWN")
-                        team_members[player_id] = {
-                            "name": name,
-                            "gameStats": {col: parse_bool(row.get(col, '')) for col in GAME_COLUMNS},
-                            "gamePoints": row.get('Home Score', '') if is_home else row.get('Away Score', '')
-                        }
-                # Lookup penalties for this team, season, and week
-                penalties = {}
-                if team_rows:
-                    season = team_rows[0]['Season Code'].upper()
-                    week = str(team_rows[0]['Week Number']).strip()
-                    key = (season, week, str(team_id))
-                    penalties = penalties_by_key.get(key, {})
-                return {
-                    "teamLetter": team_letter,
-                    "teamName": team_name,
-                    "home": is_home,
-                    "teamMembers": team_members,
-                    "penalties": penalties
-                }
+            home_rows = teams['home']
+            away_rows = teams['away']
+            home_row = home_rows[0] if home_rows else None
+            away_row = away_rows[0] if away_rows else None
+            home_team_id = str(get_team_id(home_row, 'home')) if home_row else ''
+            away_team_id = str(get_team_id(away_row, 'away')) if away_row else ''
+            home_team_letter = get_team_letter(home_row, 'home') if home_row else ''
+            away_team_letter = get_team_letter(away_row, 'away') if away_row else ''
+            home_team_name = team_names.get(home_team_id, '')
+            away_team_name = team_names.get(away_team_id, '')
 
-            team_info = {}
-            team_info[get_team_id(teams['home'][0], 'home') if teams['home'] else ''] = build_team_info(teams['home'], 'home', True)
-            team_info[get_team_id(teams['away'][0], 'away') if teams['away'] else ''] = build_team_info(teams['away'], 'away', False)
-
-            # Find the home and away rows for this matchup
-            home_row = teams['home'][0] if teams['home'] else None
-            away_row = teams['away'][0] if teams['away'] else None
-
-            def matchup_game_information(home_row, away_row):
+            # Build game info JSON for team_game_info (only if both teams present)
+            if home_row and away_row and home_team_id and away_team_id:
                 games = {}
                 for col in GAME_COLUMNS:
-                    # Extract game number from column name
                     game_num = ''.join(filter(str.isdigit, col))
                     points_col = f'Points Game {game_num}'
                     won_col = f'Won Game {game_num}'
@@ -392,34 +379,73 @@ def main():
                     away_points = away_row.get(points_col, '') if away_row else ''
                     if away_points == '':
                         away_points = '0'
-                    # Use parse_bool so that '1' means win, '0' means not win
                     home_win = parse_bool(home_row.get(won_col, '')) if home_row else False
                     games[col] = {
                         "homeWin": home_win,
                         "homePoints": home_points,
                         "awayPoints": away_points
                     }
-                return games
+                game_info_json = json.dumps(games).replace("'", "''")
+                # Determine team points (integers, default 0)
+                try:
+                    h_pts = int(home_row.get('Home Score', '0')) if home_row and str(home_row.get('Home Score', '0')).isdigit() else 0
+                except Exception:
+                    h_pts = 0
+                try:
+                    a_raw = away_row.get('Away Score', '0') if away_row else '0'
+                    a_pts = int(a_raw) if a_raw and str(a_raw).isdigit() else 0
+                except Exception:
+                    a_pts = 0
+                # Assume completed true per requirement
+                completed_flag = 'true'
+                team_game_values.append(
+                    f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', {home_team_id}, {away_team_id}, {h_pts}, {a_pts}, '{game_info_json}', {completed_flag})"
+                )
 
-            def matchup_team_points(home_row, away_row):
-                home_points = home_row.get('Home Score', '') if home_row else ''
-                away_points = away_row.get('Away Score', '') if away_row else ''
-                if away_points == '' or away_points is None:
-                    away_points = '0'
-                return {
-                    "homePoints": home_points,
-                    "awayPoints": away_points
-                }
+            # Penalties lookup per team
+            def penalties_json_for(team_id):
+                key = (season, str(week), str(team_id))
+                penalties = penalties_by_key.get(key, {})
+                if not penalties:
+                    return '{}'
+                return json.dumps(penalties).replace("'", "''")
 
-            scoresheet[division][formatted_subdivision][matchup] = {
-                "teamInformation": team_info,
-                "gameInformation": matchup_game_information(home_row, away_row),
-                "teamPoints": matchup_team_points(home_row, away_row)
-            }
-        scoresheet_json = json.dumps(scoresheet).replace("'", "''")
-        return (season, int(week), f"('{season}', {week}, '{scoresheet_json}', NULL)")
+            # Team info rows (home and away separately)
+            if home_team_id and away_team_id:
+                team_info_values.append(
+                    f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', true, {home_team_id}, '{home_team_name.replace("'", "''")}', '{home_team_letter.replace("'", "''")}', {away_team_id}, '{penalties_json_for(home_team_id)}')"
+                )
+            if home_team_id and away_team_id:
+                team_info_values.append(
+                    f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', false, {away_team_id}, '{away_team_name.replace("'", "''")}', '{away_team_letter.replace("'", "''")}', {home_team_id}, '{penalties_json_for(away_team_id)}')"
+                )
 
-    sql_results = []
+            # Player info rows: aggregate game stats across multiple rows per player
+            def aggregate_players(team_rows, is_home):
+                players = {}
+                for r in team_rows:
+                    player_id = str(r.get('Player Number', '')).strip()
+                    if not player_id:
+                        continue
+                    if player_id not in players:
+                        players[player_id] = {col: False for col in GAME_COLUMNS}
+                    for col in GAME_COLUMNS:
+                        players[player_id][col] = players[player_id][col] or parse_bool(r.get(col, ''))
+                team_id = home_team_id if is_home else away_team_id
+                for pid, stats in players.items():
+                    stats_json = json.dumps(stats).replace("'", "''")
+                    if team_id:
+                        player_values.append(
+                            f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', {pid}, {team_id}, '{stats_json}')"
+                        )
+            if home_rows:
+                aggregate_players(home_rows, True)
+            if away_rows:
+                aggregate_players(away_rows, False)
+
+        return (season, week_int, player_values, team_game_values, team_info_values)
+
+    sql_results = []  # will hold tuples (season, week, player_values, team_game_values, team_info_values)
     # Sort by seasonCode and weekNum (as int)
     items = sorted(grouped.items(), key=lambda x: (x[0][0], int(x[0][1])))
     total = len(items)
@@ -445,32 +471,37 @@ def main():
         if pbar:
             pbar.close()
 
-    # Sort results by season and week before writing
-    sql_values = [row for _, _, row in sorted(sql_results, key=lambda x: (x[0], x[1]))]
+    # Flatten and sort outputs by (season, week) for deterministic ordering
+    all_player_values = []
+    all_team_game_values = []
+    all_team_info_values = []
+    for season, week, pvals, tgvals, tivals in sorted(sql_results, key=lambda x: (x[0], x[1])):
+        all_player_values.extend(pvals)
+        all_team_game_values.extend(tgvals)
+        all_team_info_values.extend(tivals)
 
-    # Determine finishedScoresheet for each row
-    finished_flags = []
-    # Find the last week for F25
-    f25_weeks = [int(x[0][1]) for x in items if x[0][0] == 'F25']
-    last_f25_week = max(f25_weeks) if f25_weeks else None
-    for (season, week), _ in sorted(items, key=lambda x: (x[0][0], int(x[0][1]))):
-        if season == 'F25' and int(week) == last_f25_week:
-            finished_flags.append('false')
-        else:
-            finished_flags.append('true')
-
-    # Write SQL insert statements for leda_weekly_scoresheets
-    if sql_values:
-        with open(sql_output_file, 'w', encoding='utf-8') as f:
-            f.write(
-                'INSERT INTO leda_weekly_scoresheets ("seasonCode", "weekNum", "scoresheetData", "finishedScoresheet") VALUES\n'
-            )
-            for i, row in enumerate(sql_values):
-                if i > 0:
-                    f.write(",\n")
-                # Replace the NULL with the correct finishedScoresheet value
-                f.write(row.rsplit(',', 1)[0] + f', {finished_flags[i]})')
-            f.write(";\n")
+    # Write player info inserts
+    if all_player_values:
+        with open(player_info_output, 'w', encoding='utf-8') as f:
+            f.write('INSERT INTO leda_weekly_scoresheets_player_info ("seasonCode","weekNum","division","subdivision","ledaId","teamId","gameStats") VALUES\n')
+            f.write(',\n'.join(all_player_values))
+            f.write(';\n')
+    # Write team game info inserts
+    if all_team_game_values:
+        with open(team_game_info_output, 'w', encoding='utf-8') as f:
+            f.write('INSERT INTO leda_weekly_scoresheets_team_game_info ("seasonCode","weekNum","division","subdivision","homeTeamId","awayTeamId","homePoints","awayPoints","gameInfo","completed") VALUES\n')
+            f.write(',\n'.join(all_team_game_values))
+            f.write(';\n')
+    # Write team info inserts
+    if all_team_info_values:
+        with open(team_info_output, 'w', encoding='utf-8') as f:
+            f.write('INSERT INTO leda_weekly_scoresheets_team_info ("seasonCode","weekNum","division","subdivision","home","teamId","teamName","teamLetter","opposingTeamId","penalties") VALUES\n')
+            f.write(',\n'.join(all_team_info_values))
+            f.write(';\n')
+    print('Weekly scoresheets conversion complete:')
+    print(f'  Player info rows: {len(all_player_values)} -> {player_info_output}')
+    print(f'  Team game info rows: {len(all_team_game_values)} -> {team_game_info_output}')
+    print(f'  Team info rows: {len(all_team_info_values)} -> {team_info_output}')
 
 def export_weekly_player_scores():
     input_csv = 'Working/leda_weekly_scoresheets_table.csv'
