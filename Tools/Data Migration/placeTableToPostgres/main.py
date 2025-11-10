@@ -75,7 +75,7 @@ def build_record(row: dict) -> dict:
         'lastBarFeePayment': clean(row.get('Last Bar Fee Payment'), True),
         'lastSanctioningDate': last_sanction,
         'contactId': int(row.get('Contact Id') or 0),
-        'placeType': clean(row.get('Place Type'), True),
+        'placeType': clean(row.get('Place Type'), True).upper(),
     }
     for k in REQUIRED_TEXT:
         if record[k] == '' or record[k] is None:
@@ -110,7 +110,7 @@ def record_values_sql(rec: dict) -> str:
         f"'{esc(rec['lastBarFeePayment'])}'",
         f"'{rec['lastSanctioningDate']}'",
         str(rec['contactId']),
-        f"'{esc(rec['placeType'])}'"
+        f"'{esc(rec['placeType']).upper()}'"
     ]
     return '(' + ','.join(vals) + ')'
 

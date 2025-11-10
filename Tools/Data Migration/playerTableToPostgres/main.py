@@ -115,7 +115,7 @@ def build_membership_record(row: dict) -> dict:
         "inactiveDate": inactive_date,
         "lastMembershipFeePayment": clean_text(row.get("Last Membership Fee Payment"), True),
         "lastTrailsDate": trails_date,
-        "memberType": clean_text(row.get("People Type"), True),
+        "memberType": clean_text(row.get("People Type"), True).upper(),
         "cannotBeCaptain": to_bool(row.get("Can Not Be Captain", "0")),
         "lifetimeMember": to_bool(row.get("Lifetime Member", "0")),
         "lifetimeMemberReason": clean_text(row.get("Lifetime Member Reason"), False),
