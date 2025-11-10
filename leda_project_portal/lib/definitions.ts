@@ -711,7 +711,6 @@ export type WeeklyScoresheetsPlayerInfo = {
 	ledaId: number;
 	teamId: number;
 	gameStats: JSON;
-	mentions: JSON;
 }
 //
 // Define type to identify the shape of our data from postgres for weekly scoresheets matchup info

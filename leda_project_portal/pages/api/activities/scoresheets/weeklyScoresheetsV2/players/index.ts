@@ -17,10 +17,10 @@ export default async function handler(
         const body = req.body;
         const rows: WeeklyScoresheetsPlayerInfo[] = Array.isArray(body) ? body : [body];
 
-        const queryStr = `INSERT INTO public.leda_weekly_scoresheets_player_info ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "teamId", "gameStats", "mentions") 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+        const queryStr = `INSERT INTO public.leda_weekly_scoresheets_player_info ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "teamId", "gameStats") 
+        VALUES ($1, $2, $3, $4, $5, $6, $7) 
         ON CONFLICT ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "teamId") 
-        DO UPDATE SET "gameStats" = $7, "mentions" = $8`;
+        DO UPDATE SET "gameStats" = $7`;
 
         try {
             await Promise.all(
@@ -33,7 +33,6 @@ export default async function handler(
                         data.ledaId,
                         data.teamId,
                         data.gameStats,
-                        data.mentions
                     ];
                     return queryPost(queryStr, values);
                 })
