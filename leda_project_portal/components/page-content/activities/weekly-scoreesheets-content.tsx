@@ -641,7 +641,7 @@ export default function WeeklyScoresheetsContent({
 	};
 
 	// V2 player game-stats hydration (per team, per week)
-	useQuery({
+	const { isLoading: isHomeGameStatsLoading } = useQuery({
 		queryKey: ["v2-playerPoints", seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, homeTeamPlayerData?.length || 0, matchupLoadToken],
 		queryFn: async () => {
 			if (!seasonCode || !selectedWeek || !selectedHomeTeamId) return [];
@@ -675,7 +675,7 @@ export default function WeeklyScoresheetsContent({
 		refetchOnWindowFocus: false,
 	});
 
-	useQuery({
+	const { isLoading: isAwayGameStatsLoading } = useQuery({
 		queryKey: ["v2-playerPoints", seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedAwayTeamId, awayTeamPlayerData?.length || 0, matchupLoadToken],
 		queryFn: async () => {
 			if (!seasonCode || !selectedWeek || !selectedAwayTeamId) return [];
@@ -772,7 +772,9 @@ export default function WeeklyScoresheetsContent({
 		isHomeTeamLoading || 
 		isAwayTeamLoading || 
 		isHomePlayersLoading || 
-		isAwayPlayersLoading;
+		isAwayPlayersLoading ||
+		isHomeGameStatsLoading ||
+		isAwayGameStatsLoading;
 	
 	const isSaving = 
 		saveGameInfoMutation.isPending || 
@@ -1514,51 +1516,6 @@ const confirmPendingChangesPlaceholder = () => true;
 		}
 	};
 
-	// Reset current matchup fields to server baseline via V2 GETs
-	const resetToServerBaseline = useCallback(async () => {
-		if (!seasonCode || !selectedWeek || !selectedDivision || !selectedSubdivision || !selectedHomeTeamId || !selectedAwayTeamId) return;
-		try {
-			const giRows = await fetchGameInfoV2({
-				seasonCode,
-				weekNum: selectedWeek,
-				division: selectedDivision,
-				subdivision: selectedSubdivision,
-				homeTeamId: selectedHomeTeamId,
-				awayTeamId: selectedAwayTeamId,
-			});
-			const gameInfo = Array.isArray(giRows) && giRows[0]?.gameInfo ? giRows[0].gameInfo as Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> : {};
-			const homeWinsArray = Array(11).fill(false).map((_, i) => (gameInfo[`Game ${i + 1}`]?.homeWin ?? false));
-			const homePointsArray = Array(11).fill("").map((_, i) => (gameInfo[`Game ${i + 1}`]?.homePoints ?? "0"));
-			const awayPointsArray = Array(11).fill("").map((_, i) => (gameInfo[`Game ${i + 1}`]?.awayPoints ?? "0"));
-			setHomeWins(homeWinsArray);
-			setHomePoints(homePointsArray);
-			setAwayPoints(awayPointsArray);
-
-			const teamRows = await fetchTeamInfoV2({
-				seasonCode,
-				weekNum: selectedWeek,
-				division: selectedDivision,
-				subdivision: selectedSubdivision,
-				teamLetter: selectedHomeLetter,
-			});
-			if (Array.isArray(teamRows) && teamRows.length >= 2) {
-				interface PenRow { points?: number }
-				const homePenalties = teamRows[0]?.penalties || {};
-				const awayPenalties = teamRows[1]?.penalties || {};
-				const homeTotal = Object.values(homePenalties as Record<string, PenRow>).reduce((sum: number, p: PenRow) => sum + (p.points || 0), 0);
-				const awayTotal = Object.values(awayPenalties as Record<string, PenRow>).reduce((sum: number, p: PenRow) => sum + (p.points || 0), 0);
-				setHomePenaltyTotal(homeTotal);
-				setAwayPenaltyTotal(awayTotal);
-			} else {
-				setHomePenaltyTotal(0);
-				setAwayPenaltyTotal(0);
-			}
-			setIsDataChanged(false);
-		} catch (e) {
-			console.error("Failed to reset to server baseline", e);
-		}
-	}, [seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, selectedAwayTeamId, selectedHomeLetter]);
-
 	const handleMentionSubmit = async (
 		mentionCode: string,
 		desc: string,
@@ -1792,6 +1749,20 @@ const confirmPendingChangesPlaceholder = () => true;
 									Matchup for {selectedHomeLetter} vs{" "}
 									{selectedAwayLetter}
 								</div>
+								{isLoading ? (
+									<>
+										<FolderTab title="Home">
+											<FolderTabSkeleton />
+										</FolderTab>
+										<FolderTab title="Away">
+											<FolderTabSkeleton />
+										</FolderTab>
+										<FolderTab title="Game Points">
+											<FolderTabSkeleton />
+										</FolderTab>
+									</>
+								) : (
+									<>
 								<FolderTab title="Home">
 									{isLoading || !homeTeamPlayerInformation ? (
 										<FolderTabSkeleton />
@@ -2574,16 +2545,7 @@ const confirmPendingChangesPlaceholder = () => true;
 								{isMatchupCompleted && (
 									<div className="mt-2 text-center text-green-700 font-semibold">Matchup marked complete.</div>
 								)}
-								{!isSaving && matchSelected && (
-									<div className="mt-4 flex justify-center">
-										<Button
-											variant="outline"
-											onClick={() => resetToServerBaseline()}
-											className="border-gray-400 hover:bg-gray-100"
-										>
-											Reset To Server Baseline
-										</Button>
-									</div>
+									</>
 								)}
 							</div>
 						</div>
