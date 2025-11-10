@@ -64,5 +64,22 @@ export default async function handler(
         } else {
             res.status(400).json({ error: "seasonCode, weekNum, and teamId are required" });
         }
+    } else if (req.method === "DELETE") {
+        // Delete all weekly player rows for a team in a given season/week
+        if (req.query.seasonCode && req.query.weekNum && req.query.teamId) {
+            const delQuery = `DELETE FROM public.leda_weekly_scoresheets_player_info WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "teamId" = $3`;
+            try {
+                await queryPost(delQuery, [
+                    req.query.seasonCode as string,
+                    req.query.weekNum as string,
+                    req.query.teamId as string,
+                ]);
+                res.status(200).json({ message: "Player info deleted for team" });
+            } catch (error) {
+                res.status(500).json({ message: "Failed to delete player info", error });
+            }
+        } else {
+            res.status(400).json({ error: "seasonCode, weekNum, and teamId are required" });
+        }
     }
 }

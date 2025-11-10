@@ -17,10 +17,10 @@ export default async function handler(
         const body = req.body;
         const rows: WeeklyScoresheetsTeamInfo[] = Array.isArray(body) ? body : [body];
 
-        const queryStr = `INSERT INTO public.leda_weekly_scoresheets_team_info ("seasonCode", "weekNum", "division", "subdivision", "home", "teamId", "teamName", "teamLetter", "opposingTeamId", "penalties") 
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-                        ON CONFLICT ("seasonCode", "weekNum", "division", "subdivision", "teamId")
-                        DO UPDATE SET "penalties" = $10`;
+    const queryStr = `INSERT INTO public.leda_weekly_scoresheets_team_info ("seasonCode", "weekNum", "division", "subdivision", "home", "teamId", "teamName", "teamLetter", "opposingTeamId", "penalties") 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+            ON CONFLICT ("seasonCode", "weekNum", "division", "subdivision", "teamId")
+            DO UPDATE SET "teamName" = EXCLUDED."teamName", "teamLetter" = EXCLUDED."teamLetter", "opposingTeamId" = EXCLUDED."opposingTeamId", "penalties" = EXCLUDED."penalties"`;
 
         try {
             await Promise.all(

@@ -58,7 +58,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 		if (seasonCodes.length > 0) {
 			if (useCurrentSeason) {
 				const current = seasonCodes.find((type: { value: string; label: string; isCurrentSeason?: boolean }) => type.isCurrentSeason);
-				if (current) {
+				if (current && current.value !== selectedSeasonCode) {
 					setSelectedSeasonCode(current.value);
 					handleSelect(current.value);
 				}
@@ -68,7 +68,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 			}
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [seasonCodes, useCurrentSeason, setDisabled, handleSelect]);
+	}, [seasonCodes, useCurrentSeason, setDisabled, handleSelect, selectedSeasonCode]);
 
 	const handleSelectSeasonCode = (value: string) => {
 		setSelectedSeasonCode(value);

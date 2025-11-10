@@ -23,13 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import WeekSelector from "@/components/ui/week-selector";
-import {
-	scheduleRoute,
-	teamRoute,
-	playerRoute,
-	weeklyScoresheetsRoute,
-	mentionPlayerHistoryRoute,
-} from "@/lib/apiRoutes";
+import { teamRoute, playerRoute, mentionPlayerHistoryRoute } from "@/lib/apiRoutes";
 import FolderTab, { FolderTabMed } from "@/components/ui/folder-tab";
 import { Player } from "@/lib/definitions";
 import {
@@ -42,22 +36,8 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import SideNav from "./weekly-scoresheet-sidenav";
-import {
-	Team,
-	DivisionData,
-	FormattedScoreData,
-	PlayerGameData,
-	TeamGameData,
-	PlayerPoints,
-} from "@/lib/weekly-scoresheet-definitions";
 import PenaltyAddForm from "@/components/forms/activities/weekly-scoresheet-add-penalty-form";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
+import { Team, TeamGameData } from "@/lib/weekly-scoresheet-definitions";
 import {
 	Accordion,
 	AccordionContent,
@@ -66,225 +46,20 @@ import {
 } from "@/components/ui/accordion";
 import MentionSelector from "@/components/ui/mentions-selector";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import { isMatchupValid } from "@/utils/matchupValidation";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+// import { isMatchupValid } from "@/utils/matchupValidation"; // deprecated automatic validation
 // Import React Query hooks
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 import { useForm, FormProvider } from "react-hook-form";
 
-// Utility function: Deep merge two objects
-const deepMerge = <
-	T extends Record<string, unknown>,
-	U extends Record<string, unknown>
->(
-	target: T,
-	source: U
-): T & U => {
-	const output = { ...target } as T & U;
-
-	if (isObject(target) && isObject(source)) {
-		Object.keys(source).forEach((key) => {
-			if (isObject(source[key])) {
-				if (!(key in target)) {
-					(output as Record<string, unknown>)[key] = source[key];
-				} else if (isObject(target[key])) {
-					(output as Record<string, unknown>)[key] = deepMerge(
-						target[key] as Record<string, unknown>,
-						source[key] as Record<string, unknown>
-					);
-				} else {
-					(output as Record<string, unknown>)[key] = source[key];
-				}
-			} else {
-				(output as Record<string, unknown>)[key] = source[key];
-			}
-		});
-	}
-
-	return output;
-};
-
-// Utility function: Check if an item is an object
-const isObject = (item: unknown): item is Record<string, unknown> => {
-	return Boolean(item && typeof item === "object" && !Array.isArray(item));
-};
-
-// Converts raw schedule data into a structured DivisionData format
-const convertScheduleData = (
-	sourceData: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
-	dateToDisplay: string
-): DivisionData => {
-	const result: DivisionData = {};
-
-	// Iterate through all divisions
-	for (const divisionName in sourceData) {
-		result[divisionName] = {};
-
-		// Iterate through all subdivisions
-		for (const subdivisionName in sourceData[divisionName]) {
-			result[divisionName][subdivisionName] = {};
-			let gameCounter = 1;
-
-			// Iterate through all teams
-			for (const teamLetter in sourceData[divisionName][
-				subdivisionName
-			]) {
-				const team =
-					sourceData[divisionName][subdivisionName][teamLetter];
-
-				// Check each match for this team
-				for (const dateKey in team.matchesData) {
-					// Skip if it doesn't match the dateToDisplay parameter
-					if (dateKey !== dateToDisplay) continue;
-
-					const match = team.matchesData[dateKey];
-
-					// Only create a game entry if this team is the home team (to avoid duplicates)
-					if (match.home) {
-						result[divisionName][subdivisionName][
-							gameCounter.toString()
-						] = {
-							homeTeamLetter: teamLetter,
-							homeTeamId: team.teamId,
-							awayTeamLetter: match.opposingTeamLetter,
-							awayTeamId: match.opposingTeamId,
-						};
-						gameCounter++;
-					}
-				}
-			}
-		}
-	}
-
-	return result;
-};
+// Removed legacy deep merge and schedule conversion utilities (normalized model)
 
 // Utility function to check if all matchups are filled out and valid
-const areAllMatchupsValid = (data: FormattedScoreData): boolean => {
-	for (const division in data) {
-		for (const subdivision in data[division]) {
-			for (const matchupKey in data[division][subdivision]) {
-				// Use the shared utility function
-				if (!isMatchupValid(data, division, subdivision, matchupKey)) {
-					console.log(
-						`Invalid matchup: ${division} > ${subdivision} > ${matchupKey}`
-					);
-					return false;
-				}
-			}
-		}
-	}
-	return true;
-};
+// Deprecated: automatic validation replaced by manual completion control
+// (Removed old misplaced fetch code that caused syntax errors.)
 
-// Utility to generate empty matchup data for a given matchup
-const generateEmptyMatchupData = (
-	division: string,
-	subdivision: string,
-	matchupKey: string,
-	homeTeamId: string,
-	awayTeamId: string,
-	homeTeamLetter: string,
-	awayTeamLetter: string,
-	homeTeamName: string,
-	awayTeamName: string
-) => ({
-	[division]: {
-		[subdivision]: {
-			[matchupKey]: {
-				teamInformation: {
-					[homeTeamId]: {
-						teamLetter: homeTeamLetter,
-						teamName: homeTeamName,
-						home: true,
-						teamMembers: {},
-						penalties: {},
-					},
-					[awayTeamId]: {
-						teamLetter: awayTeamLetter,
-						teamName: awayTeamName,
-						home: false,
-						teamMembers: {},
-						penalties: {},
-					},
-				},
-				gameInformation: {},
-				teamPoints: { homePoints: "0", awayPoints: "0" },
-			},
-		},
-	},
-});
-
-// API fetch functions for React Query
-const fetchSchedule = async (seasonCode: string) => {
-	const response = await fetchWithSession(scheduleRoute + `?seasonCode=${seasonCode}`);
-	return response.json();
-};
-
-const fetchTeam = async (teamId: string) => {
-	if (!teamId) return null;
-	const response = await fetchWithSession(teamRoute + `?ledaId=${teamId}`);
-	return response.json();
-};
-
-const fetchPlayer = async (playerId: string) => {
-	const response = await fetchWithSession(playerRoute + `?ledaId=${playerId}`);
-	return response.json();
-};
-
-const fetchScoresheet = async (seasonCode: string, weekNumber: string) => {
-	if (!seasonCode || !weekNumber) return { scoresheetData: {} };
-	const response = await fetchWithSession(
-		`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&weekNumber=${weekNumber}`
-	);
-	if (!response.ok) return { scoresheetData: {} };
-	return response.json();
-};
-
-const saveTeamPoints = async (data: {
-	seasonCode: string;
-	weekNum: number;
-	ledaId: string;
-	totalPoints: number;
-}) => {
-	const response = await fetchWithSession(`${weeklyScoresheetsRoute}/teamPoints`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(data),
-	});
-	return response.json();
-};
-
-const savePlayerPoints = async (data: {
-	seasonCode: string;
-	weekNum: number;
-	ledaId: string;
-	playerId: string;
-	totalPoints: number;
-	pointsByGame: Record<string, boolean>;
-	teamLedaId: string;
-	mentions: Record<
-		string,
-		{
-			mentionCode: string;
-			desc: string;
-			points: number;
-			notes?: string;
-			count?: number;
-		}
-	>;
-}) => {
-	const response = await fetchWithSession(`${weeklyScoresheetsRoute}/playerPoints`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(data),
-	});
-	return response.json();
-};
+// Removed legacy generateEmptyMatchupData; now relying solely on V2 baselines
 
 const createMentionHistory = async (data: {
 	ledaId: string;
@@ -311,6 +86,205 @@ const createMentionHistory = async (data: {
 	return response.json();
 };
 
+	// V2 API routes (local constants)
+	const weeklyScoresheetsV2PlayersRoute =
+		"/api/activities/scoresheets/weeklyScoresheetsV2/players";
+	const weeklyScoresheetsV2GameInfoRoute =
+		"/api/activities/scoresheets/weeklyScoresheetsV2/gameInfo";
+	const weeklyScoresheetsV2TeamInfoRoute =
+		"/api/activities/scoresheets/weeklyScoresheetsV2/teamInfo";
+
+	// Legacy aggregate points endpoints (must remain in use for leaderboards/history)
+	const weeklyPlayerPointsRoute = "/api/activities/scoresheets/playerPoints"; // expects PlayerPoints shape
+	const weeklyTeamPointsRoute = "/api/activities/scoresheets/teamPoints"; // expects TeamPoints shape
+
+	// Data fetchers
+	// Removed legacy schedule fetch (SideNav handles V2 matchups)
+
+	// Removed legacy fetchScoresheet
+
+	const fetchTeam = async (teamId: string) => {
+		const url = `${teamRoute}?ledaId=${encodeURIComponent(teamId)}`;
+		const response = await fetchWithSession(url, { method: "GET" });
+		return response.json();
+	};
+
+	const fetchPlayer = async (playerId: string | number) => {
+		const url = `${playerRoute}?ledaId=${encodeURIComponent(
+			String(playerId)
+		)}`;
+		const response = await fetchWithSession(url, { method: "GET" });
+		return response.json();
+	};
+
+	const fetchTeamInfoV2 = async ({
+		seasonCode,
+		weekNum,
+		division,
+		subdivision,
+		teamLetter,
+	}: { seasonCode: string; weekNum: string; division: string; subdivision: string; teamLetter: string; }) => {
+		const url = `${weeklyScoresheetsV2TeamInfoRoute}?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}&teamLetter=${encodeURIComponent(teamLetter)}`;
+		const res = await fetchWithSession(url, { method: "GET" });
+		if (res.status === 204) return null;
+		return res.json();
+	};
+
+	const fetchGameInfoV2 = async ({
+		seasonCode,
+		weekNum,
+		division,
+		subdivision,
+		homeTeamId,
+		awayTeamId,
+	}: {
+		seasonCode: string;
+		weekNum: string;
+		division: string;
+		subdivision: string;
+		homeTeamId: string;
+		awayTeamId: string;
+	}) => {
+		const url = `${weeklyScoresheetsV2GameInfoRoute}?seasonCode=${encodeURIComponent(
+			seasonCode
+		)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(
+			division
+		)}&subdivision=${encodeURIComponent(
+			subdivision
+		)}&homeTeamId=${encodeURIComponent(
+			homeTeamId
+		)}&awayTeamId=${encodeURIComponent(awayTeamId)}`;
+		const res = await fetchWithSession(url, { method: "GET" });
+		if (res.status === 204) return null;
+		return res.json();
+	};
+
+	// Mutations helpers for V2 tables
+	const savePlayerPoints = async ({
+		seasonCode,
+		weekNum,
+		division,
+		subdivision,
+		ledaId,
+		teamId,
+		gameStats,
+	}: {
+		seasonCode: string;
+		weekNum: number;
+		division: string;
+		subdivision: string;
+		ledaId: string;
+		teamId: string;
+		gameStats: Record<string, boolean>;
+	}) => {
+		const response = await fetchWithSession(
+			weeklyScoresheetsV2PlayersRoute,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					seasonCode,
+					weekNum,
+					division,
+					subdivision,
+					ledaId,
+					teamId,
+					gameStats,
+				}),
+			}
+		);
+		return response.json();
+	};
+
+	const saveGameInfo = async ({
+		seasonCode,
+		weekNum,
+		division,
+		subdivision,
+		homeTeamId,
+		awayTeamId,
+		homePoints,
+		awayPoints,
+		completed,
+		gameInfo,
+	}: {
+		seasonCode: string;
+		weekNum: number;
+		division: string;
+		subdivision: string;
+		homeTeamId: string;
+		awayTeamId: string;
+		homePoints: number;
+		awayPoints: number;
+		completed: boolean;
+		gameInfo: Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }>;
+	}) => {
+		const response = await fetchWithSession(
+			weeklyScoresheetsV2GameInfoRoute,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					seasonCode,
+					weekNum,
+					division,
+					subdivision,
+					homeTeamId,
+					awayTeamId,
+					homePoints,
+					awayPoints,
+					completed,
+					gameInfo,
+				}),
+			}
+		);
+		return response.json();
+	};
+
+	// Legacy weekly cumulative team points upsert (stores rolling totals)
+	const saveWeeklyTeamPoints = async ({
+		seasonCode,
+		weekNum,
+		ledaId,
+		totalPoints,
+	}: {
+		seasonCode: string;
+		weekNum: number;
+		ledaId: string; // team ID
+		totalPoints: number; // this week's points before cumulative calc (server derives prev + new)
+	}) => {
+		const res = await fetchWithSession(weeklyTeamPointsRoute, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ seasonCode, weekNum, ledaId, totalPoints }),
+		});
+		return res.json();
+	};
+
+	// Legacy weekly cumulative player points upsert
+	// ASSUMPTION: A player's weekly points = number of games participated (boolean true in gameStats)
+	// If a different formula (e.g., includes mentions), adjust here.
+	const saveWeeklyPlayerPoints = async ({
+		seasonCode,
+		weekNum,
+		ledaId,
+		teamLedaId,
+		totalPoints,
+	}: {
+		seasonCode: string;
+		weekNum: number;
+		ledaId: string; // player ID
+		teamLedaId: string; // team ID
+		totalPoints: number; // this week's points
+	}) => {
+		const res = await fetchWithSession(weeklyPlayerPointsRoute, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ seasonCode, weekNum, ledaId, teamLedaId, totalPoints }),
+		});
+		return res.json();
+	};
+
 const updateMentionHistory = async (data: {
 	ledaId: string;
 	mentionId: string;
@@ -331,6 +305,68 @@ const updateMentionHistory = async (data: {
 		body: JSON.stringify({
 			...data,
 			count: data.count ?? 0,
+		}),
+	});
+	return response.json();
+};
+
+const deleteGameInfo = async ({
+	seasonCode,
+	weekNum,
+	division,
+	subdivision,
+	homeTeamId,
+	awayTeamId,
+}: {
+	seasonCode: string;
+	weekNum: string | number;
+	division: string;
+	subdivision: string | number;
+	homeTeamId: string;
+	awayTeamId: string;
+}) => {
+	const url = `${weeklyScoresheetsV2GameInfoRoute}?seasonCode=${encodeURIComponent(String(seasonCode))}&weekNum=${encodeURIComponent(String(weekNum))}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(String(subdivision))}&homeTeamId=${encodeURIComponent(homeTeamId)}&awayTeamId=${encodeURIComponent(awayTeamId)}`;
+	const res = await fetchWithSession(url, { method: "DELETE" });
+	return res.json();
+};
+
+const saveTeamInfo = async ({
+	seasonCode,
+	weekNum,
+	division,
+	subdivision,
+	home,
+	teamId,
+	teamName,
+	teamLetter,
+	opposingTeamId,
+	penalties,
+}: {
+	seasonCode: string;
+	weekNum: number;
+	division: string;
+	subdivision: string;
+	home: boolean;
+	teamId: string;
+	teamName: string;
+	teamLetter: string;
+	opposingTeamId: string;
+	penalties: Record<string, { penaltyCode: string; points: number; notes?: string }>;
+}) => {
+	const response = await fetchWithSession(weeklyScoresheetsV2TeamInfoRoute, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			seasonCode,
+			weekNum,
+			division,
+			subdivision,
+			home,
+			teamId,
+			teamName,
+			teamLetter,
+			opposingTeamId,
+			penalties,
 		}),
 	});
 	return response.json();
@@ -402,8 +438,7 @@ export default function WeeklyScoresheetsContent({
 	}) {
 		// Local state for mentions for the currently selected player
 		const [currentPlayerMentions, setCurrentPlayerMentions] = useState<MentionPlayerHistory[] | null>(null);
-	// Initialize the React Query client
-	const queryClient = useQueryClient();
+	// React Query client not needed for legacy invalidations anymore
 
 	// State declarations
 	const [seasonCode, setSeasonCode] = useState<string>("");
@@ -411,9 +446,7 @@ export default function WeeklyScoresheetsContent({
 	const [seasonSelected, setSeasonSelected] = useState<boolean>(true);
 
 	// Team and matchup state
-	const [sidenavData, setSidenavData] = useState<DivisionData>({});
-	const [formattedScoreData, setFormattedScoreData] =
-		useState<FormattedScoreData | null>(null);
+	// Removed legacy sidenavData (SideNav fetches V2 matchups directly)
 	const [matchSelected, setMatchSelected] = useState<boolean>(false);
 	const [selectedHomeLetter, setSelectedHomeLetter] = useState<string>("");
 	const [selectedAwayLetter, setSelectedAwayLetter] = useState<string>("");
@@ -421,6 +454,8 @@ export default function WeeklyScoresheetsContent({
 	const [selectedSubdivision, setSelectedSubdivision] = useState<string>("");
 	const [selectedHomeTeamId, setSelectedHomeTeamId] = useState<string>("");
 	const [selectedAwayTeamId, setSelectedAwayTeamId] = useState<string>("");
+	// Token to force refetch of player game-stats even if React Query cache considers data fresh
+	const [matchupLoadToken, setMatchupLoadToken] = useState<number>(0);
 
 	// Game data state
 	const [homeTeamGameData, setHomeTeamGameData] = useState<TeamGameData>({});
@@ -434,6 +469,42 @@ export default function WeeklyScoresheetsContent({
 	// API operation state
 	const [selectedWeek, setSelectedWeek] = useState<string>("");
 	const [isDataChanged, setIsDataChanged] = useState<boolean>(false);
+
+	// Manual completion and reset snapshot state
+	const [isMatchupCompleted, setIsMatchupCompleted] = useState<boolean>(false);
+	const [originalMatchupSnapshot, setOriginalMatchupSnapshot] = useState<
+		| null
+		| {
+			Home: {
+				teamGameData: TeamGameData;
+				wins: boolean[];
+				points: string[];
+				penalties: Record<
+					string,
+					{ penaltyCode: string; points: number; notes?: string }
+				>;
+			};
+			Away: {
+				teamGameData: TeamGameData;
+				points: string[];
+				penalties: Record<
+					string,
+					{ penaltyCode: string; points: number; notes?: string }
+				>;
+			};
+		}
+	>(null);
+
+	// Snapshot for change detection and hydration flags
+	type Snapshot = {
+		Home: { teamGameData: TeamGameData; wins: boolean[]; points: string[]; penalties: Record<string, { penaltyCode: string; points: number; notes?: string }> };
+		Away: { teamGameData: TeamGameData; points: string[]; penalties: Record<string, { penaltyCode: string; points: number; notes?: string }> };
+		completed: boolean;
+	};
+	const [lastSavedSnapshot, setLastSavedSnapshot] = useState<Snapshot | null>(null);
+	const [baselineInitialized, setBaselineInitialized] = useState<boolean>(false);
+	const [homeHydrated, setHomeHydrated] = useState<boolean>(false);
+	const [awayHydrated, setAwayHydrated] = useState<boolean>(false);
 
 	// Penalty management state
 	const [homePenaltyDialogOpen, setHomePenaltyDialogOpen] =
@@ -453,6 +524,8 @@ export default function WeeklyScoresheetsContent({
 	} | null>(null);
 	const [homePenaltyCounter, setHomePenaltyCounter] = useState<number>(0);
 	const [awayPenaltyCounter, setAwayPenaltyCounter] = useState<number>(0);
+	const [homePenalties, setHomePenalties] = useState<Record<string, { penaltyCode: string; points: number; notes?: string }>>({});
+	const [awayPenalties, setAwayPenalties] = useState<Record<string, { penaltyCode: string; points: number; notes?: string }>>({});
 
 	// Mentions management state
 	const [mentionCounters, setMentionCounters] = useState<
@@ -488,20 +561,9 @@ export default function WeeklyScoresheetsContent({
 
 	// React Query hooks
 	// Schedule data query
-	const { data: scheduleData, isLoading: isScheduleLoading } = useQuery({
-		queryKey: ["schedule", seasonCode],
-		queryFn: () => fetchSchedule(seasonCode),
-		enabled: !!seasonCode && !seasonSelected,
-		staleTime: 1000 * 60 * 5, // 5 minutes
-	});
+// Removed legacy schedule query
 
-	// Scoresheet data query
-	const { data: scoresheetData, isLoading: isScoresheetLoading } = useQuery({
-		queryKey: ["scoresheet", seasonCode, selectedWeek],
-		queryFn: () => fetchScoresheet(seasonCode, selectedWeek),
-		enabled: !!seasonCode && !!selectedWeek,
-		staleTime: 1000 * 60, // 1 minute
-	});
+	// Removed legacy scoresheet query; V2 per-matchup flow only
 
 	// Team data queries
 	const { data: homeTeamData, isLoading: isHomeTeamLoading } = useQuery({
@@ -562,180 +624,110 @@ export default function WeeklyScoresheetsContent({
 		enabled: !!awayTeamData && !!awayTeamData.memberIdList,
 		staleTime: 1000 * 60 * 10, // 10 minutes
 	});
+
+	// Helper: build blank TeamGameData map from roster players
+	const buildBlankGameData = (players?: Player[]): TeamGameData => {
+		const map: TeamGameData = {};
+		(players || []).forEach((p) => {
+			// Player interface should have ledaId; fall back to id if present
+			// Cast narrowly instead of using any
+			const maybeAny = p as { ledaId?: string | number; id?: string | number };
+			const pid = maybeAny.ledaId ?? maybeAny.id;
+			if (pid !== undefined && pid !== null) {
+				map[String(pid)] = {};
+			}
+		});
+		return map;
+	};
+
+	// V2 player game-stats hydration (per team, per week)
+	useQuery({
+		queryKey: ["v2-playerPoints", seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, homeTeamPlayerData?.length || 0, matchupLoadToken],
+		queryFn: async () => {
+			if (!seasonCode || !selectedWeek || !selectedHomeTeamId) return [];
+			const url = `${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(String(seasonCode))}&weekNum=${encodeURIComponent(String(selectedWeek))}&teamId=${encodeURIComponent(String(selectedHomeTeamId))}`;
+			console.log("[v2-playerPoints] Fetch HOME gameStats", { url, selectedHomeTeamId, selectedDivision, selectedSubdivision, matchupLoadToken });
+			const res = await fetchWithSession(url, { method: "GET" });
+			if (res.status === 204) {
+				// No saved stats yet: fall back to roster with blank gameStats
+				setHomeTeamGameData(buildBlankGameData(homeTeamPlayerData as Player[]));
+				setHomeHydrated(true);
+				return [];
+			}
+			const rows = await res.json();
+			if (!Array.isArray(rows) || rows.length === 0) {
+				setHomeTeamGameData(buildBlankGameData(homeTeamPlayerData as Player[]));
+				setHomeHydrated(true);
+				return rows;
+			}
+			const map: TeamGameData = {};
+			(rows || []).forEach((r: { ledaId: string | number; gameStats?: Record<string, boolean> }) => {
+				map[String(r.ledaId)] = r.gameStats || {};
+			});
+			setHomeTeamGameData(map);
+			setHomeHydrated(true);
+			return rows;
+		},
+		enabled: !!seasonCode && !!selectedWeek && !!selectedHomeTeamId && matchSelected && !!homeTeamPlayerData,
+		staleTime: 1000 * 60 * 5,
+		refetchOnMount: true,
+		refetchOnReconnect: true,
+		refetchOnWindowFocus: false,
+	});
+
+	useQuery({
+		queryKey: ["v2-playerPoints", seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedAwayTeamId, awayTeamPlayerData?.length || 0, matchupLoadToken],
+		queryFn: async () => {
+			if (!seasonCode || !selectedWeek || !selectedAwayTeamId) return [];
+			const url = `${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(String(seasonCode))}&weekNum=${encodeURIComponent(String(selectedWeek))}&teamId=${encodeURIComponent(String(selectedAwayTeamId))}`;
+			console.log("[v2-playerPoints] Fetch AWAY gameStats", { url, selectedAwayTeamId, selectedDivision, selectedSubdivision, matchupLoadToken });
+			const res = await fetchWithSession(url, { method: "GET" });
+			if (res.status === 204) {
+				setAwayTeamGameData(buildBlankGameData(awayTeamPlayerData as Player[]));
+				setAwayHydrated(true);
+				return [];
+			}
+			const rows = await res.json();
+			if (!Array.isArray(rows) || rows.length === 0) {
+				setAwayTeamGameData(buildBlankGameData(awayTeamPlayerData as Player[]));
+				setAwayHydrated(true);
+				return rows;
+			}
+			const map: TeamGameData = {};
+			(rows || []).forEach((r: { ledaId: string | number; gameStats?: Record<string, boolean> }) => {
+				map[String(r.ledaId)] = r.gameStats || {};
+			});
+			setAwayTeamGameData(map);
+			setAwayHydrated(true);
+			return rows;
+		},
+		enabled: !!seasonCode && !!selectedWeek && !!selectedAwayTeamId && matchSelected && !!awayTeamPlayerData,
+		staleTime: 1000 * 60 * 5,
+		refetchOnMount: true,
+		refetchOnReconnect: true,
+		refetchOnWindowFocus: false,
+	});
 	// Local state for mentions by player (must be after player data queries)
 // Declare only once, after player data queries
 
 // ...existing code for useQuery hooks for homeTeamPlayerData and awayTeamPlayerData...
 
 // Removed automatic mention fetching - mentions are now only fetched when user clicks mention button
-	// Save scoresheet function must be defined before useMutation
-	// API call to actually save the scoresheet to the backend
-	const saveScoresheetApi = async ({
-		seasonCode,
-		weekNumber,
-		scoresheetData,
-		finishedScoresheet,
-	}: {
-		seasonCode: string;
-		weekNumber: string;
-		scoresheetData: FormattedScoreData;
-		finishedScoresheet: boolean;
-	}) => {
-		const response = await fetchWithSession(weeklyScoresheetsRoute, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				seasonCode,
-				weekNumber,
-				scoresheetData,
-				finishedScoresheet,
-			}),
-		});
-		return response.json();
-	};
+	// Removed legacy scoresheet save; normalization only
 
-	// Mutations
-	const saveScoresheetMutation = useMutation({
-		mutationFn: saveScoresheetApi,
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: ["scoresheet", seasonCode, selectedWeek],
-			});
-			setIsDataChanged(false);
-		},
-	});
 
-	const saveScoresheet = async (data: FormattedScoreData) => {
-		if (!seasonCode || !selectedWeek) {
-			return;
-		}
-
-		try {
-			// Determine if all matchups are valid
-			const finishedScoresheet = areAllMatchupsValid(data);
-
-			// Fetch existing scoresheet data (using cached data from React Query)
-			const existingData = scoresheetData?.scoresheetData || {};
-			let completeData: FormattedScoreData = data;
-
-			// If there's existing data, merge it with our new data
-			if (Object.keys(existingData).length > 0) {
-				// For the current matchup, use our new data completely
-				// but merge with other matchups that might exist
-				
-				// Start with a clean copy of existing data
-				completeData = JSON.parse(JSON.stringify(existingData));
-
-				// Make sure our current division and subdivision exists
-				if (!completeData[selectedDivision]) {
-					completeData[selectedDivision] = {};
-				}
-				if (!completeData[selectedDivision][selectedSubdivision]) {
-					completeData[selectedDivision][selectedSubdivision] = {};
-				}
-
-				// Replace the entire matchup data with our new version
-				const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-				if (data[selectedDivision]?.[selectedSubdivision]?.[matchupKey]) {
-					completeData[selectedDivision][selectedSubdivision][matchupKey] =
-						data[selectedDivision][selectedSubdivision][matchupKey];
-				}
-			}
-
-			// Use React Query mutation to save the scoresheet
-			await saveScoresheetMutation.mutateAsync({
-				seasonCode,
-				weekNumber: selectedWeek,
-				scoresheetData: completeData,
-				finishedScoresheet,
-			});
-
-			// Save team points for each team with penalty adjustments
-			const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-			const matchupData = data[selectedDivision]?.[selectedSubdivision]?.[matchupKey];
-
-			if (matchupData) {
-				// Save home team points
-				await saveTeamPointsMutation.mutateAsync({
-					seasonCode,
-					weekNum: parseInt(selectedWeek),
-					ledaId: selectedHomeTeamId,
-					totalPoints: parseInt(matchupData.teamPoints.homePoints),
-				});
-
-				// Save away team points
-				await saveTeamPointsMutation.mutateAsync({
-					seasonCode,
-					weekNum: parseInt(selectedWeek),
-					ledaId: selectedAwayTeamId,
-					totalPoints: parseInt(matchupData.teamPoints.awayPoints),
-				});
-
-				// Note: Mentions are now saved directly when users add/edit/delete them,
-				// so we don't need to process them during scoresheet save
-				// await processMentionHistory(
-				// 	matchupData,
-				// 	previousData,
-				// 	selectedDivision,
-				// 	selectedSubdivision,
-				// 	matchupKey,
-				// 	parseInt(selectedWeek)
-				// );
-
-				// Save player points for each player in the home team
-				const homePlayers = matchupData.teamInformation[selectedHomeTeamId].teamMembers;
-				for (const playerId in homePlayers) {
-					const player = homePlayers[playerId];
-					await savePlayerPointsMutation.mutateAsync({
-						seasonCode,
-						weekNum: parseInt(selectedWeek),
-						ledaId: playerId,
-						playerId,
-						totalPoints: parseInt(player.gamePoints),
-						pointsByGame: player.gameStats,
-						teamLedaId: selectedHomeTeamId,
-						mentions: player.mentions || {},
-					});
-				}
-
-				// Save player points for each player in the away team
-				const awayPlayers = matchupData.teamInformation[selectedAwayTeamId].teamMembers;
-				for (const playerId in awayPlayers) {
-					const player = awayPlayers[playerId];
-					await savePlayerPointsMutation.mutateAsync({
-						seasonCode,
-						weekNum: parseInt(selectedWeek),
-						ledaId: playerId,
-						playerId,
-						totalPoints: parseInt(player.gamePoints),
-						pointsByGame: player.gameStats,
-						teamLedaId: selectedAwayTeamId,
-						mentions: player.mentions || {},
-					});
-				}
-			}
-
-			// Update the local state with the complete data
-			setFormattedScoreData(completeData);
-			setIsDataChanged(false);
-			
-			// Invalidate related queries to ensure fresh data
-			queryClient.invalidateQueries({ queryKey: ["scoresheet"] });
-			
-		} catch (error) {
-			console.error("Error saving scoresheet:", error);
-		}
-	};
-
-	const saveTeamPointsMutation = useMutation({
-		mutationFn: saveTeamPoints,
-	});
 
 	const savePlayerPointsMutation = useMutation({
 		mutationFn: savePlayerPoints,
 	});
+
+	const saveGameInfoMutation = useMutation({
+		mutationFn: saveGameInfo,
+	});
+
+	// Legacy cumulative points mutations
+	const saveWeeklyTeamPointsMutation = useMutation({ mutationFn: saveWeeklyTeamPoints });
+	const saveWeeklyPlayerPointsMutation = useMutation({ mutationFn: saveWeeklyPlayerPoints });
 
 	const createMentionHistoryMutation = useMutation({
 		mutationFn: createMentionHistory,
@@ -749,18 +741,41 @@ export default function WeeklyScoresheetsContent({
 		mutationFn: deleteMentionHistory,
 	});
 
+	// Delete mutations for normalized clear
+	const deleteGameInfoMutation = useMutation({
+		mutationFn: deleteGameInfo,
+	});
+
+	const deletePlayerInfoForTeam = async ({
+		seasonCode,
+		weekNum,
+		teamId,
+	}: { seasonCode: string; weekNum: string | number; teamId: string }) => {
+		const url = `${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(String(seasonCode))}&weekNum=${encodeURIComponent(String(weekNum))}&teamId=${encodeURIComponent(teamId)}`;
+		const res = await fetchWithSession(url, { method: "DELETE" });
+		return res.json();
+	};
+
+	const deletePlayerInfoMutation = useMutation({
+		mutationFn: deletePlayerInfoForTeam,
+	});
+
+	// New V2 mutations for team baseline inserts
+	const saveTeamInfoMutation = useMutation({
+		mutationFn: saveTeamInfo,
+	});
+
+	// Removed legacy saveScoresheet; saveMatchup now persists directly to V2 tables
+
 	// Derived state
 	const isLoading = 
-		isScheduleLoading || 
-		isScoresheetLoading || 
 		isHomeTeamLoading || 
 		isAwayTeamLoading || 
 		isHomePlayersLoading || 
 		isAwayPlayersLoading;
 	
 	const isSaving = 
-		saveScoresheetMutation.isPending || 
-		saveTeamPointsMutation.isPending || 
+		saveGameInfoMutation.isPending || 
 		savePlayerPointsMutation.isPending;
 
 	const homeTeamInformation = homeTeamData as Team | undefined;
@@ -791,247 +806,229 @@ export default function WeeklyScoresheetsContent({
 			setSeasonSelected(false); // Allow week selection
 
 			// Reset state
-			setSidenavData({});
+			// clear selection
 			setMatchSelected(false);
-			setFormattedScoreData(null);
 			setSelectedHomeLetter("");
 			setSelectedAwayLetter("");
 		}
 	}, [renderSeasonCode]); 
 
-	// Update formatted score data when scoresheet data changes
-	useEffect(() => {
-		if (scoresheetData?.scoresheetData && Object.keys(scoresheetData.scoresheetData).length > 0) {
-			setFormattedScoreData(scoresheetData.scoresheetData);
-		}
-	}, [scoresheetData]);
+	// Removed legacy formatted score data syncing
 
 	// Event handlers
 	const handleDataChange = () => {
 		setIsDataChanged(true);
 	};
 
-	const handleSeasonCodeSelect = useCallback((value: string) => {
-		setSeasonCode(value);
-		setSeasonSelected(false);
-
-		// Reset state when season changes
-		setSelectedWeek("");
-		setSidenavData({});
-		setMatchSelected(false);
-		setFormattedScoreData(null);
-		setSelectedHomeLetter("");
-		setSelectedAwayLetter("");
-		setSelectedDivision("");
-		setSelectedSubdivision("");
-		setSelectedHomeTeamId("");
-		setSelectedAwayTeamId("");
-		setHomeTeamGameData({});
-		setAwayTeamGameData({});
-		setHomeWins(Array(11).fill(false));
-		setHomePoints(Array(11).fill(""));
-		setAwayPoints(Array(11).fill(""));
-		setHomePenaltyCounter(0);
-		setAwayPenaltyCounter(0);
-		setMentionCounters({});
-	}, []); 
-
-	const handleMatchupSelection = async (
-		homeLetter: string,
-		awayLetter: string,
-		divisionName: string,
-		subdivisionName: string
-	) => {
-		setMatchSelected(true);
-		setSelectedDivision(divisionName);
-		setSelectedSubdivision(subdivisionName);
-		setSelectedHomeLetter(homeLetter);
-		setSelectedAwayLetter(awayLetter);
-
-		// Find team IDs from sidenavData
-		let homeTeamId = "";
-		let awayTeamId = "";
-		const games = sidenavData[divisionName]?.[subdivisionName] || {};
-		for (const gameNumber in games) {
-			const game = games[gameNumber];
-			if (
-				game.homeTeamLetter === homeLetter &&
-				game.awayTeamLetter === awayLetter
-			) {
-				homeTeamId = game.homeTeamId;
-				awayTeamId = game.awayTeamId;
-				break;
-			}
-		}
-		setSelectedHomeTeamId(homeTeamId);
-		setSelectedAwayTeamId(awayTeamId);
-
-		// Initialize game data from existing data if present
-		const matchupKey = `${homeLetter} - ${awayLetter}`;
-		const fsd = formattedScoreData || {};
-		const matchupData =
-			fsd[divisionName]?.[subdivisionName]?.[matchupKey] || {};
-
-		// Setup will be handled in useEffect after team data is fetched
-		// This ensures we're using React Query for the data fetching
-		
-		// Set homeWins, homePoints, awayPoints from matchupData if present
-		const gameInformation = matchupData?.gameInformation || {};
-		const homeWinsArray = Array(11)
-			.fill(false)
-			.map((_, i) => gameInformation[`Game ${i + 1}`]?.homeWin || false);
-		const homePointsArray = Array(11)
-			.fill("")
-			.map((_, i) => gameInformation[`Game ${i + 1}`]?.homePoints || "");
-		const awayPointsArray = Array(11)
-			.fill("")
-			.map((_, i) => gameInformation[`Game ${i + 1}`]?.awayPoints || "");
-		setHomeWins(homeWinsArray);
-		setHomePoints(homePointsArray);
-		setAwayPoints(awayPointsArray);
-
-		// Mentions counter logic (preserve existing)
-		const newMentionCounters: Record<string, number> = { ...mentionCounters };
-		[homeTeamId, awayTeamId].forEach((teamId) => {
-			const teamMembers =
-				matchupData?.teamInformation?.[teamId]?.teamMembers || {};
-			Object.entries(teamMembers).forEach(([playerId, member]) => {
-				if (member.mentions) {
-					const mentionIds = Object.keys(member.mentions);
-					if (mentionIds.length > 0) {
-						const maxId = Math.max(...mentionIds.map((id) => parseInt(id)));
-						const playerMentionKey = `${teamId}-${playerId}`;
-						newMentionCounters[playerMentionKey] = maxId;
-					}
-				}
-			});
-		});
-		setMentionCounters(newMentionCounters);
+	// Week selector handler: incoming value may be like 'Date3'; normalize to just numeric '3'
+	const handleDateToDisplay = (value: string) => {
+		const numeric = value.match(/\d+/)?.[0] || value; // fallback if pattern changes
+		setSelectedWeek(numeric);
 	};
 
-	// Update game data when team player data changes
+	// confirmPendingChanges is defined after saveMatchup to avoid TDZ issues
+
+// Placeholder; actual definition moved below after confirmPendingChanges
+// Temporary noop; real implementation defined after confirmPendingChanges
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let handleSeasonCodeSelect = (_value: string) => {};
+// Forward declare to avoid TDZ when referenced in early handlers
+// Will be defined after saveMatchup; use function hoisting-safe placeholder
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const confirmPendingChangesPlaceholder = () => true;
+
+	// Penalty totals & point calculation (moved above saveMatchup to avoid TDZ)
+	const [homePenaltyTotal, setHomePenaltyTotal] = useState<number>(0);
+	const [awayPenaltyTotal, setAwayPenaltyTotal] = useState<number>(0);
 	useEffect(() => {
-		if (!matchSelected || !formattedScoreData) return;
-		
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-		const matchupData = 
-			formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[matchupKey] || {};
-		
-		// Set up home team game data
-		if (homeTeamPlayerInformation?.length) {
-			const homeGameData: TeamGameData = {};
-			homeTeamPlayerInformation.forEach((player) => {
-				const playerGameData: PlayerGameData = {};
-				for (let i = 1; i <= 11; i++) {
-					const gameKey = `Game ${i}`;
-					playerGameData[gameKey] =
-						matchupData?.teamInformation?.[selectedHomeTeamId]?.teamMembers?.[player.ledaId]?.gameStats?.[gameKey] ||
-						false;
-				}
-				homeGameData[player.ledaId] = playerGameData;
-			});
-			setHomeTeamGameData(homeGameData);
-		}
+		const total = Object.values(homePenalties).reduce((sum, p) => sum + (p.points || 0), 0);
+		setHomePenaltyTotal(total);
+	}, [homePenalties]);
+	useEffect(() => {
+		const total = Object.values(awayPenalties).reduce((sum, p) => sum + (p.points || 0), 0);
+		setAwayPenaltyTotal(total);
+	}, [awayPenalties]);
+	const calculatePoints = useCallback(() => {
+		const totalHomeWins = homeWins.filter(Boolean).length;
+		const rawHomePoints = totalHomeWins;
+		const rawAwayPoints = 11 - totalHomeWins;
+		const finalHomePoints = Math.max(0, rawHomePoints - (homePenaltyTotal || 0));
+		const finalAwayPoints = Math.max(0, rawAwayPoints - (awayPenaltyTotal || 0));
+		return {
+			rawHomePoints,
+			rawAwayPoints,
+			homePenaltyPoints: homePenaltyTotal || 0,
+			awayPenaltyPoints: awayPenaltyTotal || 0,
+			finalHomePoints,
+			finalAwayPoints,
+		};
+	}, [homeWins, homePenaltyTotal, awayPenaltyTotal]);
 
-		// Set up away team game data
-		if (awayTeamPlayerInformation?.length) {
-			const awayGameData: TeamGameData = {};
-			awayTeamPlayerInformation.forEach((player) => {
-				const playerGameData: PlayerGameData = {};
-				for (let i = 1; i <= 11; i++) {
-					const gameKey = `Game ${i}`;
-					playerGameData[gameKey] =
-						matchupData?.teamInformation?.[selectedAwayTeamId]?.teamMembers?.[player.ledaId]?.gameStats?.[gameKey] ||
-						false;
-				}
-				awayGameData[player.ledaId] = playerGameData;
-			});
-			setAwayTeamGameData(awayGameData);
-		}
-	}, [
-		matchSelected, 
-		formattedScoreData, 
-		homeTeamPlayerInformation, 
-		awayTeamPlayerInformation,
-		selectedDivision,
-		selectedSubdivision,
-		selectedHomeLetter,
-		selectedAwayLetter,
-		selectedHomeTeamId,
-		selectedAwayTeamId
-	]);
+	// Handle matchup selection from SideNav is defined later after confirmPendingChanges
 
-	const handleDateToDisplay = async (value: string) => {
-		setMatchSelected(false);
-		
-		// Extract the week number from "DateX" format
-		const weekNumber = value.replace("Date", "");
-		setSelectedWeek(weekNumber);
-		
-		if (scheduleData?.scheduleData) {
-			const newSidenavData = convertScheduleData(scheduleData.scheduleData, value);
-			setSidenavData(newSidenavData);
-			
-			// React Query will automatically fetch the scoresheet data based on the selectedWeek change
-			// We'll process it when it arrives in the useEffect hook
-			
-			// Build matchups from schedule data
-			let allWeekMatchups: FormattedScoreData = {};
-			for (const division in newSidenavData) {
-				for (const subdivision in newSidenavData[division]) {
-					for (const matchupNum in newSidenavData[division][subdivision]) {
-						const matchup = newSidenavData[division][subdivision][matchupNum];
-						const matchupKey = `${matchup.homeTeamLetter} - ${matchup.awayTeamLetter}`;
-						const homeTeamId = matchup.homeTeamId;
-						const awayTeamId = matchup.awayTeamId;
-						const homeTeamLetter = matchup.homeTeamLetter;
-						const awayTeamLetter = matchup.awayTeamLetter;
-
-						// Try to get team names from DB data if available, else fallback to empty string
-						const dbScoreData = scoresheetData?.scoresheetData || {};
-						const homeTeamName =
-							dbScoreData?.[division]?.[subdivision]?.[matchupKey]?.teamInformation?.[homeTeamId]?.teamName || "";
-						const awayTeamName =
-							dbScoreData?.[division]?.[subdivision]?.[matchupKey]?.teamInformation?.[awayTeamId]?.teamName || "";
-
-						// If matchup exists in DB, use DB data, else generate empty
-						const matchupData =
-							dbScoreData?.[division]?.[subdivision]?.[matchupKey]
-								? {
-										[division]: {
-											[subdivision]: {
-												[matchupKey]:
-													dbScoreData[division][subdivision][matchupKey],
-											},
-										},
-									}
-								: generateEmptyMatchupData(
-										division,
-										subdivision,
-										matchupKey,
-										homeTeamId,
-										awayTeamId,
-										homeTeamLetter,
-										awayTeamLetter,
-										homeTeamName,
-										awayTeamName
-									);
-
-						// Deep merge into allWeekMatchups
-						allWeekMatchups = deepMerge(allWeekMatchups, matchupData);
-					}
-				}
+	const deepEqual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+	const saveMatchup = useCallback(async (markComplete: boolean = false) => {
+		if (!seasonCode || !selectedWeek || !selectedDivision || !selectedSubdivision) return;
+		if (!selectedHomeTeamId || !selectedAwayTeamId) return;
+		try {
+			const tasks: Promise<unknown>[] = [];
+			const last = lastSavedSnapshot;
+			const homePenChanged = !last || !deepEqual(homePenalties, last.Home.penalties);
+			const awayPenChanged = !last || !deepEqual(awayPenalties, last.Away.penalties);
+			if (homePenChanged) {
+				tasks.push(
+					saveTeamInfoMutation.mutateAsync({
+						seasonCode,
+						weekNum: parseInt(selectedWeek),
+						division: selectedDivision,
+						subdivision: selectedSubdivision,
+						home: true,
+						teamId: selectedHomeTeamId,
+						teamName: homeTeamInformation?.teamName || "",
+						teamLetter: selectedHomeLetter,
+						opposingTeamId: selectedAwayTeamId,
+						penalties: homePenalties,
+					})
+				);
+			}
+			if (awayPenChanged) {
+				tasks.push(
+					saveTeamInfoMutation.mutateAsync({
+						seasonCode,
+						weekNum: parseInt(selectedWeek),
+						division: selectedDivision,
+						subdivision: selectedSubdivision,
+						home: false,
+						teamId: selectedAwayTeamId,
+						teamName: awayTeamInformation?.teamName || "",
+						teamLetter: selectedAwayLetter,
+						opposingTeamId: selectedHomeTeamId,
+						penalties: awayPenalties,
+					})
+				);
 			}
 
-			// If DB had extra matchups (e.g. new ones added in DB), merge them in
-			const dbScoreData = scoresheetData?.scoresheetData || {};
-			if (dbScoreData && Object.keys(dbScoreData).length > 0) {
-				allWeekMatchups = deepMerge(allWeekMatchups, dbScoreData);
+			// Build per-game info for 11 games
+			const gameInfo: Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> = {};
+			for (let i = 0; i < 11; i++) {
+				const gameKey = `Game ${i + 1}`;
+				gameInfo[gameKey] = {
+					homeWin: !!homeWins[i],
+					homePoints: homePoints[i] || "0",
+					awayPoints: awayPoints[i] || "0",
+				};
 			}
 
-			setFormattedScoreData(allWeekMatchups);
+			const totals = calculatePoints();
+			const gameInfoChanged = !last || !deepEqual(last.Home.wins, homeWins) || !deepEqual(last.Home.points, homePoints) || !deepEqual(last.Away.points, awayPoints) || (!!markComplete !== !!last.completed);
+			if (gameInfoChanged) {
+				// Save granular game info
+				tasks.push(
+					saveGameInfoMutation.mutateAsync({
+						seasonCode,
+						weekNum: parseInt(selectedWeek),
+						division: selectedDivision,
+						subdivision: selectedSubdivision,
+						homeTeamId: selectedHomeTeamId,
+						awayTeamId: selectedAwayTeamId,
+						homePoints: totals.finalHomePoints,
+						awayPoints: totals.finalAwayPoints,
+						completed: !!markComplete,
+						gameInfo,
+					})
+				);
+				// Also persist legacy cumulative team weekly points to keep historical leaderboards in sync
+				tasks.push(
+					saveWeeklyTeamPointsMutation.mutateAsync({
+						seasonCode,
+						weekNum: parseInt(selectedWeek),
+						ledaId: selectedHomeTeamId,
+						totalPoints: totals.finalHomePoints,
+					})
+				);
+				tasks.push(
+					saveWeeklyTeamPointsMutation.mutateAsync({
+						seasonCode,
+						weekNum: parseInt(selectedWeek),
+						ledaId: selectedAwayTeamId,
+						totalPoints: totals.finalAwayPoints,
+					})
+				);
+			}
+
+			// Save player participation for each player (home and away)
+			Object.entries(homeTeamGameData).forEach(([playerId, gameStats]) => {
+				const before = last?.Home.teamGameData?.[playerId] || {};
+				if (!deepEqual(before, gameStats)) {
+					// Persist granular participation stats
+					tasks.push(
+						savePlayerPointsMutation.mutateAsync({
+							seasonCode,
+							weekNum: parseInt(selectedWeek),
+							division: selectedDivision,
+							subdivision: selectedSubdivision,
+							ledaId: playerId,
+							teamId: selectedHomeTeamId,
+							gameStats: gameStats as Record<string, boolean>,
+						})
+					);
+					// Also upsert legacy cumulative player weekly points
+					const weeklyPoints = Object.values(gameStats).filter(Boolean).length; // assumption metric
+					tasks.push(
+						saveWeeklyPlayerPointsMutation.mutateAsync({
+							seasonCode,
+							weekNum: parseInt(selectedWeek),
+							ledaId: playerId,
+							teamLedaId: selectedHomeTeamId,
+							totalPoints: weeklyPoints,
+						})
+					);
+				}
+			});
+			Object.entries(awayTeamGameData).forEach(([playerId, gameStats]) => {
+				const before = last?.Away.teamGameData?.[playerId] || {};
+				if (!deepEqual(before, gameStats)) {
+					tasks.push(
+						savePlayerPointsMutation.mutateAsync({
+							seasonCode,
+							weekNum: parseInt(selectedWeek),
+							division: selectedDivision,
+							subdivision: selectedSubdivision,
+							ledaId: playerId,
+							teamId: selectedAwayTeamId,
+							gameStats: gameStats as Record<string, boolean>,
+						})
+					);
+					const weeklyPoints = Object.values(gameStats).filter(Boolean).length;
+					tasks.push(
+						saveWeeklyPlayerPointsMutation.mutateAsync({
+							seasonCode,
+							weekNum: parseInt(selectedWeek),
+							ledaId: playerId,
+							teamLedaId: selectedAwayTeamId,
+							totalPoints: weeklyPoints,
+						})
+					);
+				}
+			});
+			if (tasks.length === 0) { setIsDataChanged(false); return; }
+			await Promise.all(tasks);
+
+			setIsDataChanged(false);
+			if (markComplete) setIsMatchupCompleted(true);
+			const newSnap = {
+				Home: { teamGameData: JSON.parse(JSON.stringify(homeTeamGameData)), wins: [...homeWins], points: [...homePoints], penalties: JSON.parse(JSON.stringify(homePenalties)) },
+				Away: { teamGameData: JSON.parse(JSON.stringify(awayTeamGameData)), points: [...awayPoints], penalties: JSON.parse(JSON.stringify(awayPenalties)) },
+				completed: !!markComplete,
+			};
+			setLastSavedSnapshot(newSnap);
+			if (!originalMatchupSnapshot) setOriginalMatchupSnapshot(newSnap);
+		} catch (err) {
+			console.error("Error saving matchup", err);
 		}
-	};
+	}, [seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, selectedAwayTeamId, homeTeamInformation, awayTeamInformation, selectedHomeLetter, selectedAwayLetter, homePenalties, awayPenalties, homeWins, homePoints, awayPoints, calculatePoints, saveTeamInfoMutation, saveGameInfoMutation, homeTeamGameData, awayTeamGameData, savePlayerPointsMutation, saveWeeklyTeamPointsMutation, saveWeeklyPlayerPointsMutation, originalMatchupSnapshot, lastSavedSnapshot]);
+		
+	// removed stray fragment from prior handler
 
 	const handleGameToggle = (
 		teamType: "home" | "away",
@@ -1075,67 +1072,8 @@ export default function WeeklyScoresheetsContent({
 		handleDataChange();
 	};
 
-	const calculatePoints = () => {
-		const totalHomeWins = homeWins.filter(Boolean).length;
-		const rawHomePoints = totalHomeWins;
-		const rawAwayPoints = 11 - totalHomeWins;
 
-		// Calculate penalty totals for both teams - updated for new structure
-		let homePenaltyPoints = 0;
-		let awayPenaltyPoints = 0;
-
-		// Only calculate penalties if we have formatted score data
-		if (formattedScoreData) {
-			const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-
-			// Check if the team exists in the formattedScoreData and has penalties
-			if (
-				formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[
-					matchupKey
-				]?.teamInformation?.[selectedHomeTeamId]?.penalties
-			) {
-				const homePenalties =
-					formattedScoreData[selectedDivision][selectedSubdivision][
-						matchupKey
-					].teamInformation[selectedHomeTeamId].penalties;
-				// Sum all penalty points
-				homePenaltyPoints = Object.values(homePenalties).reduce(
-					(sum, penalty) => sum + penalty.points,
-					0
-				);
-			}
-
-			// Same for away team
-			if (
-				formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[
-					matchupKey
-				]?.teamInformation?.[selectedAwayTeamId]?.penalties
-			) {
-				const awayPenalties =
-					formattedScoreData[selectedDivision][selectedSubdivision][
-						matchupKey
-					].teamInformation[selectedAwayTeamId].penalties;
-				// Sum all penalty points
-				awayPenaltyPoints = Object.values(awayPenalties).reduce(
-					(sum, penalty) => sum + penalty.points,
-					0
-				);
-			}
-		}
-
-		// Subtract penalty points from raw points
-		const finalHomePoints = Math.max(0, rawHomePoints - homePenaltyPoints);
-		const finalAwayPoints = Math.max(0, rawAwayPoints - awayPenaltyPoints);
-
-		return {
-			rawHomePoints,
-			rawAwayPoints,
-			homePenaltyPoints,
-			awayPenaltyPoints,
-			finalHomePoints,
-			finalAwayPoints,
-		};
-	};
+    // (moved up)
 
 	const handleHomePointsChange = (gameIndex: number, value: string) => {
 		setHomePoints((prev) => {
@@ -1155,253 +1093,164 @@ export default function WeeklyScoresheetsContent({
 		handleDataChange();
 	};
 
-	const calculatePlayerPoints = () => {
-		// Calculate home team player points
-		const homePlayerPoints: PlayerPoints[] = [];
+	// removed legacy saveMatchup implementation
 
-		if (homeTeamPlayerInformation) {
-			homeTeamPlayerInformation.forEach((player) => {
-				const playerGameData = homeTeamGameData[player.ledaId] || {};
-				let totalPoints = 0;
-				const pointsByGame: Record<string, number> = {};
-
-				// Calculate points for each game
-				for (let i = 0; i < 11; i++) {
-					const gameKey = `Game ${i + 1}`;
-					// If player participated in the game, add the points
-					if (playerGameData[gameKey]) {
-						const gamePoints = parseInt(homePoints[i]) || 0;
-						totalPoints += gamePoints;
-						pointsByGame[gameKey] = gamePoints;
-					} else {
-						pointsByGame[gameKey] = 0;
-					}
-				}
-
-				// Mention points will be calculated from the scoresheet data structure when saved
-
-				homePlayerPoints.push({
-					playerId: String(player.ledaId),
-					playerName: player.fullName,
-					totalPoints,
-					pointsByGame,
-				});
-			});
+	// Now that saveMatchup exists, define confirmPendingChanges depending on it
+	const confirmPendingChanges = useCallback((): boolean => {
+		if (!isDataChanged) return true;
+		const choice = window.prompt(
+			"You have unsaved changes. Enter 1 to Save, 2 to Save & Mark Complete, 3 to Discard.",
+			"1"
+		);
+		if (choice === null) return false; // cancel
+		if (choice === "1") {
+			saveMatchup(false);
+			return true;
 		}
-
-		// Calculate away team player points
-		const awayPlayerPoints: PlayerPoints[] = [];
-
-		if (awayTeamPlayerInformation) {
-			awayTeamPlayerInformation.forEach((player) => {
-				const playerGameData = awayTeamGameData[player.ledaId] || {};
-				let totalPoints = 0;
-				const pointsByGame: Record<string, number> = {};
-
-				// Calculate points for each game
-				for (let i = 0; i < 11; i++) {
-					const gameKey = `Game ${i + 1}`;
-					// If player participated in the game, add the points
-					if (playerGameData[gameKey]) {
-						const gamePoints = parseInt(awayPoints[i]) || 0;
-						totalPoints += gamePoints;
-						pointsByGame[gameKey] = gamePoints;
-					} else {
-						pointsByGame[gameKey] = 0;
-					}
-				}
-
-				// Mention points will be calculated from the scoresheet data structure when saved
-
-				awayPlayerPoints.push({
-					playerId: String(player.ledaId),
-					playerName: player.fullName,
-					totalPoints,
-					pointsByGame,
-				});
-			});
+		if (choice === "2") {
+			saveMatchup(true);
 		}
+		if (choice === "3") {
+			setIsDataChanged(false);
+			return true;
+		}
+		window.alert("Invalid selection; action cancelled.");
+		return false;
+	}, [isDataChanged, saveMatchup]);
 
-		// Format data in the requested JSON structure
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
+	// Define matchup selection handler now that confirmPendingChanges exists
+	const handleMatchupSelection = useCallback(async (
+		homeLetter: string,
+		awayLetter: string,
+		divisionName: string,
+		subdivisionName: string
+	) => {
+		if (!seasonCode || !selectedWeek) return;
+		// guard unsaved changes
+		if (!confirmPendingChanges()) return;
+		setSelectedHomeLetter(homeLetter);
+		setSelectedAwayLetter(awayLetter);
+		setSelectedDivision(divisionName);
+		setSelectedSubdivision(subdivisionName);
+		setMatchSelected(true);
+		// reset baseline tracking for new matchup
+		setBaselineInitialized(false);
+		setLastSavedSnapshot(null);
+		setHomeHydrated(false);
+		setAwayHydrated(false);
+		try {
+			const teamRows = await fetchTeamInfoV2({
+				seasonCode,
+				weekNum: selectedWeek,
+				division: divisionName,
+				subdivision: subdivisionName,
+				teamLetter: homeLetter,
+			});
+			// Reset local state when switching matchups
+			setHomeTeamGameData({});
+			setAwayTeamGameData({});
+			setHomeWins(Array(11).fill(false));
+			setHomePoints(Array(11).fill(""));
+			setAwayPoints(Array(11).fill(""));
+			setIsMatchupCompleted(false);
+			setIsDataChanged(false);
+			setOriginalMatchupSnapshot(null);
+			setLastSavedSnapshot(null);
+			setBaselineInitialized(false);
 
-		// Create the new formatted data
-		const newData: FormattedScoreData = {
-			[selectedDivision]: {
-				[selectedSubdivision]: {
-					[matchupKey]: {
-						teamInformation: {
-							[selectedHomeTeamId]: {
-								teamLetter: selectedHomeLetter,
-								teamName: homeTeamInformation?.teamName || "",
-								home: true,
-								teamMembers:
-									homeTeamPlayerInformation?.reduce(
-										(acc, player) => {
-											acc[player.ledaId] = {
-												name: player.fullName,
-												gameStats: homeTeamGameData[player.ledaId] || {},
-												gamePoints: String(
-													homePlayerPoints.find(
-														(p) => p.playerId === String(player.ledaId)
-													)?.totalPoints || 0
-												),
-												// Note: Mentions are now handled separately in the database
-											};
-											return acc;
-										},
-										{} as {
-											[playerId: string]: {
-												name: string;
-												gameStats: Record<string, boolean>;
-												gamePoints: string;
-											};
-										}
-									) || {},
-								penalties:
-									formattedScoreData?.[selectedDivision]?.[
-										selectedSubdivision
-									]?.[matchupKey]?.teamInformation?.[
-										selectedHomeTeamId
-									]?.penalties || {},
-							},
-							[selectedAwayTeamId]: {
-								teamLetter: selectedAwayLetter,
-								teamName: awayTeamInformation?.teamName || "",
-								home: false,
-								teamMembers:
-									awayTeamPlayerInformation?.reduce(
-										(acc, player) => {
-											acc[player.ledaId] = {
-												name: player.fullName,
-												gameStats: awayTeamGameData[player.ledaId] || {},
-												gamePoints: String(
-													awayPlayerPoints.find(
-														(p) => p.playerId === String(player.ledaId)
-													)?.totalPoints || 0
-												),
-												// Note: Mentions are now handled separately in the database
-											};
-											return acc;
-										},
-										{} as {
-											[playerId: string]: {
-												name: string;
-												gameStats: Record<string, boolean>;
-												gamePoints: string;
-											};
-										}
-									) || {},
-								penalties:
-									formattedScoreData?.[selectedDivision]?.[
-										selectedSubdivision
-									]?.[matchupKey]?.teamInformation?.[
-										selectedAwayTeamId
-									]?.penalties || {},
-							},
-						},
-						gameInformation: {
-							...Array.from({ length: 11 }, (_, i) => {
-								const gameNum = i + 1;
-								return {
-									[`Game ${gameNum}`]: {
-										homeWin: homeWins[i],
-										homePoints: homePoints[i] || "0",
-										awayPoints: awayPoints[i] || "0",
-									},
-								};
-							}).reduce((acc, cur) => ({ ...acc, ...cur }), {}),
-						},
-						teamPoints: {
-							homePoints: String(
-								calculatePoints().finalHomePoints
-							),
-							awayPoints: String(
-								calculatePoints().finalAwayPoints
-							),
-						},
-					},
-				},
-			},
+			if (Array.isArray(teamRows) && teamRows.length >= 2) {
+				const homeTeamId = String(teamRows[0].teamId);
+				const awayTeamId = String(teamRows[1].teamId);
+				setSelectedHomeTeamId(homeTeamId);
+				setSelectedAwayTeamId(awayTeamId);
+				setHomePenalties(teamRows[0]?.penalties || {});
+				setAwayPenalties(teamRows[1]?.penalties || {});
+
+				// Hydrate existing game info
+				const giRows = await fetchGameInfoV2({
+					seasonCode,
+					weekNum: selectedWeek,
+					division: divisionName,
+					subdivision: subdivisionName,
+					homeTeamId,
+					awayTeamId,
+				});
+				if (Array.isArray(giRows) && giRows.length > 0) {
+					const gi = giRows[0];
+					const gameInfo = gi?.gameInfo as Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> | undefined;
+					if (gameInfo) {
+						const newWins = Array(11).fill(false).map((_, i) => !!gameInfo[`Game ${i + 1}`]?.homeWin);
+						const newHomePoints = Array(11).fill("").map((_, i) => gameInfo[`Game ${i + 1}`]?.homePoints ?? "0");
+						const newAwayPoints = Array(11).fill("").map((_, i) => gameInfo[`Game ${i + 1}`]?.awayPoints ?? "0");
+						setHomeWins(newWins);
+						setHomePoints(newHomePoints);
+						setAwayPoints(newAwayPoints);
+					}
+					setIsMatchupCompleted(!!gi?.completed);
+				}
+			} else {
+				setSelectedHomeTeamId("");
+				setSelectedAwayTeamId("");
+				setHomePenalties({});
+				setAwayPenalties({});
+			}
+			// Force refetch of player game-stats queries for this matchup
+			setMatchupLoadToken(prev => prev + 1);
+		} catch (e) {
+			console.error("Failed to load matchup team info", e);
+		}
+	// fetchTeamInfoV2 & fetchGameInfoV2 are stable local functions; exclude from deps to satisfy lint
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [seasonCode, selectedWeek, confirmPendingChanges]);
+
+	// establish baseline snapshot once roster/game data hydrated for both teams
+	useEffect(() => {
+		if (!matchSelected) return;
+		if (baselineInitialized) return;
+		if (!homeHydrated || !awayHydrated) return;
+		const snap = {
+			Home: { teamGameData: JSON.parse(JSON.stringify(homeTeamGameData)), wins: [...homeWins], points: [...homePoints], penalties: JSON.parse(JSON.stringify(homePenalties)) },
+			Away: { teamGameData: JSON.parse(JSON.stringify(awayTeamGameData)), points: [...awayPoints], penalties: JSON.parse(JSON.stringify(awayPenalties)) },
+			completed: isMatchupCompleted,
 		};
+		setOriginalMatchupSnapshot(snap);
+		setLastSavedSnapshot(snap);
+		setBaselineInitialized(true);
+	}, [matchSelected, baselineInitialized, homeHydrated, awayHydrated, homeTeamGameData, awayTeamGameData, homeWins, homePoints, awayPoints, homePenalties, awayPenalties, isMatchupCompleted]);
 
-		// Merge with existing data instead of overwriting
-		if (formattedScoreData) {
-			// Deep merge existing data with new data
-			const mergedData = deepMerge(formattedScoreData, newData);
-			setFormattedScoreData(mergedData as FormattedScoreData);
-		} else {
-			// First save, just use the new data
-			setFormattedScoreData(newData);
-		}
+	// Implement season code selection handler now that confirmPendingChanges exists
+	handleSeasonCodeSelect = (value: string) => {
+		if (!confirmPendingChanges()) return;
+		setSeasonCode(value);
+		setSeasonSelected(false);
 
-		// Save using React Query mutation
-		saveScoresheet(newData);
+		// Reset state when season changes
+		setSelectedWeek("");
+		// clear selection
+		setMatchSelected(false);
+		setSelectedHomeLetter("");
+		setSelectedAwayLetter("");
+		setSelectedDivision("");
+		setSelectedSubdivision("");
+		setSelectedHomeTeamId("");
+		setSelectedAwayTeamId("");
+		setHomeTeamGameData({});
+		setAwayTeamGameData({});
+		setHomeWins(Array(11).fill(false));
+		setHomePoints(Array(11).fill(""));
+		setAwayPoints(Array(11).fill(""));
+		setHomePenaltyCounter(0);
+		setAwayPenaltyCounter(0);
+		setMentionCounters({});
 	};
 
 	// Process mention history using React Query mutations
 	// Note: processMentionHistory function was removed since mentions are now
 	// saved directly to the database when users add/edit/delete them
 
-	const resetScoresheet = () => {
-		if (
-			window.confirm(
-				"Are you sure you want to reset this scoresheet? This action cannot be undone."
-			)
-		) {
-			// Reset home and away team game data
-			setHomeTeamGameData({});
-			setAwayTeamGameData({});
+	// Legacy resetScoresheet fully removed (was replaced by explicit Reset Changes & Delete actions)
 
-			// Reset home win checkboxes
-			setHomeWins(Array(11).fill(false));
-
-			// Reset points
-			setHomePoints(Array(11).fill(""));
-			setAwayPoints(Array(11).fill(""));
-
-			// Reset formattedScoreData for this matchup
-			if (formattedScoreData) {
-				const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-				const updatedData = { ...formattedScoreData };
-
-				if (
-					updatedData[selectedDivision] &&
-					updatedData[selectedDivision][selectedSubdivision] &&
-					updatedData[selectedDivision][selectedSubdivision][
-						matchupKey
-					]
-				) {
-					delete updatedData[selectedDivision][selectedSubdivision][
-						matchupKey
-					];
-
-					// If no matchups remain in the subdivision, remove it
-					if (
-						Object.keys(
-							updatedData[selectedDivision][selectedSubdivision]
-						).length === 0
-					) {
-						delete updatedData[selectedDivision][
-							selectedSubdivision
-						];
-					}
-
-					// If no subdivisions remain in the division, remove it
-					if (
-						Object.keys(updatedData[selectedDivision]).length === 0
-					) {
-						delete updatedData[selectedDivision];
-					}
-				}
-
-				setFormattedScoreData(updatedData);
-			}
-
-			// Mark data as changed to enable the "Save Scoresheet" button
-			setIsDataChanged(true);
-		}
-	};
+	// ensureBaselineForMatchup removed (baselines now implicit via save + probing)
 
 	const handlePenaltyClick = (
 		teamId: string,
@@ -1420,159 +1269,43 @@ export default function WeeklyScoresheetsContent({
 		}
 	};
 
-	const handlePenaltySubmit = (
-		teamId: string,
-		penaltyCode: string,
-		points: number,
-		notes?: string
-	) => {
-		// Create a copy of existing data, or initialize if it doesn't exist
-		const updatedData = formattedScoreData ? { ...formattedScoreData } : {};
-
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-
-		// Ensure the necessary nested structure exists
-		if (!updatedData[selectedDivision]) {
-			updatedData[selectedDivision] = {};
-		}
-
-		if (!updatedData[selectedDivision][selectedSubdivision]) {
-			updatedData[selectedDivision][selectedSubdivision] = {};
-		}
-
-		if (!updatedData[selectedDivision][selectedSubdivision][matchupKey]) {
-			updatedData[selectedDivision][selectedSubdivision][matchupKey] = {
-				teamInformation: {},
-				gameInformation: {},
-				teamPoints: { homePoints: "0", awayPoints: "0" },
-			};
-		}
-
-		// Find the right team (home or away) to add the penalty to
-		const teamKey =
-			teamId === selectedHomeTeamId
-				? selectedHomeTeamId
-				: selectedAwayTeamId;
-		const isHomeTeam = teamId === selectedHomeTeamId;
-
-		if (
-			!updatedData[selectedDivision][selectedSubdivision][matchupKey]
-				.teamInformation[teamKey]
-		) {
-			updatedData[selectedDivision][selectedSubdivision][
-				matchupKey
-			].teamInformation[teamKey] = {
-				teamLetter:
-					teamId === selectedHomeTeamId
-						? selectedHomeLetter
-						: selectedAwayLetter,
-				teamName:
-					teamId === selectedHomeTeamId
-						? homeTeamInformation?.teamName || ""
-						: awayTeamInformation?.teamName || "",
-				home: teamId === selectedHomeTeamId,
-				teamMembers: {},
-				penalties: {},
-			};
-		}
-
-		// Ensure penalties object exists
-		if (
-			!updatedData[selectedDivision][selectedSubdivision][matchupKey]
-				.teamInformation[teamKey].penalties
-		) {
-			updatedData[selectedDivision][selectedSubdivision][
-				matchupKey
-			].teamInformation[teamKey].penalties = {};
-		}
-
-		// Get current counter and increment for next use
-		const nextCounter = isHomeTeam
-			? homePenaltyCounter + 1
-			: awayPenaltyCounter + 1;
-
-		// Add the new penalty using the counter as the key
-		updatedData[selectedDivision][selectedSubdivision][
-			matchupKey
-		].teamInformation[teamKey].penalties[nextCounter.toString()] = {
-			penaltyCode,
-			points,
-			notes: notes || "",
-		};
-
-		// Log to verify the penalty was added
-		console.log(
-			"Added penalty:",
-			updatedData[selectedDivision][selectedSubdivision][matchupKey]
-				.teamInformation[teamKey].penalties
-		);
-
-		// Update the counter state
-		if (isHomeTeam) {
-			setHomePenaltyCounter(nextCounter);
-		} else {
-			setAwayPenaltyCounter(nextCounter);
-		}
-
-		// Update state
-		setFormattedScoreData(updatedData);
-
-		// Close the appropriate dialog
-		if (teamId === selectedHomeTeamId) {
-			setHomePenaltyDialogOpen(false);
-		} else {
-			setAwayPenaltyDialogOpen(false);
-		}
-
-		// Mark data as changed
-		handleDataChange();
-	};
+    const handlePenaltySubmit = (
+        teamId: string,
+        penaltyCode: string,
+        points: number,
+        notes?: string
+    ) => {
+        const isHomeTeam = teamId === selectedHomeTeamId;
+        const nextCounter = isHomeTeam ? homePenaltyCounter + 1 : awayPenaltyCounter + 1;
+        const penaltyObj = { penaltyCode, points, notes: notes || "" };
+        if (isHomeTeam) {
+            setHomePenalties((prev) => ({ ...prev, [nextCounter]: penaltyObj }));
+            setHomePenaltyCounter(nextCounter);
+        } else {
+            setAwayPenalties((prev) => ({ ...prev, [nextCounter]: penaltyObj }));
+            setAwayPenaltyCounter(nextCounter);
+        }
+        if (isHomeTeam) setHomePenaltyDialogOpen(false); else setAwayPenaltyDialogOpen(false);
+        handleDataChange();
+    };
 
 	const handlePenaltyEditing = (teamId: string, penaltyId: string) => {
-		if (!formattedScoreData) return;
-
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-		const teamKey =
-			teamId === selectedHomeTeamId
-				? selectedHomeTeamId
-				: selectedAwayTeamId;
-
-		// Check if the penalty exists
-		if (
-			formattedScoreData[selectedDivision]?.[selectedSubdivision]?.[
-				matchupKey
-			]?.teamInformation?.[teamKey]?.penalties?.[penaltyId]
-		) {
-			// Get the penalty data
-			const penalty =
-				formattedScoreData[selectedDivision][selectedSubdivision][
-					matchupKey
-				].teamInformation[teamKey].penalties[penaltyId];
-
-			// Set up the editing state
-			setPenaltyEditMode(true);
-			setCurrentEditingPenalty({
-				id: penaltyId,
-				code: penalty.penaltyCode,
-				points: penalty.points,
-				notes: penalty.notes || "",
-			});
-
-			// Set the selected team information for penalties
-			setSelectedPenaltyTeamId(teamId);
-			setSelectedPenaltyTeamName(
-				teamId === selectedHomeTeamId
-					? homeTeamInformation?.teamName || ""
-					: awayTeamInformation?.teamName || ""
-			);
-
-			// Open the appropriate dialog
-			if (teamId === selectedHomeTeamId) {
-				setHomePenaltyDialogOpen(true);
-			} else {
-				setAwayPenaltyDialogOpen(true);
-			}
-		}
+		const isHomeTeam = teamId === selectedHomeTeamId;
+		const penalties = isHomeTeam ? homePenalties : awayPenalties;
+		const penalty = penalties[penaltyId];
+		if (!penalty) return;
+		setPenaltyEditMode(true);
+		setCurrentEditingPenalty({
+			id: penaltyId,
+			code: penalty.penaltyCode,
+			points: penalty.points,
+			notes: penalty.notes || "",
+		});
+		setSelectedPenaltyTeamId(teamId);
+		setSelectedPenaltyTeamName(
+			isHomeTeam ? homeTeamInformation?.teamName || "" : awayTeamInformation?.teamName || ""
+		);
+		if (isHomeTeam) setHomePenaltyDialogOpen(true); else setAwayPenaltyDialogOpen(true);
 	};
 
 	const updatePenalty = (
@@ -1582,88 +1315,29 @@ export default function WeeklyScoresheetsContent({
 		points: number,
 		notes?: string
 	) => {
-		if (!formattedScoreData) return;
-
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-
-		// Create a copy of the current formatted score data
-		const updatedData = { ...formattedScoreData };
-
-		// Find the right team (home or away) to update the penalty
-		const teamKey =
-			teamId === selectedHomeTeamId
-				? selectedHomeTeamId
-				: selectedAwayTeamId;
-
-		// Check if the penalty exists before attempting to update
-		if (
-			updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]
-				?.teamInformation?.[teamKey]?.penalties?.[penaltyId]
-		) {
-			// Update the existing penalty with the new values
-			updatedData[selectedDivision][selectedSubdivision][
-				matchupKey
-			].teamInformation[teamKey].penalties[penaltyId] = {
-				penaltyCode: newCode,
-				points,
-				notes: notes || "",
-			};
-
-			// Update state
-			setFormattedScoreData(updatedData);
-
-			// Reset editing state
-			setPenaltyEditMode(false);
-			setCurrentEditingPenalty(null);
-
-			// Close the dialogs
-			setHomePenaltyDialogOpen(false);
-			setAwayPenaltyDialogOpen(false);
-
-			// Mark data as changed
-			handleDataChange();
-		}
+		const isHomeTeam = teamId === selectedHomeTeamId;
+		const setFn = isHomeTeam ? setHomePenalties : setAwayPenalties;
+		setFn((prev) => ({
+			...prev,
+			[penaltyId]: { penaltyCode: newCode, points, notes: notes || "" },
+		}));
+		setPenaltyEditMode(false);
+		setCurrentEditingPenalty(null);
+		setHomePenaltyDialogOpen(false);
+		setAwayPenaltyDialogOpen(false);
+		handleDataChange();
 	};
 
 	const handlePenaltyRemoval = (teamId: string, penaltyId: string) => {
-		if (!formattedScoreData) return;
-
-		// Add confirmation dialog
-		if (
-			!window.confirm(
-				`Are you sure you want to delete this penalty? This action cannot be undone.`
-			)
-		) {
-			return; // Exit the function if user cancels
-		}
-
-		const matchupKey = `${selectedHomeLetter} - ${selectedAwayLetter}`;
-
-		// Create a copy of the current formatted score data
-		const updatedData = { ...formattedScoreData };
-
-		// Find the right team (home or away) to remove the penalty from
-		const teamKey =
-			teamId === selectedHomeTeamId
-				? selectedHomeTeamId
-				: selectedAwayTeamId;
-
-		// Check if the penalty exists before attempting to remove
-		if (
-			updatedData[selectedDivision]?.[selectedSubdivision]?.[matchupKey]
-				?.teamInformation?.[teamKey]?.penalties?.[penaltyId]
-		) {
-			// Remove the penalty
-			delete updatedData[selectedDivision][selectedSubdivision][
-				matchupKey
-			].teamInformation[teamKey].penalties[penaltyId];
-
-			// Update state
-			setFormattedScoreData(updatedData);
-
-			// Mark data as changed
-			handleDataChange();
-		}
+		if (!window.confirm("Delete this penalty?")) return;
+		const isHomeTeam = teamId === selectedHomeTeamId;
+		const setFn = isHomeTeam ? setHomePenalties : setAwayPenalties;
+		setFn((prev) => {
+			const clone = { ...prev };
+			delete clone[penaltyId];
+			return clone;
+		});
+		handleDataChange();
 	};
 
 	const handleMentionClick = async (playerId: string, teamId: string) => {
@@ -1833,13 +1507,57 @@ export default function WeeklyScoresheetsContent({
 			setMentionEditMode(false);
 			setCurrentEditingMention(null);
 
-			// Note: We don't update formattedScoreData or call handleDataChange()
-			// This means the mention is updated in database but doesn't trigger "unsaved changes"
+			// Intentionally does not toggle unsaved-change flag; mention updates persist immediately
 		} catch (error) {
 			console.error("Failed to update mention:", error);
 			// Could show a toast notification here
 		}
 	};
+
+	// Reset current matchup fields to server baseline via V2 GETs
+	const resetToServerBaseline = useCallback(async () => {
+		if (!seasonCode || !selectedWeek || !selectedDivision || !selectedSubdivision || !selectedHomeTeamId || !selectedAwayTeamId) return;
+		try {
+			const giRows = await fetchGameInfoV2({
+				seasonCode,
+				weekNum: selectedWeek,
+				division: selectedDivision,
+				subdivision: selectedSubdivision,
+				homeTeamId: selectedHomeTeamId,
+				awayTeamId: selectedAwayTeamId,
+			});
+			const gameInfo = Array.isArray(giRows) && giRows[0]?.gameInfo ? giRows[0].gameInfo as Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> : {};
+			const homeWinsArray = Array(11).fill(false).map((_, i) => (gameInfo[`Game ${i + 1}`]?.homeWin ?? false));
+			const homePointsArray = Array(11).fill("").map((_, i) => (gameInfo[`Game ${i + 1}`]?.homePoints ?? "0"));
+			const awayPointsArray = Array(11).fill("").map((_, i) => (gameInfo[`Game ${i + 1}`]?.awayPoints ?? "0"));
+			setHomeWins(homeWinsArray);
+			setHomePoints(homePointsArray);
+			setAwayPoints(awayPointsArray);
+
+			const teamRows = await fetchTeamInfoV2({
+				seasonCode,
+				weekNum: selectedWeek,
+				division: selectedDivision,
+				subdivision: selectedSubdivision,
+				teamLetter: selectedHomeLetter,
+			});
+			if (Array.isArray(teamRows) && teamRows.length >= 2) {
+				interface PenRow { points?: number }
+				const homePenalties = teamRows[0]?.penalties || {};
+				const awayPenalties = teamRows[1]?.penalties || {};
+				const homeTotal = Object.values(homePenalties as Record<string, PenRow>).reduce((sum: number, p: PenRow) => sum + (p.points || 0), 0);
+				const awayTotal = Object.values(awayPenalties as Record<string, PenRow>).reduce((sum: number, p: PenRow) => sum + (p.points || 0), 0);
+				setHomePenaltyTotal(homeTotal);
+				setAwayPenaltyTotal(awayTotal);
+			} else {
+				setHomePenaltyTotal(0);
+				setAwayPenaltyTotal(0);
+			}
+			setIsDataChanged(false);
+		} catch (e) {
+			console.error("Failed to reset to server baseline", e);
+		}
+	}, [seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, selectedAwayTeamId, selectedHomeLetter]);
 
 	const handleMentionSubmit = async (
 		mentionCode: string,
@@ -1937,8 +1655,7 @@ export default function WeeklyScoresheetsContent({
 				setCurrentPlayerMentions([...currentPlayerMentions, newMention]);
 			}
 
-			// Note: We don't update formattedScoreData or call handleDataChange()
-			// This means the mention is saved to database but doesn't trigger "unsaved changes"
+			// Intentionally does not mark data dirty; mention additions persist immediately
 			console.log("Mention added successfully!");
 		} catch (error) {
 			console.error("Failed to add mention:", error);
@@ -1983,13 +1700,24 @@ export default function WeeklyScoresheetsContent({
 			);
 			setCurrentPlayerMentions(updatedMentions);
 
-			// Note: We don't update formattedScoreData or call handleDataChange()
-			// This means the mention is deleted from database but doesn't trigger "unsaved changes"
+			// Intentionally does not mark data dirty; deletion already persisted
 		} catch (error) {
 			console.error("Failed to delete mention:", error);
 			// Could show a toast notification here
 		}
 	};
+
+	// Warn on page unload if there are unsaved changes
+	useEffect(() => {
+		const handler = (e: BeforeUnloadEvent) => {
+			if (isDataChanged) {
+				e.preventDefault();
+				e.returnValue = "You have unsaved changes.";
+			}
+		};
+		window.addEventListener("beforeunload", handler);
+		return () => window.removeEventListener("beforeunload", handler);
+	}, [isDataChanged]);
 
 	// UI skeleton for loading state
 	const FolderTabSkeleton = () => (
@@ -2040,8 +1768,8 @@ export default function WeeklyScoresheetsContent({
 			</div>
 			<div className="flex flex-1 overflow-hidden">
 				<SideNav
-					data={sidenavData}
-					formattedScoreData={formattedScoreData}
+					seasonCode={seasonCode}
+					weekNum={selectedWeek}
 					handleMatchupSelection={handleMatchupSelection}
 				/>
 				<div className="flex-1 p-4 overflow-auto">
@@ -2150,22 +1878,7 @@ export default function WeeklyScoresheetsContent({
 													</DialogContent>
 												</Dialog>
 												{/* Penalties Accordion for Home Team - Only render if penalties exist */}
-												{formattedScoreData?.[
-													selectedDivision
-												]?.[selectedSubdivision]?.[
-													`${selectedHomeLetter} - ${selectedAwayLetter}`
-												]?.teamInformation?.[
-													selectedHomeTeamId
-												]?.penalties &&
-													Object.keys(
-														formattedScoreData[
-															selectedDivision
-														][selectedSubdivision][
-															`${selectedHomeLetter} - ${selectedAwayLetter}`
-														].teamInformation[
-															selectedHomeTeamId
-														].penalties
-													).length > 0 && (
+												{Object.keys(homePenalties).length > 0 && (
 														<Accordion
 															type="single"
 															collapsible
@@ -2178,19 +1891,7 @@ export default function WeeklyScoresheetsContent({
 																</AccordionTrigger>
 																<AccordionContent>
 																	<div className="space-y-2 p-2 border rounded-md">
-																		{Object.entries(
-																			formattedScoreData[
-																				selectedDivision
-																			][
-																				selectedSubdivision
-																			][
-																				`${selectedHomeLetter} - ${selectedAwayLetter}`
-																			]
-																				.teamInformation[
-																				selectedHomeTeamId
-																			]
-																				.penalties
-																		).map(
+																		{Object.entries(homePenalties).map(
 																			([
 																				id,
 																				penalty,
@@ -2440,22 +2141,7 @@ export default function WeeklyScoresheetsContent({
 											</Dialog>
 
 											{/* Penalties Accordion for Away Team - Only render if penalties exist */}
-											{formattedScoreData?.[
-												selectedDivision
-											]?.[selectedSubdivision]?.[
-												`${selectedHomeLetter} - ${selectedAwayLetter}`
-											]?.teamInformation?.[
-												selectedAwayTeamId
-											]?.penalties &&
-												Object.keys(
-													formattedScoreData[
-														selectedDivision
-													][selectedSubdivision][
-														`${selectedHomeLetter} - ${selectedAwayLetter}`
-													].teamInformation[
-														selectedAwayTeamId
-													].penalties
-												).length > 0 && (
+											{Object.keys(awayPenalties).length > 0 && (
 													<Accordion
 														type="single"
 														collapsible
@@ -2468,19 +2154,7 @@ export default function WeeklyScoresheetsContent({
 															</AccordionTrigger>
 															<AccordionContent>
 																<div className="space-y-2 p-2 border rounded-md">
-																	{Object.entries(
-																		formattedScoreData[
-																			selectedDivision
-																		][
-																			selectedSubdivision
-																		][
-																			`${selectedHomeLetter} - ${selectedAwayLetter}`
-																		]
-																			.teamInformation[
-																			selectedAwayTeamId
-																		]
-																			.penalties
-																	).map(
+																	{Object.entries(awayPenalties).map(
 																		([
 																			id,
 																			penalty,
@@ -2514,21 +2188,11 @@ export default function WeeklyScoresheetsContent({
 																					<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
 																						<Pencil
 																							className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700"
-																							onClick={() =>
-																								handlePenaltyEditing(
-																									selectedAwayTeamId,
-																									id
-																								)
-																							}
+																							onClick={() => handlePenaltyEditing(selectedAwayTeamId, id)}
 																						/>
 																						<X
 																							className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700"
-																							onClick={() =>
-																								handlePenaltyRemoval(
-																									selectedAwayTeamId,
-																									id
-																								)
-																							}
+																							onClick={() => handlePenaltyRemoval(selectedAwayTeamId, id)}
 																						/>
 																					</div>
 																				</div>
@@ -2838,31 +2502,89 @@ export default function WeeklyScoresheetsContent({
 									)}
 								</FolderTab>
 
-								{/* Add Save and Reset Buttons */}
-								<div className="flex justify-center mt-4">
+								{/* Action Buttons: Save, Save & Complete, Reset Changes, Delete */}
+								<div className="flex flex-wrap gap-3 justify-center mt-6">
 									<Button
-										onClick={calculatePlayerPoints}
-										className={`${
-											isDataChanged
-												? "bg-blue-600 hover:bg-blue-700 text-white animate-pulse"
-												: "bg-blue-600 hover:bg-blue-700 text-white"
-										}`}
-										disabled={isSaving || !isDataChanged} // Disable button if no data has changed
+										onClick={() => saveMatchup(false)}
+										className={"bg-blue-600 hover:bg-blue-700 text-white " + (isDataChanged ? "animate-pulse" : "")}
+										disabled={isSaving || !isDataChanged}
 									>
-										{isSaving
-											? "Saving..."
-											: isDataChanged
-											? "Save Scoresheet (Changes Pending)"
-											: "Save Scoresheet"}
+										{isSaving ? "Saving..." : "Save"}
 									</Button>
 									<Button
-										onClick={resetScoresheet}
-										className="bg-red-600 hover:bg-red-700 text-white ml-4"
-										disabled={isSaving} // Disable button while saving
+										onClick={() => saveMatchup(true)}
+										className="bg-green-600 hover:bg-green-700 text-white"
+										disabled={isSaving || !isDataChanged}
 									>
-										Reset Scoresheet
+										Save & Mark Complete
+									</Button>
+									<Button
+										onClick={() => {
+											if (!originalMatchupSnapshot) { window.alert("No snapshot to reset to yet."); return; }
+											setHomeTeamGameData(originalMatchupSnapshot.Home.teamGameData);
+											setAwayTeamGameData(originalMatchupSnapshot.Away.teamGameData);
+											setHomeWins([...originalMatchupSnapshot.Home.wins]);
+											setHomePoints([...originalMatchupSnapshot.Home.points]);
+											setAwayPoints([...originalMatchupSnapshot.Away.points]);
+											setIsDataChanged(false);
+										}}
+										className="bg-yellow-500 hover:bg-yellow-600 text-white"
+										disabled={isSaving || !originalMatchupSnapshot}
+									>
+										Reset Changes
+									</Button>
+									<Button
+										onClick={() => {
+											if (window.confirm("Delete all data for this matchup?")) {
+												// Normalized delete: remove gameInfo row + player info rows for both teams
+												(async () => {
+													try {
+														await deleteGameInfoMutation.mutateAsync({
+															seasonCode,
+															weekNum: selectedWeek,
+															division: selectedDivision,
+															subdivision: selectedSubdivision,
+															homeTeamId: selectedHomeTeamId,
+															awayTeamId: selectedAwayTeamId,
+														});
+														await deletePlayerInfoMutation.mutateAsync({ seasonCode, weekNum: selectedWeek, teamId: selectedHomeTeamId });
+														await deletePlayerInfoMutation.mutateAsync({ seasonCode, weekNum: selectedWeek, teamId: selectedAwayTeamId });
+													} catch (e) {
+														console.error("Failed deleting matchup rows", e);
+													}
+												})();
+												// Reset local UI state
+												setHomeTeamGameData({});
+												setAwayTeamGameData({});
+												setHomeWins(Array(11).fill(false));
+												setHomePoints(Array(11).fill(""));
+												setAwayPoints(Array(11).fill(""));
+												setHomePenaltyTotal(0);
+												setAwayPenaltyTotal(0);
+												setIsMatchupCompleted(false);
+												setIsDataChanged(false);
+											}
+										}}
+										className="bg-red-600 hover:bg-red-700 text-white"
+										disabled={isSaving}
+									>
+										Delete Scoresheet
 									</Button>
 								</div>
+								{isMatchupCompleted && (
+									<div className="mt-2 text-center text-green-700 font-semibold">Matchup marked complete.</div>
+								)}
+								{!isSaving && matchSelected && (
+									<div className="mt-4 flex justify-center">
+										<Button
+											variant="outline"
+											onClick={() => resetToServerBaseline()}
+											className="border-gray-400 hover:bg-gray-100"
+										>
+											Reset To Server Baseline
+										</Button>
+									</div>
+								)}
 							</div>
 						</div>
 					)}
