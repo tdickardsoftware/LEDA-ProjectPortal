@@ -55,7 +55,11 @@ const playerInfoSchema = z.object({
 	email: z
 		.string()
 		.min(1, { message: "Email is Required" })
-		.refine(validator.isEmail, { message: "Email is Invalid" }),
+		.refine(
+			(value) => value.toUpperCase() === "UNKNOWN" || validator.isEmail(value),
+			{ message: "Email is Invalid" }
+		)
+		.transform((value) => value.toUpperCase() === "UNKNOWN" ? "UNKNOWN" : value),
 	gender: z.string().min(1, { message: "Gender is Required" }),
 	dateOfBirth: z.string().nullable().optional(),
 	// Membership Information

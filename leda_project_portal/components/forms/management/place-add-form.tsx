@@ -58,8 +58,9 @@ const placeFormSchema = z.object({
 		),
 	email: z
 		.string()
-		.min(1, { message: "Email is Required" })
-		.refine(validator.isEmail, { message: "Email is Invalid" }),
+		.nullable()
+		.optional()
+		.refine((value) => !value || validator.isEmail(value), { message: "Email is Invalid" }),
 	website: z
 		.string()
 		.nullable()
@@ -348,7 +349,7 @@ export default function PlaceAddForm({
 						<InputDefault
 							control={form.control}
 							name="email"
-							label="Email *"
+							label="Email"
 							type="email"
 						/>
 						<PhoneNumberInput

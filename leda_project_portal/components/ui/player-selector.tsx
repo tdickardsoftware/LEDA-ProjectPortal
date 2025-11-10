@@ -37,15 +37,18 @@ interface Player {
 interface PlayerSelectorProps {
 	setMemberIdList: (memberIdList: string) => void;
 	existingJsonList?: string;
+	onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export default function PlayerSelector({
 	setMemberIdList,
 	existingJsonList = "{}",
+	onLoadingChange,
 }: PlayerSelectorProps) {
 	const [open, setOpen] = useState(false);
+	const [isLoadingExisting, setIsLoadingExisting] = useState(false);
 
-	const { data: players = [] } = useQuery({
+	const { data: players = [], isLoading: isLoadingPlayers } = useQuery({
 		queryKey: ["players"],
 		queryFn: async () => {
 			const response = await fetch(playerRoute);
@@ -72,7 +75,8 @@ export default function PlayerSelector({
 	// Load existing selected players from JSON list
 	useEffect(() => {
 		async function loadExistingPlayers() {
-			if (existingJsonList) {
+			if (existingJsonList && existingJsonList !== "{}") {
+				setIsLoadingExisting(true);
 				try {
 					const parsedList = JSON.parse(existingJsonList);
 					const playerEntries = Object.keys(parsedList).map(
@@ -110,6 +114,8 @@ export default function PlayerSelector({
 					setSelectedPlayers(updatedPlayers);
 				} catch (error) {
 					console.error("Failed to parse existing JSON list", error);
+				} finally {
+					setIsLoadingExisting(false);
 				}
 			}
 		}
@@ -117,10 +123,19 @@ export default function PlayerSelector({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [existingJsonList, players]);
 
+	// Report loading state to parent
+	useEffect(() => {
+		if (onLoadingChange) {
+			onLoadingChange(isLoadingPlayers || isLoadingExisting);
+		}
+	}, [isLoadingPlayers, isLoadingExisting, onLoadingChange]);
+
 	// Filter out selected players from the list
 	const availablePlayers = players.filter(
 		(player: Player) => !selectedPlayers.some((p) => p.ledaId === player.ledaId)
 	);
+
+	const isLoading = isLoadingPlayers || isLoadingExisting;
 
 	// Generate the stringified JSON list
 	const generateJsonList = (players: Player[]) => {
@@ -203,10 +218,15 @@ export default function PlayerSelector({
 							role="combobox"
 							aria-expanded={open}
 							className="w-[200px] justify-between"
+							disabled={isLoading}
 						>
-							{selectedPlayers.length > 0
-								? `${selectedPlayers.length} player(s) selected`
-								: "Select players..."}
+							{isLoading ? (
+								"Loading players..."
+							) : selectedPlayers.length > 0 ? (
+								`${selectedPlayers.length} player(s) selected`
+							) : (
+								"Select players..."
+							)}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
