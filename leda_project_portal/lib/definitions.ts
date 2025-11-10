@@ -720,3 +720,12 @@ export type WeeklyScoresheetsMatchupInfo = {
 	weekNum: number;
 	matchupData: JSON;
 };
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets scoresheet count
+//
+export type WeeklyScoresheetsScoresheetCount = {
+	seasonCode: string;
+	expectedScoresheets: number;
+	completedScoresheets: number;
+	totalWeeks: number;
+};

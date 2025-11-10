@@ -6,7 +6,7 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import React, { useState, useCallback, useEffect } from "react";
 import {
 	rosterRoute,
-	seasonRoute,
+	scoresheetCountRoute,
 	weeklyScoresheetsRoute,
 	payoutRoute,
 } from "@/lib/apiRoutes";
@@ -99,9 +99,11 @@ export default function PayoutsContent() {
 	const [divisionsData, setDivisionsData] = useState<RosterData>({});
 	const [payoutsData, setPayoutsData] = useState<PayoutsData>({});
 	const [loading, setLoading] = useState(false);
-	const [weekCount, setWeekCount] = useState<number>(0);
+	const [expectedScoresheetCount, setExpectedScoresheetCount] =
+		useState<number>(0);
 	const [completedScoresheetCount, setCompletedScoresheetCount] =
 		useState<number>(0);
+	const [totalWeeks, setTotalWeeks] = useState<number>(0);
 
 	// State for accordion open/closed status
 	const [openDivisions, setOpenDivisions] = useState<string[]>([]);
@@ -187,34 +189,18 @@ export default function PayoutsContent() {
 		enabled: !!seasonCode,
 	});
 
-	// --- TanStack Query: Fetch season weeks data ---
+	// --- TanStack Query: Fetch scoresheet count (expected and completed) ---
 	const {
-		data: seasonWeeksData,
-		isLoading: seasonWeeksLoading,
+		data: scoresheetCountData,
+		isLoading: scoresheetCountLoading,
 	} = useQuery({
-		queryKey: ["seasonWeeks", seasonCode],
-		queryFn: async () => {
-			if (!seasonCode) return null;
-			const res = await fetch(`${seasonRoute}?seasonCode=${seasonCode}`);
-			if (!res.ok) throw new Error("Failed to fetch season weeks");
-			const data = await res.json();
-			return data;
-		},
-		enabled: !!seasonCode,
-	});
-
-	// --- TanStack Query: Fetch completed scoresheet count ---
-	const {
-		data: completedScoresheetData,
-		isLoading: completedScoresheetLoading,
-	} = useQuery({
-		queryKey: ["completedScoresheetCount", seasonCode],
+		queryKey: ["scoresheetCount", seasonCode],
 		queryFn: async () => {
 			if (!seasonCode) return null;
 			const res = await fetch(
-				`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&countOfFinishedWeeks=true`
+				`${scoresheetCountRoute}?seasonCode=${seasonCode}`
 			);
-			if (!res.ok) throw new Error("Failed to fetch completed scoresheet count");
+			if (!res.ok) throw new Error("Failed to fetch scoresheet count");
 			const data = await res.json();
 			return data;
 		},
@@ -227,8 +213,7 @@ export default function PayoutsContent() {
 		setLoading(
 			payoutsLoading ||
 			rosterLoading ||
-			seasonWeeksLoading ||
-			completedScoresheetLoading
+			scoresheetCountLoading
 		);
 
 		if (rosterQueryData) {
@@ -243,23 +228,20 @@ export default function PayoutsContent() {
 			toast.info("Creating new payouts data from roster");
 			// This will be handled by the effect below (when divisionsData changes)
 		}
-		if (seasonWeeksData) {
-			setWeekCount(Object.keys(seasonWeeksData.dates).length);
-		}
-		if (completedScoresheetData) {
-			setCompletedScoresheetCount(completedScoresheetData.count);
+		if (scoresheetCountData) {
+			setExpectedScoresheetCount(scoresheetCountData.expectedScoresheets || 0);
+			setCompletedScoresheetCount(scoresheetCountData.completedScoresheets || 0);
+			setTotalWeeks(scoresheetCountData.totalWeeks || 0);
 		}
 		// eslint-disable-next-line
 	}, [
 		seasonCode,
 		payoutsQueryData,
 		rosterQueryData,
-		seasonWeeksData,
-		completedScoresheetData,
+		scoresheetCountData,
 		payoutsLoading,
 		rosterLoading,
-		seasonWeeksLoading,
-		completedScoresheetLoading,
+		scoresheetCountLoading,
 	]);
 
 	// Create payouts data when divisions data changes
@@ -384,16 +366,16 @@ export default function PayoutsContent() {
 	const calculatePayoutsMutation = useMutation({
 		mutationFn: async (params: {
 			seasonCode: string | null;
-			weekCount: number;
-			teamIdsBySubdivision: { [subdivision: string]: string[] };
-			divisionsData: RosterData;
+			totalWeeks: number;
+			teamIdsByDivisionSubdivision: { [key: string]: { division: string; subdivision: string; teamIds: string[] } };
 			payoutsData: PayoutsData;
 		}) => {
-			const { seasonCode, weekCount, teamIdsBySubdivision, divisionsData, payoutsData } = params;
+			const { seasonCode, totalWeeks, teamIdsByDivisionSubdivision, payoutsData } = params;
 			const newPayoutsData = { ...payoutsData };
-			for (const subdivision of Object.keys(teamIdsBySubdivision)) {
+			for (const key of Object.keys(teamIdsByDivisionSubdivision)) {
+				const { division, subdivision, teamIds } = teamIdsByDivisionSubdivision[key];
 				const response = await fetchWithSession(
-					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${weekCount}&teamLedaIds=${teamIdsBySubdivision[subdivision]}`,
+					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${totalWeeks}&teamLedaIds=${teamIds}`,
 					{ method: "GET", headers: { "Content-Type": "application/json" } }
 				);
 				if (!response.ok) throw new Error("Failed to fetch team points data");
@@ -405,20 +387,14 @@ export default function PayoutsContent() {
 							place: string;
 							amount: string;
 						}) => {
-							Object.keys(divisionsData).forEach((division) => {
-								Object.keys(
-									divisionsData[division]?.subdivisions || {}
-								).forEach((subdivisionKey) => {
-									if (
-										newPayoutsData[division]?.[subdivisionKey]?.[teamData.teamLedaId]
-									) {
-										newPayoutsData[division][subdivisionKey][teamData.teamLedaId].place =
-											parseInt(teamData.place, 10) || null;
-										newPayoutsData[division][subdivisionKey][teamData.teamLedaId].amount =
-											parseFloat(teamData.amount) || 0;
-									}
-								});
-							});
+							if (
+								newPayoutsData[division]?.[subdivision]?.[teamData.teamLedaId]
+							) {
+								newPayoutsData[division][subdivision][teamData.teamLedaId].place =
+									parseInt(teamData.place, 10) || null;
+								newPayoutsData[division][subdivision][teamData.teamLedaId].amount =
+									parseFloat(teamData.amount) || 0;
+							}
 						}
 					);
 				}
@@ -435,26 +411,30 @@ export default function PayoutsContent() {
 	});
 
 	const handleCalculatePayoutsClick = async () => {
-		const teamIdsBySubdivision: { [subdivision: string]: string[] } = {};
+		const teamIdsByDivisionSubdivision: { [key: string]: { division: string; subdivision: string; teamIds: string[] } } = {};
 		Object.keys(divisionsData).forEach((division) => {
 			Object.keys(divisionsData[division]?.subdivisions || {}).forEach(
 				(subdivision) => {
-					teamIdsBySubdivision[subdivision] = Object.keys(
-						divisionsData[division]?.subdivisions[subdivision] || {}
-					).map(
-						(team) =>
-							divisionsData[division]?.subdivisions[subdivision][
-								team
-							]?.teamId
-					);
+					const key = `${division}|${subdivision}`;
+					teamIdsByDivisionSubdivision[key] = {
+						division,
+						subdivision,
+						teamIds: Object.keys(
+							divisionsData[division]?.subdivisions[subdivision] || {}
+						).map(
+							(team) =>
+								divisionsData[division]?.subdivisions[subdivision][
+									team
+								]?.teamId
+						)
+					};
 				}
 			);
 		});
 		calculatePayoutsMutation.mutate({
 			seasonCode,
-			weekCount,
-			teamIdsBySubdivision,
-			divisionsData,
+			totalWeeks,
+			teamIdsByDivisionSubdivision,
 			payoutsData,
 		});
 	};
@@ -798,7 +778,7 @@ export default function PayoutsContent() {
 									className="w-fit self-start"
 								>
 									<div className="flex flex-col gap-2">
-										{weekCount > 0 && (
+										{expectedScoresheetCount > 0 && (
 											<TooltipProvider>
 												<Tooltip delayDuration={300}>
 													<TooltipTrigger asChild>
@@ -811,11 +791,11 @@ export default function PayoutsContent() {
 																}}
 																disabled={
 																	completedScoresheetCount !==
-																	weekCount
+																	expectedScoresheetCount
 																}
 															>
 																{completedScoresheetCount ===
-																weekCount ? (
+																expectedScoresheetCount ? (
 																	<span className="relative z-10 font-semibold">
 																		Calculate
 																		Payouts
@@ -827,7 +807,7 @@ export default function PayoutsContent() {
 																			style={{
 																				width: `${
 																					(completedScoresheetCount /
-																						weekCount) *
+																						expectedScoresheetCount) *
 																					100
 																				}%`,
 																				minWidth:
@@ -843,9 +823,9 @@ export default function PayoutsContent() {
 																			}
 																			/
 																			{
-																				weekCount
+																				expectedScoresheetCount
 																			}{" "}
-																			Weeks
+																			Scoresheets
 																			Completed
 																		</span>
 																	</>
@@ -859,7 +839,7 @@ export default function PayoutsContent() {
 													>
 														<p className="text-sm font-medium">
 															{completedScoresheetCount !==
-															weekCount
+															expectedScoresheetCount
 																? "Scoresheets are not yet complete"
 																: "All scoresheets are complete, calculate placements"}
 														</p>
