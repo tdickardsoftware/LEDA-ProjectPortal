@@ -48,7 +48,7 @@ export default async function handler(
                     ]
                 );
                 if (result.rows.length === 0) {
-                    res.status(204).json({ message: "No Game Info Found, Not Created Yet." });
+                    res.status(204).end();
                 } else {
                     res.status(200).json(result.rows[0].completed);
                 }
@@ -70,7 +70,7 @@ export default async function handler(
                     ]
                 );
                 if (result.rows.length === 0) {
-                    res.status(204).json({ message: "No Game Info Found, Not Created Yet." });
+                    res.status(204).end();
                 } else {
                     res.status(200).json(result.rows);
                 }

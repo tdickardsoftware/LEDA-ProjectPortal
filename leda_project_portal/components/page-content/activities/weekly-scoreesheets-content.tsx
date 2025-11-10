@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import WeekSelector from "@/components/ui/week-selector";
-import { teamRoute, playerRoute, mentionPlayerHistoryRoute } from "@/lib/apiRoutes";
+import { teamRoute, playerRoute, mentionPlayerHistoryRoute, rosterTeamViewRoute, memberInfoRoute } from "@/lib/apiRoutes";
 import FolderTab, { FolderTabMed } from "@/components/ui/folder-tab";
 import { Player } from "@/lib/definitions";
 import {
@@ -115,6 +115,29 @@ const createMentionHistory = async (data: {
 		)}`;
 		const response = await fetchWithSession(url, { method: "GET" });
 		return response.json();
+	};
+
+	const fetchRosterTeamId = async ({
+		seasonCode,
+		division,
+		subdivision,
+		teamLetter,
+	}: {
+		seasonCode: string;
+		division: string;
+		subdivision: string;
+		teamLetter: string;
+	}) => {
+		const url = `${rosterTeamViewRoute}?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}&teamLetter=${encodeURIComponent(teamLetter)}`;
+		const res = await fetchWithSession(url, { method: "GET" });
+		const data = await res.json();
+		return data[0]?.ledaid || null;
+	};
+
+	const fetchTeamMembers = async (teamId: string) => {
+		const url = `${memberInfoRoute}?ledaId=${encodeURIComponent(teamId)}`;
+		const res = await fetchWithSession(url, { method: "GET" });
+		return res.json();
 	};
 
 	const fetchTeamInfoV2 = async ({
@@ -565,17 +588,89 @@ export default function WeeklyScoresheetsContent({
 
 	// Removed legacy scoresheet query; V2 per-matchup flow only
 
-	// Team data queries
+	// Team data queries - with fallback to roster if not yet created
 	const { data: homeTeamData, isLoading: isHomeTeamLoading } = useQuery({
-		queryKey: ["team", selectedHomeTeamId],
-		queryFn: () => fetchTeam(selectedHomeTeamId),
+		queryKey: ["team", selectedHomeTeamId, seasonCode, selectedDivision, selectedSubdivision, selectedHomeLetter],
+		queryFn: async () => {
+			if (!selectedHomeTeamId) return null;
+			
+			// First try to fetch existing team
+			const teamData = await fetchTeam(selectedHomeTeamId);
+			if (teamData && teamData.ledaId) {
+				return teamData;
+			}
+
+			// If team doesn't exist yet, fetch from roster view and member info
+			const subdivisionNum = selectedSubdivision.replace('Subdivision ', '');
+			const teamId = await fetchRosterTeamId({
+				seasonCode,
+				division: selectedDivision,
+				subdivision: subdivisionNum,
+				teamLetter: selectedHomeLetter,
+			});
+
+			if (!teamId) return null;
+
+			// Fetch members for this team
+			const members = await fetchTeamMembers(teamId);
+			
+			// Format to match Team interface (map ledaid from DB to ledaId for interface)
+			const memberIdList: Record<string, { ledaId: string }> = {};
+			members.forEach((member: { ledaid: string }, idx: number) => {
+				memberIdList[idx] = { ledaId: member.ledaid };
+			});
+
+			return {
+				ledaId: teamId,
+				memberIdList,
+				teamLetter: selectedHomeLetter,
+				division: selectedDivision,
+				subdivision: selectedSubdivision,
+			};
+		},
 		enabled: !!selectedHomeTeamId && matchSelected,
 		staleTime: 1000 * 60 * 10, // 10 minutes
 	});
 
 	const { data: awayTeamData, isLoading: isAwayTeamLoading } = useQuery({
-		queryKey: ["team", selectedAwayTeamId],
-		queryFn: () => fetchTeam(selectedAwayTeamId),
+		queryKey: ["team", selectedAwayTeamId, seasonCode, selectedDivision, selectedSubdivision, selectedAwayLetter],
+		queryFn: async () => {
+			if (!selectedAwayTeamId) return null;
+			
+			// First try to fetch existing team
+			const teamData = await fetchTeam(selectedAwayTeamId);
+			if (teamData && teamData.ledaId) {
+				return teamData;
+			}
+
+			// If team doesn't exist yet, fetch from roster view and member info
+			const subdivisionNum = selectedSubdivision.replace('Subdivision ', '');
+			const teamId = await fetchRosterTeamId({
+				seasonCode,
+				division: selectedDivision,
+				subdivision: subdivisionNum,
+				teamLetter: selectedAwayLetter,
+			});
+
+			if (!teamId) return null;
+
+			// Fetch members for this team
+			const members = await fetchTeamMembers(teamId);
+			
+			// Format to match Team interface (map ledaid from DB to ledaId for interface)
+			const memberIdList: Record<string, { ledaId: string }> = {};
+			members.forEach((member: { ledaid: string }, idx: number) => {
+				memberIdList[idx] = { ledaId: member.ledaid };
+			});
+
+			return {
+				ledaId: teamId,
+				memberIdList,
+				teamLetter: selectedAwayLetter,
+				division: selectedDivision,
+				subdivision: selectedSubdivision,
+			};
+		},
 		enabled: !!selectedAwayTeamId && matchSelected,
 		staleTime: 1000 * 60 * 10, // 10 minutes
 	});
@@ -824,8 +919,26 @@ export default function WeeklyScoresheetsContent({
 
 	// Week selector handler: incoming value may be like 'Date3'; normalize to just numeric '3'
 	const handleDateToDisplay = (value: string) => {
+		if (!confirmPendingChanges()) return;
 		const numeric = value.match(/\d+/)?.[0] || value; // fallback if pattern changes
 		setSelectedWeek(numeric);
+		// Clear selected matchup when week changes
+		setMatchSelected(false);
+		setSelectedHomeLetter("");
+		setSelectedAwayLetter("");
+		setSelectedDivision("");
+		setSelectedSubdivision("");
+		setSelectedHomeTeamId("");
+		setSelectedAwayTeamId("");
+		setHomeTeamGameData({});
+		setAwayTeamGameData({});
+		setHomeWins(Array(11).fill(false));
+		setHomePoints(Array(11).fill(""));
+		setAwayPoints(Array(11).fill(""));
+		setHomePenalties({});
+		setAwayPenalties({});
+		setIsMatchupCompleted(false);
+		setIsDataChanged(false);
 	};
 
 	// confirmPendingChanges is defined after saveMatchup to avoid TDZ issues
@@ -1160,9 +1273,50 @@ const confirmPendingChangesPlaceholder = () => true;
 			setLastSavedSnapshot(null);
 			setBaselineInitialized(false);
 
-			if (Array.isArray(teamRows) && teamRows.length >= 2) {
-				const homeTeamId = String(teamRows[0].teamId);
-				const awayTeamId = String(teamRows[1].teamId);
+			let homeTeamId = "";
+			let awayTeamId = "";
+
+			if (teamRows === null) {
+				// 204 response - matchup doesn't exist yet, fetch team IDs from roster
+				const subdivisionNum = subdivisionName.replace('Subdivision ', '');
+				
+				const homeTeamIdResult = await fetchRosterTeamId({
+					seasonCode,
+					division: divisionName,
+					subdivision: subdivisionNum,
+					teamLetter: homeLetter,
+				});
+				
+				const awayTeamIdResult = await fetchRosterTeamId({
+					seasonCode,
+					division: divisionName,
+					subdivision: subdivisionNum,
+					teamLetter: awayLetter,
+				});
+
+				if (homeTeamIdResult && awayTeamIdResult) {
+					homeTeamId = homeTeamIdResult;
+					awayTeamId = awayTeamIdResult;
+					setSelectedHomeTeamId(homeTeamId);
+					setSelectedAwayTeamId(awayTeamId);
+					setHomePenalties({});
+					setAwayPenalties({});
+					
+					// Initialize with blank game data since matchup doesn't exist
+					setHomeWins(Array(11).fill(false));
+					setHomePoints(Array(11).fill("0"));
+					setAwayPoints(Array(11).fill("0"));
+					setIsMatchupCompleted(false);
+				} else {
+					// Could not find team IDs in roster
+					setSelectedHomeTeamId("");
+					setSelectedAwayTeamId("");
+					setHomePenalties({});
+					setAwayPenalties({});
+				}
+			} else if (Array.isArray(teamRows) && teamRows.length >= 2) {
+				homeTeamId = String(teamRows[0].teamId);
+				awayTeamId = String(teamRows[1].teamId);
 				setSelectedHomeTeamId(homeTeamId);
 				setSelectedAwayTeamId(awayTeamId);
 				setHomePenalties(teamRows[0]?.penalties || {});
@@ -1177,7 +1331,14 @@ const confirmPendingChangesPlaceholder = () => true;
 					homeTeamId,
 					awayTeamId,
 				});
-				if (Array.isArray(giRows) && giRows.length > 0) {
+				
+				if (giRows === null) {
+					// 204 response - matchup doesn't exist yet, initialize with blank data
+					setHomeWins(Array(11).fill(false));
+					setHomePoints(Array(11).fill("0"));
+					setAwayPoints(Array(11).fill("0"));
+					setIsMatchupCompleted(false);
+				} else if (Array.isArray(giRows) && giRows.length > 0) {
 					const gi = giRows[0];
 					const gameInfo = gi?.gameInfo as Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> | undefined;
 					if (gameInfo) {
@@ -1189,6 +1350,12 @@ const confirmPendingChangesPlaceholder = () => true;
 						setAwayPoints(newAwayPoints);
 					}
 					setIsMatchupCompleted(!!gi?.completed);
+				} else {
+					// Empty array or unexpected response - initialize with blank data
+					setHomeWins(Array(11).fill(false));
+					setHomePoints(Array(11).fill("0"));
+					setAwayPoints(Array(11).fill("0"));
+					setIsMatchupCompleted(false);
 				}
 			} else {
 				setSelectedHomeTeamId("");
@@ -1725,6 +1892,7 @@ const confirmPendingChangesPlaceholder = () => true;
 			</div>
 			<div className="flex flex-1 overflow-hidden">
 				<SideNav
+					key={`${seasonCode}-${selectedWeek}`}
 					seasonCode={seasonCode}
 					weekNum={selectedWeek}
 					handleMatchupSelection={handleMatchupSelection}
@@ -2540,6 +2708,73 @@ const confirmPendingChangesPlaceholder = () => true;
 										disabled={isSaving}
 									>
 										Delete Scoresheet
+									</Button>
+									<Button
+										onClick={async () => {
+											if (window.confirm("Mark this week as a bye week? No points will be awarded, but the scoresheet will be marked as completed.")) {
+												try {
+													// Save game info with all zeros and mark as completed
+													const emptyGameInfo: Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> = {};
+													for (let i = 0; i < 11; i++) {
+														const gameKey = `Game ${i + 1}`;
+														emptyGameInfo[gameKey] = {
+															homeWin: false,
+															homePoints: "0",
+															awayPoints: "0",
+														};
+													}
+
+													await saveGameInfoMutation.mutateAsync({
+														seasonCode,
+														weekNum: parseInt(selectedWeek),
+														division: selectedDivision,
+														subdivision: selectedSubdivision,
+														homeTeamId: selectedHomeTeamId,
+														awayTeamId: selectedAwayTeamId,
+														homePoints: 0,
+														awayPoints: 0,
+														completed: true,
+														gameInfo: emptyGameInfo,
+													});
+
+													// Also save zero points to legacy team points tables
+													await saveWeeklyTeamPointsMutation.mutateAsync({
+														seasonCode,
+														weekNum: parseInt(selectedWeek),
+														ledaId: selectedHomeTeamId,
+														totalPoints: 0,
+													});
+													await saveWeeklyTeamPointsMutation.mutateAsync({
+														seasonCode,
+														weekNum: parseInt(selectedWeek),
+														ledaId: selectedAwayTeamId,
+														totalPoints: 0,
+													});
+
+													// Update local UI state to reflect bye week
+													setHomeWins(Array(11).fill(false));
+													setHomePoints(Array(11).fill("0"));
+													setAwayPoints(Array(11).fill("0"));
+													setIsMatchupCompleted(true);
+													setIsDataChanged(false);
+
+													const newSnap = {
+														Home: { teamGameData: JSON.parse(JSON.stringify(homeTeamGameData)), wins: Array(11).fill(false), points: Array(11).fill("0"), penalties: JSON.parse(JSON.stringify(homePenalties)) },
+														Away: { teamGameData: JSON.parse(JSON.stringify(awayTeamGameData)), points: Array(11).fill("0"), penalties: JSON.parse(JSON.stringify(awayPenalties)) },
+														completed: true,
+													};
+													setLastSavedSnapshot(newSnap);
+													if (!originalMatchupSnapshot) setOriginalMatchupSnapshot(newSnap);
+												} catch (e) {
+													console.error("Failed to mark bye week", e);
+													alert("Failed to mark bye week. Please try again.");
+												}
+											}
+										}}
+										className="bg-blue-600 hover:bg-blue-700 text-white"
+										disabled={isSaving}
+									>
+										Bye Week
 									</Button>
 								</div>
 								{isMatchupCompleted && (

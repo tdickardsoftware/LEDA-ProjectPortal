@@ -38,9 +38,10 @@ interface SideNavProps {
 		divisionName: string,
 		subdivisionName: string
 	) => void;
+	collapseOnSelection?: boolean;
 }
 
-const SideNav = ({ seasonCode, weekNum, handleMatchupSelection }: SideNavProps) => {
+const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelection = true }: SideNavProps) => {
 	const { data: matchupsResponse } = useQuery({
 		queryKey: ["v2-matchups", seasonCode, weekNum],
 		queryFn: async () => {
@@ -225,6 +226,11 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection }: SideNavProps) 
 																if (isSelected) return; // safety
 																setSelectedMatchup({ home: game.homeTeamLetter, away: game.awayTeamLetter });
 																handleMatchupSelection(game.homeTeamLetter, game.awayTeamLetter, divisionName, subdivisionName);
+																// Collapse sidenav after selection if enabled
+																if (collapseOnSelection) {
+																	setOpenDivisions({});
+																	setOpenSubdivisions({});
+																}
 															}}
 														>
 															<div className="flex items-center gap-2">

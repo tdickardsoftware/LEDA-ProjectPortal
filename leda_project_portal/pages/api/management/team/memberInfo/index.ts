@@ -11,7 +11,7 @@ export default async function handler(
 		if (req.query.ledaId && !req.query.playerId) {
 			try {
 				const result = await query(
-					`SELECT "teamLedaId", "ledaId", "isCaptain", "fullName", "cannotBeCaptain", "badStanding" FROM public.leda_player_team_info where "teamLedaId" = $1`,
+					`SELECT "teamLedaId", "ledaid", "isCaptain", "fullName", "cannotBeCaptain", "badStanding" FROM public.leda_player_team_info where "teamLedaId" = $1`,
 					[req.query.ledaId as string]
 				);
 				res.status(200).json(result.rows);
@@ -24,7 +24,7 @@ export default async function handler(
 		} else if (req.query.ledaId && req.query.playerId) {
 			try {
 				const result = await query(
-					`SELECT "teamLedaId", "ledaId", "isCaptain", "fullName", "cannotBeCaptain", "badStanding" FROM public.leda_player_team_info where "teamLedaId" = $1 and "playerLedaId" = $2`,
+					`SELECT "teamLedaId", "ledaid", "isCaptain", "fullName", "cannotBeCaptain", "badStanding" FROM public.leda_player_team_info where "teamLedaId" = $1 and "playerLedaId" = $2`,
 					[req.query.ledaId as string, req.query.playerId as string]
 				);
 				res.status(200).json(result.rows);

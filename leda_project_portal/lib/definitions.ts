@@ -729,3 +729,11 @@ export type WeeklyScoresheetsScoresheetCount = {
 	completedScoresheets: number;
 	totalWeeks: number;
 };
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets scoresheet team info 
+//
+export type WeeklyScoresheetsScoresheetTeamInfo = {
+	seasonCode: string;
+	ledaid: number;
+	teamLetter: string;
+}

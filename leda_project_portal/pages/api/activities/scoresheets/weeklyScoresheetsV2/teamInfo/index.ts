@@ -72,7 +72,7 @@ export default async function handler(
                     const awayResult = opposingResult.rows[0];
                     res.status(200).json([homeResult, awayResult]);
                 } else {
-                    res.status(204).json({ message: "No Team Matchup Info Found, Not Created Yet."})
+                    res.status(204).end();
                 }
             } catch (error) {
                 res.status(500).json({ message: "Failed to fetch team info", error });
