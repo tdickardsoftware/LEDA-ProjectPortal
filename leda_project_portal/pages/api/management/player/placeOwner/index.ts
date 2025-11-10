@@ -16,7 +16,7 @@ export default async function handler(
 			// Execute the database query to fetch player information
 			const result =
 				await query<Player>(`SELECT p."ledaId", CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName", p."lastName", p."firstName", p."middleInitial", m."memberType" FROM public.leda_player_info p 
-            JOIN public.leda_membership_info m ON p."ledaId" = m."ledaId" WHERE m."memberType" = 'BAR' ORDER BY p."ledaId";`);
+            JOIN public.leda_membership_info m ON p."ledaId" = m."ledaId" WHERE m."memberType" = 'BAR' OR m."memberType" = 'MEM' ORDER BY p."ledaId";`);
 			// Respond with the query result
 			res.status(200).json(result.rows);
 		} catch (error) {
