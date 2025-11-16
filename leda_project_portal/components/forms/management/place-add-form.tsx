@@ -38,7 +38,7 @@ const placeFormSchema = z.object({
 		.optional(),
 	name: z.string().min(1, { message: "Name is required." }),
 	addressOne: z.string().min(1, { message: "Address is required." }),
-	addressTwo: z.string().optional(),
+	addressTwo: z.string().nullable().optional(),
 	city: z.string().min(1, { message: "City is required." }),
 	state: z.string().min(1, { message: "State is required." }),
 	zip: z.string().min(1, { message: "Zip is required." }),
@@ -50,23 +50,26 @@ const placeFormSchema = z.object({
 		}),
 	otherNumber: z
 		.string()
+		.nullable()
 		.optional()
 		.refine(
-			(value) => value === "" || isValidPhoneNumber(value ?? "", "US"),
+			(value) => !value || value === "" || isValidPhoneNumber(value, "US"),
 			{ message: "Other Number is Invalid" }
 		),
 	email: z
 		.string()
-		.min(1, { message: "Email is Required" })
-		.refine(validator.isEmail, { message: "Email is Invalid" }),
+		.nullable()
+		.optional()
+		.refine((value) => !value || validator.isEmail(value), { message: "Email is Invalid" }),
 	website: z
 		.string()
+		.nullable()
 		.optional()
-		.refine((value) => value === undefined || validator.isURL(value), {
+		.refine((value) => !value || validator.isURL(value), {
 			message: "Website is Invalid",
 		}),
 	establishDate: z.string(),
-	memo: z.string().optional(),
+	memo: z.string().nullable().optional(),
 	numberOfBoards: z
 		.number()
 		.min(0, { message: "Number of Boards Must be a Postive Number." }),
@@ -75,7 +78,7 @@ const placeFormSchema = z.object({
 	currentSponsor: z.boolean(),
 	issues: z.boolean(),
 	lastBarFeePayment: z.string(),
-	lastSanctioningDate: z.string().optional(),
+	lastSanctioningDate: z.string().nullable().optional(),
 	placeType: z.string().min(1, { message: "Place Type is Required" }),
 	contactId: z.string().min(1, { message: "Place Owner is Required" }),
 });
@@ -138,7 +141,7 @@ export default function PlaceAddForm({
 			addressOne: "",
 			addressTwo: "",
 			city: "",
-			state: "Ohio",
+			state: "OH",
 			zip: "",
 			phoneNumber: "",
 			otherNumber: "",
@@ -346,7 +349,7 @@ export default function PlaceAddForm({
 						<InputDefault
 							control={form.control}
 							name="email"
-							label="Email *"
+							label="Email"
 							type="email"
 						/>
 						<PhoneNumberInput
@@ -484,6 +487,7 @@ export default function PlaceAddForm({
 										<Textarea
 											placeholder="Additional Data Here..."
 											{...field}
+											value={field.value ?? ""}
 										/>
 									</FormControl>
 									<FormMessage />

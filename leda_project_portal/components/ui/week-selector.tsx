@@ -77,9 +77,11 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 	});
 
 	const handleSelectWeek = (value: string, label: string) => {
+		// Keep local selection value for UI (e.g., 'Date3'), but send numeric '3' to parent
 		setSelectedWeek(value);
 		setSelectedWeekLabel(label);
-		handleSelect(value);
+		const weekNum = value.match(/\d+/)?.[0] || value;
+		handleSelect(weekNum);
 		setOpen(false);
 	};
 

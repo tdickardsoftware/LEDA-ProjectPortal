@@ -31,10 +31,10 @@ import { fetchWithSession } from "@/lib/getData";
 
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
-	middleInitial: z.optional(z.string()),
+	middleInitial: z.string().nullable().optional(),
 	lastName: z.string().min(1, { message: "Last Name is Required" }),
 	addressOne: z.string().min(1, { message: "Address is Required" }),
-	addressTwo: z.optional(z.string()),
+	addressTwo: z.string().nullable().optional(),
 	city: z.string().min(1, { message: "City is Required" }),
 	state: z.string().min(1, { message: "State is Required" }),
 	zip: z.string().min(1, { message: "Zip Code is Required" }),
@@ -46,17 +46,22 @@ const playerInfoSchema = z.object({
 		}),
 	otherNumber: z
 		.string()
+		.nullable()
 		.optional()
 		.refine(
-			(value) => value === "" || isValidPhoneNumber(value ?? "", "US"),
+			(value) => !value || value === "" || isValidPhoneNumber(value, "US"),
 			{ message: "Other Number is Invalid" }
 		),
 	email: z
 		.string()
 		.min(1, { message: "Email is Required" })
-		.refine(validator.isEmail, { message: "Email is Invalid" }),
+		.refine(
+			(value) => value.toUpperCase() === "UNKNOWN" || validator.isEmail(value),
+			{ message: "Email is Invalid" }
+		)
+		.transform((value) => value.toUpperCase() === "UNKNOWN" ? "UNKNOWN" : value),
 	gender: z.string().min(1, { message: "Gender is Required" }),
-	dateOfBirth: z.string().optional(),
+	dateOfBirth: z.string().nullable().optional(),
 	// Membership Information
 	ledaId: z
 		.number()
@@ -64,20 +69,20 @@ const playerInfoSchema = z.object({
 		.optional(),
 	establishedDate: z.string(),
 	badStanding: z.boolean(),
-	badStandingReason: z.optional(z.string()),
+	badStandingReason: z.string().nullable().optional(),
 	takeOffMailing: z.boolean(),
 	mailStandings: z.boolean(),
 	formOnFile: z.boolean(),
 	needsMemberCard: z.boolean(),
-	inactiveDate: z.optional(z.string().optional()),
+	inactiveDate: z.string().nullable().optional(),
 	lastMembershipFeePayment: z
 		.string()
 		.min(1, { message: "Last Membership fee is required" }),
-	lastTrailsDate: z.optional(z.string()),
+	lastTrailsDate: z.string().nullable().optional(),
 	memberType: z.string().min(1, { message: "Member Type is Required" }),
 	cannotBeCaptain: z.boolean(),
 	lifetimeMember: z.boolean(),
-	lifetimeMemberReason: z.optional(z.string()),
+	lifetimeMemberReason: z.string().nullable().optional(),
 });
 
 const formContainerStyle =
@@ -120,7 +125,7 @@ export default function PlayerAddInformationForm({
 			firstName: "",
 			lastName: "",
 			city: "",
-			state: "Ohio",
+			state: "OH",
 			zip: "",
 			email: "",
 			phoneNumber: "",
@@ -481,6 +486,7 @@ export default function PlayerAddInformationForm({
 										<Input
 											placeholder="Reasoning..."
 											{...field}
+											value={field.value ?? ""}
 											disabled={
 												!badStandingStatus
 											}
@@ -538,6 +544,7 @@ export default function PlayerAddInformationForm({
 										<Input
 											placeholder="Reasoning..."
 											{...field}
+											value={field.value ?? ""}
 											disabled={
 												!lifetimeMemberStatus
 											}

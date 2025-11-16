@@ -1,6 +1,6 @@
 import TeamPageContent from "@/components/page-content/management-content/team-content/team-view-page-content";
-import { teamRouteServer } from "@/lib/apiRoutes";
-import { fetchTeam } from "@/lib/getData";
+import { teamRoute } from "@/lib/apiRoutes";
+import { fetchTeam, fetchWithSession } from "@/lib/getData";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -25,13 +25,12 @@ export default async function Page(props: { params: PageProps }) {
 	}
 
 	const fetchMemberDetails = async () => {
-		const results = await fetch(
-			`${teamRouteServer}/memberInfo?ledaId=${teamData.ledaId}`
-		);
-		if (!results.ok) {
+		const res = await fetchWithSession(`${teamRoute}/memberInfo?ledaId=${teamData.ledaId}`);
+		if (!res.ok) {
+			if (res.status === 404) return [] as TeamMember[]; // graceful empty
 			throw new Error("Failed to fetch member details");
 		}
-		const data = await results.json();
+		const data = await res.json();
 		return data.map((member: TeamMember) => ({
 			fullName: member.fullName,
 			ledaId: member.ledaId,

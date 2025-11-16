@@ -32,7 +32,7 @@ const teamInfoSchema = z.object({
 		.optional(),
 	teamName: z.string().min(1, { message: "Team Name is required." }),
 	establishedDate: z.string(),
-	memo: z.string().optional(),
+	memo: z.string().nullable().optional(),
 });
 
 const formContainerStyle =
@@ -312,6 +312,7 @@ export default function TeamEditForm({
 												<Textarea
 													placeholder="Additional Data Here..."
 													{...field}
+													value={field.value ?? ""}
 												/>
 											</FormControl>
 											<FormMessage />

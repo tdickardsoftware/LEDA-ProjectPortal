@@ -40,6 +40,12 @@ export const rosterRoute = "/api/activities/roster";
 export const scheduleRoute = "/api/activities/schedule";
 // Define route for weekly scoresheets not on serverside
 export const weeklyScoresheetsRoute = "/api/activities/scoresheets";
+// Define route for scoresheet count not on serverside
+export const scoresheetCountRoute = "/api/activities/scoresheets/weeklyScoresheetsV2/scoresheetCount";
+// Define route for roster team view not on serverside
+export const rosterTeamViewRoute = "/api/activities/roster/rosterTeamView";
+// Define route for member info not on serverside
+export const memberInfoRoute = "/api/management/team/memberInfo";
 // Define route for payout not on the serverside
 export const payoutRoute = "/api/activities/payout";
 // Define route for trailsPlayerHistory not on the serverside

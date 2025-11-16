@@ -40,9 +40,9 @@ interface FormValues {
 
 // List of gender options
 const genders = [
-	{ value: "Male", label: "Male" },
-	{ value: "Female", label: "Female" },
-	{ value: "Other", label: "Other" },
+	{ value: "M", label: "Male" },
+	{ value: "F", label: "Female" },
+	{ value: "O", label: "Other" },
 ];
 
 export default function GenderSelector({ control, name }: GenderSelectorProps) {

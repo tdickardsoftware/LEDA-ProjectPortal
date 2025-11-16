@@ -125,10 +125,14 @@ export default function MentionForm({
 	 * Delegates to either updateMention or handleMentionSubmit based on mode
 	 */
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
+		console.log("MentionForm onSubmit called with values:", values);
+		console.log("isEditMode:", isEditMode);
+		console.log("initialMention:", initialMention);
+		
 		// Ensure count is always set to a valid number
 		const countValue = values.count ?? 0;
 
-		console.log(countValue);
+		console.log("countValue:", countValue);
 
 		if (isEditMode && initialMention && updateMention) {
 			updateMention(
@@ -155,6 +159,14 @@ export default function MentionForm({
 				notes: "",
 			});
 		} else {
+			console.log("Calling handleMentionSubmit with:", {
+				mentionCode: values.mentionCode || "",
+				desc: values.mentionDesc || "",
+				points: values.points ?? 0,
+				count: countValue,
+				notes: values.notes
+			});
+			
 			handleMentionSubmit(
 				values.mentionCode || "",
 				values.mentionDesc || "",
@@ -305,7 +317,17 @@ export default function MentionForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">
+					<Button 
+						type="submit" 
+						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						onClick={() => {
+							alert("Button clicked!"); // Simple test
+							console.log("Submit button clicked!");
+							console.log("Form values:", form.getValues());
+							console.log("Form errors:", form.formState.errors);
+							console.log("Form is valid:", form.formState.isValid);
+						}}
+					>
 						{isEditMode ? "Update Mention" : "Add Mention"}
 					</Button>
 				</div>

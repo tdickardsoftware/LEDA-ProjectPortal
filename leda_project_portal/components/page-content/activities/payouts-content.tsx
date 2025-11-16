@@ -6,7 +6,7 @@ import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import React, { useState, useCallback, useEffect } from "react";
 import {
 	rosterRoute,
-	seasonRoute,
+	scoresheetCountRoute,
 	weeklyScoresheetsRoute,
 	payoutRoute,
 } from "@/lib/apiRoutes";
@@ -99,9 +99,11 @@ export default function PayoutsContent() {
 	const [divisionsData, setDivisionsData] = useState<RosterData>({});
 	const [payoutsData, setPayoutsData] = useState<PayoutsData>({});
 	const [loading, setLoading] = useState(false);
-	const [weekCount, setWeekCount] = useState<number>(0);
+	const [expectedScoresheetCount, setExpectedScoresheetCount] =
+		useState<number>(0);
 	const [completedScoresheetCount, setCompletedScoresheetCount] =
 		useState<number>(0);
+	const [totalWeeks, setTotalWeeks] = useState<number>(0);
 
 	// State for accordion open/closed status
 	const [openDivisions, setOpenDivisions] = useState<string[]>([]);
@@ -187,34 +189,18 @@ export default function PayoutsContent() {
 		enabled: !!seasonCode,
 	});
 
-	// --- TanStack Query: Fetch season weeks data ---
+	// --- TanStack Query: Fetch scoresheet count (expected and completed) ---
 	const {
-		data: seasonWeeksData,
-		isLoading: seasonWeeksLoading,
+		data: scoresheetCountData,
+		isLoading: scoresheetCountLoading,
 	} = useQuery({
-		queryKey: ["seasonWeeks", seasonCode],
-		queryFn: async () => {
-			if (!seasonCode) return null;
-			const res = await fetch(`${seasonRoute}?seasonCode=${seasonCode}`);
-			if (!res.ok) throw new Error("Failed to fetch season weeks");
-			const data = await res.json();
-			return data;
-		},
-		enabled: !!seasonCode,
-	});
-
-	// --- TanStack Query: Fetch completed scoresheet count ---
-	const {
-		data: completedScoresheetData,
-		isLoading: completedScoresheetLoading,
-	} = useQuery({
-		queryKey: ["completedScoresheetCount", seasonCode],
+		queryKey: ["scoresheetCount", seasonCode],
 		queryFn: async () => {
 			if (!seasonCode) return null;
 			const res = await fetch(
-				`${weeklyScoresheetsRoute}?seasonCode=${seasonCode}&countOfFinishedWeeks=true`
+				`${scoresheetCountRoute}?seasonCode=${seasonCode}`
 			);
-			if (!res.ok) throw new Error("Failed to fetch completed scoresheet count");
+			if (!res.ok) throw new Error("Failed to fetch scoresheet count");
 			const data = await res.json();
 			return data;
 		},
@@ -227,8 +213,7 @@ export default function PayoutsContent() {
 		setLoading(
 			payoutsLoading ||
 			rosterLoading ||
-			seasonWeeksLoading ||
-			completedScoresheetLoading
+			scoresheetCountLoading
 		);
 
 		if (rosterQueryData) {
@@ -243,23 +228,20 @@ export default function PayoutsContent() {
 			toast.info("Creating new payouts data from roster");
 			// This will be handled by the effect below (when divisionsData changes)
 		}
-		if (seasonWeeksData) {
-			setWeekCount(Object.keys(seasonWeeksData.dates).length);
-		}
-		if (completedScoresheetData) {
-			setCompletedScoresheetCount(completedScoresheetData.count);
+		if (scoresheetCountData) {
+			setExpectedScoresheetCount(scoresheetCountData.expectedScoresheets || 0);
+			setCompletedScoresheetCount(scoresheetCountData.completedScoresheets || 0);
+			setTotalWeeks(scoresheetCountData.totalWeeks || 0);
 		}
 		// eslint-disable-next-line
 	}, [
 		seasonCode,
 		payoutsQueryData,
 		rosterQueryData,
-		seasonWeeksData,
-		completedScoresheetData,
+		scoresheetCountData,
 		payoutsLoading,
 		rosterLoading,
-		seasonWeeksLoading,
-		completedScoresheetLoading,
+		scoresheetCountLoading,
 	]);
 
 	// Create payouts data when divisions data changes
@@ -384,16 +366,16 @@ export default function PayoutsContent() {
 	const calculatePayoutsMutation = useMutation({
 		mutationFn: async (params: {
 			seasonCode: string | null;
-			weekCount: number;
-			teamIdsBySubdivision: { [subdivision: string]: string[] };
-			divisionsData: RosterData;
+			totalWeeks: number;
+			teamIdsByDivisionSubdivision: { [key: string]: { division: string; subdivision: string; teamIds: string[] } };
 			payoutsData: PayoutsData;
 		}) => {
-			const { seasonCode, weekCount, teamIdsBySubdivision, divisionsData, payoutsData } = params;
+			const { seasonCode, totalWeeks, teamIdsByDivisionSubdivision, payoutsData } = params;
 			const newPayoutsData = { ...payoutsData };
-			for (const subdivision of Object.keys(teamIdsBySubdivision)) {
+			for (const key of Object.keys(teamIdsByDivisionSubdivision)) {
+				const { division, subdivision, teamIds } = teamIdsByDivisionSubdivision[key];
 				const response = await fetchWithSession(
-					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${weekCount}&teamLedaIds=${teamIdsBySubdivision[subdivision]}`,
+					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${totalWeeks}&teamLedaIds=${teamIds}`,
 					{ method: "GET", headers: { "Content-Type": "application/json" } }
 				);
 				if (!response.ok) throw new Error("Failed to fetch team points data");
@@ -405,20 +387,17 @@ export default function PayoutsContent() {
 							place: string;
 							amount: string;
 						}) => {
-							Object.keys(divisionsData).forEach((division) => {
-								Object.keys(
-									divisionsData[division]?.subdivisions || {}
-								).forEach((subdivisionKey) => {
-									if (
-										newPayoutsData[division]?.[subdivisionKey]?.[teamData.teamLedaId]
-									) {
-										newPayoutsData[division][subdivisionKey][teamData.teamLedaId].place =
-											parseInt(teamData.place, 10) || null;
-										newPayoutsData[division][subdivisionKey][teamData.teamLedaId].amount =
-											parseFloat(teamData.amount) || 0;
-									}
-								});
-							});
+							// Only update if this team is in the current subdivision's team list
+							if (teamIds.includes(teamData.teamLedaId)) {
+								if (
+									newPayoutsData[division]?.[subdivision]?.[teamData.teamLedaId]
+								) {
+									newPayoutsData[division][subdivision][teamData.teamLedaId].place =
+										parseInt(teamData.place, 10) || null;
+									newPayoutsData[division][subdivision][teamData.teamLedaId].amount =
+										parseFloat(teamData.amount) || 0;
+								}
+							}
 						}
 					);
 				}
@@ -435,11 +414,12 @@ export default function PayoutsContent() {
 	});
 
 	const handleCalculatePayoutsClick = async () => {
-		const teamIdsBySubdivision: { [subdivision: string]: string[] } = {};
+		const teamIdsByDivisionSubdivision: { [key: string]: { division: string; subdivision: string; teamIds: string[] } } = {};
 		Object.keys(divisionsData).forEach((division) => {
 			Object.keys(divisionsData[division]?.subdivisions || {}).forEach(
 				(subdivision) => {
-					teamIdsBySubdivision[subdivision] = Object.keys(
+					const key = `${division}|${subdivision}`;
+					const teamIds = Object.keys(
 						divisionsData[division]?.subdivisions[subdivision] || {}
 					).map(
 						(team) =>
@@ -447,15 +427,38 @@ export default function PayoutsContent() {
 								team
 							]?.teamId
 					);
+					teamIdsByDivisionSubdivision[key] = {
+						division,
+						subdivision,
+						teamIds
+					};
+					console.log(`Division: ${division}, Subdivision: ${subdivision}, Teams:`, teamIds);
 				}
 			);
 		});
+		
+		// Clean up payoutsData: remove teams that don't belong to their subdivisions
+		const cleanedPayoutsData = { ...payoutsData };
+		Object.keys(cleanedPayoutsData).forEach((division) => {
+			Object.keys(cleanedPayoutsData[division]).forEach((subdivision) => {
+				const key = `${division}|${subdivision}`;
+				const validTeamIds = teamIdsByDivisionSubdivision[key]?.teamIds || [];
+				
+				// Remove teams that aren't in the current subdivision's roster
+				Object.keys(cleanedPayoutsData[division][subdivision]).forEach((teamId) => {
+					if (!validTeamIds.includes(teamId)) {
+						console.warn(`Removing team ${teamId} from ${division} - ${subdivision} (not in roster)`);
+						delete cleanedPayoutsData[division][subdivision][teamId];
+					}
+				});
+			});
+		});
+		
 		calculatePayoutsMutation.mutate({
 			seasonCode,
-			weekCount,
-			teamIdsBySubdivision,
-			divisionsData,
-			payoutsData,
+			totalWeeks,
+			teamIdsByDivisionSubdivision,
+			payoutsData: cleanedPayoutsData,
 		});
 	};
 
@@ -793,82 +796,83 @@ export default function PayoutsContent() {
 										</Button>
 									</div>
 								</FolderTabMed>
-								<FolderTabMed
-									title="Payouts"
-									className="w-fit self-start"
-								>
-									<div className="flex flex-col gap-2">
-										{weekCount > 0 && (
-											<TooltipProvider>
-												<Tooltip delayDuration={300}>
-													<TooltipTrigger asChild>
-														<div>
-															<Button
-																variant="outline"
-																className="relative w-full h-10 bg-gray-200 border-gray-300 text-gray-700 overflow-hidden"
-																onClick={() => {
-																	handleCalculatePayoutsClick();
-																}}
-																disabled={
-																	completedScoresheetCount !==
-																	weekCount
-																}
-															>
-																{completedScoresheetCount ===
-																weekCount ? (
-																	<span className="relative z-10 font-semibold">
-																		Calculate
-																		Payouts
-																	</span>
-																) : (
-																	<>
-																		<div
-																			className="absolute top-0 left-0 h-full bg-green-500"
-																			style={{
-																				width: `${
-																					(completedScoresheetCount /
-																						weekCount) *
-																					100
-																				}%`,
-																				minWidth:
-																					completedScoresheetCount >
-																					0
-																						? "5%"
-																						: "0%",
-																			}}
-																		></div>
+								{!payoutsQueryData && (
+									<FolderTabMed
+										title="Payouts"
+										className="w-fit self-start"
+									>
+										<div className="flex flex-col gap-2">
+											{expectedScoresheetCount > 0 && (
+												<TooltipProvider>
+													<Tooltip delayDuration={300}>
+														<TooltipTrigger asChild>
+															<div>
+																<Button
+																	variant="outline"
+																	className="relative w-full h-10 bg-gray-200 border-gray-300 text-gray-700 overflow-hidden"
+																	onClick={() => {
+																		handleCalculatePayoutsClick();
+																	}}
+																	disabled={
+																		completedScoresheetCount !==
+																		expectedScoresheetCount
+																	}
+																>
+																	{completedScoresheetCount ===
+																	expectedScoresheetCount ? (
 																		<span className="relative z-10 font-semibold">
-																			{
-																				completedScoresheetCount
-																			}
-																			/
-																			{
-																				weekCount
-																			}{" "}
-																			Weeks
-																			Completed
+																			Calculate
+																			Payouts
 																		</span>
-																	</>
-																)}
-															</Button>
-														</div>
-													</TooltipTrigger>
-													<TooltipContent
-														side="top"
-														className="bg-white text-black px-4 py-3 rounded-lg shadow-lg border-0"
-													>
-														<p className="text-sm font-medium">
-															{completedScoresheetCount !==
-															weekCount
-																? "Scoresheets are not yet complete"
-																: "All scoresheets are complete, calculate placements"}
-														</p>
-													</TooltipContent>
-												</Tooltip>
-											</TooltipProvider>
-										)}
-									</div>
-								</FolderTabMed>
+																	) : (
+																		<>
+																			<div
+																				className="absolute top-0 left-0 h-full bg-green-500"
+																				style={{
+																					width: `${
+																						(completedScoresheetCount /
+																							expectedScoresheetCount) *
+																						100
+																					}%`,
+																					minWidth:
+																						completedScoresheetCount >
+																						0
+																							? "5%"
+																							: "0%",
+																				}}
+																			></div>
+																			<span className="relative z-10 font-semibold">
+																				{expectedScoresheetCount > 0
+																					? `${Math.round(
+																							(completedScoresheetCount /
+																								expectedScoresheetCount) *
+																								100
+																					  )}%`
+																					: "0%"}{" "}
+																				Complete
+																			</span>
+																		</>
+																	)}
+																</Button>
+															</div>
+														</TooltipTrigger>
+														<TooltipContent
+															side="top"
+															className="bg-white text-black px-4 py-3 rounded-lg shadow-lg border-0"
+														>
+															<p className="text-sm font-medium">
+																{completedScoresheetCount !==
+																expectedScoresheetCount
+																	? "Scoresheets are not yet complete"
+																	: "All scoresheets are complete, calculate placements"}
+															</p>
+														</TooltipContent>
+													</Tooltip>
+												</TooltipProvider>
+											)}
+										</div>
+									</FolderTabMed>
+								)}
 							</div>
 						</div>
 					</div>

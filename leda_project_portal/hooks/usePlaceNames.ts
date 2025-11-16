@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TeamData, PlaceApiResponse } from '@/lib/schedule';
+import { TeamData } from '@/lib/schedule';
 import { placeRoute } from '@/lib/apiRoutes';
+import { fetchWithSession } from '@/lib/getData';
 
 export function usePlaceNames(teams: Record<string, TeamData>) {
 	const uniquePlaceIds = useMemo(
@@ -13,22 +14,27 @@ export function usePlaceNames(teams: Record<string, TeamData>) {
 		data: placeNames = {},
 		isLoading: loading,
 	} = useQuery<Record<string, string>>({
-		queryKey: ['placeNames', uniquePlaceIds],
+		queryKey: ['batchPlaceNames', uniquePlaceIds],
 		enabled: uniquePlaceIds.length > 0,
+		staleTime: 5 * 60 * 1000, // 5 minutes - places don't change often
 		queryFn: async () => {
-			const placePromises = uniquePlaceIds.map(async (placeId): Promise<[string, string]> => {
-				try {
-					const response = await fetch(`${placeRoute}?ledaId=${placeId}`);
-					if (!response.ok) throw new Error(`HTTP ${response.status}`);
-					const data: PlaceApiResponse = await response.json();
-					return [placeId, data.name || "Unknown Location"];
-				} catch (error) {
-					console.error(`Error fetching place ${placeId}:`, error);
-					return [placeId, "Error loading location"];
-				}
+			// Use batch API instead of individual calls
+			const response = await fetchWithSession(`${placeRoute}/batch`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					placeIds: uniquePlaceIds,
+				}),
 			});
-			const placeResults = await Promise.all(placePromises);
-			return Object.fromEntries(placeResults);
+
+			if (!response.ok) {
+				throw new Error(`Batch place fetch failed: ${response.status}`);
+			}
+
+			const placesMap: Record<string, string> = await response.json();
+			return placesMap;
 		},
 	});
 

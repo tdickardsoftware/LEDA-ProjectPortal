@@ -670,3 +670,70 @@ export type UserRole = {
 	username: string;
 	role: string;
 }
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets team info
+//
+export type WeeklyScoresheetsTeamInfo = {
+	seasonCode: string;
+	weekNum: number;
+	division: string;
+	subdivision: number;
+	home: boolean;
+	teamId: number;
+	teamName: string;
+	teamLetter: string;
+	opposingTeamId: number;
+	penalties: JSON;
+}
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets game info
+//
+export type WeeklyScoresheetsGameInfo = {
+	seasonCode: string;
+	weekNum: number;
+	division: string;
+	subdivision: number;
+	homeTeamId: number;
+	awayTeamId: number;
+	homePoints: number;
+	awayPoints: number;
+	gameInfo: JSON;
+	completed: boolean;
+}
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets player info
+//
+export type WeeklyScoresheetsPlayerInfo = {
+	seasonCode: string;
+	weekNum: number;
+	division: string;
+	subdivision: number;
+	ledaId: number;
+	teamId: number;
+	gameStats: JSON;
+}
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets matchup info
+//
+export type WeeklyScoresheetsMatchupInfo = {
+	seasonCode: string;
+	weekNum: number;
+	matchupData: JSON;
+};
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets scoresheet count
+//
+export type WeeklyScoresheetsScoresheetCount = {
+	seasonCode: string;
+	expectedScoresheets: number;
+	completedScoresheets: number;
+	totalWeeks: number;
+};
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets scoresheet team info 
+//
+export type WeeklyScoresheetsScoresheetTeamInfo = {
+	seasonCode: string;
+	ledaid: number;
+	teamLetter: string;
+}

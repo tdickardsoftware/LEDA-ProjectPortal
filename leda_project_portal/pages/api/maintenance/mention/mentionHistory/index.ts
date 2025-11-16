@@ -104,22 +104,22 @@ export default async function handler(
 	} else if (req.method === "PUT") {
 		try {
 			const data = req.body as MentionPlayerHistory;
-			const query = `UPDATE public.leda_player_mention_history SET "mentionCode" = $1, "mentionDesc" = $2, "mentionPoints" = $3, notes = $6, "creationDate" = $8, "count" = $10 WHERE "mentionId" = $7 and "seasonCode" = $5 and "weekNum" = $6 and "ledaId" = $9 and "teamId" = $11;`;
+			const query = `UPDATE public.leda_player_mention_history SET "mentionCode" = $1, "mentionDesc" = $2, "mentionPoints" = $3, notes = $4, "creationDate" = $5, "count" = $6 WHERE "mentionId" = $7 and "seasonCode" = $8 and "weekNum" = $9 and "ledaId" = $10 and "teamId" = $11;`;
 			const values = [
 				data.mentionCode,
 				data.mentionDesc,
 				data.mentionPoints,
-				data.seasonCode,
-				data.weekNum,
 				data.notes,
-				data.mentionId,
 				new Date(
 					new Date().toLocaleString("en-US", {
 						timeZone: "America/New_York",
 					})
 				),
-				data.ledaId,
 				data.count,
+				data.mentionId,
+				data.seasonCode,
+				data.weekNum,
+				data.ledaId,
 				data.teamId,
 			];
 

@@ -1,20 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { PaymentHistory } from "@/lib/definitions";
 import {
 	playerPaymentHistoryRoute,
@@ -22,16 +9,18 @@ import {
 	placePaymentHistoryRoute,
 } from "@/lib/apiRoutes";
 import { Button } from "./ui/button";
+import { DataTable } from "./datatable";
+import { ColumnDef } from "@tanstack/react-table";
 import PaymentHistoryFormDialog from "./payment-history-form-dialog";
-import { PencilIcon, XIcon } from "lucide-react";
-import PaymentTypeSelectorNF from "./ui/payment-type-selector-nf";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import { FilterIcon } from "lucide-react";
+import { Eye, PencilIcon, XIcon } from "lucide-react";
 import { fetchWithSession } from "@/lib/getData";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 
 interface PaymentVisualisorProps {
 	type: "player" | "team" | "place";
@@ -39,48 +28,28 @@ interface PaymentVisualisorProps {
 }
 
 export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
-	const [selectedDate, setSelectedDate] = useState<string>("all");
-	const [selectedPaymentType, setSelectedPaymentType] = useState<
-		{ paymentType: string; desc: string } | undefined
-	>(undefined);
-	const [appliedPaymentType, setAppliedPaymentType] = useState<
-		{ paymentType: string; desc: string } | undefined
-	>(undefined);
-	const [filterOpen, setFilterOpen] = useState(false);
-	const [currentPage, setCurrentPage] = useState(1);
-	const recordsPerPage = 10;
-
+	const [selectedPayment, setSelectedPayment] = useState<PaymentHistory | null>(null);
+	const [detailsOpen, setDetailsOpen] = useState(false);
 	const queryClient = useQueryClient();
 
-	// TanStack Query for unique dates
-	const {
-		data: uniqueDates = [],
-		error: datesError,
-		isLoading: datesLoading,
-		refetch: refetchDates,
-	} = useQuery({
-		queryKey: ['uniqueDates', type, ledaId],
-		queryFn: async () => {
-			let baseRoute = "";
-			if (type === "player") baseRoute = playerPaymentHistoryRoute;
-			else if (type === "team") baseRoute = teamPaymentHistoryRoute;
-			else if (type === "place") baseRoute = placePaymentHistoryRoute;
-			else return [];
-			const url = ledaId
-				? `${baseRoute}/uniqueDates?ledaId=${ledaId}`
-				: `${baseRoute}/uniqueDates`;
-			const response = await fetch(url);
-			if (!response.ok) throw new Error('Failed to fetch unique dates');
-			const data = await response.json();
-			return Array.isArray(data)
-				? data.map((item) => ({ paymentDate: item.date }))
-				: (data?.rows || []).map((item: { date: string }) => ({
-						paymentDate: item.date,
-				  }));
-		},
-		enabled: !!type,
-		staleTime: 5 * 60 * 1000,
-	});
+	// Get the appropriate route for the payment type - wrapped in useCallback
+	const getBaseRoute = React.useCallback(() => {
+		if (type === "player") return playerPaymentHistoryRoute;
+		if (type === "team") return teamPaymentHistoryRoute;
+		if (type === "place") return placePaymentHistoryRoute;
+		return "";
+	}, [type]);
+
+	// Helper function to format dates consistently
+	const formatDate = React.useCallback((dateStr: string | Date | undefined) => {
+		if (!dateStr) return "N/A";
+		
+		const date = typeof dateStr === "string" 
+			? new Date(dateStr + (dateStr.endsWith("Z") ? "" : "T00:00:00Z"))
+			: dateStr;
+			
+		return date.toLocaleDateString("en-US", { timeZone: "UTC" });
+	}, []);
 
 	// TanStack Query for payments
 	const {
@@ -89,113 +58,152 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 		isLoading: paymentsLoading,
 		refetch: refetchPayments,
 	} = useQuery({
-		queryKey: ['paymentHistory', type, ledaId, selectedDate, appliedPaymentType],
+		queryKey: ['paymentHistory', type, ledaId],
 		queryFn: async () => {
-			let baseUrl = "";
-			if (type === "player") baseUrl = playerPaymentHistoryRoute;
-			else if (type === "team") baseUrl = teamPaymentHistoryRoute;
-			else if (type === "place") baseUrl = placePaymentHistoryRoute;
-			else return [];
+			const baseUrl = getBaseRoute();
+			if (!baseUrl) return [];
+			
 			const url = ledaId ? `${baseUrl}?ledaId=${ledaId}` : baseUrl;
 			const response = await fetch(url);
-			if (!response.ok) throw new Error(`API returned ${response.status}: ${response.statusText}`);
+			
+			if (!response.ok) {
+				throw new Error(`API returned ${response.status}: ${response.statusText}`);
+			}
+			
 			let data = await response.json();
 			data = Array.isArray(data) ? data : data?.payments || [];
-			data = data.map((payment: PaymentHistory) => ({
-				...payment,
-				date: payment.date || payment.date,
-			}));
-			if (selectedDate !== "all") {
-				data = data.filter((payment: PaymentHistory) => {
-					const paymentDate = String(payment.date || "");
-					if (!paymentDate) return false;
-					const paymentUTC = new Date(paymentDate + (paymentDate.endsWith("Z") ? "" : "T00:00:00Z"));
-					const selectedUTC = new Date(selectedDate + "T00:00:00Z");
-					return paymentUTC.toISOString().slice(0, 10) === selectedUTC.toISOString().slice(0, 10);
-				});
-			}
-			if (appliedPaymentType) {
-				data = data.filter((payment: PaymentHistory) => payment.type === appliedPaymentType.paymentType);
-			}
-			data.sort((a: PaymentHistory, b: PaymentHistory) => {
+			
+			// Format dates and sort by newest first
+			return data.map((payment: PaymentHistory) => {
+				// Ensure date is processed correctly
+				const formattedDate = formatDate(payment.date);
+				
+				return {
+					...payment,
+					date: payment.date, // Keep original date
+					formattedDate: formattedDate // Add formatted date for display
+				};
+			}).sort((a: PaymentHistory, b: PaymentHistory) => {
 				const dateA = new Date(String(a.date || "") + (String(a.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
 				const dateB = new Date(String(b.date || "") + (String(b.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
 				return dateB.getTime() - dateA.getTime();
 			});
-			return data;
 		},
 		enabled: !!type,
 		staleTime: 2 * 60 * 1000,
 		retry: 1,
 	});
 
-	const error = datesError || paymentsError;
-	const loading = datesLoading || paymentsLoading;
-
 	const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
 
-	const indexOfLastRecord = currentPage * recordsPerPage;
-	const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-	const currentRecords = payments.slice(indexOfFirstRecord, indexOfLastRecord);
-	const totalPages = Math.ceil(payments.length / recordsPerPage);
-
-	const refreshPayments = () => {
+	const refreshPayments = React.useCallback(() => {
 		refetchPayments();
-		refetchDates();
 		queryClient.invalidateQueries({ queryKey: ['paymentHistory'] });
-		queryClient.invalidateQueries({ queryKey: ['uniqueDates'] });
-	};
+	}, [refetchPayments, queryClient]);
 
-	// Function to clear all filters
-	const clearFilters = () => {
-		setSelectedDate("all");
-		setSelectedPaymentType(undefined);
-		setAppliedPaymentType(undefined);
-		setFilterOpen(false);
-	};
-
-	// Function to apply the selected filter
-	const applyFilter = () => {
-		setAppliedPaymentType(selectedPaymentType);
-		setFilterOpen(false);
-	};
-
-	// Function to delete a payment record
-	const handleDeletePayment = async (payment: PaymentHistory) => {
-		if (
-			!window.confirm(
-				"Are you sure you want to delete this payment record? This action cannot be undone."
-			)
-		) {
+	// Function to delete a payment record - wrapped in useCallback
+	const handleDeletePayment = React.useCallback(async (payment: PaymentHistory) => {
+		if (!window.confirm("Are you sure you want to delete this payment record? This action cannot be undone.")) {
 			return;
 		}
 
 		try {
-			let baseRoute = "";
-			if (type === "player") baseRoute = playerPaymentHistoryRoute;
-			else if (type === "team") baseRoute = teamPaymentHistoryRoute;
-			else if (type === "place") baseRoute = placePaymentHistoryRoute;
-			else return;
+			const baseRoute = getBaseRoute();
+			if (!baseRoute) return;
 
 			const response = await fetchWithSession(`${baseRoute}`, {
 				method: "DELETE",
-				headers: {
-					"Content-Type": "application/json",
-				},
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(payment),
 			});
+			
 			if (!response.ok) {
-				throw new Error(
-					`Failed to delete payment: ${response.statusText}`
-				);
+				throw new Error(`Failed to delete payment: ${response.statusText}`);
 			}
+			
 			refreshPayments();
-			window.location.reload();
 		} catch (error) {
 			console.error("Error deleting payment:", error);
 			alert("Failed to delete payment. Please try again.");
 		}
-	};
+	}, [getBaseRoute, refreshPayments]);
+	
+	// Show payment details in dialog - wrapped in useCallback
+	const showPaymentDetails = React.useCallback((payment: PaymentHistory) => {
+		setSelectedPayment(payment);
+		setDetailsOpen(true);
+	}, []);
+	
+	// Define columns for the DataTable
+	const columns = useMemo<ColumnDef<PaymentHistory>[]>(() => [
+		{
+			accessorKey: "paymentNbr",
+			header: "Payment #",
+		},
+		{
+			accessorKey: "ledaId",
+			header: "LEDA ID",
+		},
+		{
+			accessorKey: "fullName",
+			header: "Name",
+			cell: ({ row }) => row.original.fullName || "N/A",
+		},
+		{
+			accessorKey: "amount",
+			header: "Amount",
+		},
+		{
+			accessorKey: "date",
+			header: "Date",
+			cell: ({ row }) => formatDate(row.original.date),
+		},
+		{
+			accessorKey: "type",
+			header: "Type",
+		},
+		{
+			accessorKey: "seasonCode",
+			header: "Season",
+		},
+		{
+			id: "actions",
+			header: "Actions",
+			cell: ({ row }) => (
+				<div className="flex gap-2 justify-left">
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={() => showPaymentDetails(row.original)}
+						className="p-1 h-8 w-8"
+					>
+						<Eye className="h-4 w-4" />
+					</Button>
+					<PaymentHistoryFormDialog
+						buttonText=""
+						buttonIcon={<PencilIcon className="h-4 w-4" />}
+						onSuccess={refreshPayments}
+						initialLedaId={ledaId}
+						route={getBaseRoute()}
+						paymentData={row.original}
+						isEditing={true}
+						type={type}
+					/>
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={(e) => {
+							e.stopPropagation();
+							handleDeletePayment(row.original);
+						}}
+						className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1 h-8 w-8"
+					>
+						<XIcon className="h-4 w-4" />
+					</Button>
+				</div>
+			),
+		},
+	], [ledaId, type, showPaymentDetails, refreshPayments, getBaseRoute, handleDeletePayment, formatDate]);
 
 	return (
 		<div className="w-full">
@@ -204,360 +212,128 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 					buttonText={`Add ${capitalizedType} Payment`}
 					onSuccess={refreshPayments}
 					initialLedaId={ledaId}
-					route={
-						type === "player"
-							? playerPaymentHistoryRoute
-							: type === "team"
-							? teamPaymentHistoryRoute
-							: placePaymentHistoryRoute
-					}
+					route={getBaseRoute()}
 					type={type}
 				/>
-				<div className="flex gap-2">
-					<Select
-						value={selectedDate}
-						onValueChange={setSelectedDate}
-					>
-						<SelectTrigger className="w-[200px] border-gray-400 text-gray-700">
-							<SelectValue placeholder="Filter by date" />
-						</SelectTrigger>
-						<SelectContent className="bg-white  border-gray-400 text-gray-700">
-							<SelectItem value="all" className="hover:bg-gray-300">All Dates</SelectItem>
-							{Array.isArray(uniqueDates) &&
-								uniqueDates.map((date, index) => {
-									// Defensive: ensure date.paymentDate is a valid date string (YYYY-MM-DD)
-									// Postgres DATE fields may be returned as JS Date objects, ISO strings, or plain YYYY-MM-DD strings.
-									let dateStr = "";
-									if (date.paymentDate instanceof Date) {
-										dateStr = date.paymentDate.toISOString().slice(0, 10);
-									} else if (
-										typeof date.paymentDate === "string" &&
-										/^\d{4}-\d{2}-\d{2}$/.test(date.paymentDate)
-									) {
-										dateStr = date.paymentDate;
-									} else if (
-										typeof date.paymentDate === "string" &&
-										!isNaN(Date.parse(date.paymentDate))
-									) {
-										dateStr = new Date(date.paymentDate).toISOString().slice(0, 10);
-									}
-
-									const isValid =
-										typeof dateStr === "string" &&
-										/^\d{4}-\d{2}-\d{2}$/.test(dateStr) &&
-										!isNaN(Date.parse(dateStr + "T00:00:00Z"));
-
-									return (
-										<SelectItem
-											key={`${date.paymentDate}-${index}`}
-											value={dateStr || date.paymentDate}
-											className="hover:bg-gray-300"
-										>
-											{isValid
-												? new Date(dateStr + "T00:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC" })
-												: "Unknown date"}
-										</SelectItem>
-									);
-								})}
-						</SelectContent>
-					</Select>
-
-					<Popover open={filterOpen} onOpenChange={setFilterOpen}>
-						<PopoverTrigger asChild>
-							<Button
-								variant="outline"
-								className="border-gray-400 text-gray-700"
-							>
-								<FilterIcon className="h-4 w-4 mr-2" />
-								{appliedPaymentType
-									? "Payment Type Filter"
-									: "Filter by Type"}
-							</Button>
-						</PopoverTrigger>
-						<PopoverContent className="w-80 p-4 bg-white border-gray-400 text-gray-700">
-							<div className="space-y-4">
-								<h4 className="font-medium">
-									Filter by Payment Type
-								</h4>
-								<PaymentTypeSelectorNF
-									value={selectedPaymentType}
-									onChange={setSelectedPaymentType}
-									label="Payment Type"
-								/>
-								<div className="flex justify-between mt-4">
-									<Button
-										variant="outline"
-										onClick={clearFilters}
-										className="text-sm border-gray-400 text-gray-700"
-									>
-										Clear Filters
-									</Button>
-									<Button
-										onClick={applyFilter}
-										className="text-sm border-gray-400 text-gray-700"
-									>
-										Apply
-									</Button>
-								</div>
-							</div>
-						</PopoverContent>
-					</Popover>
-				</div>
 			</div>
-
-			{/* Show active filters if any are applied */}
-			{(selectedDate !== "all" || appliedPaymentType) && (
-				<div className="flex gap-2 mb-4 items-center">
-					<span className="text-sm text-gray-500">
-						Active filters:
-					</span>
-					{selectedDate !== "all" && (
-						<Button
-							variant="outline"
-							size="sm"
-							className="text-xs flex items-center gap-1 bg-gray-100"
-							onClick={() => setSelectedDate("all")}
-						>
-							Date: {new Date(selectedDate + "T00:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC" })}
-							<XIcon className="h-3 w-3" />
-						</Button>
-					)}
-					{appliedPaymentType && (
-						<Button
-							variant="outline"
-							size="sm"
-							className="text-xs flex items-center gap-1 bg-gray-100"
-							onClick={() => {
-								setAppliedPaymentType(undefined);
-								setSelectedPaymentType(undefined);
-							}}
-						>
-							Type: {appliedPaymentType.paymentType}
-							<XIcon className="h-3 w-3" />
-						</Button>
-					)}
-				</div>
-			)}
-
-			{loading ? (
+			
+			{paymentsLoading ? (
 				<div className="flex justify-center items-center h-40">
 					<p>Loading payments...</p>
 				</div>
-			) : error ? (
+			) : paymentsError ? (
 				<div className="flex justify-center items-center h-40 text-red-500">
-					<p>{error instanceof Error ? error.message : String(error)}</p>
+					<p>
+						{paymentsError instanceof Error 
+							? paymentsError.message 
+							: String(paymentsError)}
+					</p>
 				</div>
-			) : payments.length > 0 ? (
+			) : (
 				<>
-					<Accordion type="single" collapsible className="w-full">
-						{currentRecords.map((payment: PaymentHistory) => (
-							<AccordionItem
-								key={payment.paymentNbr}
-								value={`payment-${payment.paymentNbr}`}
-							>
-								<AccordionTrigger className="flex flex-row w-full text-left px-4 py-2 hover:bg-gray-50 gap-6">
-									<div className="flex flex-col">
-										<span className="text-xs text-gray-500">
-											Payment #
-										</span>
-										<span>{payment.paymentNbr}</span>
+					<DataTable 
+						columns={columns}
+						data={payments}
+						pageName={`${capitalizedType} Payments`}
+						apiEndpoint={getBaseRoute()}
+						filter={false}
+						defaultSort="paymentNbr"
+					/>
+					
+					{/* Payment Details Dialog */}
+					<Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+						<DialogContent className="max-w-2xl bg-white">
+							<DialogHeader>
+								<DialogTitle>Payment Details</DialogTitle>
+								<DialogDescription>
+									Payment #{selectedPayment?.paymentNbr} for {selectedPayment?.fullName || "N/A"}
+								</DialogDescription>
+							</DialogHeader>
+							
+							{selectedPayment && (
+								<div className="grid grid-cols-2 gap-4 mt-4">
+									<div>
+										<p className="font-semibold">Payment #:</p>
+										<p>{selectedPayment.paymentNbr}</p>
 									</div>
-									<div className="flex flex-col">
-										<span className="text-xs text-gray-500">
-											LEDA ID
-										</span>
-										<span>{payment.ledaId}</span>
+									<div>
+										<p className="font-semibold">LEDA ID:</p>
+										<p>{selectedPayment.ledaId}</p>
 									</div>
-									<div className="flex flex-col">
-										<span className="text-xs text-gray-500">
-											Name
-										</span>
-										<span>{payment.fullName || "N/A"}</span>
+									<div>
+										<p className="font-semibold">Name:</p>
+										<p>{selectedPayment.fullName || "N/A"}</p>
 									</div>
-									<div className="flex flex-col">
-										<span className="text-xs text-gray-500">
-											Amount
-										</span>
-										<span>{payment.amount}</span>
+									<div>
+										<p className="font-semibold">Amount:</p>
+										<p>{selectedPayment.amount}</p>
 									</div>
-									<div className="flex flex-col">
-										<span className="text-xs text-gray-500">
-											Date
-										</span>
-										<span>
-											{payment.date
-												? new Date(
-														String(payment.date) + (String(payment.date).endsWith("Z") ? "" : "T00:00:00Z")
-												  ).toLocaleDateString("en-US", { timeZone: "UTC" })
-												: "N/A"}
-										</span>
+									<div>
+										<p className="font-semibold">Date:</p>
+										<p>{formatDate(selectedPayment.date)}</p>
 									</div>
-								</AccordionTrigger>
-								<AccordionContent className="px-6 py-4 bg-gray-50">
-									<div className="flex justify-end mb-2 gap-2">
+									<div>
+										<p className="font-semibold">Type:</p>
+										<p>{selectedPayment.type}</p>
+									</div>
+									<div>
+										<p className="font-semibold">Payment Type:</p>
+										<p>{selectedPayment.paymentType}</p>
+									</div>
+									<div>
+										<p className="font-semibold">Season Code:</p>
+										<p>{selectedPayment.seasonCode}</p>
+									</div>
+									<div>
+										<p className="font-semibold">Fiscal Year:</p>
+										<p>{selectedPayment.fiscalYear}</p>
+									</div>
+									<div>
+										<p className="font-semibold">Comp:</p>
+										<p>{selectedPayment.comp ? "Yes" : "No"}</p>
+									</div>
+									<div>
+										<p className="font-semibold">Paid Off:</p>
+										<p>{selectedPayment.paidOff ? "Yes" : "No"}</p>
+									</div>
+									{selectedPayment.notes && (
+										<div className="col-span-2">
+											<p className="font-semibold">Notes:</p>
+											<p>{selectedPayment.notes}</p>
+										</div>
+									)}
+									
+									<div className="col-span-2 flex justify-end gap-2 mt-4">
 										<PaymentHistoryFormDialog
-											buttonText=""
-											buttonIcon={
-												<PencilIcon className="h-4 w-4" />
-											}
-											onSuccess={refreshPayments}
+											buttonText="Edit"
+											buttonIcon={<PencilIcon className="h-4 w-4 mr-2" />}
+											onSuccess={() => {
+												refreshPayments();
+												setDetailsOpen(false);
+											}}
 											initialLedaId={ledaId}
-											route={
-												type === "player"
-													? playerPaymentHistoryRoute
-													: type === "team"
-													? teamPaymentHistoryRoute
-													: placePaymentHistoryRoute
-											}
-											paymentData={payment}
+											route={getBaseRoute()}
+											paymentData={selectedPayment}
 											isEditing={true}
 											type={type}
 										/>
 										<Button
-											variant="ghost"
-											size="sm"
+											variant="outline"
 											onClick={(e) => {
 												e.stopPropagation();
-												handleDeletePayment(payment);
+												handleDeletePayment(selectedPayment);
+												setDetailsOpen(false);
 											}}
 											className="text-red-600 hover:text-red-800 hover:bg-red-100"
 										>
-											<XIcon className="h-4 w-4" />
+											<XIcon className="h-4 w-4 mr-2" /> Delete
 										</Button>
 									</div>
-									<div className="grid grid-cols-2 gap-4">
-										<div>
-											<p className="font-semibold">
-												Type:
-											</p>
-											<p>{payment.type}</p>
-										</div>
-										<div>
-											<p className="font-semibold">
-												Payment Type:
-											</p>
-											<p>{payment.paymentType}</p>
-										</div>
-										<div>
-											<p className="font-semibold">
-												Season Code:
-											</p>
-											<p>{payment.seasonCode}</p>
-										</div>
-										<div>
-											<p className="font-semibold">
-												Fiscal Year:
-											</p>
-											<p>{payment.fiscalYear}</p>
-										</div>
-										<div>
-											<p className="font-semibold">
-												Comp:
-											</p>
-											<p>{payment.comp ? "Yes" : "No"}</p>
-										</div>
-										<div>
-											<p className="font-semibold">
-												Paid Off:
-											</p>
-											<p>
-												{payment.paidOff ? "Yes" : "No"}
-											</p>
-										</div>
-										{payment.notes && (
-											<div className="col-span-2">
-												<p className="font-semibold">
-													Notes:
-												</p>
-												<p>{payment.notes}</p>
-											</div>
-										)}
-									</div>
-								</AccordionContent>
-							</AccordionItem>
-						))}
-					</Accordion>
-
-					{/* Pagination Controls */}
-					<div className="flex items-center justify-between mt-6">
-						<div className="text-sm text-gray-700">
-							Showing{" "}
-							<span className="font-medium">
-								{indexOfFirstRecord + 1}
-							</span>{" "}
-							to{" "}
-							<span className="font-medium">
-								{Math.min(indexOfLastRecord, payments.length)}
-							</span>{" "}
-							of{" "}
-							<span className="font-medium">
-								{payments.length}
-							</span>{" "}
-							results
-						</div>
-						<div className="flex space-x-2">
-							<Button
-								onClick={() =>
-									setCurrentPage((prev) =>
-										Math.max(prev - 1, 1)
-									)
-								}
-								disabled={currentPage === 1}
-								className={`px-3 py-1 rounded ${
-									currentPage === 1
-										? "hover:bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed"
-										: "hover:bg-gray-100 border-gray-300 text-gray-700"
-								}`}
-							>
-								Previous
-							</Button>
-							{Array.from(
-								{ length: Math.min(5, totalPages) },
-								(_, i) => {
-									// Show current page and two pages on either side if possible
-									const pageNum = Math.min(
-										Math.max(currentPage - 2 + i, 1),
-										totalPages
-									);
-									return (
-										<Button
-											key={pageNum}
-											onClick={() =>
-												setCurrentPage(pageNum)
-											}
-											className={`px-3 py-1 rounded ${
-												currentPage === pageNum
-													? " bg-gray-300 hover:bg-gray-100 border-gray-300 text-gray-700"
-													: "bg-gray-200 hover:bg-gray-100 border-gray-300 text-gray-700"
-											}`}
-										>
-											{pageNum}
-										</Button>
-									);
-								}
+								</div>
 							)}
-							<Button
-								onClick={() =>
-									setCurrentPage((prev) =>
-										Math.min(prev + 1, totalPages)
-									)
-								}
-								disabled={currentPage === totalPages}
-								className={`px-3 py-1 rounded ${
-									currentPage === totalPages
-										? "hover:bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed"
-										: "hover:bg-gray-100 border-gray-300 text-gray-700"
-								}`}
-							>
-								Next
-							</Button>
-						</div>
-					</div>
+						</DialogContent>
+					</Dialog>
 				</>
-			) : (
-				<div className="flex justify-center items-center h-40">
-					<p>No payment records found.</p>
-				</div>
 			)}
 		</div>
 	);

@@ -95,10 +95,15 @@ const PlaceOwnerSelectContent: React.FC = () => {
 		queryFn: async () => {
 			const response = await fetch(placeOwnerRoute);
 			const data = await response.json();
-			return data.map((type: { ledaId: string; fullName: string }) => ({
+			const mappedData = data.map((type: { ledaId: string; fullName: string }) => ({
 				value: type.ledaId,
 				label: type.ledaId + " - " + type.fullName,
 			}));
+			// Add None/Unknown option at the beginning
+			return [
+				{ value: "0", label: "0 - None/Unknown" },
+				...mappedData,
+			];
 		},
 	});
 

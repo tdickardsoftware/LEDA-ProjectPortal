@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { playerRoute, placeRoute } from "@/lib/apiRoutes";
 import { fetchWithSession as _fetchWithSession } from "@/lib/getData";
 
@@ -20,40 +21,100 @@ export default function MailingLabelsImportDialog({
 	const [importType, setImportType] = useState<ImportType | null>(null);
 	const [importBoth, setImportBoth] = useState(false);
 	const [status, setStatus] = useState<"idle" | "pending" | "success" | "error">("idle");
+	const [progress, setProgress] = useState(0);
+	const [importResults, setImportResults] = useState<{ player?: { count: number }; place?: { count: number }; count?: number } | null>(null);
+
+	// Progress bar animation effect
+	useEffect(() => {
+		let interval: NodeJS.Timeout;
+		if (status === "pending") {
+			setProgress(0);
+			interval = setInterval(() => {
+				setProgress(prev => {
+					if (prev >= 90) return 90; // Stop at 90% until completion
+					return prev + Math.random() * 15; // Random increments for realistic feel
+				});
+			}, 200);
+		} else if (status === "success") {
+			setProgress(100);
+		} else if (status === "error") {
+			setProgress(0);
+		}
+		return () => {
+			if (interval) clearInterval(interval);
+		};
+	}, [status]);
 
 	const mutation = useMutation({
 		mutationFn: async () => {
 			setStatus("pending");
+			setProgress(0);
+			setImportResults(null);
+			
+			const timeoutPromise = new Promise<never>((_, reject) => 
+				setTimeout(() => reject(new Error('Import timeout after 60 seconds')), 60000)
+			);
+
 			if (importBoth) {
-				const [playerRes, placeRes] = await Promise.all([
+				const importPromises = Promise.all([
 					_fetchWithSession(`${playerRoute}/playerMailList`, { method: "POST" }),
 					_fetchWithSession(`${placeRoute}/placeMailList`, { method: "POST" }),
 				]);
+
+				const [playerRes, placeRes] = await Promise.race([
+					importPromises,
+					timeoutPromise
+				]);
+
 				const bothOk = playerRes.ok && placeRes.ok;
 				setStatus(bothOk ? "success" : "error");
 				if (!bothOk) throw new Error("Import failed");
-				return { player: await playerRes.json(), place: await placeRes.json() };
+				
+				const results = { 
+					player: await playerRes.json(), 
+					place: await placeRes.json() 
+				};
+				setImportResults(results);
+				return results;
 			} else {
 				const url =
 					importType === "player"
 						? `${playerRoute}/playerMailList`
 						: `${placeRoute}/placeMailList`;
-				const res = await _fetchWithSession(url, { method: "POST" });
+						
+				const importPromise = _fetchWithSession(url, { method: "POST" });
+				const res = await Promise.race([importPromise, timeoutPromise]);
+				
 				setStatus(res.ok ? "success" : "error");
 				if (!res.ok) throw new Error("Import failed");
-				return res.json();
+				
+				const results = await res.json();
+				setImportResults(results);
+				return results;
 			}
 		},
 		onSuccess: () => {
 			if (onImportSuccess) onImportSuccess();
 		},
-		onError: () => {
+		onError: (error) => {
 			setStatus("error");
+			setProgress(0);
+			console.error("Import error:", error);
 		},
+		retry: false, // Don't retry on timeout/error
 	});
 
 	const handleImport = () => {
+		setImportResults(null);
+		setProgress(0);
 		mutation.mutate();
+	};
+
+	const handleReset = () => {
+		setStatus("idle");
+		setProgress(0);
+		setImportResults(null);
+		mutation.reset();
 	};
 
 	return (
@@ -102,28 +163,72 @@ export default function MailingLabelsImportDialog({
 					</div>
 				</div>
 				{status === "pending" && (
-					<div className="text-sm text-gray-500 mb-2">Importing...</div>
+					<div className="space-y-2">
+						<div className="text-sm text-gray-500">Importing...</div>
+						<Progress value={progress} className="w-full" />
+						<div className="text-xs text-gray-400">{Math.round(progress)}%</div>
+					</div>
 				)}
 				{status === "success" && (
-					<div className="text-sm text-green-600 mb-2">Import successful!</div>
+					<div className="space-y-2">
+						<div className="text-sm text-green-600">Import successful!</div>
+						<Progress value={100} className="w-full" />
+						{importResults && (
+							<div className="text-xs text-gray-600">
+								{importBoth ? (
+									<>
+										Players: {importResults.player?.count || 0} imported, 
+										Places: {importResults.place?.count || 0} imported
+									</>
+								) : (
+									<>{importResults.count || 0} records imported</>
+								)}
+							</div>
+						)}
+					</div>
 				)}
 				{status === "error" && (
-					<div className="text-sm text-red-600 mb-2">Import failed. Please try again.</div>
+					<div className="space-y-2">
+						<div className="text-sm text-red-600">Import failed. Please try again.</div>
+						<Progress value={0} className="w-full" />
+					</div>
 				)}
 				<AlertDialogFooter>
-					<AlertDialogCancel
-						disabled={status === "pending"}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
-					>
-						Cancel
-					</AlertDialogCancel>
-					<Button
-						disabled={(!importType && !importBoth) || status === "pending"}
-						onClick={handleImport}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
-					>
-						Import
-					</Button>
+					{status === "success" || status === "error" ? (
+						<>
+							<AlertDialogCancel
+								onClick={handleReset}
+								className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							>
+								Close
+							</AlertDialogCancel>
+							{status === "error" && (
+								<Button
+									disabled={(!importType && !importBoth)}
+									onClick={handleImport}
+									className="hover:bg-gray-100 border-gray-300 text-gray-700"
+								>
+									Try Again
+								</Button>
+							)}
+						</>
+					) : (
+						<>
+							<AlertDialogCancel
+								disabled={status === "pending"}
+								className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							>
+								Cancel
+							</AlertDialogCancel>
+							<Button
+								disabled={(!importType && !importBoth) || status === "pending"}
+								onClick={handleImport}
+								className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							>
+								Import
+							</Button>
+						</>
+					)}
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>

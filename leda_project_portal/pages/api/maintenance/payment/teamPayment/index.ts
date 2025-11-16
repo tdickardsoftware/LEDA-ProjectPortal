@@ -78,7 +78,7 @@ export default async function handler(
 	if (req.method === "GET") {
 		// ...existing GET logic...
 		// (No changes needed)
-		if (req.query.ledaId && typeof req.query.ledaId === "string") {
+		if (req.query.teamId && typeof req.query.teamId === "string") {
 			try {
 				const result = await query<
 					PaymentHistory & { fullName: string; fiscalYear: string }
@@ -91,12 +91,12 @@ export default async function handler(
                      JOIN maint.leda_maint_seasons s ON h."seasonCode" = s."seasonCode"
                      WHERE h."ledaId" = $1
                      ORDER BY h."paymentNbr";`,
-					[req.query.ledaId]
+					[req.query.teamId]
 				);
 				res.status(200).json(result.rows);
 			} catch (error) {
 				console.error(
-					"Error fetching payment history for ledaId:",
+					"Error fetching payment history for teamId:",
 					error
 				);
 				res.status(500).json({
