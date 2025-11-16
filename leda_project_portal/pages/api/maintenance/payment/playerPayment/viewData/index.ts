@@ -49,7 +49,7 @@ export default async function handler(
 					res.status(200).json(result.rows[0]);
 				} else {
 					// Return an empty object or a default status when no records found
-					res.status(200).json({ status: null });
+					res.status(200).json({ status: "UNPAID" });
 				}
 			} catch (error) {
 				console.error("Error fetching payment status:", error);

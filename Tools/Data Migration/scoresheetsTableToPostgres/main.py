@@ -233,7 +233,7 @@ def main():
                 penalty_reader = csv.DictReader(penaltyfile)
                 for prow in penalty_reader:
                     season = prow['Season Code'].upper()
-                    week = str(prow['Week Number']).strip()
+                    week = str(int(prow['Week Number'])) if prow['Week Number'] else '0'
                     team_id = str(prow['Team ID Number']).strip()
                     key = (season, week, team_id)
                     code = map_penalty_code(prow['Penalty Type'], prow['Penalty Code Letter'])
@@ -251,7 +251,7 @@ def main():
                 penalty_reader = csv.DictReader(penaltyfile)
                 for prow in penalty_reader:
                     season = prow['Season Code'].upper()
-                    week = str(prow['Week Number']).strip()
+                    week = str(int(prow['Week Number'])) if prow['Week Number'] else '0'
                     team_id = str(prow['Team ID Number']).strip()
                     key = (season, week, team_id)
                     code = map_penalty_code(prow['Penalty Type'], prow['Penalty Code Letter'])
@@ -340,6 +340,9 @@ def main():
         player_values = []
         team_game_values = []
         team_info_values = []
+        
+        # Track teams in this week for penalty accumulation
+        teams_in_week = set()
 
         # Group rows by matchup (home/away team letters) and by team (home/away)
         matchups = {}
@@ -404,20 +407,48 @@ def main():
 
             # Penalties lookup per team
             def penalties_json_for(team_id):
-                key = (season, str(week), str(team_id))
+                key = (season, str(week_int), str(team_id))
                 penalties = penalties_by_key.get(key, {})
                 if not penalties:
                     return '{}'
                 return json.dumps(penalties).replace("'", "''")
+            
+            def calculate_penalty_points(team_id):
+                """Calculate total penalty points for this team in this week."""
+                key = (season, str(week_int), str(team_id))
+                penalties = penalties_by_key.get(key, {})
+                total = 0
+                for penalty_data in penalties.values():
+                    total += penalty_data.get('points', 0)
+                return total
 
             # Team info rows (home and away separately)
             if home_team_id and away_team_id:
+                # Calculate penalty points for home team
+                home_penalty_pts = calculate_penalty_points(home_team_id)
+                teams_in_week.add((home_team_id, home_penalty_pts))
+                
+                # Calculate penalty points for away team
+                away_penalty_pts = calculate_penalty_points(away_team_id)
+                teams_in_week.add((away_team_id, away_penalty_pts))
+                
+                # Extract subdivision number (e.g., "Subdivision 1" -> "1")
+                subdivision_num = subdivision if not str(subdivision).startswith("Subdivision ") else str(subdivision).replace("Subdivision ", "").strip()
+                
+                # Build teamLabel: (first letter of division)(subdivision number)(teamLetter)
+                # Format: D1A, C2B, etc.
+                home_team_label = f"{division[0].upper()}{subdivision_num}{home_team_letter.upper()}"
+                away_team_label = f"{division[0].upper()}{subdivision_num}{away_team_letter.upper()}"
+                
                 team_info_values.append(
-                    f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', true, {home_team_id}, '{home_team_name.replace("'", "''")}', '{home_team_letter.replace("'", "''")}', {away_team_id}, '{penalties_json_for(home_team_id)}')"
+                    (season, week_int, division, formatted_subdivision, True, home_team_id, 
+                     home_team_name, home_team_letter, away_team_id, 
+                     penalties_json_for(home_team_id), home_penalty_pts, home_team_label)
                 )
-            if home_team_id and away_team_id:
                 team_info_values.append(
-                    f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', false, {away_team_id}, '{away_team_name.replace("'", "''")}', '{away_team_letter.replace("'", "''")}', {home_team_id}, '{penalties_json_for(away_team_id)}')"
+                    (season, week_int, division, formatted_subdivision, False, away_team_id,
+                     away_team_name, away_team_letter, home_team_id,
+                     penalties_json_for(away_team_id), away_penalty_pts, away_team_label)
                 )
 
             # Player info rows: aggregate game stats across multiple rows per player
@@ -445,6 +476,10 @@ def main():
 
         return (season, week_int, player_values, team_game_values, team_info_values)
 
+    # Dictionary to track cumulative penalty points per team per season
+    # Key: (season, team_id), Value: cumulative penalty points
+    penalty_accumulator = {}
+    
     sql_results = []  # will hold tuples (season, week, player_values, team_game_values, team_info_values)
     # Sort by seasonCode and weekNum (as int)
     items = sorted(grouped.items(), key=lambda x: (x[0][0], int(x[0][1])))
@@ -475,10 +510,32 @@ def main():
     all_player_values = []
     all_team_game_values = []
     all_team_info_values = []
+    
+    # Process results in order to calculate cumulative penalties
     for season, week, pvals, tgvals, tivals in sorted(sql_results, key=lambda x: (x[0], x[1])):
         all_player_values.extend(pvals)
         all_team_game_values.extend(tgvals)
-        all_team_info_values.extend(tivals)
+        
+        # Process team info with penalty accumulation
+        for ti_tuple in tivals:
+            # ti_tuple: (season, week_int, division, formatted_subdivision, is_home, team_id, 
+            #            team_name, team_letter, opposing_team_id, penalties_json, current_week_penalty_pts, team_label)
+            season_val, week_val, division, subdivision, is_home, team_id, team_name, team_letter, opposing_team_id, penalties_json, current_week_penalty_pts, team_label = ti_tuple
+            
+            # Get previous cumulative penalty points for this team
+            key = (season_val, team_id)
+            prev_total = penalty_accumulator.get(key, 0)
+            
+            # Calculate new total
+            new_total = prev_total + current_week_penalty_pts
+            
+            # Update accumulator
+            penalty_accumulator[key] = new_total
+            
+            # Build the SQL insert value string with the new columns
+            all_team_info_values.append(
+                f"('{season_val}', {week_val}, '{division.replace("'", "''")}', '{subdivision.replace("'", "''")}', {str(is_home).lower()}, {team_id}, '{team_name.replace("'", "''")}', '{team_letter.replace("'", "''")}', {opposing_team_id}, '{penalties_json}', {prev_total}, {new_total}, '{team_label}')"
+            )
 
     # Write player info inserts
     if all_player_values:
@@ -495,7 +552,7 @@ def main():
     # Write team info inserts
     if all_team_info_values:
         with open(team_info_output, 'w', encoding='utf-8') as f:
-            f.write('INSERT INTO leda_weekly_scoresheets_team_info ("seasonCode","weekNum","division","subdivision","home","teamId","teamName","teamLetter","opposingTeamId","penalties") VALUES\n')
+            f.write('INSERT INTO leda_weekly_scoresheets_team_info ("seasonCode","weekNum",division,subdivision,home,"teamId","teamName","teamLetter","opposingTeamId",penalties,"previousPenaltyPoints","totalPenaltyPoints","teamLabel") VALUES\n')
             f.write(',\n'.join(all_team_info_values))
             f.write(';\n')
     print('Weekly scoresheets conversion complete:')

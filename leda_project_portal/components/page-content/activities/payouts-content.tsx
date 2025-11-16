@@ -387,13 +387,16 @@ export default function PayoutsContent() {
 							place: string;
 							amount: string;
 						}) => {
-							if (
-								newPayoutsData[division]?.[subdivision]?.[teamData.teamLedaId]
-							) {
-								newPayoutsData[division][subdivision][teamData.teamLedaId].place =
-									parseInt(teamData.place, 10) || null;
-								newPayoutsData[division][subdivision][teamData.teamLedaId].amount =
-									parseFloat(teamData.amount) || 0;
+							// Only update if this team is in the current subdivision's team list
+							if (teamIds.includes(teamData.teamLedaId)) {
+								if (
+									newPayoutsData[division]?.[subdivision]?.[teamData.teamLedaId]
+								) {
+									newPayoutsData[division][subdivision][teamData.teamLedaId].place =
+										parseInt(teamData.place, 10) || null;
+									newPayoutsData[division][subdivision][teamData.teamLedaId].amount =
+										parseFloat(teamData.amount) || 0;
+								}
 							}
 						}
 					);
@@ -416,26 +419,46 @@ export default function PayoutsContent() {
 			Object.keys(divisionsData[division]?.subdivisions || {}).forEach(
 				(subdivision) => {
 					const key = `${division}|${subdivision}`;
+					const teamIds = Object.keys(
+						divisionsData[division]?.subdivisions[subdivision] || {}
+					).map(
+						(team) =>
+							divisionsData[division]?.subdivisions[subdivision][
+								team
+							]?.teamId
+					);
 					teamIdsByDivisionSubdivision[key] = {
 						division,
 						subdivision,
-						teamIds: Object.keys(
-							divisionsData[division]?.subdivisions[subdivision] || {}
-						).map(
-							(team) =>
-								divisionsData[division]?.subdivisions[subdivision][
-									team
-								]?.teamId
-						)
+						teamIds
 					};
+					console.log(`Division: ${division}, Subdivision: ${subdivision}, Teams:`, teamIds);
 				}
 			);
 		});
+		
+		// Clean up payoutsData: remove teams that don't belong to their subdivisions
+		const cleanedPayoutsData = { ...payoutsData };
+		Object.keys(cleanedPayoutsData).forEach((division) => {
+			Object.keys(cleanedPayoutsData[division]).forEach((subdivision) => {
+				const key = `${division}|${subdivision}`;
+				const validTeamIds = teamIdsByDivisionSubdivision[key]?.teamIds || [];
+				
+				// Remove teams that aren't in the current subdivision's roster
+				Object.keys(cleanedPayoutsData[division][subdivision]).forEach((teamId) => {
+					if (!validTeamIds.includes(teamId)) {
+						console.warn(`Removing team ${teamId} from ${division} - ${subdivision} (not in roster)`);
+						delete cleanedPayoutsData[division][subdivision][teamId];
+					}
+				});
+			});
+		});
+		
 		calculatePayoutsMutation.mutate({
 			seasonCode,
 			totalWeeks,
 			teamIdsByDivisionSubdivision,
-			payoutsData,
+			payoutsData: cleanedPayoutsData,
 		});
 	};
 
@@ -773,82 +796,83 @@ export default function PayoutsContent() {
 										</Button>
 									</div>
 								</FolderTabMed>
-								<FolderTabMed
-									title="Payouts"
-									className="w-fit self-start"
-								>
-									<div className="flex flex-col gap-2">
-										{expectedScoresheetCount > 0 && (
-											<TooltipProvider>
-												<Tooltip delayDuration={300}>
-													<TooltipTrigger asChild>
-														<div>
-															<Button
-																variant="outline"
-																className="relative w-full h-10 bg-gray-200 border-gray-300 text-gray-700 overflow-hidden"
-																onClick={() => {
-																	handleCalculatePayoutsClick();
-																}}
-																disabled={
-																	completedScoresheetCount !==
-																	expectedScoresheetCount
-																}
-															>
-																{completedScoresheetCount ===
-																expectedScoresheetCount ? (
-																	<span className="relative z-10 font-semibold">
-																		Calculate
-																		Payouts
-																	</span>
-																) : (
-																	<>
-																		<div
-																			className="absolute top-0 left-0 h-full bg-green-500"
-																			style={{
-																				width: `${
-																					(completedScoresheetCount /
-																						expectedScoresheetCount) *
-																					100
-																				}%`,
-																				minWidth:
-																					completedScoresheetCount >
-																					0
-																						? "5%"
-																						: "0%",
-																			}}
-																		></div>
+								{!payoutsQueryData && (
+									<FolderTabMed
+										title="Payouts"
+										className="w-fit self-start"
+									>
+										<div className="flex flex-col gap-2">
+											{expectedScoresheetCount > 0 && (
+												<TooltipProvider>
+													<Tooltip delayDuration={300}>
+														<TooltipTrigger asChild>
+															<div>
+																<Button
+																	variant="outline"
+																	className="relative w-full h-10 bg-gray-200 border-gray-300 text-gray-700 overflow-hidden"
+																	onClick={() => {
+																		handleCalculatePayoutsClick();
+																	}}
+																	disabled={
+																		completedScoresheetCount !==
+																		expectedScoresheetCount
+																	}
+																>
+																	{completedScoresheetCount ===
+																	expectedScoresheetCount ? (
 																		<span className="relative z-10 font-semibold">
-																			{
-																				completedScoresheetCount
-																			}
-																			/
-																			{
-																				expectedScoresheetCount
-																			}{" "}
-																			Scoresheets
-																			Completed
+																			Calculate
+																			Payouts
 																		</span>
-																	</>
-																)}
-															</Button>
-														</div>
-													</TooltipTrigger>
-													<TooltipContent
-														side="top"
-														className="bg-white text-black px-4 py-3 rounded-lg shadow-lg border-0"
-													>
-														<p className="text-sm font-medium">
-															{completedScoresheetCount !==
-															expectedScoresheetCount
-																? "Scoresheets are not yet complete"
-																: "All scoresheets are complete, calculate placements"}
-														</p>
-													</TooltipContent>
-												</Tooltip>
-											</TooltipProvider>
-										)}
-									</div>
-								</FolderTabMed>
+																	) : (
+																		<>
+																			<div
+																				className="absolute top-0 left-0 h-full bg-green-500"
+																				style={{
+																					width: `${
+																						(completedScoresheetCount /
+																							expectedScoresheetCount) *
+																						100
+																					}%`,
+																					minWidth:
+																						completedScoresheetCount >
+																						0
+																							? "5%"
+																							: "0%",
+																				}}
+																			></div>
+																			<span className="relative z-10 font-semibold">
+																				{expectedScoresheetCount > 0
+																					? `${Math.round(
+																							(completedScoresheetCount /
+																								expectedScoresheetCount) *
+																								100
+																					  )}%`
+																					: "0%"}{" "}
+																				Complete
+																			</span>
+																		</>
+																	)}
+																</Button>
+															</div>
+														</TooltipTrigger>
+														<TooltipContent
+															side="top"
+															className="bg-white text-black px-4 py-3 rounded-lg shadow-lg border-0"
+														>
+															<p className="text-sm font-medium">
+																{completedScoresheetCount !==
+																expectedScoresheetCount
+																	? "Scoresheets are not yet complete"
+																	: "All scoresheets are complete, calculate placements"}
+															</p>
+														</TooltipContent>
+													</Tooltip>
+												</TooltipProvider>
+											)}
+										</div>
+									</FolderTabMed>
+								)}
 							</div>
 						</div>
 					</div>

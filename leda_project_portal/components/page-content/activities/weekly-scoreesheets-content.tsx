@@ -130,6 +130,7 @@ const createMentionHistory = async (data: {
 	}) => {
 		const url = `${rosterTeamViewRoute}?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}&teamLetter=${encodeURIComponent(teamLetter)}`;
 		const res = await fetchWithSession(url, { method: "GET" });
+		if (res.status === 204) return null;
 		const data = await res.json();
 		return data[0]?.ledaid || null;
 	};
@@ -137,6 +138,7 @@ const createMentionHistory = async (data: {
 	const fetchTeamMembers = async (teamId: string) => {
 		const url = `${memberInfoRoute}?ledaId=${encodeURIComponent(teamId)}`;
 		const res = await fetchWithSession(url, { method: "GET" });
+		if (res.status === 204) return [];
 		return res.json();
 	};
 
