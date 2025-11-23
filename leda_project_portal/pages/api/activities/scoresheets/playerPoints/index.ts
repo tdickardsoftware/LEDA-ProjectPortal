@@ -27,10 +27,12 @@ export default async function handler(
 			// Check if this is an update to an existing record
 			try {
 				const existingRecord = await query<PlayerPoints>(
-					`SELECT "totalPoints" FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "ledaId" = $3 AND "teamLedaId" = $4`,
+					`SELECT "totalPoints" FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "division" = $3 AND "subdivision" = $4 AND "ledaId" = $5 AND "teamLedaId" = $6`,
 					[
 						data.seasonCode,
 						data.weekNum,
+						data.division,
+						data.subdivision,
 						data.ledaId,
 						data.teamLedaId,
 					]
@@ -49,10 +51,12 @@ export default async function handler(
 
 			if (data.weekNum != 1) {
 				try {
-					const queryText = `SELECT "totalPoints" from public.leda_weekly_player_points where "seasonCode" = $1 and "weekNum" = $2 and "ledaId" = $3 and "teamLedaId" = $4`;
+					const queryText = `SELECT "totalPoints" from public.leda_weekly_player_points where "seasonCode" = $1 and "weekNum" = $2 and "division" = $3 and "subdivision" = $4 and "ledaId" = $5 and "teamLedaId" = $6`;
 					const values = [
 						data.seasonCode,
 						data.weekNum - 1,
+						data.division,
+						data.subdivision,
 						data.ledaId,
 						data.teamLedaId,
 					];
@@ -97,14 +101,16 @@ export default async function handler(
 				);
 
 				const queryString = `
-                    INSERT INTO public.leda_weekly_player_points ("seasonCode", "weekNum", "ledaId", "prevTotalPoints", "totalPoints", "teamLedaId")
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT ("seasonCode", "weekNum", "ledaId", "teamLedaId")
-                    DO UPDATE SET "prevTotalPoints" = $4, "totalPoints" = $5;
+                    INSERT INTO public.leda_weekly_player_points ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "prevTotalPoints", "totalPoints", "teamLedaId")
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    ON CONFLICT ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "teamLedaId")
+                    DO UPDATE SET "prevTotalPoints" = $6, "totalPoints" = $7;
                 `;
 				const values = [
 					data.seasonCode,
 					data.weekNum,
+					data.division,
+					data.subdivision,
 					data.ledaId,
 					data.prevTotalPoints,
 					newTotalPoints,
@@ -122,6 +128,8 @@ export default async function handler(
 						await updateSubsequentWeeks(
 							data.seasonCode,
 							data.weekNum,
+							data.division,
+							data.subdivision,
 							data.ledaId.toString(),
 							data.teamLedaId.toString(),
 							newTotalPoints - originalTotalPoints
@@ -161,11 +169,15 @@ export default async function handler(
 				const weekNum = req.query.weekNum;
 				const ledaId = req.query.ledaId;
 				const teamLedaId = req.query.teamLedaId;
+				const division = req.query.division;
+				const subdivision = req.query.subdivision;
 				const result = await query<PlayerPoints>(
-					`SELECT * FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "ledaId" = $3 and "teamLedaId" = $4`,
+					`SELECT * FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "division" = $3 AND "subdivision" = $4 AND "ledaId" = $5 and "teamLedaId" = $6`,
 					[
 						seasonCode as string,
 						weekNum as string,
+						division as string,
+						subdivision as string,
 						ledaId as string,
 						teamLedaId as string,
 					]
@@ -242,6 +254,8 @@ export default async function handler(
 async function updateSubsequentWeeks(
 	seasonCode: string,
 	weekNum: number,
+	division: string,
+	subdivision: string,
 	ledaId: string,
 	teamLedaId: string,
 	pointDifference: number
@@ -254,9 +268,9 @@ async function updateSubsequentWeeks(
 		// Get all subsequent weeks for this player
 		const subsequentWeeks = await query<PlayerPoints>(
 			`SELECT * FROM public.leda_weekly_player_points 
-             WHERE "seasonCode" = $1 AND "weekNum" > $2 AND "ledaId" = $3 AND "teamLedaId" = $4
+             WHERE "seasonCode" = $1 AND "weekNum" > $2 AND "division" = $3 AND "subdivision" = $4 AND "ledaId" = $5 AND "teamLedaId" = $6
              ORDER BY "weekNum" ASC`,
-			[seasonCode, weekNum, ledaId, teamLedaId]
+			[seasonCode, weekNum, division, subdivision, ledaId, teamLedaId]
 		);
 
 		console.log(
@@ -291,12 +305,14 @@ async function updateSubsequentWeeks(
 			await queryPost(
 				`UPDATE public.leda_weekly_player_points 
                  SET "prevTotalPoints" = $1, "totalPoints" = $2
-                 WHERE "seasonCode" = $3 AND "weekNum" = $4 AND "ledaId" = $5 AND "teamLedaId" = $6`,
+                 WHERE "seasonCode" = $3 AND "weekNum" = $4 AND "division" = $5 AND "subdivision" = $6 AND "ledaId" = $7 AND "teamLedaId" = $8`,
 				[
 					newPrevTotalPoints,
 					newTotalPoints,
 					seasonCode,
 					week.weekNum,
+					week.division,
+					week.subdivision,
 					ledaId,
 					teamLedaId,
 				]

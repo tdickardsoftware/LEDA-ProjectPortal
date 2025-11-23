@@ -18,10 +18,15 @@ def export_weekly_team_scores():
         pbar = None
 
     # Only use the first occurrence of each (season, week, team)
+    # Store: key -> (points, division, subdivision)
     team_week_points = {}
     for row in rows:
         season = row['Season Code'].upper()
         week = int(row['Week Number'])
+        division = row.get('Division', '').strip()
+        subdivision_raw = row.get('Subdivision', '').strip()
+        subdivision = f"Subdivision {subdivision_raw}" if subdivision_raw and not subdivision_raw.startswith('Subdivision ') else subdivision_raw
+        
         # Home team
         home_team_id = row.get('Home Team Number', '').strip()
         home_points = row.get('Home Points', row.get('Home Score', ''))
@@ -32,7 +37,7 @@ def export_weekly_team_scores():
         if home_team_id:
             key = (season, week, home_team_id)
             if key not in team_week_points:
-                team_week_points[key] = home_points
+                team_week_points[key] = (home_points, division, subdivision)
         # Away team
         away_team_id = row.get('Away Team Number', '').strip()
         away_points = row.get('Away Points', row.get('Away Score', ''))
@@ -43,7 +48,7 @@ def export_weekly_team_scores():
         if away_team_id:
             key = (season, week, away_team_id)
             if key not in team_week_points:
-                team_week_points[key] = away_points
+                team_week_points[key] = (away_points, division, subdivision)
 
     # Now calculate prevTotalPoints and totalPoints for each team across weeks
     # Sort keys for cumulative calculation
@@ -56,10 +61,10 @@ def export_weekly_team_scores():
         pbar = None
     for key in sorted_keys:
         season, week, team_id = key
-        points = team_week_points[key]
+        points, division, subdivision = team_week_points[key]
         prev_total = prev_points.get((season, team_id), 0)
         total = prev_total + points
-        values.append(f"('{season}', {week}, {team_id}, {prev_total}, {total})")
+        values.append(f"('{season}', {week}, '{division.replace("'", "''")}', '{subdivision.replace("'", "''")}', {team_id}, {prev_total}, {total})")
         prev_points[(season, team_id)] = total
         if pbar:
             pbar.update(1)
@@ -69,7 +74,7 @@ def export_weekly_team_scores():
     # Write SQL insert
     if values:
         with open(output_file, 'w', encoding='utf-8') as f:
-            f.write('INSERT INTO leda_weekly_team_scores ("seasonCode", "weekNum", "teamLedaId", "prevTotalPoints", "totalPoints") VALUES\n')
+            f.write('INSERT INTO leda_weekly_team_scores ("seasonCode", "weekNum", "division", "subdivision", "teamLedaId", "prevTotalPoints", "totalPoints") VALUES\n')
             f.write(",\n".join(values))
             f.write(';\n')
 # c:\Users\tyler\Projects\LEDA-ProjectPortal\Tools\Data Migration\scoresheetsTableToPostgres\csv_to_json_scoresheets.py
@@ -583,6 +588,10 @@ def export_weekly_player_scores():
     for idx, row in enumerate(rows):
         season = row['Season Code'].upper()
         week = int(row['Week Number'])
+        division = row.get('Division', '').strip()
+        subdivision_raw = row.get('Subdivision', '').strip()
+        subdivision = f"Subdivision {subdivision_raw}" if subdivision_raw and not subdivision_raw.startswith('Subdivision ') else subdivision_raw
+        
         # Determine team and player
         if row.get('Home or Away', '').strip().upper() == 'H':
             team_id = row['Home Team Number']
@@ -607,7 +616,7 @@ def export_weekly_player_scores():
         prev_key = (season, player_id, team_id, week-1)
         prev_total = prev_points.get(key, 0)
         total = prev_total + points
-        values.append(f"('{season}', {week}, {player_id}, {prev_total}, {total}, {team_id})")
+        values.append(f"('{season}', {week}, '{division.replace("'", "''")}', '{subdivision.replace("'", "''")}', {player_id}, {prev_total}, {total}, {team_id})")
         # Update for next week
         prev_points[key] = total
         if pbar:
@@ -618,7 +627,7 @@ def export_weekly_player_scores():
     # Write SQL insert
     if values:
         with open(output_file, 'w', encoding='utf-8') as f:
-            f.write('INSERT INTO leda_weekly_player_points ("seasonCode", "weekNum", "ledaId", "prevTotalPoints", "totalPoints", "teamLedaId") VALUES\n')
+            f.write('INSERT INTO leda_weekly_player_points ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "prevTotalPoints", "totalPoints", "teamLedaId") VALUES\n')
             f.write(",\n".join(values))
             f.write(';\n')
 

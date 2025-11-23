@@ -292,12 +292,16 @@ const createMentionHistory = async (data: {
 	const saveWeeklyPlayerPoints = async ({
 		seasonCode,
 		weekNum,
+		division,
+		subdivision,
 		ledaId,
 		teamLedaId,
 		totalPoints,
 	}: {
 		seasonCode: string;
 		weekNum: number;
+		division: string;
+		subdivision: string;
 		ledaId: string; // player ID
 		teamLedaId: string; // team ID
 		totalPoints: number; // this week's points
@@ -305,7 +309,7 @@ const createMentionHistory = async (data: {
 		const res = await fetchWithSession(weeklyPlayerPointsRoute, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ seasonCode, weekNum, ledaId, teamLedaId, totalPoints }),
+			body: JSON.stringify({ seasonCode, weekNum, division, subdivision,ledaId, teamLedaId, totalPoints }),
 		});
 		return res.json();
 	};
@@ -1095,6 +1099,8 @@ const confirmPendingChangesPlaceholder = () => true;
 						saveWeeklyPlayerPointsMutation.mutateAsync({
 							seasonCode,
 							weekNum: parseInt(selectedWeek),
+							division: selectedDivision,
+							subdivision: selectedSubdivision,
 							ledaId: playerId,
 							teamLedaId: selectedHomeTeamId,
 							totalPoints: weeklyPoints,
@@ -1121,6 +1127,8 @@ const confirmPendingChangesPlaceholder = () => true;
 						saveWeeklyPlayerPointsMutation.mutateAsync({
 							seasonCode,
 							weekNum: parseInt(selectedWeek),
+							division: selectedDivision,
+							subdivision: selectedSubdivision,
 							ledaId: playerId,
 							teamLedaId: selectedAwayTeamId,
 							totalPoints: weeklyPoints,
