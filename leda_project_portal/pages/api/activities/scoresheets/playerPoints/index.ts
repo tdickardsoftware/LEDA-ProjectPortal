@@ -163,7 +163,7 @@ export default async function handler(
 			});
 		}
 	} else if (req.method === "GET") {
-		if (req.query.seasonCode && req.query.weekNum && req.query.ledaId) {
+		if (req.query.seasonCode && req.query.weekNum && req.query.ledaId && req.query.teamLedaId && req.query.division && req.query.subdivision) {
 			try {
 				const seasonCode = req.query.seasonCode;
 				const weekNum = req.query.weekNum;
