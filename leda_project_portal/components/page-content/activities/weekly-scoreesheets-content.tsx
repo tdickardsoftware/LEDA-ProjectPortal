@@ -47,7 +47,6 @@ import {
 import MentionSelector from "@/components/ui/mentions-selector";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-// import { isMatchupValid } from "@/utils/matchupValidation"; // deprecated automatic validation
 // Import React Query hooks
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
