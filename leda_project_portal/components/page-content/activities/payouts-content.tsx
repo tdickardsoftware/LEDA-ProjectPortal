@@ -375,7 +375,7 @@ export default function PayoutsContent() {
 			for (const key of Object.keys(teamIdsByDivisionSubdivision)) {
 				const { division, subdivision, teamIds } = teamIdsByDivisionSubdivision[key];
 				const response = await fetchWithSession(
-					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${totalWeeks}&teamLedaIds=${teamIds}`,
+					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${totalWeeks}&teamLedaIds=${teamIds}&division=${division}&subdivision=${subdivision}`,
 					{ method: "GET", headers: { "Content-Type": "application/json" } }
 				);
 				if (!response.ok) throw new Error("Failed to fetch team points data");

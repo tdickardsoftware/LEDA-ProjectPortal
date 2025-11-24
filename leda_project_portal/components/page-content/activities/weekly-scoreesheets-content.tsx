@@ -270,18 +270,22 @@ const createMentionHistory = async (data: {
 	const saveWeeklyTeamPoints = async ({
 		seasonCode,
 		weekNum,
+		division,
+		subdivision,
 		ledaId,
 		totalPoints,
 	}: {
 		seasonCode: string;
 		weekNum: number;
+		division: string;
+		subdivision: string;
 		ledaId: string; // team ID
 		totalPoints: number; // this week's points before cumulative calc (server derives prev + new)
 	}) => {
 		const res = await fetchWithSession(weeklyTeamPointsRoute, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ seasonCode, weekNum, ledaId, totalPoints }),
+			body: JSON.stringify({ seasonCode, weekNum, division, subdivision, ledaId, totalPoints }),
 		});
 		return res.json();
 	};
@@ -292,12 +296,16 @@ const createMentionHistory = async (data: {
 	const saveWeeklyPlayerPoints = async ({
 		seasonCode,
 		weekNum,
+		division,
+		subdivision,
 		ledaId,
 		teamLedaId,
 		totalPoints,
 	}: {
 		seasonCode: string;
 		weekNum: number;
+		division: string;
+		subdivision: string;
 		ledaId: string; // player ID
 		teamLedaId: string; // team ID
 		totalPoints: number; // this week's points
@@ -305,7 +313,7 @@ const createMentionHistory = async (data: {
 		const res = await fetchWithSession(weeklyPlayerPointsRoute, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ seasonCode, weekNum, ledaId, teamLedaId, totalPoints }),
+			body: JSON.stringify({ seasonCode, weekNum, division, subdivision,ledaId, teamLedaId, totalPoints }),
 		});
 		return res.json();
 	};
@@ -1059,6 +1067,8 @@ const confirmPendingChangesPlaceholder = () => true;
 					saveWeeklyTeamPointsMutation.mutateAsync({
 						seasonCode,
 						weekNum: parseInt(selectedWeek),
+						division: selectedDivision,
+						subdivision: selectedSubdivision,
 						ledaId: selectedHomeTeamId,
 						totalPoints: totals.finalHomePoints,
 					})
@@ -1067,6 +1077,8 @@ const confirmPendingChangesPlaceholder = () => true;
 					saveWeeklyTeamPointsMutation.mutateAsync({
 						seasonCode,
 						weekNum: parseInt(selectedWeek),
+						division: selectedDivision,
+						subdivision: selectedSubdivision,
 						ledaId: selectedAwayTeamId,
 						totalPoints: totals.finalAwayPoints,
 					})
@@ -1095,6 +1107,8 @@ const confirmPendingChangesPlaceholder = () => true;
 						saveWeeklyPlayerPointsMutation.mutateAsync({
 							seasonCode,
 							weekNum: parseInt(selectedWeek),
+							division: selectedDivision,
+							subdivision: selectedSubdivision,
 							ledaId: playerId,
 							teamLedaId: selectedHomeTeamId,
 							totalPoints: weeklyPoints,
@@ -1121,6 +1135,8 @@ const confirmPendingChangesPlaceholder = () => true;
 						saveWeeklyPlayerPointsMutation.mutateAsync({
 							seasonCode,
 							weekNum: parseInt(selectedWeek),
+							division: selectedDivision,
+							subdivision: selectedSubdivision,
 							ledaId: playerId,
 							teamLedaId: selectedAwayTeamId,
 							totalPoints: weeklyPoints,
@@ -2743,12 +2759,16 @@ const confirmPendingChangesPlaceholder = () => true;
 													await saveWeeklyTeamPointsMutation.mutateAsync({
 														seasonCode,
 														weekNum: parseInt(selectedWeek),
+														division: selectedDivision,
+														subdivision: selectedSubdivision,
 														ledaId: selectedHomeTeamId,
 														totalPoints: 0,
 													});
 													await saveWeeklyTeamPointsMutation.mutateAsync({
 														seasonCode,
 														weekNum: parseInt(selectedWeek),
+														division: selectedDivision,
+														subdivision: selectedSubdivision,
 														ledaId: selectedAwayTeamId,
 														totalPoints: 0,
 													});

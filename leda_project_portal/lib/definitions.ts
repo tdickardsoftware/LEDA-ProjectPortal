@@ -202,6 +202,8 @@ export type WeeklyScoresheet = {
 export type TeamPoints = {
 	seasonCode: string;
 	weekNum: number;
+	division: string;
+	subdivision: string;
 	ledaId: number;
 	prevTotalPoints: number;
 	totalPoints: number;
@@ -212,6 +214,8 @@ export type TeamPoints = {
 export type PlayerPoints = {
 	seasonCode: string;
 	weekNum: number;
+	division: string;
+	subdivision: string;
 	ledaId: number;
 	prevTotalPoints: number;
 	totalPoints: number;
