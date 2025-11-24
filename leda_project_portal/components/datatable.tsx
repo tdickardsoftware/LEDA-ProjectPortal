@@ -369,8 +369,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 
 	// Parse field-specific search queries with AND/OR logic
 	const parseFieldSearch = React.useCallback((query: string) => {
-		// Check for field-specific patterns first
-		const hasFieldPattern = /["']?(\w+|\w+\s+\w+)["']?\s*=/.test(query);
+		// Check for field-specific patterns (= or IN)
+		const hasFieldPattern = /["']?(\w+|\w+\s+\w+)["']?\s*(=|IN)/.test(query);
 		
 		if (!hasFieldPattern) {
 			return { type: "general", query: query.trim() };
@@ -383,43 +383,59 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			// Within each OR group, split by AND
 			const andParts = orGroup.split(/\s+and\s+/gi);
 			
-			const fieldSearches: Array<{ field: string; values: string[] }> = [];
+			const fieldSearches: Array<{ field: string; values: string[]; matchMode: 'exact' | 'in' | 'contains' }> = [];
 			let remainingQuery = "";
 			
 			andParts.forEach(part => {
-				// Enhanced regex to handle quoted field names: "LEDA ID Number"=value or field=value
-				const quotedFieldMatch = part.match(/"([^"]+)"\s*=\s*(.+)/);
-				const unquotedFieldMatch = part.match(/(\w+)\s*=\s*(.+)/);
+				// Pattern 1: "Field" = "value" or Field = value (exact match)
+				const exactMatchQuoted = part.match(/"([^"]+)"\s*=\s*"([^"]+)"/);
+				const exactMatchMixed = part.match(/"([^"]+)"\s*=\s*([^"\s,]+)/);
+				const exactMatchUnquoted = part.match(/(\w+)\s*=\s*"([^"]+)"/);
+				const exactMatchPlain = part.match(/(\w+)\s*=\s*([^"\s,]+)/);
 				
-				const fieldMatch = quotedFieldMatch || unquotedFieldMatch;
+				// Pattern 2: "Field" IN ("value1", "value2") or Field IN (value1, value2)
+				const inMatchQuoted = part.match(/"([^"]+)"\s+IN\s*\((.+?)\)/i);
+				const inMatchUnquoted = part.match(/(\w+)\s+IN\s*\((.+?)\)/i);
 				
-				if (fieldMatch) {
-					const originalField = fieldMatch[1];
+				// Pattern 3a: ("value1", "value2") IN "Field" or (value1, value2) IN Field (multiple values contains)
+				const multiReverseInQuoted = part.match(/\((.+?)\)\s+IN\s+"([^"]+)"/i);
+				const multiReverseInUnquoted = part.match(/\((.+?)\)\s+IN\s+(\w+)/i);
+				
+				// Pattern 3b: "value" IN "Field" or value IN Field (single value contains/partial match)
+				const reverseInQuoted = part.match(/"([^"]+)"\s+IN\s+"([^"]+)"/i);
+				const reverseInMixed1 = part.match(/"([^"]+)"\s+IN\s+(\w+)/i);
+				const reverseInMixed2 = part.match(/([^"\s,]+)\s+IN\s+"([^"]+)"/i);
+				const reverseInUnquoted = part.match(/([^"\s,]+)\s+IN\s+(\w+)/i);
+				
+				if (exactMatchQuoted || exactMatchMixed || exactMatchUnquoted || exactMatchPlain) {
+					// Exact match pattern
+					const match = exactMatchQuoted || exactMatchMixed || exactMatchUnquoted || exactMatchPlain;
+					const originalField = match![1];
 					const resolvedField = resolveFieldName(originalField);
-					const valuesPart = fieldMatch[2];
+					const value = match![2];
 					
-					// Parse comma-separated values, handling both quoted and unquoted
+					fieldSearches.push({ 
+						field: resolvedField, 
+						values: [value], 
+						matchMode: 'exact' 
+					});
+				} else if (inMatchQuoted || inMatchUnquoted) {
+					// IN operator pattern: Field IN (values)
+					const match = inMatchQuoted || inMatchUnquoted;
+					const originalField = match![1];
+					const resolvedField = resolveFieldName(originalField);
+					const valuesPart = match![2];
+					
+					// Parse comma-separated values
 					const values: string[] = [];
 					const quotedValuePattern = /"([^"]*)"/g;
 					const quotedMatches = [...valuesPart.matchAll(quotedValuePattern)];
 					
 					if (quotedMatches.length > 0) {
-						// Has quoted values - check if they contain commas for splitting
 						quotedMatches.forEach(match => {
-							const quotedValue = match[1];
-							if (quotedValue.includes(',')) {
-								// Split comma-separated values inside quotes
-								quotedValue.split(',').forEach(v => {
-									const trimmed = v.trim();
-									if (trimmed) values.push(trimmed);
-								});
-							} else {
-								// Single value inside quotes
-								values.push(quotedValue);
-							}
+							values.push(match[1]);
 						});
 					} else {
-						// No quotes, split by comma
 						valuesPart.split(',').forEach(v => {
 							const trimmed = v.trim();
 							if (trimmed) values.push(trimmed);
@@ -427,8 +443,54 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 					}
 					
 					if (values.length > 0) {
-						fieldSearches.push({ field: resolvedField, values });
+						fieldSearches.push({ 
+							field: resolvedField, 
+							values, 
+							matchMode: 'in' 
+						});
 					}
+				} else if (multiReverseInQuoted || multiReverseInUnquoted) {
+					// Multiple values reverse IN: (values) IN Field (partial match for any value)
+					const match = multiReverseInQuoted || multiReverseInUnquoted;
+					const valuesPart = match![1];
+					const originalField = match![2];
+					const resolvedField = resolveFieldName(originalField);
+					
+					// Parse comma-separated values
+					const values: string[] = [];
+					const quotedValuePattern = /"([^"]*)"/g;
+					const quotedMatches = [...valuesPart.matchAll(quotedValuePattern)];
+					
+					if (quotedMatches.length > 0) {
+						quotedMatches.forEach(match => {
+							values.push(match[1]);
+						});
+					} else {
+						valuesPart.split(',').forEach(v => {
+							const trimmed = v.trim();
+							if (trimmed) values.push(trimmed);
+						});
+					}
+					
+					if (values.length > 0) {
+						fieldSearches.push({ 
+							field: resolvedField, 
+							values, 
+							matchMode: 'contains' 
+						});
+					}
+				} else if (reverseInQuoted || reverseInMixed1 || reverseInMixed2 || reverseInUnquoted) {
+					// Reverse IN operator: value IN Field (partial match)
+					const match = reverseInQuoted || reverseInMixed1 || reverseInMixed2 || reverseInUnquoted;
+					const value = match![1];
+					const originalField = match![2];
+					const resolvedField = resolveFieldName(originalField);
+					
+					fieldSearches.push({ 
+						field: resolvedField, 
+						values: [value], 
+						matchMode: 'contains' 
+					});
 				} else {
 					// This part is general search text
 					if (part.trim()) {
@@ -480,18 +542,29 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 					
 					// Check field-specific searches (all must match - AND logic)
 					if (group.fieldSearches.length > 0) {
-						fieldMatches = group.fieldSearches.every(({ field, values }) => {
+						fieldMatches = group.fieldSearches.every(({ field, values, matchMode }) => {
 							const cellValue = String(row[field] || "").toLowerCase();
 							
-							// If multiple values (comma-separated), treat as IN statement
-							if (values.length > 1) {
-								// Exact match for any of the values (IN behavior)
-								return values.some(value => 
-									cellValue === value.toLowerCase()
-								);
-							} else {
-								// Single value: use contains for partial matching
-								return cellValue.includes(values[0].toLowerCase());
+							switch (matchMode) {
+								case 'exact':
+									// Exact match: "Field" = "value"
+									return cellValue === values[0].toLowerCase();
+									
+								case 'in':
+									// IN operator: "Field" IN ("value1", "value2")
+									return values.some(value => 
+										cellValue === value.toLowerCase()
+									);
+									
+								case 'contains':
+									// Reverse IN: "value" IN "Field" or ("value1", "value2") IN "Field" (partial match)
+									// Match if cell value contains ANY of the values
+									return values.some(value => 
+										cellValue.includes(value.toLowerCase())
+									);
+									
+								default:
+									return false;
 							}
 						});
 					}
@@ -834,29 +907,85 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		}, 0);
 	}, [contextMenu, searchQuery]);
 
-	// Handle adding cell value to search
-	const handleAddCellToSearch = React.useCallback(() => {
+	// Handle adding cell value to search with exact match
+	const handleAddCellToSearchExact = React.useCallback(() => {
 		const { columnName, cellValue } = rowContextMenu;
 		
-		// Check if this field is already in the search query
-		const fieldPattern = new RegExp(`"${columnName}"\\s*=\\s*([^\\s]+(?:\\s+(?!and|or)[^\\s]*)*)`);
-		const match = searchQuery.match(fieldPattern);
+		// Check if this field is already in the search query with IN operator
+		const inPattern = new RegExp(`"${columnName.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}"\\s+IN\\s*\\(([^)]+)\\)`, 'i');
+		const inMatch = searchQuery.match(inPattern);
 		
-		if (match) {
-			// Field exists, add to its values
-			const existingValues = match[1];
+		if (inMatch) {
+			// Field exists with IN operator, add to its values
+			const existingValues = inMatch[1];
 			const newSearchQuery = searchQuery.replace(
-				fieldPattern,
-				`"${columnName}"="${existingValues.replace(/"/g, '')},${cellValue}"`
+				inPattern,
+				`"${columnName}" IN (${existingValues}, "${cellValue}")`
 			);
 			setSearchQuery(newSearchQuery);
 		} else {
-			// Field doesn't exist, add new field search
-			const searchPattern = `"${columnName}"="${cellValue}"`;
-			const newSearchQuery = searchQuery 
-				? `${searchQuery} and ${searchPattern}`
-				: searchPattern;
+			// Check if exact match exists
+			const exactPattern = new RegExp(`"${columnName.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}"\\s*=\\s*"([^"]+)"`);
+			const exactMatch = searchQuery.match(exactPattern);
+			
+			if (exactMatch) {
+				// Convert exact match to IN operator with both values
+				const existingValue = exactMatch[1];
+				const newSearchQuery = searchQuery.replace(
+					exactPattern,
+					`"${columnName}" IN ("${existingValue}", "${cellValue}")`
+				);
+				setSearchQuery(newSearchQuery);
+			} else {
+				// Field doesn't exist, add new exact match
+				const searchPattern = `"${columnName}"="${cellValue}"`;
+				const newSearchQuery = searchQuery 
+					? `${searchQuery} and ${searchPattern}`
+					: searchPattern;
+				setSearchQuery(newSearchQuery);
+			}
+		}
+		
+		setRowContextMenu({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
+	}, [rowContextMenu, searchQuery]);
+
+	// Handle adding cell value to search with contains/partial match
+	const handleAddCellToSearchContains = React.useCallback(() => {
+		const { columnName, cellValue } = rowContextMenu;
+		
+		// Check if reverse IN pattern already exists for this field
+		const reverseInPattern = new RegExp(`\\(([^)]+)\\)\\s+IN\\s+"${columnName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i');
+		const reverseInMatch = searchQuery.match(reverseInPattern);
+		
+		if (reverseInMatch) {
+			// Pattern exists, add to the values list
+			const existingValues = reverseInMatch[1];
+			const newSearchQuery = searchQuery.replace(
+				reverseInPattern,
+				`(${existingValues}, "${cellValue}") IN "${columnName}"`
+			);
 			setSearchQuery(newSearchQuery);
+		} else {
+			// Check if single value reverse IN exists
+			const singleReverseInPattern = new RegExp(`"([^"]+)"\\s+IN\\s+"${columnName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i');
+			const singleReverseInMatch = searchQuery.match(singleReverseInPattern);
+			
+			if (singleReverseInMatch) {
+				// Convert single value to multiple values
+				const existingValue = singleReverseInMatch[1];
+				const newSearchQuery = searchQuery.replace(
+					singleReverseInPattern,
+					`("${existingValue}", "${cellValue}") IN "${columnName}"`
+				);
+				setSearchQuery(newSearchQuery);
+			} else {
+				// No existing pattern, create new single value reverse IN
+				const searchPattern = `"${cellValue}" IN "${columnName}"`;
+				const newSearchQuery = searchQuery 
+					? `${searchQuery} and ${searchPattern}`
+					: searchPattern;
+				setSearchQuery(newSearchQuery);
+			}
 		}
 		
 		setRowContextMenu({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
@@ -1221,10 +1350,16 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								onClick={(e) => e.stopPropagation()}
 							>
 								<button
-									className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors"
-									onClick={handleAddCellToSearch}
+									className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors border-b border-gray-200"
+									onClick={handleAddCellToSearchExact}
 								>
-									Add &quot;{rowContextMenu.columnName}&quot; = &quot;{rowContextMenu.cellValue}&quot; to search
+									Search for exact match: &quot;{rowContextMenu.cellValue}&quot;
+								</button>
+								<button
+									className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors"
+									onClick={handleAddCellToSearchContains}
+								>
+									Search for all records containing: &quot;{rowContextMenu.cellValue}&quot;
 								</button>
 							</div>
 						)}
