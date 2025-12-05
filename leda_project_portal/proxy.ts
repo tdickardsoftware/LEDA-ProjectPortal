@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getSessionCookie } from "better-auth/cookies"; // Correct import
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const isMaintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ||
         process.env.MAINTENANCE_MODE === 'true';
 
