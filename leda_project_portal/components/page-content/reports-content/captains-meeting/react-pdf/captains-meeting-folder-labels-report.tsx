@@ -76,15 +76,15 @@ export const CaptainsMeetingFolderLabelsReport: React.FC<
 	// Sort data by place name, then by subdivision for consistent ordering
 	const sortedData = [...data].sort((a, b) => {
 		if (a.placeName !== b.placeName) {
-			return a.placeName.localeCompare(b.placeName);
+			return (a.placeName || '').localeCompare(b.placeName || '');
 		}
 		if (a.divisionLetter !== b.divisionLetter) {
-			return a.divisionLetter.localeCompare(b.divisionLetter);
+			return (a.divisionLetter || '').localeCompare(b.divisionLetter || '');
 		}
 		if (a.subdivisionNumber !== b.subdivisionNumber) {
-			return a.subdivisionNumber.localeCompare(b.subdivisionNumber);
+			return (a.subdivisionNumber || '').localeCompare(b.subdivisionNumber || '');
 		}
-		return a.teamLetter.localeCompare(b.teamLetter);
+		return (a.teamLetter || '').localeCompare(b.teamLetter || '');
 	});
 
 	return (

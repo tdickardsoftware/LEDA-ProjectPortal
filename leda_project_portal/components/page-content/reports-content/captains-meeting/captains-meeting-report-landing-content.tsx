@@ -138,8 +138,8 @@ export default function CaptainsMeetingReportLandingContent() {
 				);
 			}
 		} else {
-			// For other reports, check if regular data is fetched
-			if (!dataFetched || !reportData.length) {
+			// For other reports, check if regular data is fetched and valid
+			if (!dataFetched || !reportData || !Array.isArray(reportData) || reportData.length === 0) {
 				return (
 					<div className="flex items-center justify-center h-full px-4 py-2">
 						<svg
@@ -437,7 +437,7 @@ export default function CaptainsMeetingReportLandingContent() {
 					</div>
 				</FolderTabMed>
 				{((selectedReport.includes("schedule") && scheduleData && scheduleData.seasonInfo.length > 0) ||
-				  (selectedReport && !selectedReport.includes("schedule") && dataFetched)) && (
+				  (selectedReport && !selectedReport.includes("schedule") && dataFetched && reportData && Array.isArray(reportData) && reportData.length > 0)) && (
 					<FolderTabMed title="Download PDF" className="w-fit">
 						{renderPDFDownload()}
 					</FolderTabMed>

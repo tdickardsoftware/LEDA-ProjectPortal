@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
 	tableRow: {
 		flexDirection: "row",
 		minHeight: 45,
+		wrap: false, // Prevent rows from breaking across pages
 	},
 	tableColHeader: {
 		borderStyle: "solid",
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
 		borderStyle: "solid",
 		borderWidth: 1,
 		borderColor: "#000000",
-		padding: 1,
+		padding: 3,
 		textAlign: "center",
 		fontSize: 8,
 	},
@@ -102,6 +103,7 @@ const styles = StyleSheet.create({
 	teamName: {
 		fontSize: 9,
 		fontWeight: "bold",
+		marginBottom: 3,
 	},
 	gameDate: {
 		fontSize: 7,
@@ -134,9 +136,9 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 }) => {
 	const gameDateEntries = Object.entries(gameDates);
 
-	// Calculate dynamic column width based on number of game dates
+	// Calculate dynamic column width based on number of teams
 	const getColumnWidth = (totalColumns: number) => {
-		const remainingWidth = 80; // 80% for game columns (reduced from 85% to give more space to team column)
+		const remainingWidth = 85; // 85% for team columns
 		return `${remainingWidth / totalColumns}%`;
 	};
 
@@ -169,6 +171,14 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 		}
 
 		const opposingTeamName = getTeamNameById(matchup.opposingTeamId, teams);
+		
+		// Check if opposing team is a BYE
+		if (opposingTeamName.toUpperCase().includes('BYE')) {
+			return (
+				<Text style={styles.byeText}>BYE</Text>
+			);
+		}
+		
 		const locationPlaceId = matchup.home
 			? teamData.placeId
 			: teams[matchup.opposingTeamLetter]?.placeId || "";
@@ -189,93 +199,106 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 	// Get season description from the season info array with safety check
 	const seasonDescription = seasonInfo && seasonInfo.length > 0 ? seasonInfo[0].desc : "Season " + seasonCode;
 
+	// Helper function to chunk game dates for pagination
+	const chunkGameDates = (gameDateEntries: [string, string][], maxDatesPerPage: number = 7) => {
+		const chunks: [string, string][][] = [];
+		for (let i = 0; i < gameDateEntries.length; i += maxDatesPerPage) {
+			chunks.push(gameDateEntries.slice(i, i + maxDatesPerPage));
+		}
+		return chunks;
+	};
+
 	return (
 		<Document>
 			{Object.entries(divisionsData).map(([division, divisionData]) =>
 				Object.entries(divisionData.subdivisions).map(([subdivision, teams]) => {
-					const columnWidth = getColumnWidth(gameDateEntries.length);
+					// Filter out BYE teams
+					const teamsArray = Object.entries(teams).filter(([_, teamData]) => 
+						!teamData.teamName.toUpperCase().includes('BYE')
+					);
+					const columnWidth = getColumnWidth(teamsArray.length);
+					const gameDateChunks = chunkGameDates(gameDateEntries);
 					
-					return (
-						<Page
-							key={`${division}-${subdivision}`}
-							size="A4"
-							orientation="landscape"
-							style={styles.page}
-						>
-							<View style={styles.header}>
-								<View style={styles.logoContainer}>
-									<PDFImage style={styles.logo} src="/leda-reports-logo.png" />
-								</View>
-								<Text style={styles.headerTitle}>
-									Lake Erie Dart Association, Inc. - {seasonDescription}
-								</Text>
-							</View>
-							<View style={styles.table}>
-								{/* Header Row */}
-								<View style={styles.tableRow}>
-									<View style={[styles.tableColHeader, { width: "20%" }]}>
-										<Text>{division} - {subdivision}</Text>
+					return gameDateChunks.map((gameDateChunk, chunkIndex) => {
+						return (
+							<Page
+								key={`${division}-${subdivision}-${chunkIndex}`}
+								size="A4"
+								orientation="landscape"
+								style={styles.page}
+							>
+								<View style={styles.header}>
+									<View style={styles.logoContainer}>
+										<PDFImage style={styles.logo} src="/leda-reports-logo.png" />
 									</View>
-									{gameDateEntries.map(([gameTitle, date]) => (
-										<View key={gameTitle} style={[styles.tableColHeader, { width: columnWidth }]}>
-											<Text>{gameTitle.replace(/(\d+)/, " $1")}</Text>
-											<Text style={styles.gameDate}>{date}</Text>
-										</View>
-									))}
+									<Text style={styles.headerTitle}>
+										Lake Erie Dart Association, Inc. - {seasonDescription}
+									</Text>
 								</View>
-
-								{/* Data Rows */}
-								{Object.entries(teams).map(([teamLetter, teamData]) => (
-									<View key={teamLetter} style={styles.tableRow}>
-										<View style={styles.tableColTeam}>
-											<Text style={styles.teamName}>{teamLetter}</Text>
-											<Text>{teamData.teamName}</Text>
-											{(() => {
-												const matchingSeasonInfo = seasonInfo.find(
-													info => info.teamId.toString() === teamData.teamId && 
-													info.division === division && 
-													info.subdivision === subdivision
-												);
-												
-												if (matchingSeasonInfo) {
-													return (
+								<View style={styles.table}>
+									{/* Header Row - Teams */}
+									<View style={styles.tableRow}>
+										<View style={[styles.tableColHeader, { width: "15%" }]}>
+											<Text>{division} - {subdivision}</Text>
+										</View>
+										{teamsArray.map(([teamLetter, teamData]) => {
+											const matchingSeasonInfo = seasonInfo.find(
+												info => info.teamId.toString() === teamData.teamId && 
+												info.division === division && 
+												info.subdivision === subdivision
+											);
+											
+											return (
+												<View key={teamLetter} style={[styles.tableColTeam, { width: columnWidth }]}>
+													<Text style={styles.teamName}>{teamLetter}</Text>
+													<Text>{teamData.teamName}</Text>
+													{matchingSeasonInfo && (
 														<View>
 															<Text>{matchingSeasonInfo.placeName}</Text>
 															<Text>{matchingSeasonInfo.addressFirstLine}</Text>
 															<Text>
-																{matchingSeasonInfo.addressSecondLine} - 
-																{matchingSeasonInfo.placePhoneNumber && ` ${matchingSeasonInfo.placePhoneNumber}`}
+																{matchingSeasonInfo.addressSecondLine}
+																{matchingSeasonInfo.placePhoneNumber && ` - ${matchingSeasonInfo.placePhoneNumber}`}
 															</Text>
 															{matchingSeasonInfo.captainFullName !== "No Captain" && (
 																<Text>
-																	{matchingSeasonInfo.captainFullName} -
-																	{matchingSeasonInfo.captainPhoneNumber && ` ${matchingSeasonInfo.captainPhoneNumber}`}
+																	{matchingSeasonInfo.captainFullName}
+																	{matchingSeasonInfo.captainPhoneNumber && ` - ${matchingSeasonInfo.captainPhoneNumber}`}
 																</Text>
 															)}
 														</View>
-													);
-												}
-												return null;
-											})()}
-										</View>
-										{gameDateEntries.map(([gameTitle]) => {
-											const matchup = getTeamMatchup(
-												division,
-												subdivision,
-												teamLetter,
-												gameTitle
-											);
-											return (
-												<View key={`${teamLetter}-${gameTitle}`} style={[styles.tableCol, { width: columnWidth }]}>
-													{renderMatchupContent(matchup, teamData, teams)}
+													)}
 												</View>
 											);
 										})}
 									</View>
-								))}
-							</View>
-						</Page>
-					);
+
+									{/* Data Rows - Game Dates */}
+									{gameDateChunk.map(([gameTitle, date]) => (
+										<View key={gameTitle} style={styles.tableRow}>
+											<View style={[styles.tableColHeader, { width: "15%" }]}>
+												<Text>{gameTitle.replace(/(\d+)/, " $1")}</Text>
+												<Text style={styles.gameDate}>{date}</Text>
+											</View>
+											{teamsArray.map(([teamLetter, teamData]) => {
+												const matchup = getTeamMatchup(
+													division,
+													subdivision,
+													teamLetter,
+													gameTitle
+												);
+												return (
+													<View key={`${gameTitle}-${teamLetter}`} style={[styles.tableCol, { width: columnWidth }]}>
+														{renderMatchupContent(matchup, teamData, teams)}
+													</View>
+												);
+											})}
+										</View>
+									))}
+								</View>
+							</Page>
+						);
+					});
 				})
 			)}
 		</Document>
