@@ -131,7 +131,7 @@ const LeaguePlayMentionLeaguePlayReport: React.FC<MentionLeaguePlayReportProps> 
 				// Use the first row for teamName and placeName (assuming all rows in this group are for the same team/place)
 				const firstRow = rows[0] || {};
 				return (
-					<Page key={divisionInfo} size="A4" style={styles.page} wrap>
+					<Page key={divisionInfo} size="A4" style={styles.page}>
 						<ReportsHeader
 							title="Mentions League Play"
 							reportDate={reportDate}
@@ -150,7 +150,7 @@ const LeaguePlayMentionLeaguePlayReport: React.FC<MentionLeaguePlayReportProps> 
 						</View>
 						<View style={styles.playerTable}>
 							{rows.map((row, i) => (
-								<React.Fragment key={i}>
+								<View key={i} wrap={false}>
                                     <View style={styles.playerHeader}>
                                         <Text style={[styles.playerCell, { width: "25%" }]}>Player Name</Text>
                                         <Text style={[styles.playerCell, { width: "25%" }]}>LEDA ID</Text>
@@ -180,7 +180,7 @@ const LeaguePlayMentionLeaguePlayReport: React.FC<MentionLeaguePlayReportProps> 
 											</View>
 										))}
 									</View>
-								</React.Fragment>
+								</View>
 							))}
 						</View>
 						<ReportsFooter />
