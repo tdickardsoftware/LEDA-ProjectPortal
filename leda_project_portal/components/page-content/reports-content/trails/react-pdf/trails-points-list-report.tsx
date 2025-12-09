@@ -74,6 +74,8 @@ interface TrailsPointsListReportProps {
 	reportDate?: string;
 }
 
+const ROWS_PER_PAGE = 30;
+
 export const TrailsPointsListReport: React.FC<TrailsPointsListReportProps> = ({
 	data,
 	reportDate = new Date()
@@ -87,100 +89,112 @@ export const TrailsPointsListReport: React.FC<TrailsPointsListReportProps> = ({
 		})
 		.replace(",", ""),
 }) => {
+	const chunkData = (arr: TrailsPointsList[], size: number) => {
+		const chunks: TrailsPointsList[][] = [];
+		for (let i = 0; i < arr.length; i += size) {
+			chunks.push(arr.slice(i, i + size));
+		}
+		return chunks;
+	};
+
+	const pages = chunkData(data, ROWS_PER_PAGE);
+
 	return (
 		<Document>
-			<Page size="A4" style={styles.page} wrap>
-				<ReportsHeader
-					title="Trails Points List"
-					reportDate={reportDate}
-				/>
+			{pages.map((pageData, pageIdx) => (
+				<Page size="A4" style={styles.page} key={pageIdx}>
+					<ReportsHeader
+						title="Trails Points List"
+						reportDate={reportDate}
+					/>
 
-				<View style={styles.table}>
-					<View style={styles.tableHeader} fixed>
-						<Text
-							style={[
-								styles.ledaIdColumn,
-								styles.tableHeaderText,
-							]}
-						>
-							LEDA ID
-						</Text>
-						<Text
-							style={[styles.nameColumn, styles.tableHeaderText]}
-						>
-							Full Name
-						</Text>
-						<Text
-							style={[
-								styles.pointsColumn,
-								styles.tableHeaderText,
-							]}
-						>
-							Prev Points
-						</Text>
-						<Text
-							style={[
-								styles.pointsColumn,
-								styles.tableHeaderText,
-							]}
-						>
-							Total Points
-						</Text>
-						<Text
-							style={[
-								styles.pointsColumn,
-								styles.tableHeaderText,
-							]}
-						>
-							Change
-						</Text>
-						<Text
-							style={[styles.dateColumn, styles.tableHeaderText]}
-						>
-							Trails Date
-						</Text>
-						<Text
-							style={[styles.duesColumn, styles.tableHeaderText]}
-						>
-							Paid Dues
-						</Text>
-					</View>
-					{data.map((member, index) => (
-						<View key={index} style={styles.tableRow}>
-							<Text style={styles.ledaIdColumn}>
-								{member.ledaId}
+					<View style={styles.table}>
+						<View style={styles.tableHeader} fixed>
+							<Text
+								style={[
+									styles.ledaIdColumn,
+									styles.tableHeaderText,
+								]}
+							>
+								LEDA ID
 							</Text>
-							<Text style={styles.nameColumn}>
-								{member.fullname}
+							<Text
+								style={[styles.nameColumn, styles.tableHeaderText]}
+							>
+								Full Name
 							</Text>
-							<Text style={styles.pointsColumn}>
-								{member.previousTotalPoints}
+							<Text
+								style={[
+									styles.pointsColumn,
+									styles.tableHeaderText,
+								]}
+							>
+								Prev Points
 							</Text>
-							<Text style={styles.pointsColumn}>
-								{member.totalPoints}
+							<Text
+								style={[
+									styles.pointsColumn,
+									styles.tableHeaderText,
+								]}
+							>
+								Total Points
 							</Text>
-							<Text style={styles.pointsColumn}>
-								{member.changeBy}
+							<Text
+								style={[
+									styles.pointsColumn,
+									styles.tableHeaderText,
+								]}
+							>
+								Change
 							</Text>
-							<Text style={styles.dateColumn}>
-								{new Date(member.trailsDate).toLocaleDateString(
-									"en-US",
-									{
-										month: "2-digit",
-										day: "2-digit",
-										year: "numeric",
-									}
-								)}
+							<Text
+								style={[styles.dateColumn, styles.tableHeaderText]}
+							>
+								Trails Date
 							</Text>
-							<Text style={styles.duesColumn}>
-								{member.paidDues ? "X" : ""}
+							<Text
+								style={[styles.duesColumn, styles.tableHeaderText]}
+							>
+								Paid Dues
 							</Text>
 						</View>
-					))}
-				</View>
+						{pageData.map((member, index) => (
+							<View key={index} style={styles.tableRow} wrap={false}>
+								<Text style={styles.ledaIdColumn}>
+									{member.ledaId}
+								</Text>
+								<Text style={styles.nameColumn}>
+									{member.fullname}
+								</Text>
+								<Text style={styles.pointsColumn}>
+									{member.previousTotalPoints}
+								</Text>
+								<Text style={styles.pointsColumn}>
+									{member.totalPoints}
+								</Text>
+								<Text style={styles.pointsColumn}>
+									{member.changeBy}
+								</Text>
+								<Text style={styles.dateColumn}>
+									{new Date(member.trailsDate).toLocaleDateString(
+										"en-US",
+										{
+											month: "2-digit",
+											day: "2-digit",
+											year: "numeric",
+										}
+									)}
+								</Text>
+								<Text style={styles.duesColumn}>
+									{member.paidDues ? "X" : ""}
+								</Text>
+							</View>
+						))}
+					</View>
 
-				<ReportsFooter />
-			</Page>
+					<ReportsFooter />
+				</Page>
+			))}
 		</Document>
 	);
 };

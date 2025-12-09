@@ -65,6 +65,8 @@ interface Props {
 	reportDate?: string;
 }
 
+const ROWS_PER_PAGE = 20;
+
 const ListsReportTeamsListSeasonReport: React.FC<Props> = ({
 	data,
 	desc,
@@ -78,46 +80,60 @@ const ListsReportTeamsListSeasonReport: React.FC<Props> = ({
 			hour12: false,
 		})
 		.replace(",", ""),
-}) => (
-	<Document>
-		<Page size="A4" style={styles.page} wrap>
-			<ReportsHeader
-				title="TEAMS LIST (By Season)"
-				reportDate={reportDate}
-				subtitle={desc}
-			/>
-			<View style={styles.table}>
-				<View style={styles.tableHeader}>
-					<Text style={[styles.cell, styles.headerCell, styles.teamId]} wrap={false}>Team LEDA ID</Text>
-					<Text style={[styles.cell, styles.headerCell, styles.teamName]} wrap={false}>Team Name</Text>
-					<Text style={[styles.cell, styles.headerCell, styles.placeName]} wrap={false}>Place Name</Text>
-					<Text style={[styles.cell, styles.headerCell, styles.addressFirstLine]} wrap={false}>Place Address Line 1</Text>
-					<Text style={[styles.cell, styles.headerCell, styles.addressSecondLine]} wrap={false}>Place Address Line 2</Text>
-					<Text style={[styles.cell, styles.headerCell, styles.placePhoneNumber]} wrap={false}>Place Phone Number</Text>
-					<Text style={[styles.cell, styles.headerCell, styles.captainFullName]} wrap={false}>Captain Full Name</Text>
-					<Text style={[styles.cell, styles.headerCell, styles.captainPhoneNumber]} wrap={false}>Captain Phone Number</Text>
-					<Text style={[styles.cell, styles.headerCell, styles.divisionInfo, styles.lastCell]} wrap={false}>Division Info</Text>
-				</View>
-				{data.map((row, idx) => {
-					const noCaptain = !row.captainFullName || row.captainFullName === "No Captain";
-					return (
-						<View style={styles.tableRow} key={idx}>
-							<Text style={[styles.cell, styles.teamId]}>{row.teamId}</Text>
-							<Text style={[styles.cell, styles.teamName]}>{row.teamName}</Text>
-							<Text style={[styles.cell, styles.placeName]}>{row.placeName}</Text>
-							<Text style={[styles.cell, styles.addressFirstLine]}>{row.addressFirstLine}</Text>
-							<Text style={[styles.cell, styles.addressSecondLine]}>{row.addressSecondLine}</Text>
-							<Text style={[styles.cell, styles.placePhoneNumber]}>{row.placePhoneNumber}</Text>
-							<Text style={[styles.cell, styles.captainFullName]}>{noCaptain ? "" : row.captainFullName}</Text>
-							<Text style={[styles.cell, styles.captainPhoneNumber]}>{noCaptain ? "" : row.captainPhoneNumber}</Text>
-							<Text style={[styles.cell, styles.divisionInfo, styles.lastCell]}>{row.divisionInfo}</Text>
+}) => {
+	const chunkData = (arr: ListsTeams[], size: number) => {
+		const chunks: ListsTeams[][] = [];
+		for (let i = 0; i < arr.length; i += size) {
+			chunks.push(arr.slice(i, i + size));
+		}
+		return chunks;
+	};
+
+	const pages = chunkData(data, ROWS_PER_PAGE);
+
+	return (
+		<Document>
+			{pages.map((pageData, pageIdx) => (
+				<Page size="A4" style={styles.page} key={pageIdx}>
+					<ReportsHeader
+						title="TEAMS LIST (By Season)"
+						reportDate={reportDate}
+						subtitle={desc}
+					/>
+					<View style={styles.table}>
+						<View style={styles.tableHeader}>
+							<Text style={[styles.cell, styles.headerCell, styles.teamId]} wrap={false}>Team LEDA ID</Text>
+							<Text style={[styles.cell, styles.headerCell, styles.teamName]} wrap={false}>Team Name</Text>
+							<Text style={[styles.cell, styles.headerCell, styles.placeName]} wrap={false}>Place Name</Text>
+							<Text style={[styles.cell, styles.headerCell, styles.addressFirstLine]} wrap={false}>Place Address Line 1</Text>
+							<Text style={[styles.cell, styles.headerCell, styles.addressSecondLine]} wrap={false}>Place Address Line 2</Text>
+							<Text style={[styles.cell, styles.headerCell, styles.placePhoneNumber]} wrap={false}>Place Phone Number</Text>
+							<Text style={[styles.cell, styles.headerCell, styles.captainFullName]} wrap={false}>Captain Full Name</Text>
+							<Text style={[styles.cell, styles.headerCell, styles.captainPhoneNumber]} wrap={false}>Captain Phone Number</Text>
+							<Text style={[styles.cell, styles.headerCell, styles.divisionInfo, styles.lastCell]} wrap={false}>Division Info</Text>
 						</View>
-					);
-				})}
-			</View>
-			<ReportsFooter />
-		</Page>
-	</Document>
-);
+						{pageData.map((row, idx) => {
+							const noCaptain = !row.captainFullName || row.captainFullName === "No Captain";
+							return (
+								<View style={styles.tableRow} key={idx} wrap={false}>
+									<Text style={[styles.cell, styles.teamId]}>{row.teamId}</Text>
+									<Text style={[styles.cell, styles.teamName]}>{row.teamName}</Text>
+									<Text style={[styles.cell, styles.placeName]}>{row.placeName}</Text>
+									<Text style={[styles.cell, styles.addressFirstLine]}>{row.addressFirstLine}</Text>
+									<Text style={[styles.cell, styles.addressSecondLine]}>{row.addressSecondLine}</Text>
+									<Text style={[styles.cell, styles.placePhoneNumber]}>{row.placePhoneNumber}</Text>
+									<Text style={[styles.cell, styles.captainFullName]}>{noCaptain ? "" : row.captainFullName}</Text>
+									<Text style={[styles.cell, styles.captainPhoneNumber]}>{noCaptain ? "" : row.captainPhoneNumber}</Text>
+									<Text style={[styles.cell, styles.divisionInfo, styles.lastCell]}>{row.divisionInfo}</Text>
+								</View>
+							);
+						})}
+					</View>
+					<ReportsFooter />
+				</Page>
+			))}
+		</Document>
+	);
+};
 
 export default ListsReportTeamsListSeasonReport;

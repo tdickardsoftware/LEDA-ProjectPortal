@@ -39,6 +39,18 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 	},
+	emailCell: {
+		fontSize: 7,
+		padding: 2,
+		borderRight: "1 solid #ccc",
+		minHeight: 12,
+		flexDirection: "column",
+		justifyContent: "center",
+	},
+	emailText: {
+		fontSize: 7,
+		wordBreak: "break-all",
+	},
 	lastCell: {
 		borderRight: 0,
 	},
@@ -64,6 +76,8 @@ interface Props {
 	reportDate?: string;
 }
 
+const ROWS_PER_PAGE = 21;
+
 const ListsReportMembershipListSeasonReport: React.FC<Props> = ({
 	data,
 	desc,
@@ -77,45 +91,61 @@ const ListsReportMembershipListSeasonReport: React.FC<Props> = ({
 			hour12: false,
 		})
 		.replace(",", ""),
-}) => (
-	<Document>
-		<Page size="A4" style={styles.page} wrap>
-			<ReportsHeader
-				title="MEMBERSHIP LIST (By Season)"
-				reportDate={reportDate}
-				subtitle={desc}
-			/>
-			<View style={styles.table}>
-				<View style={styles.tableHeader}>
-					<Text style={[styles.cell, styles.playerId, styles.tableHeaderText]}>LEDA ID</Text>
-					<Text style={[styles.cell, styles.fullName, styles.tableHeaderText]}>Name</Text>
-					<Text style={[styles.cell, styles.phoneNumber, styles.tableHeaderText]}>Phone Number</Text>
-					<Text style={[styles.cell, styles.email, styles.tableHeaderText]}>Email</Text>
-					<Text style={[styles.cell, styles.addressOne, styles.tableHeaderText]}>Address Line 1</Text>
-					<Text style={[styles.cell, styles.addressTwo, styles.tableHeaderText]}>Address Line 2</Text>
-					<Text style={[styles.cell, styles.city, styles.tableHeaderText]}>City</Text>
-					<Text style={[styles.cell, styles.state, styles.tableHeaderText]}>State</Text>
-					<Text style={[styles.cell, styles.zip, styles.tableHeaderText]}>Zip Code</Text>
-					<Text style={[styles.cell, styles.divisionInfo, styles.tableHeaderText, styles.lastCell]}>Division Info</Text>
-				</View>
-				{data.map((row, idx) => (
-					<View style={styles.tableRow} key={idx}>
-						<Text style={[styles.cell, styles.playerId]}>{row.playerId}</Text>
-						<Text style={[styles.cell, styles.fullName]}>{row.fullName}</Text>
-						<Text style={[styles.cell, styles.phoneNumber]}>{row.phoneNumber}</Text>
-						<Text style={[styles.cell, styles.email]}>{row.email}</Text>
-						<Text style={[styles.cell, styles.addressOne]}>{row.addressOne}</Text>
-						<Text style={[styles.cell, styles.addressTwo]}>{row.addressTwo}</Text>
-						<Text style={[styles.cell, styles.city]}>{row.city}</Text>
-						<Text style={[styles.cell, styles.state]}>{row.state}</Text>
-						<Text style={[styles.cell, styles.zip]}>{row.zip}</Text>
-						<Text style={[styles.cell, styles.divisionInfo, styles.lastCell]}>{row.divisionInfo}</Text>
+}) => {
+	const chunkData = (arr: ListsMembership[], size: number) => {
+		const chunks: ListsMembership[][] = [];
+		for (let i = 0; i < arr.length; i += size) {
+			chunks.push(arr.slice(i, i + size));
+		}
+		return chunks;
+	};
+
+	const pages = chunkData(data, ROWS_PER_PAGE);
+
+	return (
+		<Document>
+			{pages.map((pageData, pageIdx) => (
+				<Page size="A4" style={styles.page} key={pageIdx}>
+					<ReportsHeader
+						title="MEMBERSHIP LIST (By Season)"
+						reportDate={reportDate}
+						subtitle={desc}
+					/>
+					<View style={styles.table}>
+						<View style={styles.tableHeader}>
+							<Text style={[styles.cell, styles.playerId, styles.tableHeaderText]}>LEDA ID</Text>
+							<Text style={[styles.cell, styles.fullName, styles.tableHeaderText]}>Name</Text>
+							<Text style={[styles.cell, styles.phoneNumber, styles.tableHeaderText]}>Phone Number</Text>
+							<Text style={[styles.cell, styles.email, styles.tableHeaderText]}>Email</Text>
+							<Text style={[styles.cell, styles.addressOne, styles.tableHeaderText]}>Address Line 1</Text>
+							<Text style={[styles.cell, styles.addressTwo, styles.tableHeaderText]}>Address Line 2</Text>
+							<Text style={[styles.cell, styles.city, styles.tableHeaderText]}>City</Text>
+							<Text style={[styles.cell, styles.state, styles.tableHeaderText]}>State</Text>
+							<Text style={[styles.cell, styles.zip, styles.tableHeaderText]}>Zip Code</Text>
+							<Text style={[styles.cell, styles.divisionInfo, styles.tableHeaderText, styles.lastCell]}>Division Info</Text>
+						</View>
+						{pageData.map((row, idx) => (
+							<View style={styles.tableRow} key={idx} wrap={false}>
+							<Text style={[styles.cell, styles.playerId]}>{row.playerId}</Text>
+							<Text style={[styles.cell, styles.fullName]}>{row.fullName}</Text>
+							<Text style={[styles.cell, styles.phoneNumber]}>{row.phoneNumber}</Text>
+							<View style={[styles.emailCell, styles.email]}>
+								<Text style={styles.emailText}>{row.email}</Text>
+							</View>
+							<Text style={[styles.cell, styles.addressOne]}>{row.addressOne}</Text>
+								<Text style={[styles.cell, styles.addressTwo]}>{row.addressTwo}</Text>
+								<Text style={[styles.cell, styles.city]}>{row.city}</Text>
+								<Text style={[styles.cell, styles.state]}>{row.state}</Text>
+								<Text style={[styles.cell, styles.zip]}>{row.zip}</Text>
+								<Text style={[styles.cell, styles.divisionInfo, styles.lastCell]}>{row.divisionInfo}</Text>
+							</View>
+						))}
 					</View>
-				))}
-			</View>
-			<ReportsFooter />
-		</Page>
-	</Document>
-);
+					<ReportsFooter />
+				</Page>
+			))}
+		</Document>
+	);
+};
 
 export default ListsReportMembershipListSeasonReport;

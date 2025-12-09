@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
 		fontFamily: "Helvetica",
 	},
 	table: {
-		width: "33.33%", // Limit table to 1/3 of page width
+		width: "100%",
 		marginBottom: 16,
 	},
 	tableGap: {
@@ -43,11 +43,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	ledaIdColumn: {
-		width: "22%", // Back to original percentages since table is now 1/3 width
+		width: "10%",
 		fontWeight: "bold",
 	},
 	nameColumn: {
-		width: "45%", // Back to original percentages since table is now 1/3 width
+		width: "23.33%",
 	},
 	// For the last cell in a row, remove the right border
 	lastCell: {

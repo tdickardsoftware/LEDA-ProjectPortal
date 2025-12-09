@@ -70,6 +70,8 @@ interface ListsReportElectionListReportProps {
 	reportDate?: string;
 }
 
+const ROWS_PER_PAGE = 35;
+
 const ListsReportElectionListReport: React.FC<ListsReportElectionListReportProps> = ({
 	data,
 	desc,
@@ -83,43 +85,57 @@ const ListsReportElectionListReport: React.FC<ListsReportElectionListReportProps
 			hour12: false,
 		})
 		.replace(",", ""),
-}) => (
-	<Document>
-		<Page size="A4" style={styles.page} wrap>
-			<ReportsHeader
-				title="ELECTION LIST"
-				reportDate={reportDate}
-				subtitle={desc}
-			/>
-			<View style={styles.table}>
-				<View style={styles.tableHeader}>
-					<Text style={[styles.cell, styles.fullNameColumn, styles.tableHeaderText]}>
-						Full Name
-					</Text>
-					<Text style={[styles.cell, styles.absBallotSentColumn, styles.tableHeaderText]}>
-						Abs Ballot Sent
-					</Text>
-					<Text style={[styles.cell, styles.absBallotReceivedColumn, styles.tableHeaderText]}>
-						Abs Ballot Received
-					</Text>
-					<Text style={[styles.cell, styles.votedColumn, styles.tableHeaderText, styles.lastCell]}>
-						Voted
-					</Text>
-				</View>
-				{data.map((row, idx) => (
-					<View style={styles.tableRow} key={idx}>
-						<Text style={[styles.cell, styles.fullNameColumn]}>
-							{row.fullName}
-						</Text>
-						<Text style={[styles.cell, styles.absBallotSentColumn]}></Text>
-						<Text style={[styles.cell, styles.absBallotReceivedColumn]}></Text>
-						<Text style={[styles.cell, styles.votedColumn, styles.lastCell]}></Text>
+}) => {
+	const chunkData = (arr: ListsElectionList[], size: number) => {
+		const chunks: ListsElectionList[][] = [];
+		for (let i = 0; i < arr.length; i += size) {
+			chunks.push(arr.slice(i, i + size));
+		}
+		return chunks;
+	};
+
+	const pages = chunkData(data, ROWS_PER_PAGE);
+
+	return (
+		<Document>
+			{pages.map((pageData, pageIdx) => (
+				<Page size="A4" style={styles.page} key={pageIdx}>
+					<ReportsHeader
+						title="ELECTION LIST"
+						reportDate={reportDate}
+						subtitle={desc}
+					/>
+					<View style={styles.table}>
+						<View style={styles.tableHeader}>
+							<Text style={[styles.cell, styles.fullNameColumn, styles.tableHeaderText]}>
+								Full Name
+							</Text>
+							<Text style={[styles.cell, styles.absBallotSentColumn, styles.tableHeaderText]}>
+								Abs Ballot Sent
+							</Text>
+							<Text style={[styles.cell, styles.absBallotReceivedColumn, styles.tableHeaderText]}>
+								Abs Ballot Received
+							</Text>
+							<Text style={[styles.cell, styles.votedColumn, styles.tableHeaderText, styles.lastCell]}>
+								Voted
+							</Text>
+						</View>
+						{pageData.map((row, idx) => (
+							<View style={styles.tableRow} key={idx} wrap={false}>
+								<Text style={[styles.cell, styles.fullNameColumn]}>
+									{row.fullName}
+								</Text>
+								<Text style={[styles.cell, styles.absBallotSentColumn]}></Text>
+								<Text style={[styles.cell, styles.absBallotReceivedColumn]}></Text>
+								<Text style={[styles.cell, styles.votedColumn, styles.lastCell]}></Text>
+							</View>
+						))}
 					</View>
-				))}
-			</View>
-			<ReportsFooter />
-		</Page>
-	</Document>
-);
+					<ReportsFooter />
+				</Page>
+			))}
+		</Document>
+	);
+};
 
 export default ListsReportElectionListReport;

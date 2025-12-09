@@ -64,6 +64,8 @@ interface Props {
 	reportDate?: string;
 }
 
+const ROWS_PER_PAGE = 20;
+
 const ListsReportPlacesListJoinDateReport: React.FC<Props> = ({
 	data,
 	desc,
@@ -77,45 +79,59 @@ const ListsReportPlacesListJoinDateReport: React.FC<Props> = ({
 			hour12: false,
 		})
 		.replace(",", ""),
-}) => (
-	<Document>
-		<Page size="A4" style={styles.page} wrap>
-			<ReportsHeader
-				title="PLACES LIST (By Established Date)"
-				reportDate={reportDate}
-				subtitle={desc}
-			/>
-			<View style={styles.table}>
-				<View style={styles.tableHeader}>
-					<Text style={[styles.cell, styles.ledaId, styles.tableHeaderText]}>LEDA ID</Text>
-					<Text style={[styles.cell, styles.name, styles.tableHeaderText]}>Place Name</Text>
-					<Text style={[styles.cell, styles.phoneNumber, styles.tableHeaderText]}>Phone Number</Text>
-					<Text style={[styles.cell, styles.contact, styles.tableHeaderText]}>Contact Name</Text>
-					<Text style={[styles.cell, styles.email, styles.tableHeaderText]}>Email</Text>
-					<Text style={[styles.cell, styles.addressOne, styles.tableHeaderText]}>Address Line 1</Text>
-					<Text style={[styles.cell, styles.addressTwo, styles.tableHeaderText]}>Address Line 2</Text>
-					<Text style={[styles.cell, styles.city, styles.tableHeaderText]}>City</Text>
-					<Text style={[styles.cell, styles.state, styles.tableHeaderText]}>State</Text>
-					<Text style={[styles.cell, styles.zip, styles.tableHeaderText, styles.lastCell]}>Zip Code</Text>
-				</View>
-				{data.map((row, idx) => (
-					<View style={styles.tableRow} key={idx}>
-						<Text style={[styles.cell, styles.ledaId]}>{row.ledaId}</Text>
-						<Text style={[styles.cell, styles.name]}>{row.name}</Text>
-						<Text style={[styles.cell, styles.phoneNumber]}>{row.phoneNumber}</Text>
-						<Text style={[styles.cell, styles.contact]}>{row.contact}</Text>
-						<Text style={[styles.cell, styles.email]}>{row.email}</Text>
-						<Text style={[styles.cell, styles.addressOne]}>{row.addressOne}</Text>
-						<Text style={[styles.cell, styles.addressTwo]}>{row.addressTwo}</Text>
-						<Text style={[styles.cell, styles.city]}>{row.city}</Text>
-						<Text style={[styles.cell, styles.state]}>{row.state}</Text>
-						<Text style={[styles.cell, styles.zip, styles.lastCell]}>{row.zip}</Text>
+}) => {
+	const chunkData = (arr: ListsPlaces[], size: number) => {
+		const chunks: ListsPlaces[][] = [];
+		for (let i = 0; i < arr.length; i += size) {
+			chunks.push(arr.slice(i, i + size));
+		}
+		return chunks;
+	};
+
+	const pages = chunkData(data, ROWS_PER_PAGE);
+
+	return (
+		<Document>
+			{pages.map((pageData, pageIdx) => (
+				<Page size="A4" style={styles.page} key={pageIdx}>
+					<ReportsHeader
+						title="PLACES LIST (By Established Date)"
+						reportDate={reportDate}
+						subtitle={desc}
+					/>
+					<View style={styles.table}>
+						<View style={styles.tableHeader}>
+							<Text style={[styles.cell, styles.ledaId, styles.tableHeaderText]}>LEDA ID</Text>
+							<Text style={[styles.cell, styles.name, styles.tableHeaderText]}>Place Name</Text>
+							<Text style={[styles.cell, styles.phoneNumber, styles.tableHeaderText]}>Phone Number</Text>
+							<Text style={[styles.cell, styles.contact, styles.tableHeaderText]}>Contact Name</Text>
+							<Text style={[styles.cell, styles.email, styles.tableHeaderText]}>Email</Text>
+							<Text style={[styles.cell, styles.addressOne, styles.tableHeaderText]}>Address Line 1</Text>
+							<Text style={[styles.cell, styles.addressTwo, styles.tableHeaderText]}>Address Line 2</Text>
+							<Text style={[styles.cell, styles.city, styles.tableHeaderText]}>City</Text>
+							<Text style={[styles.cell, styles.state, styles.tableHeaderText]}>State</Text>
+							<Text style={[styles.cell, styles.zip, styles.tableHeaderText, styles.lastCell]}>Zip Code</Text>
+						</View>
+						{pageData.map((row, idx) => (
+							<View style={styles.tableRow} key={idx} wrap={false}>
+								<Text style={[styles.cell, styles.ledaId]}>{row.ledaId}</Text>
+								<Text style={[styles.cell, styles.name]}>{row.name}</Text>
+								<Text style={[styles.cell, styles.phoneNumber]}>{row.phoneNumber}</Text>
+								<Text style={[styles.cell, styles.contact]}>{row.contact}</Text>
+								<Text style={[styles.cell, styles.email]}>{row.email}</Text>
+								<Text style={[styles.cell, styles.addressOne]}>{row.addressOne}</Text>
+								<Text style={[styles.cell, styles.addressTwo]}>{row.addressTwo}</Text>
+								<Text style={[styles.cell, styles.city]}>{row.city}</Text>
+								<Text style={[styles.cell, styles.state]}>{row.state}</Text>
+								<Text style={[styles.cell, styles.zip, styles.lastCell]}>{row.zip}</Text>
+							</View>
+						))}
 					</View>
-				))}
-			</View>
-			<ReportsFooter />
-		</Page>
-	</Document>
-);
+					<ReportsFooter />
+				</Page>
+			))}
+		</Document>
+	);
+};
 
 export default ListsReportPlacesListJoinDateReport;

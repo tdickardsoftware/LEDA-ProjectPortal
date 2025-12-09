@@ -14,11 +14,10 @@ import { seasonRoute, rosterRoute } from "@/lib/apiRoutes";
 import { ListsCaptains, ListsElectionList, ListsMembership, ListsPlaces, ListsTeams, MailingList, RosterDivision } from "@/lib/definitions";
 import ReportDisplay from "@/components/ui/report-display";
 import { captainsReportColumns, electionListColumns, mailingLabelsColumns, membershipListColumnsFilterByJoinDate, membershipListColumnsFilterBySeason, placesListColumns, teamsListColumns } from "@/lib/report-definitions";
-import { PDFDownloadLink } from "@react-pdf/renderer";
+import { PDFDownloadLink, pdf } from "@react-pdf/renderer";
 import ListsReportCaptainsReport from "./react-pdf/lists-report-captains-report";
 import ListsReportElectionListReport from "./react-pdf/lists-report-election-list-report";
 import FiscalYearSelector from "@/components/ui/fiscal-year-selector";
-import "react-datepicker/dist/react-datepicker.css";
 import { Input } from "@/components/ui/input";
 import ListsReportMembershipListJoinDateReport from "./react-pdf/lists-report-membership-list-join-date-report";
 import ListsReportMembershipListSeasonReport from "./react-pdf/lists-report-membership-list-season-report";
@@ -139,6 +138,7 @@ export default function ListsReportLandingContent() {
 	const [mailingLabelsImported, setMailingLabelsImported] = useState(false);
 	const [sortByZip, setSortByZip] = useState(false);
 	const [sortByName, setSortByName] = useState(true);
+	const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 	const queryClient = useQueryClient();
 
 	// TanStack Query hooks
@@ -637,12 +637,15 @@ export default function ListsReportLandingContent() {
 		const seasonCodeDesc = seasonData?.desc || "";
 
 		// Enhanced validation to prevent PDF generation during data fetching
+		if (!selectedReport) return null;
+
+		// For mailing labels, we don't need season or join date validation
+		const needsSeasonValidation = !selectedReport.includes("mailingLabels") && filterBySeason;
+		const needsJoinDateValidation = !selectedReport.includes("mailingLabels") && filterByJoinDate;
+
 		if (
-			!selectedReport ||
-			(
-				(filterBySeason && (!seasonCode || !seasonCodeDesc)) ||
-				(filterByJoinDate && !joinDate)
-			)
+			(needsSeasonValidation && (!seasonCode || !seasonCodeDesc)) ||
+			(needsJoinDateValidation && !joinDate)
 		) return null;
 
 		// Don't render PDF download while data is being fetched or if no data is available
@@ -895,6 +898,61 @@ export default function ListsReportLandingContent() {
 
 		if (!document) return null;
 
+		// For mailing labels, use manual download for better performance
+		if (selectedReport.includes("mailingLabels")) {
+			return (
+				<button
+					onClick={() => handleManualPDFDownload(document, fileName)}
+					disabled={isGeneratingPDF}
+					className="inline-flex items-center justify-center rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+				>
+					{isGeneratingPDF ? (
+						<>
+							<svg
+								className="animate-spin -ml-1 mr-2 h-4 w-4 text-black"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+							>
+								<circle
+									className="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									strokeWidth="4"
+								></circle>
+								<path
+									className="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
+							</svg>
+							Generating PDF...
+						</>
+					) : (
+						<>
+							<svg
+								className="mr-2 h-4 w-4"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								strokeWidth={1.5}
+								stroke="currentColor"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+								/>
+							</svg>
+							Download PDF
+						</>
+					)}
+				</button>
+			);
+		}
+
 		return (
 			<PDFDownloadLink
 				document={document}
@@ -955,6 +1013,24 @@ export default function ListsReportLandingContent() {
 	const handleImportSuccess = () => {
 		setMailingLabelsImported(true);
 		queryClient.invalidateQueries({ queryKey: [selectedReport] });
+	};
+
+	// Manual PDF download handler for better performance
+	const handleManualPDFDownload = async (pdfDocument: JSX.Element, fileName: string) => {
+		setIsGeneratingPDF(true);
+		try {
+			const blob = await pdf(pdfDocument).toBlob();
+			const url = URL.createObjectURL(blob);
+			const link = window.document.createElement('a');
+			link.href = url;
+			link.download = fileName;
+			link.click();
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			console.error("Error generating PDF:", error);
+		} finally {
+			setIsGeneratingPDF(false);
+		}
 	};
 
 	// Function to compute player and place ledaIds only when needed
@@ -1286,6 +1362,10 @@ export default function ListsReportLandingContent() {
 						(
 							// For join date filter, require joinDate
 							filterByJoinDate && joinDate
+						) ||
+						(
+							// For mailing labels, no additional requirements needed
+							selectedReport.includes("mailingLabels")
 						)
 					) && (
 						<FolderTabMed title="Download PDF" className="w-fit">
