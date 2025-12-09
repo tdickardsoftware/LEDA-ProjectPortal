@@ -124,9 +124,9 @@ export default function SignupPageContent() {
       {ok ? (
         <Check className="h-3.5 w-3.5 text-green-600" aria-hidden />
       ) : (
-        <X className="h-3.5 w-3.5 text-gray-400" aria-hidden />
+        <X className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
       )}
-      <span className={ok ? "text-green-700" : "text-gray-600"}>{label}</span>
+      <span className={ok ? "text-green-700" : "text-muted-foreground"}>{label}</span>
     </div>
   );
 
@@ -171,13 +171,13 @@ export default function SignupPageContent() {
 
   if (signupSuccess) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-100">
-        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-gray-200 text-center">
+      <div className="flex justify-center items-center min-h-screen bg-muted">
+        <div className="w-full max-w-md p-8 bg-background rounded-lg shadow-lg border border-border text-center">
           <h2 className="text-2xl font-bold mb-6">Sign Up Successful</h2>
-          <p className="mb-4 text-gray-700">
+          <p className="mb-4 text-foreground">
             Please check your email for a verification link to complete your registration.
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             If you don&apos;t see the email, check your spam folder.
           </p>
         </div>
@@ -186,8 +186,8 @@ export default function SignupPageContent() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-gray-200">
+    <div className="flex justify-center items-center min-h-screen bg-muted">
+      <div className="w-full max-w-md p-8 bg-background rounded-lg shadow-lg border border-border">
         <h2 className="text-2xl font-bold mb-6 text-center">Sign Up</h2>
         {signupError && (
           <div className="mb-4 text-red-600 text-center text-sm font-medium">

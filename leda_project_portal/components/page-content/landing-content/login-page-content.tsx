@@ -153,8 +153,8 @@ export default function LoginPageContent() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-gray-200">
+    <div className="flex justify-center items-center min-h-screen bg-muted">
+      <div className="w-full max-w-md p-8 bg-background rounded-lg shadow-lg border border-border">
         <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

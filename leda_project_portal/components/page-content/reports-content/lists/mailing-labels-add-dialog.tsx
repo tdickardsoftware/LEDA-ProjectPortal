@@ -51,14 +51,14 @@ export default function MailingLabelsAddDialog({
 			<Button
 				variant="outline"
 				size="default"
-				className="hover:bg-gray-100 border-gray-300 text-gray-700"
+				className="hover:bg-muted border-border text-foreground"
 				onClick={() => setOpen(true)}
 			>
 				<Plus className="mr-2 h-4 w-4" />
 				Add
 			</Button>
 			<AlertDialog open={open} onOpenChange={setOpen}>
-				<AlertDialogContent className="bg-white min-w-[800px] max-w-[900px]">
+				<AlertDialogContent className="bg-background min-w-[800px] max-w-[900px]">
 					<AlertDialogHeader>
 						<AlertDialogTitle>Add Player/Place</AlertDialogTitle>
 					</AlertDialogHeader>
@@ -88,15 +88,15 @@ export default function MailingLabelsAddDialog({
 					</div>
 					<AlertDialogFooter>
 						<AlertDialogCancel
-							className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							className="hover:bg-muted border-border text-foreground"
 							disabled={mutation.isPending}
 						>
 							Cancel
 						</AlertDialogCancel>
-						<Button
+						<Button variant="outline"
 							onClick={handleSave}
 							disabled={mutation.isPending || (selectedPlayers.length + selectedPlaces.length === 0)}
-							className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							className="hover:bg-muted border-border text-foreground"
 						>
 							{mutation.isPending ? "Saving..." : "Save"}
 						</Button>

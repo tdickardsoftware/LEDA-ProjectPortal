@@ -196,7 +196,7 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="w-[200px] p-0 bg-white"
+						className="w-[200px] p-0 bg-background"
 					>
 						<Command>
 							<CommandInput placeholder="Search season code..." />
@@ -212,7 +212,7 @@ const SeasonCodeSelectorContent: React.FC<SeasonCodeSelectorPropsContent> = ({
 											key={type.value}
 											value={type.value}
 											onSelect={() => handleSelect(type)}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

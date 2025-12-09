@@ -57,7 +57,7 @@ export function DatePickerCustom({
 					<CalendarIcon className="h-4 w-4" />
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="w-auto p-0 bg-white">
+			<PopoverContent className="w-auto p-0 bg-background">
 				<DayPicker
 					mode="single"
 					selected={date}

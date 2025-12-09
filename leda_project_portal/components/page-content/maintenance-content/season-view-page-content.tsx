@@ -34,9 +34,9 @@ export function SeasonPageContent({ seasonData }: { seasonData: Season }) {
 						<h2 className="text-2xl font-semibold mb-6">
 							Season Code: {seasonData.seasonCode}
 						</h2>
-						<Button
+						<Button variant="outline"
 							onClick={handleEdit}
-							className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							className="hover:bg-muted border-border text-foreground"
 						>
 							Edit Season
 						</Button>

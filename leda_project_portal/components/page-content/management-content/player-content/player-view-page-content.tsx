@@ -84,26 +84,26 @@ export default function PlayerPageContent({
 				<div className="flex justify-center pb-4">
 					<FolderTabMed title="Player Actions">
 						<div className="flex gap-2">
-							<Button
+							<Button variant="outline"
 								onClick={handleEdit}
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								className="hover:bg-muted border-border text-foreground"
 							>
 								Edit Player
 							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handleTrailsHistory}
 							>
 								Trails History
 							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handleMentionsHistory}
 							>
 								Mentions History
 							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handlePaymentHistory}
 							>
 								Payment History
@@ -114,14 +114,14 @@ export default function PlayerPageContent({
 								route={playerPaymentHistoryRoute}
 								type="player"
 							/>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handleTDPHistory}
 							>
 								Top Darter Points History
 							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handleRosterHistory}
 							>
 								Roster History
@@ -130,7 +130,7 @@ export default function PlayerPageContent({
 					</FolderTabMed>
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-					<Card className="shadow-md border border-gray-300 hover:bg-gray-50 transition-colors">
+					<Card className="shadow-md border border-border hover:bg-muted transition-colors">
 						<CardHeader>
 							<CardTitle>Player Information</CardTitle>
 						</CardHeader>
@@ -165,7 +165,7 @@ export default function PlayerPageContent({
 							<p className="text-lg">Zip: {playerData.zip}</p>
 						</CardContent>
 					</Card>
-					<Card className="shadow-md border border-gray-300 hover:bg-gray-50 transition-colors">
+					<Card className="shadow-md border border-border hover:bg-muted transition-colors">
 						<CardHeader>
 							<CardTitle>Membership Information</CardTitle>
 						</CardHeader>
@@ -249,8 +249,8 @@ export default function PlayerPageContent({
 					</Card>
 				</div>
 				<div className="mt-6">
-					<Button
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+					<Button variant="outline"
+						className="hover:bg-muted border-border text-foreground"
 						asChild
 					>
 						<Link href="/Portal/Management/Players" prefetch={true}>
@@ -264,7 +264,7 @@ export default function PlayerPageContent({
 				open={isMentionsHistoryDialogOpen}
 				onOpenChange={setIsMentionsHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<PlayerMentionsHistoryContent playerData={playerData} />
 				</DialogContent>
 			</Dialog>
@@ -273,14 +273,14 @@ export default function PlayerPageContent({
 				open={isTrailsHistoryDialogOpen}
 				onOpenChange={setIsTrailsHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Trails History</DialogTitle>
 					</DialogHeader>
 					<PlayerTrailsHistoryContent playerData={playerData} />
 					<div className="flex justify-center">
-						<Button
-							className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						<Button variant="outline"
+							className="hover:bg-muted border-border text-foreground"
 							asChild
 						>
 							<Link
@@ -295,7 +295,7 @@ export default function PlayerPageContent({
 			</Dialog>
 
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent className="w-fit bg-white">
+				<DialogContent className="w-fit bg-background">
 					<DialogHeader>
 						<DialogTitle>
 							Edit Player: {playerData.fullName}
@@ -314,7 +314,7 @@ export default function PlayerPageContent({
 				open={isTDPHistoryDialogOpen}
 				onOpenChange={setIsTDPHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							Top Darter Points History for {playerData.fullName}
@@ -328,7 +328,7 @@ export default function PlayerPageContent({
 				open={isRosterHistoryDialogOpen}
 				onOpenChange={setIsRosterHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							Roster History for {playerData.fullName}
@@ -342,7 +342,7 @@ export default function PlayerPageContent({
 				open={isPaymentHistoryDialogOpen}
 				onOpenChange={setIsPaymentHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							Payment History for {playerData.fullName}

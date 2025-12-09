@@ -113,7 +113,7 @@ export default function BatchAccountCreationDialog() {
             </button>
           </SidebarMenuButton>
         </AlertDialogTrigger>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-background">
           <AlertDialogHeader>
             <AlertDialogTitle>Batch Account Creation</AlertDialogTitle>
           </AlertDialogHeader>
@@ -122,27 +122,27 @@ export default function BatchAccountCreationDialog() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Input
-                  className="flex-1 rounded-lg border border-gray-200 bg-gray-50/60 shadow-sm placeholder-gray-200"
+                  className="flex-1 rounded-lg border border-border bg-muted/60 shadow-sm placeholder-gray-200"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={onInputKeyDown}
                   onBlur={onInputBlur}
                   placeholder="Enter email and press Enter. Paste multiple with commas or spaces."
                 />
-                <Button type="button" variant="outline"  className="hover:bg-gray-100 border-gray-300 text-gray-700" onClick={() => setEmails([])} disabled={!emails.length}>
+                <Button type="button" variant="outline"  className="hover:bg-muted border-border text-foreground" onClick={() => setEmails([])} disabled={!emails.length}>
                   Clear All
                 </Button>
               </div>
-              <div className="text-xs text-gray-500 px-1">Press Enter or comma to add. Invalid or duplicate emails are ignored.</div>
+              <div className="text-xs text-muted-foreground px-1">Press Enter or comma to add. Invalid or duplicate emails are ignored.</div>
             </div>
 
-            <div className="max-h-60 overflow-auto rounded-lg border border-gray-200 bg-gray-50/60 shadow-sm">
+            <div className="max-h-60 overflow-auto rounded-lg border border-border bg-muted/60 shadow-sm">
               {emails.length === 0 ? (
-                <div className="py-6 px-4 text-sm text-gray-500 text-center">No emails added.</div>
+                <div className="py-6 px-4 text-sm text-muted-foreground text-center">No emails added.</div>
               ) : (
                 <ul className="divide-y divide-gray-200">
                   {emails.map((email) => (
-                    <li key={email} className="group flex items-center justify-between gap-2 px-3 py-2 hover:bg-white transition-colors">
+                    <li key={email} className="group flex items-center justify-between gap-2 px-3 py-2 hover:bg-background transition-colors">
                       <div className="truncate text-sm font-medium">{email}</div>
                       <Button
                         type="button"
@@ -161,14 +161,14 @@ export default function BatchAccountCreationDialog() {
 
           <AlertDialogFooter>
             <div className="flex justify-between w-full">
-              <AlertDialogCancel className="hover:bg-gray-100 border-gray-300 text-gray-700">Close</AlertDialogCancel>
+              <AlertDialogCancel className="hover:bg-muted border-border text-foreground">Close</AlertDialogCancel>
               {emails.length > 0 && (
                 <div className="flex justify-end">
                   <Button
                     type="button"
                     disabled={submitting}
                     onClick={handleSubmit}
-                    className="hover:bg-gray-100 border-gray-300 text-gray-700"
+                    className="hover:bg-muted border-border text-foreground"
                   >
                     {submitting ? "Submitting..." : "Create Accounts"}
                   </Button>

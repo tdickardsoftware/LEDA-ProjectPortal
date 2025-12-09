@@ -25,18 +25,18 @@ export default function PortalPageContent() {
 		<div className="flex flex-wrap gap-4">
 			<Can I="manage" a="Management" ability={ability}>
 				<div>
-					<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
+					<Card className="p-4 shadow-lg bg-background rounded-lg border border-border w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 						<CardHeader>
 							<CardTitle>Management</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								Manage Player, Place, or Team data
 							</p>
 						</CardContent>
 						<Link
 							href="/Portal/Management"
-							className="text-gray-700 hover:text-gray-500"
+							className="text-foreground hover:text-muted-foreground"
 							prefetch
 						>
 							<CardFooter className="flex justify-between items-center w-full mt-4">
@@ -52,18 +52,18 @@ export default function PortalPageContent() {
 
 			<Can I="manage" a="Maintenance" ability={ability}>
 				<div>
-					<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
+					<Card className="p-4 shadow-lg bg-background rounded-lg border border-border w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 						<CardHeader>
 							<CardTitle>Maintenance</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								Handle any typically static data used for Activies
 							</p>
 						</CardContent>
 						<Link
 							href="/Portal/Maintenance"
-							className="text-gray-700 hover:text-gray-500"
+							className="text-foreground hover:text-muted-foreground"
 							prefetch
 						>
 							<CardFooter className="flex justify-between items-center w-full mt-4">
@@ -79,18 +79,18 @@ export default function PortalPageContent() {
 
 			<Can I="manage" a="Reports" ability={ability}>
 				<div>
-					<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
+					<Card className="p-4 shadow-lg bg-background rounded-lg border border-border w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 						<CardHeader>
 							<CardTitle>Reports</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								Generate Reports using data from activities
 							</p>
 						</CardContent>
 						<Link
 							href="/Portal/Reports"
-							className="text-gray-700 hover:text-gray-500"
+							className="text-foreground hover:text-muted-foreground"
 							prefetch
 						>
 							<CardFooter className="flex justify-between items-center w-full mt-4">
@@ -106,18 +106,18 @@ export default function PortalPageContent() {
 
 			<Can I="manage" a="Activities" ability={ability}>
 				<div>
-					<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
+					<Card className="p-4 shadow-lg bg-background rounded-lg border border-border w-[350px] transition-transform transform hover:scale-105 hover:shadow-xl">
 						<CardHeader>
 							<CardTitle>Activities</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<p className="text-gray-700">
+							<p className="text-foreground">
 								Input data for processing/use for reports
 							</p>
 						</CardContent>
 						<Link
 							href="/Portal/Activities"
-							className="text-gray-700 hover:text-gray-500"
+							className="text-foreground hover:text-muted-foreground"
 							prefetch
 						>
 							<CardFooter className="flex justify-between items-center w-full mt-4">

@@ -249,14 +249,14 @@ export default function PaymentHistoryFormDialog({
 					</Button>
 				) : (
 					<Button
-						variant="default"
-						className="border-gray-400 text-gray-700"
+						variant="outline"
+						className="hover:bg-muted border-border text-foreground"
 					>
 						{buttonText}
 					</Button>
 				)}
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[500px] bg-white">
+			<DialogContent className="sm:max-w-[500px] bg-background">
 				<DialogHeader>
 					<DialogTitle>
 						{isEditing ? "Edit Payment" : "Add Payment History"}
@@ -326,7 +326,7 @@ export default function PaymentHistoryFormDialog({
 												<SelectValue placeholder="Select payment type" />
 											</SelectTrigger>
 										</FormControl>
-										<SelectContent className="bg-white">
+										<SelectContent className="bg-background">
 											<SelectItem value="Full">
 												Full
 											</SelectItem>
@@ -390,7 +390,7 @@ export default function PaymentHistoryFormDialog({
 											</FormControl>
 										</PopoverTrigger>
 										<PopoverContent
-											className="w-auto p-0 bg-white"
+											className="w-auto p-0 bg-background"
 											align="start"
 										>
 											<Calendar

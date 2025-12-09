@@ -291,7 +291,7 @@ export function PopoverMultiSelect({
 		<div className="flex flex-col w-full">
 			<div className="font-semibold mb-2">{label}</div>
 			<Popover open={popoverOpen} onOpenChange={handlePopoverOpenChange}>
-				<PopoverTrigger asChild className="bg-white border-gray-200">
+				<PopoverTrigger asChild className="bg-background border-border">
 					<Button
 						variant="outline"
 						role="combobox"
@@ -305,7 +305,7 @@ export function PopoverMultiSelect({
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent
-					className="w-80 p-0 bg-white border-gray-200"
+					className="w-80 p-0 bg-background border-border"
 					onWheel={(e) => e.stopPropagation()}
 				>
 					<Command shouldFilter={false}>
@@ -324,7 +324,7 @@ export function PopoverMultiSelect({
 										key={item.ledaId}
 										value={`${item.name} ${item.ledaId}`}
 										onSelect={() => handleToggle(item.ledaId)}
-										className="hover:bg-gray-200"
+										className="hover:bg-secondary"
 									>
 										<Check
 											className={cn(
@@ -336,7 +336,7 @@ export function PopoverMultiSelect({
 										/>
 										<div className="flex flex-col">
 											<span className="font-medium">{item.name}</span>
-											<span className="text-xs text-gray-500">ID: {item.ledaId}</span>
+											<span className="text-xs text-muted-foreground">ID: {item.ledaId}</span>
 										</div>
 									</CommandItem>
 								))}
@@ -347,20 +347,20 @@ export function PopoverMultiSelect({
 			</Popover>
 			<div className="mt-2">
 				{selected.length === 0 ? (
-					<div className="text-xs text-gray-700">Selected: None</div>
+					<div className="text-xs text-foreground">Selected: None</div>
 				) : (
-					<Table className="border rounded-lg bg-white shadow-sm text-xs mt-2">
+					<Table className="border rounded-lg bg-background shadow-sm text-xs mt-2">
 						<TableHeader>
-							<TableRow className="border-b border-gray-200 bg-gray-50/50">
-								<TableHead className="px-6 py-4 text-left text-sm font-semibold text-gray-900">LEDA ID</TableHead>
-								<TableHead className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Name</TableHead>
+							<TableRow className="border-b border-border bg-muted/50">
+								<TableHead className="px-6 py-4 text-left text-sm font-semibold text-foreground">LEDA ID</TableHead>
+								<TableHead className="px-6 py-4 text-left text-sm font-semibold text-foreground">Name</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{selected.map((item) => (
-								<TableRow key={item.ledaId} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-									<TableCell className="px-6 py-4 text-sm text-gray-900">{item.ledaId}</TableCell>
-									<TableCell className="px-6 py-4 text-sm text-gray-900">{item.name}</TableCell>
+								<TableRow key={item.ledaId} className="border-b border-border hover:bg-muted/50 transition-colors">
+									<TableCell className="px-6 py-4 text-sm text-foreground">{item.ledaId}</TableCell>
+									<TableCell className="px-6 py-4 text-sm text-foreground">{item.name}</TableCell>
 								</TableRow>
 							))}
 						</TableBody>

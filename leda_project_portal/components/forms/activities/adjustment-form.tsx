@@ -33,7 +33,7 @@ const adjustmentFormSchema = z.object({
 
 // Define styles for the form container
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
 // Define the DivisionAddForm component
 export default function AdjustmentForm({
@@ -149,7 +149,7 @@ export default function AdjustmentForm({
 											<SelectTrigger>
 												<SelectValue placeholder="Select type" />
 											</SelectTrigger>
-											<SelectContent className="bg-white">
+											<SelectContent className="bg-background">
 												<SelectItem value="true">
 													Credit
 												</SelectItem>
@@ -182,7 +182,7 @@ export default function AdjustmentForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">
 						{global
 							? "Save Global Adjustment"
 							: "Save Team Adjustment"}

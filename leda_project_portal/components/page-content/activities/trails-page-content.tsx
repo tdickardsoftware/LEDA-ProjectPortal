@@ -302,10 +302,10 @@ export default function TrailsPageContent() {
 		<Button
 			variant="outline"
 			onClick={onClick}
-			className="flex items-center justify-between text-left px-4 py-2 border border-gray-300 rounded-lg" // removed w-full
+			className="flex items-center justify-between text-left px-4 py-2 border border-border rounded-lg" // removed w-full
 		>
 			<span>{value || "Select a date"}</span>
-			<Calendar className="text-gray-500" />
+			<Calendar className="text-muted-foreground" />
 		</Button>
 	);
 
@@ -327,7 +327,7 @@ export default function TrailsPageContent() {
 				/>
 			)}
 
-			<Card className="p-4 shadow-lg bg-white rounded-lg border border-gray-300 w-[40vw] max-h-[80vh] overflow-y-auto">
+			<Card className="p-4 shadow-lg bg-background rounded-lg border border-border w-[40vw] max-h-[80vh] overflow-y-auto">
 				{trailsDate && (
 					<>
 						<CardHeader>
@@ -345,7 +345,7 @@ export default function TrailsPageContent() {
 											<div className="flex justify-end pt-4">
 												<Button
 													variant={"outline"}
-													className="hover:bg-gray-100 border-gray-300 text-gray-700"
+													className="hover:bg-muted border-border text-foreground"
 													onClick={() =>
 														setAddPlayer(!addPlayer)
 													}
@@ -370,7 +370,7 @@ export default function TrailsPageContent() {
 										)}
 										<Separator
 											orientation="horizontal"
-											className="my-2 bg-gray-300"
+											className="my-2 bg-muted"
 										/>
 										{trailsDateData.map((item, index) => (
 											<Accordion
@@ -529,7 +529,7 @@ export default function TrailsPageContent() {
 								{!addPlayer && (
 									<Button
 										variant={"outline"}
-										className="hover:bg-gray-100 border-gray-300 text-gray-700 flex items-center gap-1"
+										className="hover:bg-muted border-border text-foreground flex items-center gap-1"
 										onClick={() => setAddPlayer(!addPlayer)}
 									>
 										<Plus className="w-4 h-4" />
@@ -549,7 +549,7 @@ export default function TrailsPageContent() {
 							)}
 							<Separator
 								orientation="horizontal"
-								className="my-2 bg-gray-300"
+								className="my-2 bg-muted"
 							/>
 							{trailsDateData.length != 0 && (
 								<div className="flex flex-col gap-2">
@@ -664,7 +664,7 @@ export default function TrailsPageContent() {
 							<div className="flex items-center justify-center py-2">
 								<Button
 									variant={"outline"}
-									className="hover:bg-gray-100 border-gray-300 text-gray-700"
+									className="hover:bg-muted border-border text-foreground"
 									onClick={() => handleSubmit(trailsDateData)}
 									disabled={trailsDateData.length === 0}
 								>

@@ -778,7 +778,7 @@ export default function PayoutsContent() {
 										{/* Added flex-wrap */}
 										<Button
 											variant="outline"
-											className="hover:bg-gray-100 border-gray-300 text-gray-700"
+											className="hover:bg-muted border-border text-foreground"
 											onClick={() => {
 												handleGlobalAdjustmentClick();
 											}}
@@ -787,7 +787,7 @@ export default function PayoutsContent() {
 										</Button>
 										<Button
 											variant="outline"
-											className="hover:bg-gray-100 border-gray-300 text-gray-700"
+											className="hover:bg-muted border-border text-foreground"
 											onClick={() => {
 												handleManageGlobalAdjustmentsClick();
 											}}
@@ -809,7 +809,7 @@ export default function PayoutsContent() {
 															<div>
 																<Button
 																	variant="outline"
-																	className="relative w-full h-10 bg-gray-200 border-gray-300 text-gray-700 overflow-hidden"
+																	className="relative w-full h-10 bg-secondary border-border text-foreground overflow-hidden"
 																	onClick={() => {
 																		handleCalculatePayoutsClick();
 																	}}
@@ -858,7 +858,7 @@ export default function PayoutsContent() {
 														</TooltipTrigger>
 														<TooltipContent
 															side="top"
-															className="bg-white text-black px-4 py-3 rounded-lg shadow-lg border-0"
+															className="bg-background text-foreground px-4 py-3 rounded-lg shadow-lg border-0"
 														>
 															<p className="text-sm font-medium">
 																{completedScoresheetCount !==
@@ -906,7 +906,7 @@ export default function PayoutsContent() {
 												<AccordionItem
 													key={subIndex}
 													value={`subdiv-${division}-${subdivision}`}
-													className="border-b border-gray-200"
+													className="border-b border-border"
 												>
 													<AccordionTrigger>
 														{subdivision}
@@ -985,7 +985,7 @@ export default function PayoutsContent() {
 																					teamIndex
 																				}
 																				value={`team-${division}-${subdivision}-${team}`}
-																				className="border-b border-gray-200 group relative"
+																				className="border-b border-border group relative"
 																			>
 																				<AccordionTrigger className="flex justify-between items-center">
 																					<div className="flex items-center gap-6">
@@ -1055,7 +1055,7 @@ export default function PayoutsContent() {
 																							)}
 																						</span>
 																						<div
-																							className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-xs text-gray-700 cursor-pointer"
+																							className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted border border-border rounded-md px-3 py-1 text-xs text-foreground cursor-pointer"
 																							onClick={(
 																								e
 																							) => {
@@ -1081,7 +1081,7 @@ export default function PayoutsContent() {
 																						<div className="space-y-4">
 																							{/* Global Adjustments */}
 																							<div>
-																								<h4 className="font-semibold text-gray-700">
+																								<h4 className="font-semibold text-foreground">
 																									Global
 																									Adjustments
 																								</h4>
@@ -1142,7 +1142,7 @@ export default function PayoutsContent() {
 																																2
 																															)}
 																														</p>
-																														<p className="text-gray-500">
+																														<p className="text-muted-foreground">
 																															{
 																																adjustment.notes
 																															}
@@ -1154,7 +1154,7 @@ export default function PayoutsContent() {
 																															<Button
 																																variant="ghost"
 																																size="sm"
-																																className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																																className="h-6 w-6 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 																																title="Edit adjustment"
 																																onClick={() =>
 																																	handleManageGlobalAdjustmentClick(
@@ -1167,7 +1167,7 @@ export default function PayoutsContent() {
 																															<Button
 																																variant="ghost"
 																																size="sm"
-																																className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																																className="h-6 w-6 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 																																title="Remove adjustment"
 																																onClick={() =>
 																																	handleManageGlobalAdjustmentClick(
@@ -1187,7 +1187,7 @@ export default function PayoutsContent() {
 
 																							{/* Team-Specific Adjustments */}
 																							<div>
-																								<h4 className="font-semibold text-gray-700">
+																								<h4 className="font-semibold text-foreground">
 																									Team-Specific
 																									Adjustments
 																								</h4>
@@ -1248,7 +1248,7 @@ export default function PayoutsContent() {
 																																2
 																															)}
 																														</p>
-																														<p className="text-gray-500">
+																														<p className="text-muted-foreground">
 																															{
 																																adjustment.notes
 																															}
@@ -1260,7 +1260,7 @@ export default function PayoutsContent() {
 																															<Button
 																																variant="ghost"
 																																size="sm"
-																																className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																																className="h-6 w-6 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 																																title="Edit adjustment"
 																																onClick={() =>
 																																	handleEditTeamAdjustment(
@@ -1276,7 +1276,7 @@ export default function PayoutsContent() {
 																															<Button
 																																variant="ghost"
 																																size="sm"
-																																className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																																className="h-6 w-6 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 																																title="Remove adjustment"
 																																onClick={() =>
 																																	confirmRemoveTeamAdjustment(
@@ -1298,7 +1298,7 @@ export default function PayoutsContent() {
 																							</div>
 																						</div>
 																					) : (
-																						<p className="text-gray-500 italic">
+																						<p className="text-muted-foreground italic">
 																							No
 																							adjustments
 																							found...
@@ -1321,7 +1321,7 @@ export default function PayoutsContent() {
 					<div className="flex justify-center gap-4 mt-6">
 						<Button
 							variant="outline"
-							className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							className="hover:bg-muted border-border text-foreground"
 							onClick={() => {
 								handleSavePayoutsData();
 							}}
@@ -1331,7 +1331,7 @@ export default function PayoutsContent() {
 						</Button>
 						<Button
 							variant="outline"
-							className="hover:bg-red-600 border-gray-300 text-gray-700"
+							className="hover:bg-red-600 border-border text-foreground"
 							onClick={() => {
 								// Ask for confirmation before resetting
 								if (
@@ -1391,7 +1391,7 @@ export default function PayoutsContent() {
 						open={adjustmentDialogOpen}
 						onOpenChange={setAdjustmentDialogOpen}
 					>
-						<DialogContent className="sm:max-w-[425px] bg-white">
+						<DialogContent className="sm:max-w-[425px] bg-background">
 							<DialogHeader>
 								<DialogTitle>
 									Add Adjustment for {selectedTeamName}
@@ -1411,7 +1411,7 @@ export default function PayoutsContent() {
 						open={globalAdjustmentDialogOpen}
 						onOpenChange={setGlobalAdjustmentDialogOpen}
 					>
-						<DialogContent className="sm:max-w-[425px] bg-white">
+						<DialogContent className="sm:max-w-[425px] bg-background">
 							<DialogHeader>
 								<DialogTitle>Add Global Adjustment</DialogTitle>
 							</DialogHeader>
@@ -1429,7 +1429,7 @@ export default function PayoutsContent() {
 						open={manageGlobalAdjustmentsDialogOpen}
 						onOpenChange={setManageGlobalAdjustmentsDialogOpen}
 					>
-						<DialogContent className="sm:max-w-[700px] bg-white">
+						<DialogContent className="sm:max-w-[700px] bg-background">
 							<DialogHeader>
 								<DialogTitle>
 									Manage Global Adjustments
@@ -1453,7 +1453,7 @@ export default function PayoutsContent() {
 							open={editTeamAdjustmentDialogOpen}
 							onOpenChange={setEditTeamAdjustmentDialogOpen}
 						>
-							<DialogContent className="sm:max-w-[425px] bg-white">
+							<DialogContent className="sm:max-w-[425px] bg-background">
 								<DialogHeader>
 									<DialogTitle>
 										Edit Team Adjustment

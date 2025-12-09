@@ -33,7 +33,7 @@ const mentionFormSchema = z.object({
 
 // Define styles for the form container and input width
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
 // Define the MentionAddForm component
@@ -176,7 +176,7 @@ export default function MentionAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Add</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Add</Button>
 				</div>
 			</form>
 		</Form>

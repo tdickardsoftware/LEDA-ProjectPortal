@@ -165,7 +165,7 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
+					<PopoverContent className="w-[200px] p-0 bg-background">
 						<Command>
 							<CommandInput placeholder="Search place type..." />
 							<CommandEmpty>No place type found.</CommandEmpty>
@@ -180,7 +180,7 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 											key={type.value}
 											value={type.value}
 											onSelect={() => handleSelect(type.value)}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

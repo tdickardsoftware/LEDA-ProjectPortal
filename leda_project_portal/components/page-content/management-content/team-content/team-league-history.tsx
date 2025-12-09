@@ -37,7 +37,7 @@ export default function TeamLeagueHistory({ ledaId }: { ledaId: number }) {
 		<div className="container mx-auto p-6">
 			<h1 className="text-4xl font-bold mb-4">Team League History</h1>
 			{isLoading ? (
-				<p className="text-gray-500 italic">
+				<p className="text-muted-foreground italic">
 					Loading league history...
 				</p>
 			) : error ? (
@@ -45,7 +45,7 @@ export default function TeamLeagueHistory({ ledaId }: { ledaId: number }) {
 					{(error as Error).message || "Failed to load league history data"}
 				</p>
 			) : leagueHistory.length === 0 ? (
-				<p className="text-gray-500">
+				<p className="text-muted-foreground">
 					No league history found for this team.
 				</p>
 			) : (

@@ -101,13 +101,13 @@ const PaymentTypeSelectorNF: React.FC<PaymentTypeSelectorNFProps> = ({
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
-							className="w-fit justify-between border-gray-400 text-gray-700"
+							className="w-fit justify-between border-border text-foreground"
 						>
 							{getSelectedPaymentType()}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-fit p-0 bg-white border-gray-400 text-gray-700">
+					<PopoverContent className="w-fit p-0 bg-background border-border text-foreground">
 						<Command>
 							<CommandInput placeholder="Search payment type..." />
 							<CommandEmpty>No payment type found.</CommandEmpty>
@@ -126,7 +126,7 @@ const PaymentTypeSelectorNF: React.FC<PaymentTypeSelectorNFProps> = ({
 												onSelect={() => {
 													handleValueChange(type.value);
 												}}
-												className="hover:bg-gray-200"
+												className="hover:bg-secondary"
 											>
 												<Check
 													className={cn(

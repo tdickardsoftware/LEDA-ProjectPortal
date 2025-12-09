@@ -26,7 +26,7 @@ export default function CustomLink({
 }: CustomLinkProps) {
     href = href.replace("**REPLACE**", parentPage);
     return (
-        <Button disabled={disabled} variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+        <Button disabled={disabled} variant={"outline"} className="hover:bg-muted border-border text-foreground">
             <Link href={href} className={className} prefetch={true}>{linkName}</Link>
         </Button>
     )

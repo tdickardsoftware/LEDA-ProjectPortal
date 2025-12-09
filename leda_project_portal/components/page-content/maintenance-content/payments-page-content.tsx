@@ -33,10 +33,10 @@ export default function PaymentsPageContent() {
 				className="w-full"
 				orientation="horizontal"
 			>
-				<TabsList className="flex w-full bg-white rounded-lg shadow-md p-1 gap-2">
+				<TabsList className="flex w-full bg-background rounded-lg shadow-md p-1 gap-2">
 					<TabsTrigger
 						value="player"
-						className={`flex-1 py-2 px-4 rounded-md text-gray-700 font-semibold transition-colors duration-200 hover:bg-blue-50  ${
+						className={`flex-1 py-2 px-4 rounded-md text-foreground font-semibold transition-colors duration-200 hover:bg-blue-50  ${
 							activeTab === "player"
 								? "border-b-2 border-blue-500"
 								: ""
@@ -46,7 +46,7 @@ export default function PaymentsPageContent() {
 					</TabsTrigger>
 					<TabsTrigger
 						value="team"
-						className={`flex-1 py-2 px-4 rounded-md text-gray-700 font-semibold transition-colors duration-200 hover:bg-blue-50  ${
+						className={`flex-1 py-2 px-4 rounded-md text-foreground font-semibold transition-colors duration-200 hover:bg-blue-50  ${
 							activeTab === "team"
 								? "border-b-2 border-blue-500"
 								: ""
@@ -56,7 +56,7 @@ export default function PaymentsPageContent() {
 					</TabsTrigger>
 					<TabsTrigger
 						value="place"
-						className={`flex-1 py-2 px-4 rounded-md text-gray-700 font-semibold transition-colors duration-200 hover:bg-blue-50  ${
+						className={`flex-1 py-2 px-4 rounded-md text-foreground font-semibold transition-colors duration-200 hover:bg-blue-50  ${
 							activeTab === "place"
 								? "border-b-2 border-blue-500"
 								: ""
@@ -68,7 +68,7 @@ export default function PaymentsPageContent() {
 
 				<TabsContent
 					value="player"
-					className="mt-4 bg-white rounded-lg shadow-md p-4"
+					className="mt-4 bg-background rounded-lg shadow-md p-4"
 				>
 					<h2 className="text-xl font-bold mb-4">Player Payments</h2>
 					<PaymentVisualisor type="player" />
@@ -76,7 +76,7 @@ export default function PaymentsPageContent() {
 
 				<TabsContent
 					value="team"
-					className="mt-4 bg-white rounded-lg shadow-md p-4"
+					className="mt-4 bg-background rounded-lg shadow-md p-4"
 				>
 					<h2 className="text-xl font-bold mb-4">Team Payments</h2>
 					<PaymentVisualisor type="team" />
@@ -84,7 +84,7 @@ export default function PaymentsPageContent() {
 
 				<TabsContent
 					value="place"
-					className="mt-4 bg-white rounded-lg shadow-md p-4"
+					className="mt-4 bg-background rounded-lg shadow-md p-4"
 				>
 					<h2 className="text-xl font-bold mb-4">Place Payments</h2>
 					<PaymentVisualisor type="place" />

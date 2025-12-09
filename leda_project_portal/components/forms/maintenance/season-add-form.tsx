@@ -46,7 +46,7 @@ const seasonFormSchema = z.object({
 
 // Define styles for the form container, checkbox, and input width
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const checkboxWidth = "h-5 w-5";
 const inputWidth = "w-24";
 
@@ -286,20 +286,20 @@ export default function SeasonAddForm({
 										}
 									}}
 									dateFormat="MM/dd/yyyy"
-									className="w-full border border-gray-300 rounded-md p-2"
+									className="w-full border border-border rounded-md p-2"
 								/>
 								<div className="mt-2 max-w-[65vw] overflow-x-auto">
-									<Label className="whitespace-nowrap text-gray-500">
+									<Label className="whitespace-nowrap text-muted-foreground">
 										Generated Dates
 									</Label>
 									<Separator className="my-2" />
 									<Table>
 										<TableHeader>
 											<TableRow>
-												<TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+												<TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
 													Action Date
 												</TableHead>
-												<TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+												<TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
 													Date Selected
 												</TableHead>
 											</TableRow>
@@ -314,7 +314,7 @@ export default function SeasonAddForm({
 													index: number
 												) => (
 													<TableRow key={index}>
-														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 															Date {index + 1}
 															<DatePickerCustom
 																onDateChange={(
@@ -337,7 +337,7 @@ export default function SeasonAddForm({
 																}
 															/>
 														</TableCell>
-														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 															{date}
 														</TableCell>
 													</TableRow>
@@ -367,7 +367,7 @@ export default function SeasonAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Add</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Add</Button>
 				</div>
 			</form>
 		</Form>

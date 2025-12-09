@@ -18,7 +18,7 @@ export default function Page() {
 			{/* Page title */}
 			<h1 className="text-4xl font-bold antialiased">Portal Page</h1>
 			{/* Separator line */}
-			<Separator className="my-4 bg-gray-500" />
+			<Separator className="my-4 bg-muted0" />
 			{/* Portal page content */}
 			<PortalPageContent />
 		</main>

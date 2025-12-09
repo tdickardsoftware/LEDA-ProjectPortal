@@ -242,7 +242,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 					
 					{/* Payment Details Dialog */}
 					<Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-						<DialogContent className="max-w-2xl bg-white">
+						<DialogContent className="max-w-2xl bg-background">
 							<DialogHeader>
 								<DialogTitle>Payment Details</DialogTitle>
 								<DialogDescription>

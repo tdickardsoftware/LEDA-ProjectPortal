@@ -230,7 +230,7 @@ export default function PlayerSelector({
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
+					<PopoverContent className="w-[200px] p-0 bg-background">
 						<Command>
 							<CommandInput placeholder="Search players..." />
 							<CommandEmpty>No player found.</CommandEmpty>
@@ -243,7 +243,7 @@ export default function PlayerSelector({
 											onSelect={() =>
 												handlePlayerSelection(player)
 											}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(
@@ -271,7 +271,7 @@ export default function PlayerSelector({
 				{selectedPlayers.map((player) => (
 					<div
 						key={player.ledaId}
-						className="flex items-center justify-between gap-2 px-2 py-1 bg-gray-200 rounded"
+						className="flex items-center justify-between gap-2 px-2 py-1 bg-secondary rounded"
 					>
 						<div className="flex items-center gap-2">
 							<span>{player.fullName}</span>
@@ -295,13 +295,13 @@ export default function PlayerSelector({
 														"h-4 w-4",
 														player.isCaptain
 															? "text-yellow-500"
-															: "text-gray-400"
+															: "text-muted-foreground"
 													)}
 												/>
 											</Button>
 										</TooltipTrigger>
 									)}
-									<TooltipContent className="bg-white p-2 rounded shadow-lg">
+									<TooltipContent className="bg-background p-2 rounded shadow-lg">
 										<p>
 											{player.cannotBeCaptain
 												? "Cannot be Captain"

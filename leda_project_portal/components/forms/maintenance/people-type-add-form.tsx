@@ -30,7 +30,7 @@ const peopleTypeFormSchema = z.object({
 
 // Define the style for the form container
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
 // PeopleTypeAddForm component definition
 export default function PeopleTypeAddForm({
@@ -130,7 +130,7 @@ export default function PeopleTypeAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Add</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Add</Button>
 				</div>
 			</form>
 		</Form>

@@ -24,7 +24,7 @@ const divisionFormSchema = z.object({
 
 // Define styles for the form container
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
 // Define the RosterCopyForm component
 export default function RosterCopyForm({
@@ -98,7 +98,7 @@ export default function RosterCopyForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">Copy Roster</Button>
+					<Button variant={"outline"} className="hover:bg-muted border-border text-foreground">Copy Roster</Button>
 				</div>
 			</form>
 		</Form>

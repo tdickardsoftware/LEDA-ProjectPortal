@@ -173,7 +173,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 	}, [openSubdivisions, data, seasonCode, weekNum]);
 
 	if (!data || Object.keys(data).length === 0) {
-		return <div className="w-64 border-r h-full flex items-center justify-center p-4"><p className="text-gray-500 text-center">Select a week to display weekly scoresheets...</p></div>;
+		return <div className="w-64 border-r h-full flex items-center justify-center p-4"><p className="text-muted-foreground text-center">Select a week to display weekly scoresheets...</p></div>;
 	}
 
 	const subdivisionLoaded = (divisionName: string, subdivisionName: string) => {
@@ -191,7 +191,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 			<ScrollArea className="h-full">
 				<div className="p-4 space-y-2">
 					{Object.keys(data).map(divisionName => (
-						<Collapsible key={divisionName} open={openDivisions[divisionName]} onOpenChange={() => toggleDivision(divisionName)} className="border-b border-gray-100 pb-2">
+						<Collapsible key={divisionName} open={openDivisions[divisionName]} onOpenChange={() => toggleDivision(divisionName)} className="border-b border-border pb-2">
 							<CollapsibleTrigger asChild>
 								<Button variant="ghost" className="w-full justify-between font-medium text-lg p-2 h-auto">
 									{divisionName}
@@ -219,7 +219,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 														<Button
 															key={`${subdivKey}-${gameNumber}`}
 															variant="ghost"
-															className={`w-full justify-start text-sm p-1 h-auto ${isSelected ? 'bg-gray-200 cursor-not-allowed opacity-75' : 'hover:bg-gray-400'}`}
+															className={`w-full justify-start text-sm p-1 h-auto ${isSelected ? 'bg-secondary cursor-not-allowed opacity-75' : 'hover:bg-muted'}`}
 															disabled={isSelected}
 															aria-disabled={isSelected}
 															onClick={() => {

@@ -162,7 +162,7 @@ export default function ScheduleContent() {
 						<Button
 							onClick={handleSaveClick}
 							variant="outline"
-							className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							className="hover:bg-muted border-border text-foreground"
 							disabled={!enableSaveButton}
 						>
 							Save Changes

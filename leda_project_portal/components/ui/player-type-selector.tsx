@@ -141,7 +141,7 @@ const PlayerTypeSelectorContent: React.FC = () => {
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
+					<PopoverContent className="w-[200px] p-0 bg-background">
 						<Command>
 							<CommandInput placeholder="Search player type..." />
 							<CommandEmpty>No player type found.</CommandEmpty>
@@ -156,7 +156,7 @@ const PlayerTypeSelectorContent: React.FC = () => {
 											key={type.value}
 											value={type.value}
 											onSelect={() => handleSelect(type)}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

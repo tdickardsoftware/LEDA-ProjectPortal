@@ -36,7 +36,7 @@ const teamInfoSchema = z.object({
 });
 
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
 export default function TeamEditForm({
@@ -213,7 +213,7 @@ export default function TeamEditForm({
 					onChange={setCurrentStep}
 				>
 					<div className="mb-6">
-						<div className="flex border-b border-gray-200">
+						<div className="flex border-b border-border">
 							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
 								{steps.map((step, index) => (
 									<Tab
@@ -223,7 +223,7 @@ export default function TeamEditForm({
 											${
 												selected
 													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+													: "text-muted-foreground hover:text-foreground hover:border-border"
 											} ${
 												index < currentStep
 													? "text-green-500"
@@ -253,7 +253,7 @@ export default function TeamEditForm({
 									Team Basic Information for LEDA ID #
 									{rowData.ledaId}
 								</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
+								<hr className="bg-muted mb-4"></hr>
 								<FormField
 									control={form.control}
 									name="ledaId"
@@ -295,7 +295,7 @@ export default function TeamEditForm({
 						<Tab.Panel>
 							<div className={formContainerStyle}>
 								<h1>Team Details</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
+								<hr className="bg-muted mb-4"></hr>
 								<InputDefault
 									control={form.control}
 									name="establishedDate"
@@ -326,7 +326,7 @@ export default function TeamEditForm({
 						<Tab.Panel>
 							<div className={formContainerStyle}>
 								<h1>Team Members</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
+								<hr className="bg-muted mb-4"></hr>
 								<div className="player-selector-container">
 									<PlayerSelector
 										setMemberIdList={handleSetMemberIdList}
@@ -339,14 +339,14 @@ export default function TeamEditForm({
 				</Tab.Group>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === 0
 							? handleRefresh
 								? "Back"
 								: "Cancel"
 							: "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+					<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === steps.length - 1 ? "Update" : "Next"}
 					</Button>
 				</div>

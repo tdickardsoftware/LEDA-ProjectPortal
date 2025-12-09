@@ -92,14 +92,14 @@ export default function ReportDivisionSelector({
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="w-[250px] justify-between bg-white border-gray-200"
+                    className="w-[250px] justify-between bg-background border-border"
                     disabled={disabled}
                 >
                     <span className="truncate">{selectedDivisionsText}</span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0 bg-white">
+            <PopoverContent className="w-[250px] p-0 bg-background">
                 <Command>
                     <CommandInput placeholder="Search division..." />
                     <CommandEmpty>

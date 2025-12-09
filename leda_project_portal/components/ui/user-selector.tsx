@@ -102,14 +102,14 @@ export default function UserSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[300px] justify-between bg-white border-gray-200"
+          className="w-[300px] justify-between bg-background border-border"
           disabled={disabled}
         >
           <span className="truncate">{selectedText}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0 bg-white">
+      <PopoverContent className="w-[400px] p-0 bg-background">
         <Command>
           <CommandInput placeholder="Search users..." />
           <CommandEmpty>{loading ? "Loading users..." : "No users found."}</CommandEmpty>
@@ -131,7 +131,7 @@ export default function UserSelector({
                     />
                   </div>
                   <span className="truncate">{user.username}</span>
-                  <span className="text-xs text-gray-500 truncate">{user.email}</span>
+                  <span className="text-xs text-muted-foreground truncate">{user.email}</span>
                 </CommandItem>
               ))}
             </CommandList>

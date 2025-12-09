@@ -245,10 +245,10 @@ export default function PlayerRosterHistoryContent({
 												<TooltipProvider>
 													<Tooltip>
 														<TooltipTrigger asChild>
-															<Button
+															<Button variant="outline"
 																asChild
 																size="icon"
-																className="hover:bg-gray-100 border-gray-300 text-gray-700"
+																className="hover:bg-muted border-border text-foreground"
 															>
 																<Link
 																	href={`/Portal/Management/Teams/${item.team_id}`}
@@ -259,7 +259,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-white">
+														<TooltipContent className="bg-background">
 															<p>View Team</p>
 														</TooltipContent>
 													</Tooltip>
@@ -268,10 +268,10 @@ export default function PlayerRosterHistoryContent({
 												<TooltipProvider>
 													<Tooltip>
 														<TooltipTrigger asChild>
-															<Button
+															<Button variant="outline"
 																asChild
 																size="icon"
-																className="hover:bg-gray-100 border-gray-300 text-gray-700"
+																className="hover:bg-muted border-border text-foreground"
 															>
 																<Link
 																	href={`/Portal/Activities/Rosters/${item.seasonCode}`}
@@ -282,7 +282,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-white">
+														<TooltipContent className="bg-background">
 															<p>
 																View Roster for{" "}
 																{
@@ -296,10 +296,10 @@ export default function PlayerRosterHistoryContent({
 												<TooltipProvider>
 													<Tooltip>
 														<TooltipTrigger asChild>
-															<Button
+															<Button variant="outline"
 																asChild
 																size="icon"
-																className="hover:bg-gray-100 border-gray-300 text-gray-700"
+																className="hover:bg-muted border-border text-foreground"
 															>
 																<Link
 																	href={`/Portal/Activities/Weekly-Score/${item.seasonCode}`}
@@ -310,7 +310,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-white">
+														<TooltipContent className="bg-background">
 															<p>
 																View Weekly
 																Scoresheet Data
@@ -367,7 +367,7 @@ export default function PlayerRosterHistoryContent({
 					</div>
 				</div>
 			) : (
-				<div className="text-center p-4 text-gray-500">
+				<div className="text-center p-4 text-muted-foreground">
 					No roster history found for this player
 				</div>
 			)}
