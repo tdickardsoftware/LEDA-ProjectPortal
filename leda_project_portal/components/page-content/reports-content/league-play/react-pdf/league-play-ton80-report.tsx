@@ -78,31 +78,48 @@ const LeaguePlayTon80Report: React.FC<Ton80ReportProps> = ({
 			hour12: false,
 		})
 		.replace(",", ""),
-}) => (
-	<Document>
-		<Page size="A4" style={styles.page} wrap>
-			<ReportsHeader
-				title="Ton80 Report"
-				reportDate={reportDate}
-				subtitle={`${desc} - Through Week #${weekNum}`}
-			/>
-			<View style={styles.table}>
-				<View style={styles.tableHeader}>
-					<Text style={[styles.cell, styles.fullNameColumn, styles.tableHeaderText]}>Player Name</Text>
-					<Text style={[styles.cell, styles.t71Column, styles.tableHeaderText]}>T71 Cumulative</Text>
-					<Text style={[styles.cell, styles.t80Column, styles.tableHeaderText, styles.lastCell]}>T80 Cumulative</Text>
-				</View>
-				{data.map((row, idx) => (
-					<View style={styles.tableRow} key={idx}>
-						<Text style={[styles.cell, styles.fullNameColumn]}>{row.fullName}</Text>
-						<Text style={[styles.cell, styles.t71Column]}>{row.t71Cumulative}</Text>
-						<Text style={[styles.cell, styles.t80Column, styles.lastCell]}>{row.t80Cumulative}</Text>
+}) => {
+	const ROWS_PER_PAGE = 35;
+
+	// Helper function to chunk data into pages
+	const chunkData = (data: Ton80[]) => {
+		const chunks: Ton80[][] = [];
+		for (let i = 0; i < data.length; i += ROWS_PER_PAGE) {
+			chunks.push(data.slice(i, i + ROWS_PER_PAGE));
+		}
+		return chunks;
+	};
+
+	const dataChunks = chunkData(data);
+
+	return (
+		<Document>
+			{dataChunks.map((chunk, pageIndex) => (
+				<Page key={pageIndex} size="A4" style={styles.page}>
+					<ReportsHeader
+						title="Ton80 Report"
+						reportDate={reportDate}
+						subtitle={`${desc} - Through Week #${weekNum}`}
+					/>
+					<View style={styles.table}>
+						<View style={styles.tableHeader}>
+							<Text style={[styles.cell, styles.fullNameColumn, styles.tableHeaderText]}>Player Name</Text>
+							<Text style={[styles.cell, styles.t71Column, styles.tableHeaderText]}>T71 Cumulative</Text>
+							<Text style={[styles.cell, styles.t80Column, styles.tableHeaderText, styles.lastCell]}>T80 Cumulative</Text>
+						</View>
+						{chunk.map((row, idx) => (
+							<View style={styles.tableRow} key={idx} wrap={false}>
+								<Text style={[styles.cell, styles.fullNameColumn]}>{row.fullName}</Text>
+								<Text style={[styles.cell, styles.t71Column]}>{row.t71Cumulative}</Text>
+								<Text style={[styles.cell, styles.t80Column, styles.lastCell]}>{row.t80Cumulative}</Text>
+							</View>
+						))}
 					</View>
-				))}
-			</View>
-			<ReportsFooter />
-		</Page>
-	</Document>
-);
+					<ReportsFooter />
+				</Page>
+			))}
+		</Document>
+	);
+};
 
 export default LeaguePlayTon80Report;
