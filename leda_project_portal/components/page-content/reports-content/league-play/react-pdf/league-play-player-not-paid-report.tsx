@@ -78,37 +78,54 @@ const LeaguePlayPlayerNotPaidReport: React.FC<PlayerNotPaidReportProps> = ({
 			hour12: false,
 		})
 		.replace(",", ""),
-}) => (
-	<Document>
-		<Page size="A4" style={styles.page} wrap>
-			<ReportsHeader
-				title="Players Not Paid"
-				reportDate={reportDate}
-				subtitle={desc}
-			/>
-			<View style={styles.table}>
-				<View style={styles.tableHeader}>
-					<Text style={[styles.cell, styles.ledaIdColumn, styles.tableHeaderText]}>
-						Player LEDA ID
-					</Text>
-					<Text style={[styles.cell, styles.fullNameColumn, styles.tableHeaderText, styles.lastCell]}>
-						Full Name
-					</Text>
-				</View>
-				{data.map((row, idx) => (
-					<View style={styles.tableRow} key={idx}>
-						<Text style={[styles.cell, styles.ledaIdColumn]}>
-							{row.ledaId}
-						</Text>
-						<Text style={[styles.cell, styles.fullNameColumn, styles.lastCell]}>
-							{row.fullName}
-						</Text>
+}) => {
+	const ROWS_PER_PAGE = 35;
+
+	// Helper function to chunk data into pages
+	const chunkData = (data: PlayerNotPaid[]) => {
+		const chunks: PlayerNotPaid[][] = [];
+		for (let i = 0; i < data.length; i += ROWS_PER_PAGE) {
+			chunks.push(data.slice(i, i + ROWS_PER_PAGE));
+		}
+		return chunks;
+	};
+
+	const dataChunks = chunkData(data);
+
+	return (
+		<Document>
+			{dataChunks.map((chunk, pageIndex) => (
+				<Page key={pageIndex} size="A4" style={styles.page}>
+					<ReportsHeader
+						title="Players Not Paid"
+						reportDate={reportDate}
+						subtitle={desc}
+					/>
+					<View style={styles.table}>
+						<View style={styles.tableHeader}>
+							<Text style={[styles.cell, styles.ledaIdColumn, styles.tableHeaderText]}>
+								Player LEDA ID
+							</Text>
+							<Text style={[styles.cell, styles.fullNameColumn, styles.tableHeaderText, styles.lastCell]}>
+								Full Name
+							</Text>
+						</View>
+						{chunk.map((row, idx) => (
+							<View style={styles.tableRow} key={idx} wrap={false}>
+								<Text style={[styles.cell, styles.ledaIdColumn]}>
+									{row.ledaId}
+								</Text>
+								<Text style={[styles.cell, styles.fullNameColumn, styles.lastCell]}>
+									{row.fullName}
+								</Text>
+							</View>
+						))}
 					</View>
-				))}
-			</View>
-			<ReportsFooter />
-		</Page>
-	</Document>
-);
+					<ReportsFooter />
+				</Page>
+			))}
+		</Document>
+	);
+};
 
 export default LeaguePlayPlayerNotPaidReport;
