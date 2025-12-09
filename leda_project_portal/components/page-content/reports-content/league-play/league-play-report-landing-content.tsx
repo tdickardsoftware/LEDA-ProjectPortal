@@ -90,13 +90,18 @@ export default function LeaguePlayReportLandingContent() {
         const handler = setTimeout(() => {
             if (minimumPointsInput === "") {
                 setMinimumPoints(undefined);
+                setDataFetched(false);
             } else {
                 const value = parseFloat(minimumPointsInput);
-                setMinimumPoints(isNaN(value) ? undefined : value);
+                const newValue = isNaN(value) ? undefined : value;
+                if (newValue !== minimumPoints) {
+                    setMinimumPoints(newValue);
+                    setDataFetched(false);
+                }
             }
-        }, 500);
+        }, 1200); // Increased delay to 1200ms to reduce query frequency
         return () => clearTimeout(handler);
-    }, [minimumPointsInput]);
+    }, [minimumPointsInput, minimumPoints]);
 
     // Placeholder PDF document for download link
     const renderPDFDownload = () => {

@@ -130,7 +130,7 @@ const LeaguePlayMentionPlaqueReport: React.FC<MentionPlaqueReportProps> = ({
 	return (
 		<Document>
 			{divisionNames.map((division) => (
-				<Page key={division} size="A4" style={styles.page} wrap>
+				<Page key={division} size="A4" style={styles.page}>
 					<ReportsHeader
 						title="Mentions For Plaque"
 						reportDate={reportDate}
@@ -147,7 +147,7 @@ const LeaguePlayMentionPlaqueReport: React.FC<MentionPlaqueReportProps> = ({
 						</Text>
 					</View>
 					{divisionMap[division].map((row, i) => (
-						<React.Fragment key={i}>
+						<View key={i} wrap={false}>
 							<View style={styles.playerTable}>
 								{/* Table Header for each player/subtable */}
 								<View style={styles.playerHeader}>
@@ -180,7 +180,7 @@ const LeaguePlayMentionPlaqueReport: React.FC<MentionPlaqueReportProps> = ({
 									))}
 								</View>
 							</View>
-						</React.Fragment>
+						</View>
 					))}
 					<ReportsFooter />
 				</Page>
