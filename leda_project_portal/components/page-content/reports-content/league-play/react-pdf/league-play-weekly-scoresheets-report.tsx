@@ -127,7 +127,7 @@ const LeaguePlayWeeklyScoresheetsReport: React.FC<LeaguePlayWeeklyScoresheetsRep
 				const subdivisionMap = divisionMap[division];
 				const subdivisionNames = Object.keys(subdivisionMap);
 				return (
-					<Page key={division} size="A4" style={styles.page} wrap>
+					<Page key={division} size="A4" style={styles.page}>
 						<ReportsHeader
 							title="Weekly Scoresheets"
 							reportDate={reportDate}
@@ -137,7 +137,7 @@ const LeaguePlayWeeklyScoresheetsReport: React.FC<LeaguePlayWeeklyScoresheetsRep
 							<Text>{division}</Text>
 						</View>
 						{subdivisionNames.map((subdivision) => (
-							<View key={subdivision}>
+							<View key={subdivision} wrap={false}>
 								<View style={styles.subdivisionHeader}>
 									<Text>
 										{subdivision.startsWith("Subdivision")
@@ -173,7 +173,7 @@ const LeaguePlayWeeklyScoresheetsReport: React.FC<LeaguePlayWeeklyScoresheetsRep
 										</Text>
 									</View>
 									{subdivisionMap[subdivision].map((row, idx) => (
-										<View style={styles.tableRow} key={idx}>
+										<View style={styles.tableRow} key={idx} wrap={false}>
 											<Text style={[styles.cell, styles.divisionInfoColumn]}>
 												{row.divisionInfo}
 											</Text>

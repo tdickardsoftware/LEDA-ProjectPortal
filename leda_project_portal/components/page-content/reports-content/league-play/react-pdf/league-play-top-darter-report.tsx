@@ -15,26 +15,28 @@ const styles = StyleSheet.create({
 	columnsContainer: {
 		flexDirection: "row",
 		width: "100%",
+		gap: 8, // Add space between columns
 	},
 	column: {
 		flexDirection: "column",
-		width: "20%", // 5 columns per page
+		width: "19%", // Adjusted to account for gap
 	},
 	row: {
 		flexDirection: "row",
 		marginBottom: 2,
 	},
 	divisionInfo: {
-		width: "38%",
-		fontSize: 8,
+		width: "25%",
+		fontSize: 7,
 	},
 	fullName: {
-		width: "42%",
-		fontSize: 8,
+		width: "60%",
+		fontSize: 7,
+		overflow: "hidden",
 	},
 	points: {
-		width: "20%",
-		fontSize: 8,
+		width: "15%",
+		fontSize: 7,
 		textAlign: "right",
 	},
 });
