@@ -80,43 +80,60 @@ const LeaguePlayTeamFeeNotPaidReport: React.FC<TeamFeeNotPaidReportProps> = ({
 			hour12: false,
 		})
 		.replace(",", ""),
-}) => (
-	<Document>
-		<Page size="A4" style={styles.page} wrap>
-			<ReportsHeader
-				title="Team Roster Fee Not Paid"
-				reportDate={reportDate}
-				subtitle={desc}
-			/>
-			<View style={styles.table}>
-				<View style={styles.tableHeader}>
-					<Text style={[styles.cell, styles.divisionInfoColumn, styles.tableHeaderText]}>
-						Division Info
-					</Text>
-					<Text style={[styles.cell, styles.teamNameColumn, styles.tableHeaderText]}>
-						Team Name
-					</Text>
-					<Text style={[styles.cell, styles.placeNameColumn, styles.tableHeaderText, styles.lastCell]}>
-						Place Name
-					</Text>
-				</View>
-				{data.map((row, idx) => (
-					<View style={styles.tableRow} key={idx}>
-						<Text style={[styles.cell, styles.divisionInfoColumn]}>
-							{row.divisionInfo}
-						</Text>
-						<Text style={[styles.cell, styles.teamNameColumn]}>
-							{row.teamName}
-						</Text>
-						<Text style={[styles.cell, styles.placeNameColumn, styles.lastCell]}>
-							{row.name}
-						</Text>
+}) => {
+	const ROWS_PER_PAGE = 35;
+
+	// Helper function to chunk data into pages
+	const chunkData = (data: TeamFeeNotPaid[]) => {
+		const chunks: TeamFeeNotPaid[][] = [];
+		for (let i = 0; i < data.length; i += ROWS_PER_PAGE) {
+			chunks.push(data.slice(i, i + ROWS_PER_PAGE));
+		}
+		return chunks;
+	};
+
+	const dataChunks = chunkData(data);
+
+	return (
+		<Document>
+			{dataChunks.map((chunk, pageIndex) => (
+				<Page key={pageIndex} size="A4" style={styles.page}>
+					<ReportsHeader
+						title="Team Roster Fee Not Paid"
+						reportDate={reportDate}
+						subtitle={desc}
+					/>
+					<View style={styles.table}>
+						<View style={styles.tableHeader}>
+							<Text style={[styles.cell, styles.divisionInfoColumn, styles.tableHeaderText]}>
+								Division Info
+							</Text>
+							<Text style={[styles.cell, styles.teamNameColumn, styles.tableHeaderText]}>
+								Team Name
+							</Text>
+							<Text style={[styles.cell, styles.placeNameColumn, styles.tableHeaderText, styles.lastCell]}>
+								Place Name
+							</Text>
+						</View>
+						{chunk.map((row, idx) => (
+							<View style={styles.tableRow} key={idx} wrap={false}>
+								<Text style={[styles.cell, styles.divisionInfoColumn]}>
+									{row.divisionInfo}
+								</Text>
+								<Text style={[styles.cell, styles.teamNameColumn]}>
+									{row.teamName}
+								</Text>
+								<Text style={[styles.cell, styles.placeNameColumn, styles.lastCell]}>
+									{row.name}
+								</Text>
+							</View>
+						))}
 					</View>
-				))}
-			</View>
-			<ReportsFooter />
-		</Page>
-	</Document>
-);
+					<ReportsFooter />
+				</Page>
+			))}
+		</Document>
+	);
+};
 
 export default LeaguePlayTeamFeeNotPaidReport;
