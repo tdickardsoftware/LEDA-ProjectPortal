@@ -83,43 +83,58 @@ const LeaguePlayMentionBestOfDivisionReport: React.FC<MentionBestOfDivisionRepor
 		.replace(",", ""),
 }) => {
 	const divisionMap = groupByDivision(data);
-	const divisionNames = Object.keys(divisionMap);
+	const divisionNames = Object.keys(divisionMap).sort();
+	const ROWS_PER_PAGE = 35;
+
+	// Helper function to chunk data into pages
+	const chunkData = (divisionData: MentionBestOfDivision[]) => {
+		const chunks: MentionBestOfDivision[][] = [];
+		for (let i = 0; i < divisionData.length; i += ROWS_PER_PAGE) {
+			chunks.push(divisionData.slice(i, i + ROWS_PER_PAGE));
+		}
+		return chunks;
+	};
 
 	return (
 		<Document>
-			{divisionNames.map((division, ) => (
-				<Page key={division} size="A4" style={styles.page} wrap>
-					<ReportsHeader
-						title={`Mentions Best of Division`}
-						reportDate={reportDate}
-					/>
-					<View style={styles.divisionTitle}>
-						<Text>{division}</Text>
-					</View>
-					<View style={styles.table}>
-						<View style={styles.tableHeader}>
-							<Text style={[styles.cell, styles.tableHeaderText, { width: "20%" }]}>Mention Desc</Text>
-							<Text style={[styles.cell, styles.tableHeaderText, { width: "15%" }]}>Player LEDA ID</Text>
-							<Text style={[styles.cell, styles.tableHeaderText, { width: "20%" }]}>Player Name</Text>
-							<Text style={[styles.cell, styles.tableHeaderText, { width: "20%" }]}>Team Name</Text>
-                            <Text style={[styles.cell, styles.tableHeaderText, { width: "10%" }]}>Count</Text>
-							<Text style={[styles.cell, styles.tableHeaderText, { width: "15%" }, styles.lastCell]}>Hi or Lo</Text>
-							
+			{divisionNames.map((division) => {
+				const divisionData = divisionMap[division];
+				const dataChunks = chunkData(divisionData);
+				
+				return dataChunks.map((chunk, pageIndex) => (
+					<Page key={`${division}-${pageIndex}`} size="A4" style={styles.page}>
+						<ReportsHeader
+							title={`Mentions Best of Division`}
+							reportDate={reportDate}
+						/>
+						<View style={styles.divisionTitle}>
+							<Text>{division}</Text>
 						</View>
-						{divisionMap[division].map((row, i) => (
-							<View style={styles.tableRow} key={i}>
-                                <Text style={[styles.cell, { width: "20%" }]}>{row.mentionDesc}</Text>
-								<Text style={[styles.cell, { width: "15%" }]}>{row.ledaId}</Text>
-								<Text style={[styles.cell, { width: "20%" }]}>{row.fullName}</Text>
-								<Text style={[styles.cell, { width: "20%" }]}>{row.teamName}</Text>
-                                <Text style={[styles.cell, { width: "10%" }]}>{row.mentionCount}</Text>
-								<Text style={[styles.cell, { width: "15%" }, styles.lastCell]}>{row.mentionBasis}</Text>
+						<View style={styles.table}>
+							<View style={styles.tableHeader}>
+								<Text style={[styles.cell, styles.tableHeaderText, { width: "20%" }]}>Mention Desc</Text>
+								<Text style={[styles.cell, styles.tableHeaderText, { width: "15%" }]}>Player LEDA ID</Text>
+								<Text style={[styles.cell, styles.tableHeaderText, { width: "20%" }]}>Player Name</Text>
+								<Text style={[styles.cell, styles.tableHeaderText, { width: "20%" }]}>Team Name</Text>
+								<Text style={[styles.cell, styles.tableHeaderText, { width: "10%" }]}>Count</Text>
+								<Text style={[styles.cell, styles.tableHeaderText, { width: "15%" }, styles.lastCell]}>Hi or Lo</Text>
+								
 							</View>
-						))}
-					</View>
-					<ReportsFooter />
-				</Page>
-			))}
+							{chunk.map((row, i) => (
+								<View style={styles.tableRow} key={i} wrap={false}>
+									<Text style={[styles.cell, { width: "20%" }]}>{row.mentionDesc}</Text>
+									<Text style={[styles.cell, { width: "15%" }]}>{row.ledaId}</Text>
+									<Text style={[styles.cell, { width: "20%" }]}>{row.fullName}</Text>
+									<Text style={[styles.cell, { width: "20%" }]}>{row.teamName}</Text>
+									<Text style={[styles.cell, { width: "10%" }]}>{row.mentionCount}</Text>
+									<Text style={[styles.cell, { width: "15%" }, styles.lastCell]}>{row.mentionBasis}</Text>
+								</View>
+							))}
+						</View>
+						<ReportsFooter />
+					</Page>
+				));
+			})}
 		</Document>
 	);
 };

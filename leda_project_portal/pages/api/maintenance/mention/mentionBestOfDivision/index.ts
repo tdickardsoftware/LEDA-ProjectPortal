@@ -17,7 +17,7 @@ export default async function handler(
             if (req.query.seasonCode) {
 			// Execute the database query to fetch season code information
 			const result = await query<MentionBestOfDivision>(
-				'SELECT "ledaId", "fullName", "teamId", "teamName", division, "seasonCode", "mentionCode", "mentionDesc", "mentionBasis", "mentionCount" FROM public.leda_reports_league_play_mentions_best_of_division WHERE "seasonCode" = $1',
+				'SELECT "ledaId", "fullName", "teamId", "teamName", division, "seasonCode", "mentionCode", "mentionDesc", "mentionBasis", "count" as "mentionCount" FROM public.leda_reports_league_play_mentions_best_of_division WHERE "seasonCode" = $1',
                 [req.query.seasonCode as string]
 			);
 			// Respond with the query result
