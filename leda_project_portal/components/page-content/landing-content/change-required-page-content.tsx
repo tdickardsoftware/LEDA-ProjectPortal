@@ -42,10 +42,10 @@ export default function ChangeRequiredPageContent() {
 
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-gray-200 text-center space-y-4">
+    <div className="flex justify-center items-center min-h-screen bg-muted">
+      <div className="w-full max-w-md p-8 bg-background rounded-lg shadow-lg border border-border text-center space-y-4">
         <h2 className="text-2xl font-bold">Password Update Required</h2>
-        <p className="text-gray-700">An administrator has requested that you update your password before continuing.</p>
+        <p className="text-foreground">An administrator has requested that you update your password before continuing.</p>
         <div className="space-y-2">
           <Button onClick={sendReset} disabled={sending || !email} className="w-full">
             {sending ? "Sending..." : "Send Password Reset Link"}

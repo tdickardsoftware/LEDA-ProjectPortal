@@ -60,7 +60,7 @@ export default function PlayerTrailsHistoryContent({
 				</div>
 
 				{isLoading ? (
-					<p className="text-gray-500 italic">
+					<p className="text-muted-foreground italic">
 						Loading trails history...
 					</p>
 				) : error ? (
@@ -68,7 +68,7 @@ export default function PlayerTrailsHistoryContent({
 						{(error as Error).message || "Failed to load trails history data"}
 					</p>
 				) : trailsData.length === 0 ? (
-					<p className="text-gray-500">
+					<p className="text-muted-foreground">
 						No trails history found for this player.
 					</p>
 				) : (

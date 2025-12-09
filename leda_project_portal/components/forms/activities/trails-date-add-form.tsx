@@ -30,7 +30,7 @@ const TrailsDateDataFormSchema = z.object({
 });
 
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
 export default function TrailsDateAddForm({
 	goBack,
@@ -205,16 +205,16 @@ export default function TrailsDateAddForm({
 						type="button"
 						variant={"outline"}
 						onClick={() => goBack(false)}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						className="hover:bg-muted border-border text-foreground"
 					>
 						Cancel
 					</Button>
 					{index !== undefined ? (
-						<Button type="submit" variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+						<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">
 							Update Player
 						</Button>
 					) : (
-						<Button type="submit" variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+						<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">
 							Add Player
 						</Button>
 					)}

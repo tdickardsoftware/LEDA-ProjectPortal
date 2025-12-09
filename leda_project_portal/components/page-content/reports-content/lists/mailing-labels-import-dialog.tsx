@@ -126,7 +126,7 @@ export default function MailingLabelsImportDialog({
 				setImportBoth(false);
 			}
 		}}>
-			<AlertDialogContent className="bg-white">
+			<AlertDialogContent className="bg-background">
 				<AlertDialogHeader>
 					<AlertDialogTitle>Import Mailing Labels</AlertDialogTitle>
 					<AlertDialogDescription>
@@ -137,7 +137,7 @@ export default function MailingLabelsImportDialog({
 					<Button
 						variant={importType === "player" ? "default" : "outline"}
 						onClick={() => setImportType("player")}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						className="hover:bg-muted border-border text-foreground"
 						disabled={importBoth}
 					>
 						Player Import
@@ -145,7 +145,7 @@ export default function MailingLabelsImportDialog({
 					<Button
 						variant={importType === "place" ? "default" : "outline"}
 						onClick={() => setImportType("place")}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						className="hover:bg-muted border-border text-foreground"
 						disabled={importBoth}
 					>
 						Place Import
@@ -164,9 +164,9 @@ export default function MailingLabelsImportDialog({
 				</div>
 				{status === "pending" && (
 					<div className="space-y-2">
-						<div className="text-sm text-gray-500">Importing...</div>
+						<div className="text-sm text-muted-foreground">Importing...</div>
 						<Progress value={progress} className="w-full" />
-						<div className="text-xs text-gray-400">{Math.round(progress)}%</div>
+						<div className="text-xs text-muted-foreground">{Math.round(progress)}%</div>
 					</div>
 				)}
 				{status === "success" && (
@@ -174,7 +174,7 @@ export default function MailingLabelsImportDialog({
 						<div className="text-sm text-green-600">Import successful!</div>
 						<Progress value={100} className="w-full" />
 						{importResults && (
-							<div className="text-xs text-gray-600">
+							<div className="text-xs text-muted-foreground">
 								{importBoth ? (
 									<>
 										Players: {importResults.player?.count || 0} imported, 
@@ -198,15 +198,15 @@ export default function MailingLabelsImportDialog({
 						<>
 							<AlertDialogCancel
 								onClick={handleReset}
-								className="hover:bg-gray-100 border-gray-300 text-gray-700"
+								className="hover:bg-muted border-border text-foreground"
 							>
 								Close
 							</AlertDialogCancel>
 							{status === "error" && (
-								<Button
+								<Button variant="outline"
 									disabled={(!importType && !importBoth)}
 									onClick={handleImport}
-									className="hover:bg-gray-100 border-gray-300 text-gray-700"
+									className="hover:bg-muted border-border text-foreground"
 								>
 									Try Again
 								</Button>
@@ -216,14 +216,14 @@ export default function MailingLabelsImportDialog({
 						<>
 							<AlertDialogCancel
 								disabled={status === "pending"}
-								className="hover:bg-gray-100 border-gray-300 text-gray-700"
+								className="hover:bg-muted border-border text-foreground"
 							>
 								Cancel
 							</AlertDialogCancel>
-							<Button
+							<Button variant="outline"
 								disabled={(!importType && !importBoth) || status === "pending"}
 								onClick={handleImport}
-								className="hover:bg-gray-100 border-gray-300 text-gray-700"
+								className="hover:bg-muted border-border text-foreground"
 							>
 								Import
 							</Button>

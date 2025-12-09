@@ -262,7 +262,7 @@ export default function ManageGlobalAdjustments({
 							<TableRow>
 								<TableCell
 									colSpan={5}
-									className="text-center py-4 text-gray-500 italic"
+									className="text-center py-4 text-muted-foreground italic"
 								>
 									No global adjustments found
 								</TableCell>
@@ -276,7 +276,7 @@ export default function ManageGlobalAdjustments({
 			{editingAdjustment && (
 				<Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
 					<DialogContent
-						className="bg-white relative max-w-lg mx-auto p-6 rounded-md shadow-lg"
+						className="bg-background relative max-w-lg mx-auto p-6 rounded-md shadow-lg"
 						style={{
 							position: "fixed",
 							top: "50%",
@@ -291,7 +291,7 @@ export default function ManageGlobalAdjustments({
 						</DialogHeader>
 						<p
 							id="edit-adjustment-description"
-							className="text-sm text-gray-500"
+							className="text-sm text-muted-foreground"
 						>
 							Update the details of the global adjustment below.
 						</p>

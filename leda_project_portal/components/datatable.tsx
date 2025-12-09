@@ -631,7 +631,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						<TooltipTrigger asChild>
 							<span>{icon}</span>
 						</TooltipTrigger>
-						<TooltipContent className="bg-white rounded-lg">
+						<TooltipContent className="bg-background rounded-lg">
 							{tooltipText}
 						</TooltipContent>
 					</Tooltip>
@@ -1055,9 +1055,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 
 	return (
 		<div className="w-full">
-			<div className="p-5 shadow-sm bg-white rounded-xl border border-gray-200 w-full transition-all">
+			<div className="p-5 shadow-sm bg-background rounded-xl border border-border w-full transition-all">
 				<div className="overflow-hidden rounded-lg">
-					<h1 className="text-2xl font-medium pb-4 text-center text-gray-700">
+					<h1 className="text-2xl font-medium pb-4 text-center text-foreground">
 						{pageName}
 					</h1>
 					<div className="flex items-center justify-between space-x-3 mb-4">
@@ -1079,7 +1079,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									<PopoverTrigger asChild>
 										<Button
 											variant="outline"
-											className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+											className="hover:bg-muted border-border text-foreground transition-colors"
 											onClick={() =>
 												setFilterPopoverOpen(true)
 											}
@@ -1087,7 +1087,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 											Filter By Season
 										</Button>
 									</PopoverTrigger>
-									<PopoverContent className="w-[260px] bg-white shadow-md rounded-lg border border-gray-200 p-4">
+									<PopoverContent className="w-[260px] bg-background shadow-md rounded-lg border border-border p-4">
 										<div className="flex flex-col gap-3">
 											<RosterSeasonCodeSelector
 												disabled={filterCurrentSeason}
@@ -1110,7 +1110,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 														)
 													}
 												/>
-												<span className="text-gray-700 text-sm">
+												<span className="text-foreground text-sm">
 													Current Season?
 												</span>
 											</div>
@@ -1130,11 +1130,11 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 															paymentStatusLoading
 														}
 													/>
-													<span className="text-gray-700 text-sm">
+													<span className="text-foreground text-sm">
 														Show Payment Status
 													</span>
 													{paymentStatusLoading && (
-														<span className="text-xs ml-2 text-gray-500">
+														<span className="text-xs ml-2 text-muted-foreground">
 															(Loading...)
 														</span>
 													)}
@@ -1142,11 +1142,12 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 											)}
 											<Button
 												onClick={handleApplyFilter}
+												variant="outline"
 												disabled={
 													!filterSeasonCode ||
 													filterLoading
 												}
-												className="w-full hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+												className="w-full hover:bg-muted border-border text-foreground transition-colors"
 											>
 												{filterLoading
 													? "Applying..."
@@ -1166,7 +1167,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 															false
 														);
 													}}
-													className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
+													className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors"
 												>
 													Clear Filter
 												</Button>
@@ -1216,12 +1217,12 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								onChange={(e) => setSearchQuery(e.target.value)}
 								onKeyDown={handleSearchKeyDown}
 								placeholder="Search... (Press Esc to clear)"
-								className="flex-1 p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-all"
+								className="flex-1 p-2 border border-border rounded-md shadow-sm focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-all"
 							/>
 							<Button
 								onClick={executeSearch}
 								variant="outline"
-								className="px-4 hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+								className="px-4 hover:bg-muted border-border text-foreground transition-colors"
 							>
 								Search
 							</Button>
@@ -1237,13 +1238,13 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						</div>
 					</div>
 
-					<div className="border border-gray-200 rounded-lg overflow-hidden relative">
+					<div className="border border-border rounded-lg overflow-hidden relative">
 						<Table className="min-w-full">
-							<TableHeader className="bg-gray-50 border-b">
+							<TableHeader className="bg-muted border-b">
 								{table.getHeaderGroups().map((headerGroup) => (
 									<TableRow
 										key={headerGroup.id}
-										className="border-gray-200"
+										className="border-border"
 									>
 										{headerGroup.headers.map((header) => {
 											const isSelectColumn = header.column.columnDef.id === "select";
@@ -1252,7 +1253,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 											return (
 												<TableHead
 													key={header.id}
-													className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
+													className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
 													onContextMenu={isSelectColumn ? undefined : (e) => handleColumnRightClick(e, displayName)}
 													style={{ userSelect: 'none' }}
 												>
@@ -1275,7 +1276,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									table.getRowModel().rows.map((row) => (
 										<TableRow
 											key={row.id}
-											className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+											className="hover:bg-muted transition-colors border-b border-border last:border-0"
 											data-state={
 												row.getIsSelected() &&
 												"selected"
@@ -1292,7 +1293,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 													return (
 														<TableCell
 															key={cell.id}
-															className="px-6 py-3 text-sm text-gray-700"
+															className="px-6 py-3 text-sm text-foreground"
 															onContextMenu={isSelectColumn ? undefined : (e) => 
 																handleCellRightClick(e, columnKey, columnName, cellValue)
 															}
@@ -1311,7 +1312,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									<TableRow>
 										<TableCell
 											colSpan={columns.length}
-											className="h-24 text-center text-gray-500"
+											className="h-24 text-center text-muted-foreground"
 										>
 											No Results.
 										</TableCell>
@@ -1323,7 +1324,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						{/* Column Header Context Menu */}
 						{contextMenu.show && (
 							<div
-								className="fixed bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50"
+								className="fixed bg-background border border-border rounded-md shadow-lg py-1 z-50"
 								style={{
 									left: contextMenu.x,
 									top: contextMenu.y,
@@ -1331,7 +1332,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								onClick={(e) => e.stopPropagation()}
 							>
 								<button
-									className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors"
+									className="w-full px-4 py-2 text-left text-sm hover:bg-muted transition-colors"
 									onClick={handleAddToSearch}
 								>
 									Add &quot;{contextMenu.columnName}&quot; to search
@@ -1342,7 +1343,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						{/* Row Cell Context Menu */}
 						{rowContextMenu.show && (
 							<div
-								className="fixed bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50"
+								className="fixed bg-background border border-border rounded-md shadow-lg py-1 z-50"
 								style={{
 									left: rowContextMenu.x,
 									top: rowContextMenu.y,
@@ -1350,13 +1351,13 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								onClick={(e) => e.stopPropagation()}
 							>
 								<button
-									className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors border-b border-gray-200"
+									className="w-full px-4 py-2 text-left text-sm hover:bg-muted transition-colors border-b border-border"
 									onClick={handleAddCellToSearchExact}
 								>
 									Search for exact match: &quot;{rowContextMenu.cellValue}&quot;
 								</button>
 								<button
-									className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors"
+									className="w-full px-4 py-2 text-left text-sm hover:bg-muted transition-colors"
 									onClick={handleAddCellToSearchContains}
 								>
 									Search for all records containing: &quot;{rowContextMenu.cellValue}&quot;
@@ -1376,11 +1377,11 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 							localStorage.setItem(pageIndexStorageKey, newIndex.toString());
 						}}
 						disabled={!table.getCanPreviousPage()}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+						className="hover:bg-muted border-border text-foreground transition-colors"
 					>
 						Previous
 					</Button>
-					<div className="text-sm text-gray-500">
+					<div className="text-sm text-muted-foreground">
 						Page {table.getState().pagination.pageIndex + 1} of{" "}
 						{table.getPageCount()}
 					</div>
@@ -1394,7 +1395,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 							localStorage.setItem(pageIndexStorageKey, newIndex.toString());
 						}}
 						disabled={!table.getCanNextPage()}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+						className="hover:bg-muted border-border text-foreground transition-colors"
 					>
 						Next
 					</Button>

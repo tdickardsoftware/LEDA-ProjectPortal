@@ -305,27 +305,27 @@ export default function PlayerTDPHistoryContent({
 				{/* Main content area */}
 				<div className="flex-1">
 					{selectedSeasonData && !selectedTeam ? (
-						<div className="p-6 border rounded-lg shadow-sm bg-white">
+						<div className="p-6 border rounded-lg shadow-sm bg-background">
 							<h2 className="text-2xl font-semibold mb-4">
 								Season: {selectedSeasonData.seasonCode}
 							</h2>
 							{/* Add more details about the selected season here as needed */}
 						</div>
 					) : selectedTeamData && !selectedGame ? (
-						<div className="p-6 border rounded-lg shadow-sm bg-white">
+						<div className="p-6 border rounded-lg shadow-sm bg-background">
 							<h2 className="text-2xl font-semibold mb-4">
 								{selectedTeam} - {teamTotalPoints} pts
 							</h2>
 							<div className="mt-4">
-								<div className="flex justify-between items-center p-4 border rounded-md bg-gray-50">
+								<div className="flex justify-between items-center p-4 border rounded-md bg-muted">
 									<div>
 										<h4 className="text-lg font-medium">
 											{selectedTeam} Season Summary
 										</h4>
-										<p className="text-gray-600">
+										<p className="text-muted-foreground">
 											Season: {selectedSeason}
 										</p>
-										<p className="text-gray-600 mt-1">
+										<p className="text-muted-foreground mt-1">
 											Base Points:{" "}
 											{teamTotalPoints -
 												(mentionData.mentions
@@ -340,7 +340,7 @@ export default function PlayerTDPHistoryContent({
 													: 0)}{" "}
 											pts
 										</p>
-										<p className="text-gray-600 mt-2">
+										<p className="text-muted-foreground mt-2">
 											Mention Points:{" "}
 											{mentionData.mentions
 												? mentionData.mentions.reduce(
@@ -367,7 +367,7 @@ export default function PlayerTDPHistoryContent({
 									Mentions for this season
 								</h3>
 								{mentionLoading ? (
-									<p className="text-gray-500">
+									<p className="text-muted-foreground">
 										Loading mentions...
 									</p>
 								) : mentionData.mentions &&
@@ -397,7 +397,7 @@ export default function PlayerTDPHistoryContent({
 											.map((mention, index) => (
 												<div
 													key={index}
-													className="p-3 border rounded-md bg-gray-50"
+													className="p-3 border rounded-md bg-muted"
 												>
 													<div className="flex justify-between items-start">
 														<div>
@@ -406,7 +406,7 @@ export default function PlayerTDPHistoryContent({
 																	mention.mentionDesc
 																}
 															</h4>
-															<p className="text-sm text-gray-600">
+															<p className="text-sm text-muted-foreground">
 																Week{" "}
 																{
 																	mention.weekNum
@@ -420,13 +420,13 @@ export default function PlayerTDPHistoryContent({
 																	` • Count: ${mention.count}`}
 															</p>
 															{mention.notes && (
-																<p className="text-sm mt-1 italic text-gray-500">
+																<p className="text-sm mt-1 italic text-muted-foreground">
 																	{
 																		mention.notes
 																	}
 																</p>
 															)}
-															<p className="text-xs text-gray-500 mt-1">
+															<p className="text-xs text-muted-foreground mt-1">
 																{formatDate(
 																	typeof mention.creationDate ===
 																		"string"
@@ -443,7 +443,7 @@ export default function PlayerTDPHistoryContent({
 																	: mention.mentionPoints <
 																	  0
 																	? "bg-red-100 text-red-700"
-																	: "bg-gray-100 text-gray-700"
+																	: "bg-muted text-foreground"
 															}`}
 														>
 															{mention.mentionPoints >
@@ -460,34 +460,34 @@ export default function PlayerTDPHistoryContent({
 											))}
 									</div>
 								) : (
-									<p className="text-gray-500">
+									<p className="text-muted-foreground">
 										No mentions found for this season.
 									</p>
 								)}
 							</div>
-							<p className="text-gray-600 mt-6">
+							<p className="text-muted-foreground mt-6">
 								Select a game from the sidebar to view detailed
 								weekly information.
 							</p>
 						</div>
 					) : selectedGameData ? (
-						<div className="p-6 border rounded-lg shadow-sm bg-white">
+						<div className="p-6 border rounded-lg shadow-sm bg-background">
 							<h2 className="text-2xl font-semibold mb-4">
 								{selectedTeam} - {selectedGameData.gameName}
 							</h2>
 							<div className="mt-4">
-								<div className="flex justify-between items-center p-4 border rounded-md bg-gray-50">
+								<div className="flex justify-between items-center p-4 border rounded-md bg-muted">
 									<div>
 										<h4 className="text-lg font-medium">
 											{selectedGameData.gameName}
 										</h4>
-										<p className="text-gray-600">
+										<p className="text-muted-foreground">
 											Season: {selectedSeason}
 										</p>
-										<p className="text-gray-600 mt-1">
+										<p className="text-muted-foreground mt-1">
 											Base Points: {basePoints} pts
 										</p>
-										<p className="text-gray-600 mt-2">
+										<p className="text-muted-foreground mt-2">
 											Mention Points:{" "}
 											{mentionData.mentions
 												? mentionData.mentions.reduce(
@@ -515,7 +515,7 @@ export default function PlayerTDPHistoryContent({
 												: ""}
 											{selectedGameData.changeBy} pts
 										</span>
-										<p className="text-sm text-gray-600">
+										<p className="text-sm text-muted-foreground">
 											Total:{" "}
 											{selectedGameData.totalPoints}{" "}
 											(Previous:{" "}
@@ -529,7 +529,7 @@ export default function PlayerTDPHistoryContent({
 									Week {selectedGame} Mentions
 								</h3>
 								{mentionLoading ? (
-									<p className="text-gray-500">
+									<p className="text-muted-foreground">
 										Loading mentions...
 									</p>
 								) : mentionData.mentions &&
@@ -539,7 +539,7 @@ export default function PlayerTDPHistoryContent({
 											(mention, index) => (
 												<div
 													key={index}
-													className="p-3 border rounded-md bg-gray-50"
+													className="p-3 border rounded-md bg-muted"
 												>
 													<div className="flex justify-between items-start">
 														<div>
@@ -548,7 +548,7 @@ export default function PlayerTDPHistoryContent({
 																	mention.mentionDesc
 																}
 															</h4>
-															<p className="text-sm text-gray-600">
+															<p className="text-sm text-muted-foreground">
 																Code:{" "}
 																{
 																	mention.mentionCode
@@ -558,13 +558,13 @@ export default function PlayerTDPHistoryContent({
 																	` • Count: ${mention.count}`}
 															</p>
 															{mention.notes && (
-																<p className="text-sm mt-1 italic text-gray-500">
+																<p className="text-sm mt-1 italic text-muted-foreground">
 																	{
 																		mention.notes
 																	}
 																</p>
 															)}
-															<p className="text-xs text-gray-500 mt-1">
+															<p className="text-xs text-muted-foreground mt-1">
 																{formatDate(
 																	typeof mention.creationDate ===
 																		"string"
@@ -581,7 +581,7 @@ export default function PlayerTDPHistoryContent({
 																	: mention.mentionPoints <
 																	  0
 																	? "bg-red-100 text-red-700"
-																	: "bg-gray-100 text-gray-700"
+																	: "bg-muted text-foreground"
 															}`}
 														>
 															{mention.mentionPoints >
@@ -599,14 +599,14 @@ export default function PlayerTDPHistoryContent({
 										)}
 									</div>
 								) : (
-									<p className="text-gray-500">
+									<p className="text-muted-foreground">
 										No mentions found for this week.
 									</p>
 								)}
 							</div>
 						</div>
 					) : (
-						<p className="text-gray-500">
+						<p className="text-muted-foreground">
 							Select a season, team, or game to view details
 						</p>
 					)}

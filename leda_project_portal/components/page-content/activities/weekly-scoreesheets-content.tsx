@@ -1904,7 +1904,7 @@ const confirmPendingChangesPlaceholder = () => true;
 			<div className="mt-4">
 				<Separator
 					orientation="horizontal"
-					className="bg-gray-400 w-100"
+					className="bg-muted w-100"
 				/>
 			</div>
 			<div className="flex flex-1 overflow-hidden">
@@ -1917,7 +1917,7 @@ const confirmPendingChangesPlaceholder = () => true;
 				<div className="flex-1 p-4 overflow-auto">
 					{!matchSelected ? (
 						<div className="flex h-full items-center justify-center">
-							<p className="text-gray-500 text-center">
+							<p className="text-muted-foreground text-center">
 								Select a matchup...
 							</p>
 						</div>
@@ -1953,14 +1953,14 @@ const confirmPendingChangesPlaceholder = () => true;
 										<FolderTabSkeleton />
 									) : (
 										<>
-											<div className="text-lg font-bold text-gray-800">
+											<div className="text-lg font-bold text-foreground">
 												Team Name:{" "}
 												{homeTeamInformation?.teamName}
 											</div>
-											<div className="text-lg font-semibold text-gray-800">
+											<div className="text-lg font-semibold text-foreground">
 												Team ID: {selectedHomeTeamId}
 											</div>
-											<div className="text-md text-gray-600 mb-4">
+											<div className="text-md text-muted-foreground mb-4">
 												Team Letter:{" "}
 												{selectedHomeLetter}
 											</div>
@@ -1984,7 +1984,7 @@ const confirmPendingChangesPlaceholder = () => true;
 													<DialogTrigger asChild>
 														<Button
 															variant="outline"
-															className="text-sm px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100"
+															className="text-sm px-2 py-1 rounded-md border-border hover:bg-muted"
 															onClick={() =>
 																handlePenaltyClick(
 																	selectedHomeTeamId,
@@ -1998,7 +1998,7 @@ const confirmPendingChangesPlaceholder = () => true;
 															</span>
 														</Button>
 													</DialogTrigger>
-													<DialogContent className="w-fit bg-white">
+													<DialogContent className="w-fit bg-background">
 														<DialogHeader>
 															<DialogTitle className="flex justify-center">
 																{penaltyEditMode
@@ -2041,7 +2041,7 @@ const confirmPendingChangesPlaceholder = () => true;
 															className="w-full mt-2"
 														>
 															<AccordionItem value="penalties">
-																<AccordionTrigger className="text-sm font-medium text-red-600">
+																<AccordionTrigger className="text-sm font-medium text-red-600 dark:text-red-400">
 																	View Team
 																	Penalties
 																</AccordionTrigger>
@@ -2065,14 +2065,14 @@ const confirmPendingChangesPlaceholder = () => true;
 																								penalty.penaltyCode
 																							}
 																						</span>
-																						<p className="text-sm text-gray-600">
+																						<p className="text-sm text-muted-foreground">
 																							{
 																								penalty.notes
 																							}
 																						</p>
 																					</div>
 																					<div className="flex items-center">
-																						<span className="text-red-600 font-bold">
+																						<span className="text-red-600 dark:text-red-400 font-bold">
 																							{
 																								penalty.points
 																							}{" "}
@@ -2080,7 +2080,7 @@ const confirmPendingChangesPlaceholder = () => true;
 																						</span>
 																						<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
 																							<Pencil
-																								className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700"
+																								className="h-4 w-4 text-blue-500 dark:text-blue-400 cursor-pointer hover:text-blue-700 dark:hover:text-blue-300"
 																								onClick={() =>
 																									handlePenaltyEditing(
 																										selectedHomeTeamId,
@@ -2089,7 +2089,7 @@ const confirmPendingChangesPlaceholder = () => true;
 																								}
 																							/>
 																							<X
-																								className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700"
+																								className="h-4 w-4 text-red-500 dark:text-red-400 cursor-pointer hover:text-red-700 dark:hover:text-red-300"
 																								onClick={() =>
 																									handlePenaltyRemoval(
 																										selectedHomeTeamId,
@@ -2146,7 +2146,7 @@ const confirmPendingChangesPlaceholder = () => true;
 																	<TableCell>
 																		<Button
 																			variant="outline"
-																			className="text-xs px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100"
+																			className="text-xs px-2 py-1 rounded-md border-border hover:bg-muted"
 																			onClick={() =>
 																				handleMentionClick(
 																					String(
@@ -2190,14 +2190,14 @@ const confirmPendingChangesPlaceholder = () => true;
 																						)
 																					}
 																				>
-																					<div className="border border-dashed border-gray-400 w-8 h-8 mx-auto flex items-center justify-center">
+																					<div className="border-2 border-dashed border-border w-8 h-8 mx-auto flex items-center justify-center">
 																						{homeTeamGameData[
 																							player
 																								.ledaId
 																						]?.[
 																							gameKey
 																						] && (
-																							<X className="h-5 w-5" />
+																							<X className="h-5 w-5 text-foreground" />
 																						)}
 																					</div>
 																				</TableCell>
@@ -2218,14 +2218,14 @@ const confirmPendingChangesPlaceholder = () => true;
 										<FolderTabSkeleton />
 									) : (
 										<>
-											<div className="text-lg font-bold text-gray-800">
+											<div className="text-lg font-bold text-foreground">
 												Team Name:{" "}
 												{awayTeamInformation?.teamName}
 											</div>
-											<div className="text-lg font-semibold text-gray-800">
+											<div className="text-lg font-semibold text-foreground">
 												Team ID: {selectedAwayTeamId}
 											</div>
-											<div className="text-md text-gray-600 mb-4">
+											<div className="text-md text-muted-foreground mb-4">
 												Team Letter:{" "}
 												{selectedAwayLetter}
 											</div>
@@ -2249,7 +2249,7 @@ const confirmPendingChangesPlaceholder = () => true;
 												<DialogTrigger asChild>
 													<Button
 														variant="outline"
-														className="text-sm px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100"
+														className="text-sm px-2 py-1 rounded-md border-border hover:bg-muted"
 														onClick={() =>
 															handlePenaltyClick(
 																selectedAwayTeamId,
@@ -2261,7 +2261,7 @@ const confirmPendingChangesPlaceholder = () => true;
 														<span>Penalties</span>
 													</Button>
 												</DialogTrigger>
-												<DialogContent className="w-fit bg-white">
+												<DialogContent className="w-fit bg-background">
 													<DialogHeader>
 														<DialogTitle>
 															{penaltyEditMode
@@ -2304,7 +2304,7 @@ const confirmPendingChangesPlaceholder = () => true;
 														className="w-full mt-2"
 													>
 														<AccordionItem value="penalties">
-															<AccordionTrigger className="text-sm font-medium text-red-600">
+															<AccordionTrigger className="text-sm font-medium text-red-600 dark:text-red-400">
 																View Team
 																Penalties
 															</AccordionTrigger>
@@ -2328,14 +2328,14 @@ const confirmPendingChangesPlaceholder = () => true;
 																							penalty.penaltyCode
 																						}
 																					</span>
-																					<p className="text-sm text-gray-600">
+																					<p className="text-sm text-muted-foreground">
 																						{
 																							penalty.notes
 																						}
 																					</p>
 																				</div>
 																				<div className="flex items-center">
-																					<span className="text-red-600 font-bold">
+																					<span className="text-red-600 dark:text-red-400 font-bold">
 																						{
 																							penalty.points
 																						}{" "}
@@ -2343,11 +2343,11 @@ const confirmPendingChangesPlaceholder = () => true;
 																					</span>
 																					<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
 																						<Pencil
-																							className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700"
+																							className="h-4 w-4 text-blue-500 dark:text-blue-400 cursor-pointer hover:text-blue-700 dark:hover:text-blue-300"
 																							onClick={() => handlePenaltyEditing(selectedAwayTeamId, id)}
 																						/>
 																						<X
-																							className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700"
+																							className="h-4 w-4 text-red-500 dark:text-red-400 cursor-pointer hover:text-red-700 dark:hover:text-red-300"
 																							onClick={() => handlePenaltyRemoval(selectedAwayTeamId, id)}
 																						/>
 																					</div>
@@ -2399,7 +2399,7 @@ const confirmPendingChangesPlaceholder = () => true;
 																	<TableCell>
 																		<Button
 																			variant="outline"
-																			className="text-xs px-2 py-1 rounded-md border-gray-300 hover:bg-gray-100"
+																			className="text-xs px-2 py-1 rounded-md border-border hover:bg-muted"
 																			onClick={() =>
 																				handleMentionClick(
 																					String(
@@ -2443,14 +2443,14 @@ const confirmPendingChangesPlaceholder = () => true;
 																						)
 																					}
 																				>
-																					<div className="border border-dashed border-gray-400 w-8 h-8 mx-auto flex items-center justify-center">
+																					<div className="border-2 border-dashed border-border w-8 h-8 mx-auto flex items-center justify-center">
 																						{awayTeamGameData[
 																							player
 																								.ledaId
 																						]?.[
 																							gameKey
 																						] && (
-																							<X className="h-5 w-5" />
+																							<X className="h-5 w-5 text-foreground" />
 																						)}
 																					</div>
 																				</TableCell>
@@ -2547,7 +2547,7 @@ const confirmPendingChangesPlaceholder = () => true;
 																				.value
 																		)
 																	}
-																	className="w-12 text-center border border-gray-300 rounded p-1"
+																	className="w-12 text-center border border-border rounded p-1"
 																	placeholder="0"
 																/>
 															</TableCell>
@@ -2583,13 +2583,13 @@ const confirmPendingChangesPlaceholder = () => true;
 																				.value
 																		)
 																	}
-																	className="w-12 text-center border border-gray-300 rounded p-1"
+																	className="w-12 text-center border border-border rounded p-1"
 																	placeholder="0"
 																/>
 															</TableCell>
 														))}
 													</TableRow>
-													<TableRow className="bg-gray-50">
+													<TableRow className="bg-muted">
 														<TableCell className="font-bold">
 															Total
 														</TableCell>
@@ -2605,7 +2605,7 @@ const confirmPendingChangesPlaceholder = () => true;
 															{calculatePoints()
 																.homePenaltyPoints >
 																0 && (
-																<span className="text-red-600 ml-2">
+																<span className="text-red-600 dark:text-red-400 ml-2">
 																	(-
 																	{
 																		calculatePoints()
@@ -2634,7 +2634,7 @@ const confirmPendingChangesPlaceholder = () => true;
 															{calculatePoints()
 																.awayPenaltyPoints >
 																0 && (
-																<span className="text-red-600 ml-2">
+																<span className="text-red-600 dark:text-red-400 ml-2">
 																	(-
 																	{
 																		calculatePoints()
@@ -2662,14 +2662,14 @@ const confirmPendingChangesPlaceholder = () => true;
 								<div className="flex flex-wrap gap-3 justify-center mt-6">
 									<Button
 										onClick={() => saveMatchup(false)}
-										className={"bg-blue-600 hover:bg-blue-700 text-white " + (isDataChanged ? "animate-pulse" : "")}
+										className={(isDataChanged ? "animate-pulse" : "")}
 										disabled={isSaving || !isDataChanged}
 									>
 										{isSaving ? "Saving..." : "Save"}
 									</Button>
 									<Button
 										onClick={() => saveMatchup(true)}
-										className="bg-green-600 hover:bg-green-700 text-white"
+										className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white"
 										disabled={isSaving || !isDataChanged}
 									>
 										Save & Mark Complete
@@ -2684,7 +2684,7 @@ const confirmPendingChangesPlaceholder = () => true;
 											setAwayPoints([...originalMatchupSnapshot.Away.points]);
 											setIsDataChanged(false);
 										}}
-										className="bg-yellow-500 hover:bg-yellow-600 text-white"
+										className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white"
 										disabled={isSaving || !originalMatchupSnapshot}
 									>
 										Reset Changes
@@ -2721,7 +2721,7 @@ const confirmPendingChangesPlaceholder = () => true;
 												setIsDataChanged(false);
 											}
 										}}
-										className="bg-red-600 hover:bg-red-700 text-white"
+										variant="destructive"
 										disabled={isSaving}
 									>
 										Delete Scoresheet
@@ -2792,14 +2792,14 @@ const confirmPendingChangesPlaceholder = () => true;
 												}
 											}
 										}}
-										className="bg-blue-600 hover:bg-blue-700 text-white"
+										
 										disabled={isSaving}
 									>
 										Bye Week
 									</Button>
 								</div>
 								{isMatchupCompleted && (
-									<div className="mt-2 text-center text-green-700 font-semibold">Matchup marked complete.</div>
+									<div className="mt-2 text-center text-green-700 dark:text-green-400 font-semibold">Matchup marked complete.</div>
 								)}
 									</>
 								)}
@@ -2825,7 +2825,7 @@ const confirmPendingChangesPlaceholder = () => true;
 					}
 				}}
 			>
-				<DialogContent className="sm:max-w-[500px] bg-white overflow-y-auto">
+				<DialogContent className="sm:max-w-[500px] bg-background overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							{mentionEditMode ? "Edit" : "Add"} Mention for
@@ -2857,7 +2857,7 @@ const confirmPendingChangesPlaceholder = () => true;
 							
 							{/* Display selected mention info */}
 							{selectedMentionData && (
-								<div className="mt-2 p-3 bg-gray-50 border rounded">
+								<div className="mt-2 p-3 bg-muted border rounded">
 									<div className="text-sm">
 										<div><strong>Code:</strong> {selectedMentionData.mentionCode}</div>
 										<div><strong>Description:</strong> {selectedMentionData.desc}</div>
@@ -2959,7 +2959,7 @@ const confirmPendingChangesPlaceholder = () => true;
 									setMentionEditMode(false);
 									setCurrentEditingMention(null);
 								}}
-								className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+								className="px-4 py-2 rounded"
 							>
 								{mentionEditMode ? "Update Mention" : "Add Mention"}
 							</Button>
@@ -2970,7 +2970,7 @@ const confirmPendingChangesPlaceholder = () => true;
 									setMentionEditMode(false);
 									setCurrentEditingMention(null);
 								}}
-								className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+								className="bg-muted0 hover:bg-muted-foreground text-white px-4 py-2 rounded"
 							>
 								Cancel
 							</Button>
@@ -2989,19 +2989,19 @@ const confirmPendingChangesPlaceholder = () => true;
 										{currentPlayerMentions.map((mention) => (
 											<div
 												key={mention.mentionId}
-												className="p-3 border rounded-md bg-gray-50 shadow-sm group relative"
+												className="p-3 border rounded-md bg-muted shadow-sm group relative"
 											>
 												<div className="flex justify-between items-start">
-													<span className="font-semibold text-blue-600">
+													<span className="font-semibold text-blue-600 dark:text-blue-400">
 														{mention.mentionCode}
 													</span>
 													<div className="flex items-center">
-														<span className="text-green-600 font-bold">
+														<span className="text-green-600 dark:text-green-400 font-bold">
 															{mention.mentionPoints} pts
 														</span>
 														<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
 															<Pencil
-																className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700"
+																className="h-4 w-4 text-blue-500 dark:text-blue-400 cursor-pointer hover:text-blue-700 dark:hover:text-blue-300"
 																onClick={() =>
 																	handleMentionEditing(
 																		selectedPlayerForMention.id,
@@ -3011,7 +3011,7 @@ const confirmPendingChangesPlaceholder = () => true;
 																}
 															/>
 															<X
-																className="h-4 w-4 text-red-500 cursor-pointer hover:text-red-700"
+																className="h-4 w-4 text-red-500 dark:text-red-400 cursor-pointer hover:text-red-700 dark:hover:text-red-300"
 																onClick={() =>
 																	handleMentionDelete(
 																		selectedPlayerForMention.id,
@@ -3027,7 +3027,7 @@ const confirmPendingChangesPlaceholder = () => true;
 													{mention.mentionDesc}
 												</p>
 												{mention.notes && (
-													<p className="text-sm text-gray-600 mt-1 italic">
+													<p className="text-sm text-muted-foreground mt-1 italic">
 														Notes: {mention.notes}
 													</p>
 												)}
@@ -3035,7 +3035,7 @@ const confirmPendingChangesPlaceholder = () => true;
 										))}
 									</div>
 								) : (
-									<p className="text-gray-500 text-sm italic">
+									<p className="text-muted-foreground text-sm italic">
 										No mentions have been added yet
 									</p>
 								)}

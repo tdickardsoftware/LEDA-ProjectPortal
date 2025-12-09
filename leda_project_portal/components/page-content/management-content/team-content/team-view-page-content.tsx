@@ -190,7 +190,7 @@ export default function TeamPageContent({
 					<TooltipTrigger asChild>
 						<span>{icon}</span>
 					</TooltipTrigger>
-					<TooltipContent className="bg-white rounded-lg">
+					<TooltipContent className="bg-background rounded-lg">
 						{tooltipText}
 					</TooltipContent>
 				</Tooltip>
@@ -212,9 +212,9 @@ export default function TeamPageContent({
 				<div className="flex justify-center pb-4">
 					<FolderTabMed title="Team Actions">
 						<div className="flex gap-2">
-							<Button
+							<Button variant="outline"
 								onClick={handleEdit}
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								className="hover:bg-muted border-border text-foreground"
 							>
 								Edit Team
 							</Button>
@@ -224,20 +224,20 @@ export default function TeamPageContent({
 								route={teamPaymentHistoryRoute}
 								type="team"
 							/>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handlePaymentHistory}
 							>
 								Payment History
 							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handlePenaltyHistory}
 							>
 								Penalty History
 							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handleLeagueHistory}
 							>
 								League History
@@ -248,8 +248,8 @@ export default function TeamPageContent({
 								onOpenChange={setShowPaymentPopover}
 							>
 								<PopoverTrigger asChild>
-									<Button
-										className="hover:bg-gray-100 border-gray-400 text-gray-700"
+									<Button variant="outline"
+										className="hover:bg-muted border-border text-foreground"
 										onClick={() =>
 											setShowPaymentPopover(true)
 										}
@@ -257,7 +257,7 @@ export default function TeamPageContent({
 										Show Payment Status
 									</Button>
 								</PopoverTrigger>
-								<PopoverContent className="w-[350px] bg-white shadow-md rounded-lg border border-gray-200 p-4">
+								<PopoverContent className="w-[350px] bg-background shadow-md rounded-lg border border-border p-4">
 									<div className="flex flex-col gap-4">
 										<RosterSeasonCodeSelector
 											disabled={filterCurrentSeason}
@@ -276,7 +276,7 @@ export default function TeamPageContent({
 													)
 												}
 											/>
-											<span className="text-gray-700 text-sm">
+											<span className="text-foreground text-sm">
 												Current Season?
 											</span>
 										</div>
@@ -304,7 +304,7 @@ export default function TeamPageContent({
 					</FolderTabMed>
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-					<Card className="shadow-md border border-gray-300 hover:bg-gray-50 transition-colors">
+					<Card className="shadow-md border border-border hover:bg-muted transition-colors">
 						<CardHeader>
 							<CardTitle>Team Information</CardTitle>
 						</CardHeader>
@@ -326,7 +326,7 @@ export default function TeamPageContent({
 							)}
 						</CardContent>
 					</Card>
-					<Card className="shadow-md border border-gray-300 hover:bg-gray-50 transition-colors">
+					<Card className="shadow-md border border-border hover:bg-muted transition-colors">
 						<CardHeader>
 							<CardTitle>Team Member Information</CardTitle>
 						</CardHeader>
@@ -369,7 +369,7 @@ export default function TeamPageContent({
 													{member.isCaptain ? (
 														<Star className="h-4 w-4 text-yellow-500 inline" />
 													) : (
-														<span className="text-gray-400">
+														<span className="text-muted-foreground">
 															—
 														</span>
 													)}
@@ -411,8 +411,8 @@ export default function TeamPageContent({
 					</Card>
 				</div>
 				<div className="mt-6">
-					<Button
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+					<Button variant="outline"
+						className="hover:bg-muted border-border text-foreground"
 						asChild
 					>
 						<Link href="/Portal/Management/Teams" prefetch={true}>
@@ -422,7 +422,7 @@ export default function TeamPageContent({
 				</div>
 			</div>
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent className="w-fit bg-white">
+				<DialogContent className="w-fit bg-background">
 					<DialogHeader>
 						<DialogTitle>
 							Edit Team: {teamData.teamName}
@@ -441,7 +441,7 @@ export default function TeamPageContent({
 				open={isPaymentHistoryDialogOpen}
 				onOpenChange={setIsPaymentHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							Payment History for {teamData.teamName}
@@ -455,7 +455,7 @@ export default function TeamPageContent({
 				open={isTeamPenaltyHistoryDialogOpen}
 				onOpenChange={setIsTeamHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							Penalty History for {teamData.teamName}
@@ -468,7 +468,7 @@ export default function TeamPageContent({
 				open={isTeamLeagueHistoryDialogOpen}
 				onOpenChange={setIsTeamLeagueHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							League History for {teamData.teamName}

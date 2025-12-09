@@ -274,7 +274,7 @@ export default function ListsReportLandingContent() {
 				<div className="flex h-full items-center justify-center">
 					<div className="flex items-center gap-2">
 						<svg
-							className="animate-spin h-5 w-5 text-gray-500"
+							className="animate-spin h-5 w-5 text-muted-foreground"
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
@@ -293,7 +293,7 @@ export default function ListsReportLandingContent() {
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 							></path>
 						</svg>
-						<p className="text-gray-500">Loading season data...</p>
+						<p className="text-muted-foreground">Loading season data...</p>
 					</div>
 				</div>
 			);
@@ -314,7 +314,7 @@ export default function ListsReportLandingContent() {
 		if (!filterByJoinDate && !seasonCode) {
 			return (
 				<div className="flex h-full items-center justify-center">
-					<p className="text-gray-500 text-center">
+					<p className="text-muted-foreground text-center">
 						Select a season code to continue...
 					</p>
 				</div>
@@ -324,7 +324,7 @@ export default function ListsReportLandingContent() {
 		if (!selectedReport) {
 			return (
 				<div className="flex h-full items-center justify-center">
-					<p className="text-gray-500 text-center">
+					<p className="text-muted-foreground text-center">
 						Select a report to continue...
 					</p>
 				</div>
@@ -342,7 +342,7 @@ export default function ListsReportLandingContent() {
 				<div className="flex h-full items-center justify-center">
 					<div className="flex items-center gap-2">
 						<svg
-							className="animate-spin h-5 w-5 text-gray-500"
+							className="animate-spin h-5 w-5 text-muted-foreground"
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
@@ -361,7 +361,7 @@ export default function ListsReportLandingContent() {
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 							></path>
 						</svg>
-						<p className="text-gray-500">Loading divisions...</p>
+						<p className="text-muted-foreground">Loading divisions...</p>
 					</div>
 				</div>
 			);
@@ -392,7 +392,7 @@ export default function ListsReportLandingContent() {
 		) {
 			return (
 				<div className="flex h-full items-center justify-center">
-					<p className="text-gray-500 text-center">
+					<p className="text-muted-foreground text-center">
 						No divisions available for the selected season.
 					</p>
 				</div>
@@ -403,7 +403,7 @@ export default function ListsReportLandingContent() {
 		if (needsDivisionSelector && !allDivisions && !selectedDivisions) {
 			return (
 				<div className="flex h-full items-center justify-center">
-					<p className="text-gray-500 text-center">
+					<p className="text-muted-foreground text-center">
 						Please select at least one division to continue...
 					</p>
 				</div>
@@ -441,7 +441,7 @@ export default function ListsReportLandingContent() {
 			if (filterByJoinDate && !joinDate) {
 				return (
 					<div className="flex h-full items-center justify-center">
-						<p className="text-gray-500 text-center">
+						<p className="text-muted-foreground text-center">
 							Please select a join date to continue...
 						</p>
 					</div>
@@ -468,7 +468,7 @@ export default function ListsReportLandingContent() {
 									/>
 								) : (
 									<div className="flex h-full items-center justify-center">
-										<p className="text-gray-500 text-center">
+										<p className="text-muted-foreground text-center">
 											Please select at least one division to continue...
 										</p>
 									</div>
@@ -502,7 +502,7 @@ export default function ListsReportLandingContent() {
 			if (filterByJoinDate && !joinDate) {
 				return (
 					<div className="flex h-full items-center justify-center">
-						<p className="text-gray-500 text-center">
+						<p className="text-muted-foreground text-center">
 							Please select a join date to continue...
 						</p>
 					</div>
@@ -527,7 +527,7 @@ export default function ListsReportLandingContent() {
 							/>
 						) : (
 							<div className="flex h-full items-center justify-center">
-								<p className="text-gray-500 text-center">
+								<p className="text-muted-foreground text-center">
 									Please select at least one division to continue...
 								</p>
 							</div>
@@ -553,7 +553,7 @@ export default function ListsReportLandingContent() {
 			if (filterByJoinDate && !joinDate) {
 				return (
 					<div className="flex h-full items-center justify-center">
-						<p className="text-gray-500 text-center">
+						<p className="text-muted-foreground text-center">
 							Please select a join date to continue...
 						</p>
 					</div>
@@ -581,7 +581,7 @@ export default function ListsReportLandingContent() {
 									/>
 								) : (
 									<div className="flex h-full items-center justify-center">
-										<p className="text-gray-500 text-center">
+										<p className="text-muted-foreground text-center">
 											Please select at least one division to continue...
 										</p>
 									</div>
@@ -620,11 +620,11 @@ export default function ListsReportLandingContent() {
 					<h2 className="text-2xl font-semibold mb-4">
 						Work In Progress
 					</h2>
-					<p className="text-gray-600">
+					<p className="text-muted-foreground">
 						The selected report is not yet implemented.
 					</p>
 					{needsDivisionSelector && (
-						<p className="text-gray-500 mt-4">
+						<p className="text-muted-foreground mt-4">
 							Selected Divisions: {effectiveDivisionsString || "None"}
 						</p>
 					)}
@@ -654,7 +654,7 @@ export default function ListsReportLandingContent() {
 				return (
 					<div className="flex items-center justify-center h-full px-4 py-2">
 						<svg
-							className="animate-spin -ml-1 mr-2 h-4 w-4 text-black"
+							className="animate-spin -ml-1 mr-2 h-4 w-4 text-foreground"
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
@@ -673,7 +673,7 @@ export default function ListsReportLandingContent() {
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 							></path>
 						</svg>
-						<span className="text-gray-600">Loading data...</span>
+						<span className="text-muted-foreground">Loading data...</span>
 					</div>
 				);
 			}
@@ -685,7 +685,7 @@ export default function ListsReportLandingContent() {
 			return (
 				<div className="flex items-center justify-center h-full px-4 py-2">
 					<svg
-						className="animate-spin -ml-1 mr-2 h-4 w-4 text-black"
+						className="animate-spin -ml-1 mr-2 h-4 w-4 text-foreground"
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
@@ -704,7 +704,7 @@ export default function ListsReportLandingContent() {
 							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 						></path>
 					</svg>
-					<span className="text-gray-600">Loading season data...</span>
+					<span className="text-muted-foreground">Loading season data...</span>
 				</div>
 			);
 		}
@@ -904,12 +904,12 @@ export default function ListsReportLandingContent() {
 				<button
 					onClick={() => handleManualPDFDownload(document, fileName)}
 					disabled={isGeneratingPDF}
-					className="inline-flex items-center justify-center rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+					className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
 				>
 					{isGeneratingPDF ? (
 						<>
 							<svg
-								className="animate-spin -ml-1 mr-2 h-4 w-4 text-black"
+								className="animate-spin -ml-1 mr-2 h-4 w-4 text-foreground"
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
@@ -957,7 +957,7 @@ export default function ListsReportLandingContent() {
 			<PDFDownloadLink
 				document={document}
 				fileName={fileName}
-				className="inline-flex items-center justify-center rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+				className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
 			>
 				{({ loading }) => (
 					<>
@@ -1089,7 +1089,7 @@ export default function ListsReportLandingContent() {
 											<Button
 												variant="outline"
 												size="default"
-												className="hover:bg-gray-100 border-gray-300 text-gray-700"
+												className="hover:bg-muted border-border text-foreground"
 												onClick={() => setImportDialogOpen(true)}
 											>
 												<ImportIcon className="mr-2 h-4 w-4" />
@@ -1275,7 +1275,7 @@ export default function ListsReportLandingContent() {
 											<Input
 												type="date"
 												id="join-date-selector"
-												className="border rounded px-2 py-1 text-sm border-gray-200"
+												className="border rounded px-2 py-1 text-sm border-border"
 												value={
 													joinDate
 														? new Date(
@@ -1376,7 +1376,7 @@ export default function ListsReportLandingContent() {
 			<div className="mt-4">
 				<Separator
 					orientation="horizontal"
-					className="bg-gray-400 w-100"
+					className="bg-muted w-100"
 				/>
 			</div>
 			<div className="flex flex-1 overflow-hidden">

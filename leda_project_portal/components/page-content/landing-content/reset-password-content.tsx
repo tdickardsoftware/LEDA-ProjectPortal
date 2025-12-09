@@ -57,9 +57,9 @@ export default function ResetPasswordContent() {
       {ok ? (
         <Check className="h-3.5 w-3.5 text-green-600" aria-hidden />
       ) : (
-        <X className="h-3.5 w-3.5 text-gray-400" aria-hidden />
+        <X className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
       )}
-      <span className={ok ? "text-green-700" : "text-gray-600"}>{label}</span>
+      <span className={ok ? "text-green-700" : "text-muted-foreground"}>{label}</span>
     </div>
   );
 
@@ -111,10 +111,10 @@ export default function ResetPasswordContent() {
 
   if (!token) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-100">
-        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-gray-200 text-center">
+      <div className="flex justify-center items-center min-h-screen bg-muted">
+        <div className="w-full max-w-md p-8 bg-background rounded-lg shadow-lg border border-border text-center">
           <h2 className="text-2xl font-bold mb-6">Invalid Link</h2>
-          <p className="mb-4 text-gray-700">
+          <p className="mb-4 text-foreground">
             The password reset link is missing or invalid.
           </p>
         </div>
@@ -124,10 +124,10 @@ export default function ResetPasswordContent() {
 
   if (submitted) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-100">
-        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-gray-200 text-center">
+      <div className="flex justify-center items-center min-h-screen bg-muted">
+        <div className="w-full max-w-md p-8 bg-background rounded-lg shadow-lg border border-border text-center">
           <h2 className="text-2xl font-bold mb-6">Password Reset Successful</h2>
-          <p className="mb-4 text-gray-700">
+          <p className="mb-4 text-foreground">
             Your password has been reset. You may now log in with your new password.
           </p>
         </div>
@@ -136,8 +136,8 @@ export default function ResetPasswordContent() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg border border-gray-200">
+    <div className="flex justify-center items-center min-h-screen bg-muted">
+      <div className="w-full max-w-md p-8 bg-background rounded-lg shadow-lg border border-border">
         <h2 className="text-2xl font-bold mb-6 text-center">Reset Password</h2>
         {error && (
           <div className="mb-4 text-red-600 text-center text-sm font-medium">

@@ -116,12 +116,12 @@ export function DialogWithButton({
 					variant="outline"
 					onClick={() => setActiveForm(form)}
 					disabled={disabled}
-					className="hover:bg-gray-100 border-gray-300 text-gray-700"
+					className="hover:bg-muted border-border text-foreground"
 				>
 					{buttonName}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
+			<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>

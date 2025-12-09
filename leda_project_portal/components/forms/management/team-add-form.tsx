@@ -38,7 +38,7 @@ export const teamFormSchema = z.object({
 });
 
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
@@ -180,7 +180,7 @@ export default function PlaceAddForm({
 				className="space-y-4 mx-auto"
 			>
 				<div className="mb-6">
-					<div className="flex border-b border-gray-200">
+					<div className="flex border-b border-border">
 						{/* Render step headers as non-clickable */}
 						<div className="flex space-x-1 rounded-xl p-1 w-full">
 							{steps.map((step, index) => (
@@ -190,7 +190,7 @@ export default function PlaceAddForm({
 						${
 							index === currentStep
 								? "border-b-2 border-blue-500 text-blue-600"
-								: "text-gray-500"
+								: "text-muted-foreground"
 						} ${index < currentStep ? "text-green-500" : ""}`}
 								>
 									<span className="flex items-center justify-center">
@@ -209,7 +209,7 @@ export default function PlaceAddForm({
 				{currentStep === 0 && (
 					<div className={formContainerStyle}>
 						<h1>Team Basic Information</h1>
-						<hr className="bg-gray-300 mb-4"></hr>
+						<hr className="bg-muted mb-4"></hr>
 						<div className="flex items-start space-x-2">
 							<Label
 								className="whitespace-nowrap"
@@ -273,7 +273,7 @@ export default function PlaceAddForm({
 				{currentStep === 1 && (
 					<div className={formContainerStyle}>
 						<h1>Team Details</h1>
-						<hr className="bg-gray-300 mb-4"></hr>
+						<hr className="bg-muted mb-4"></hr>
 						<InputDefault
 							control={form.control}
 							name="establishedDate"
@@ -304,7 +304,7 @@ export default function PlaceAddForm({
 				{currentStep === 2 && (
 					<div className={formContainerStyle}>
 						<h1>Team Members</h1>
-						<hr className="bg-gray-300 mb-4"></hr>
+						<hr className="bg-muted mb-4"></hr>
 						<PlayerSelector
 							setMemberIdList={handleSetMemberIdList}
 						/>
@@ -312,10 +312,10 @@ export default function PlaceAddForm({
 				)}
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === 0 ? "Cancel" : "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+					<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === steps.length - 1 ? "Submit" : "Next"}
 					</Button>
 				</div>

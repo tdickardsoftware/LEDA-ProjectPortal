@@ -30,7 +30,7 @@ const placeTypeFormSchema = z.object({
 });
 
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
 export default function PlaceTypeEditForm({
 	onClose,
@@ -164,10 +164,10 @@ export default function PlaceTypeEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+					<Button variant="outline" type="button" onClick={onClose} className="hover:bg-muted border-border text-foreground">
 						Back
 					</Button>
-					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Update</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Update</Button>
 				</div>
 			</form>
 		</Form>

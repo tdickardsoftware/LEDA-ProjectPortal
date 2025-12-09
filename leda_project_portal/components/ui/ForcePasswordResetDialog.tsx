@@ -85,7 +85,7 @@ export default function ForcePasswordResetDialog() {
             </button>
           </SidebarMenuButton>
         </AlertDialogTrigger>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-background">
           <AlertDialogHeader>
             <AlertDialogTitle>Force Password Reset</AlertDialogTitle>
           </AlertDialogHeader>
@@ -100,17 +100,17 @@ export default function ForcePasswordResetDialog() {
               />
             </div>
 
-            <div className="max-h-60 overflow-auto rounded-lg border border-gray-200 bg-gray-50/60 shadow-sm">
+            <div className="max-h-60 overflow-auto rounded-lg border border-border bg-muted/60 shadow-sm">
               {selectedUsers.length === 0 ? (
-                <div className="py-6 px-4 text-sm text-gray-500 text-center">No users selected.</div>
+                <div className="py-6 px-4 text-sm text-muted-foreground text-center">No users selected.</div>
               ) : (
                 <ul className="divide-y divide-gray-200">
                   {selectedUsers.map((user) => (
-                    <li key={user.email} className="group flex items-center justify-between gap-2 px-3 py-2 hover:bg-white transition-colors">
+                    <li key={user.email} className="group flex items-center justify-between gap-2 px-3 py-2 hover:bg-background transition-colors">
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium">{user.username}</div>
                         {user.username?.trim().toLowerCase() !== user.email?.trim().toLowerCase() && (
-                          <div className="truncate text-xs text-gray-500">{user.email}</div>
+                          <div className="truncate text-xs text-muted-foreground">{user.email}</div>
                         )}
                       </div>
                       <Button
@@ -134,7 +134,7 @@ export default function ForcePasswordResetDialog() {
 
           <AlertDialogFooter>
             <div className="flex justify-between w-full">
-              <AlertDialogCancel className="hover:bg-gray-100 border-gray-300 text-gray-700">Close</AlertDialogCancel>
+              <AlertDialogCancel className="hover:bg-muted border-border text-foreground">Close</AlertDialogCancel>
               {selectedUsers.length > 0 && (
                 <div className="flex justify-end">
                   <Button

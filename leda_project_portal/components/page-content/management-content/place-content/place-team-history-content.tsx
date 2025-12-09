@@ -45,13 +45,13 @@ export default function PlaceTeamHistoryContent({
 				Place: #{placeData.ledaId} - {placeData.name}
 			</h2>
 			{isLoading ? (
-				<p className="text-gray-500 italic">Loading team history...</p>
+				<p className="text-muted-foreground italic">Loading team history...</p>
 			) : error ? (
 				<p className="text-red-500">
 					{(error as Error).message || "Failed to load team history data"}
 				</p>
 			) : teamHistory.length === 0 ? (
-				<p className="text-gray-500">
+				<p className="text-muted-foreground">
 					No team history found for this place.
 				</p>
 			) : (

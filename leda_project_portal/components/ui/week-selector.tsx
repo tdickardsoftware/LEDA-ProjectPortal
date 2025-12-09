@@ -94,7 +94,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild disabled={disabled} className="bg-white border-gray-200">
+					<PopoverTrigger asChild disabled={disabled} className="bg-background border-border">
 						<Button
 							variant="outline"
 							role="combobox"
@@ -108,7 +108,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="w-[200px] p-0 bg-white border-gray-200"
+						className="w-[200px] p-0 bg-background border-border"
 						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
@@ -126,7 +126,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 													type.label
 												);
 											}}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

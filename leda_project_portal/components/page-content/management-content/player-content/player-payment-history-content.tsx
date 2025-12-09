@@ -139,10 +139,10 @@ export default function PlayerPaymentHistoryContent({
 							value={selectedDate}
 							onValueChange={setSelectedDate}
 						>
-							<SelectTrigger className="w-[200px] border-gray-400 text-gray-700">
+							<SelectTrigger className="w-[200px] border-border text-foreground">
 								<SelectValue placeholder="Filter by date" />
 							</SelectTrigger>
-							<SelectContent className="bg-white border-gray-400 text-gray-700">
+							<SelectContent className="bg-background border-border text-foreground">
 								<SelectItem value="all">All Dates</SelectItem>
 								{uniqueDates.map((date, index) => (
 									<SelectItem
@@ -174,7 +174,7 @@ export default function PlayerPaymentHistoryContent({
 							<PopoverTrigger asChild>
 								<Button
 									variant="outline"
-									className="border-gray-400 text-gray-700"
+									className="border-border text-foreground"
 								>
 									<FilterIcon className="h-4 w-4 mr-2" />
 									{appliedPaymentType
@@ -182,7 +182,7 @@ export default function PlayerPaymentHistoryContent({
 										: "Filter by Type"}
 								</Button>
 							</PopoverTrigger>
-							<PopoverContent className="w-80 p-4 bg-white border-gray-400 text-gray-700">
+							<PopoverContent className="w-80 p-4 bg-background border-border text-foreground">
 								<div className="space-y-4">
 									<h4 className="font-medium">
 										Filter by Payment Type
@@ -196,13 +196,13 @@ export default function PlayerPaymentHistoryContent({
 										<Button
 											variant="outline"
 											onClick={clearFilters}
-											className="text-sm border-gray-400 text-gray-700"
+											className="text-sm border-border text-foreground"
 										>
 											Clear Filters
 										</Button>
 										<Button
 											onClick={applyFilter}
-											className="text-sm border-gray-400 text-gray-700"
+											className="text-sm border-border text-foreground"
 										>
 											Apply
 										</Button>
@@ -216,14 +216,14 @@ export default function PlayerPaymentHistoryContent({
 				{/* Show active filters if any are applied */}
 				{(selectedDate !== "all" || appliedPaymentType) && (
 					<div className="flex gap-2 mb-4 items-center">
-						<span className="text-sm text-gray-500">
+						<span className="text-sm text-muted-foreground">
 							Active filters:
 						</span>
 						{selectedDate !== "all" && (
 							<Button
 								variant="outline"
 								size="sm"
-								className="text-xs flex items-center gap-1 bg-gray-100"
+								className="text-xs flex items-center gap-1 bg-muted"
 								onClick={() => setSelectedDate("all")}
 							>
 								{/* Use consistent date format that ignores time component */}
@@ -240,7 +240,7 @@ export default function PlayerPaymentHistoryContent({
 							<Button
 								variant="outline"
 								size="sm"
-								className="text-xs flex items-center gap-1 bg-gray-100"
+								className="text-xs flex items-center gap-1 bg-muted"
 								onClick={() => {
 									setAppliedPaymentType(undefined);
 									setSelectedPaymentType(undefined);
@@ -254,7 +254,7 @@ export default function PlayerPaymentHistoryContent({
 				)}
 
 				{isLoading ? (
-					<p className="text-gray-500 italic">
+					<p className="text-muted-foreground italic">
 						Loading payment history...
 					</p>
 				) : error ? (
@@ -262,7 +262,7 @@ export default function PlayerPaymentHistoryContent({
 						{(error as Error).message || "Failed to load payment history data"}
 					</p>
 				) : filteredPaymentData.length === 0 ? (
-					<p className="text-gray-500">
+					<p className="text-muted-foreground">
 						No payment history found for this player.
 					</p>
 				) : (

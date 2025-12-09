@@ -31,7 +31,7 @@ const TrailsDateDataFormSchema = z.object({
 });
 
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
 export default function TrailsDateEditForm({
 	rowData,
@@ -212,7 +212,7 @@ export default function TrailsDateEditForm({
 					</div>
 				</div>
 				<div className="flex items-center justify-center">
-					<Button type="submit" variant={"outline"} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">
 						Update
 					</Button>
 				</div>

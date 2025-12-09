@@ -175,16 +175,16 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 
 	return (
 		<div className={className}>
-			<div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+			<div className="rounded-lg border border-border bg-background shadow-sm">
 				<Table>
 					<TableHeader>
-						<TableRow className="border-b border-gray-200 bg-gray-50/50">
+						<TableRow className="border-b border-border bg-muted/50">
 							{columns.map((column) => (
 								<TableHead
 									key={column.key}
-									className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 ${
+									className={`px-6 py-4 text-left text-sm font-semibold text-foreground ${
 										column.sortable
-											? "cursor-pointer hover:bg-gray-100 transition-colors"
+											? "cursor-pointer hover:bg-muted transition-colors"
 											: ""
 									}`}
 									onClick={() =>
@@ -196,7 +196,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 										{column.header}
 										{column.sortable &&
 											sortColumn === column.key && (
-												<span className="text-xs text-gray-600">
+												<span className="text-xs text-muted-foreground">
 													{sortDirection === "asc"
 														? "↑"
 														: "↓"}
@@ -206,7 +206,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 								</TableHead>
 							))}
 							{isMailingLabelsTable && (
-								<TableHead className="px-2 py-4 text-center text-sm font-semibold text-gray-900">
+								<TableHead className="px-2 py-4 text-center text-sm font-semibold text-foreground">
 									Actions
 								</TableHead>
 							)}
@@ -217,7 +217,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 							<TableRow>
 								<TableCell
 									colSpan={columns.length + (isMailingLabelsTable ? 1 : 0)}
-									className="px-6 py-12 text-center text-gray-500"
+									className="px-6 py-12 text-center text-muted-foreground"
 								>
 									No data available
 								</TableCell>
@@ -226,14 +226,14 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 							paginatedData.map((row: T, index: number) => (
 								<TableRow
 									key={startIndex + index}
-									className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+									className="border-b border-border hover:bg-muted/50 transition-colors"
 									onMouseEnter={() => setHoveredRow(index)}
 									onMouseLeave={() => setHoveredRow(null)}
 								>
 									{columns.map((column) => (
 										<TableCell
 											key={column.key}
-											className={`px-6 py-4 text-sm text-gray-900${
+											className={`px-6 py-4 text-sm text-foreground${
 												column.key === "mentions"
 													? " whitespace-pre-line"
 													: ""
@@ -268,8 +268,8 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 				</Table>
 
 				{totalPages > 1 && (
-					<div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50/50">
-						<div className="text-sm text-gray-600">
+					<div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/50">
+						<div className="text-sm text-muted-foreground">
 							Showing{" "}
 							{startIndex + 1} to{" "}
 							{Math.min(startIndex + itemsPerPage, sortedData.length)} of{" "}
@@ -299,7 +299,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 									<React.Fragment key={page}>
 										{index > 0 &&
 											visiblePages[index - 1] < page - 1 && (
-												<span className="px-2 text-sm text-gray-500">
+												<span className="px-2 text-sm text-muted-foreground">
 													...
 												</span>
 											)}

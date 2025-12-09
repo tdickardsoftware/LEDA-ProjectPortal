@@ -195,7 +195,7 @@ export default function RoleManagementDialog() {
 
   const renderTable = (role: RoleKey) => {
     const filtered = roles[role].filter((u) => u.toLowerCase().includes(search[role].toLowerCase()));
-    if (loading) return <div className="py-3 px-4 text-sm text-gray-500">Loading…</div>;
+    if (loading) return <div className="py-3 px-4 text-sm text-muted-foreground">Loading…</div>;
     return (
       <>
         <div className="px-3 pb-2">
@@ -207,7 +207,7 @@ export default function RoleManagementDialog() {
           />
         </div>
         {filtered.length === 0 ? (
-          <div className="py-3 px-4 text-sm text-gray-500">No users.</div>
+          <div className="py-3 px-4 text-sm text-muted-foreground">No users.</div>
         ) : (
           <Table>
             <TableHeader>
@@ -253,7 +253,7 @@ export default function RoleManagementDialog() {
                           {updating === u ? "Updating…" : "Change role"}
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-white">
+                      <DropdownMenuContent align="end" className="bg-background">
                         {role !== "Developer" ? (
                           <DropdownMenuItem onClick={() => updateRoleForUser(u, "Developer")}>
                             Set to Developer
@@ -298,14 +298,14 @@ export default function RoleManagementDialog() {
             </button>
           </SidebarMenuButton>
         </AlertDialogTrigger>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-background">
           <AlertDialogHeader>
             <AlertDialogTitle>Role Management</AlertDialogTitle>
           </AlertDialogHeader>
 
           <div className="space-y-3 py-1">
             {error && <div className="text-sm text-red-600 px-1">{error}</div>}
-            <div className="rounded-lg border border-gray-200 bg-gray-50/60 shadow-sm">
+            <div className="rounded-lg border border-border bg-muted/60 shadow-sm">
               <Accordion type="multiple" className="divide-y divide-gray-200">
                 <AccordionItem value="dev">
                   <AccordionTrigger
@@ -368,7 +368,7 @@ export default function RoleManagementDialog() {
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel className="hover:bg-gray-100 border-gray-300 text-gray-700">Close</AlertDialogCancel>
+            <AlertDialogCancel className="hover:bg-muted border-border text-foreground">Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

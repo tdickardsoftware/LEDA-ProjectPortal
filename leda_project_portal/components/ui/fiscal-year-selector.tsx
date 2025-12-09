@@ -68,7 +68,7 @@ const FiscalYearSelector: React.FC<FiscalYearSelectorProps> = ({
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild className="bg-white border-gray-200">
+					<PopoverTrigger asChild className="bg-background border-border">
 						<Button
 							variant="outline"
 							role="combobox"
@@ -83,7 +83,7 @@ const FiscalYearSelector: React.FC<FiscalYearSelectorProps> = ({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="w-[200px] p-0 bg-white border-gray-200"
+						className="w-[200px] p-0 bg-background border-border"
 						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
@@ -98,7 +98,7 @@ const FiscalYearSelector: React.FC<FiscalYearSelectorProps> = ({
 											onSelect={() => {
 												handleSelectFiscalYear(item.value);
 											}}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

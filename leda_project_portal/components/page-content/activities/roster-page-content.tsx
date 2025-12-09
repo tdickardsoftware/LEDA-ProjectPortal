@@ -693,7 +693,7 @@ export default function RostersContent({
 							{maxTeamsReached ? "Max Teams (8)" : "Add Team"}
 						</Button>
 					</DialogTrigger>
-					<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
+					<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
 						<DialogHeader>
 							<DialogTitle>Add Team</DialogTitle>
 						</DialogHeader>
@@ -724,12 +724,12 @@ export default function RostersContent({
 					<Button
 						variant="outline"
 						disabled={disabled}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						className="hover:bg-muted border-border text-foreground"
 					>
 						Add Division
 					</Button>
 				</DialogTrigger>
-				<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
+				<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
 					<DialogHeader>
 						<DialogTitle>Add Division</DialogTitle>
 					</DialogHeader>
@@ -751,12 +751,12 @@ export default function RostersContent({
 				<DialogTrigger asChild>
 					<Button
 						variant="outline"
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						className="hover:bg-muted border-border text-foreground"
 					>
 						Copy Roster
 					</Button>
 				</DialogTrigger>
-				<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
+				<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
 					<DialogHeader>
 						<DialogTitle>Copy Roster</DialogTitle>
 					</DialogHeader>
@@ -1007,7 +1007,7 @@ export default function RostersContent({
 								{update && (
 									<Button
 										variant="outline"
-										className="hover:bg-gray-100 border-gray-300 text-gray-700"
+										className="hover:bg-muted border-border text-foreground"
 										onClick={() =>
 											setDeleteRosterAlertOpen(true)
 										}
@@ -1028,7 +1028,7 @@ export default function RostersContent({
 						<AlertDialogTrigger asChild>
 							<div></div>
 						</AlertDialogTrigger>
-						<AlertDialogContent className="bg-white text-black">
+						<AlertDialogContent className="bg-background text-foreground">
 							<AlertDialogHeader>
 								<AlertDialogTitle>
 									Confirm Deletion
@@ -1092,7 +1092,7 @@ export default function RostersContent({
 													<X className="text-red-500" />
 												</div>
 											</AlertDialogTrigger>
-											<AlertDialogContent className="bg-white text-black">
+											<AlertDialogContent className="bg-background text-foreground">
 												<AlertDialogHeader>
 													<AlertDialogTitle>
 														Confirm Deletion
@@ -1142,7 +1142,7 @@ export default function RostersContent({
 										</div>
 										<Separator
 											orientation="horizontal"
-											className="my-2 bg-gray-300"
+											className="my-2 bg-muted"
 										/>
 
 										{/* Subdivisions Accordion */}
@@ -1159,7 +1159,7 @@ export default function RostersContent({
 											>
 												<AccordionItem
 													value={`subdivisions-${subIndex}`}
-													className="border-b border-gray-200"
+													className="border-b border-border"
 												>
 													<div className="flex justify-between items-center">
 														<AccordionTrigger>
@@ -1191,7 +1191,7 @@ export default function RostersContent({
 																	<X className="text-red-500" />
 																</div>
 															</AlertDialogTrigger>
-															<AlertDialogContent className="bg-white text-black">
+															<AlertDialogContent className="bg-background text-foreground">
 																<AlertDialogHeader>
 																	<AlertDialogTitle>
 																		Confirm
@@ -1309,7 +1309,7 @@ export default function RostersContent({
 																						<X className="text-red-500" />
 																					</div>
 																				</AlertDialogTrigger>
-																				<AlertDialogContent className="bg-white text-black">
+																				<AlertDialogContent className="bg-background text-foreground">
 																					<AlertDialogHeader>
 																						<AlertDialogTitle>
 																							Confirm
@@ -1381,7 +1381,7 @@ export default function RostersContent({
 					{update && (
 						<div className="flex justify-center gap-4">
 							<Button
-								className="hover:bg-gray-100 border-gray-300 text-gray-700 mt-4"
+								className="hover:bg-muted border-border text-foreground mt-4"
 								variant="outline"
 								disabled={!hasChanges || isLoading}
 								onClick={handleUpdateRoster}
@@ -1389,7 +1389,7 @@ export default function RostersContent({
 								Update Roster
 							</Button>
 							<Button
-								className="hover:bg-gray-100 border-gray-300 text-gray-700 mt-4"
+								className="hover:bg-muted border-border text-foreground mt-4"
 								variant="outline"
 								disabled={!hasChanges || isLoading}
 								onClick={() => {

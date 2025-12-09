@@ -103,7 +103,7 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 		return (
 			<div className="text-sm relative group">
 				<div className={viewMode ? "" : "transition-all duration-200 group-hover:blur-sm"}>
-					<div className="border border-gray-300 p-2 rounded-md text-center">
+					<div className="border border-border p-2 rounded-md text-center">
 						<div>{matchup.home ? "Home" : "Away"}</div>
 						<div>VS</div>
 						<div>{teamName}</div>
@@ -116,7 +116,7 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+							className="h-8 w-8 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 							title="Edit matchup"
 							onClick={onEdit}
 						>
@@ -125,7 +125,7 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+							className="h-8 w-8 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 							title="Remove matchup"
 							onClick={onDelete}
 						>
@@ -397,7 +397,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 		return (
 			<div className="w-full">
 				<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-					<AlertDialogContent className="bg-white">
+					<AlertDialogContent className="bg-background">
 						<AlertDialogHeader>
 							<AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
 							<AlertDialogDescription>
@@ -421,7 +421,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				</AlertDialog>
 
 				<Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-					<DialogContent className="bg-white">
+					<DialogContent className="bg-background">
 						<DialogHeader>
 							<DialogTitle>Edit Matchup</DialogTitle>
 						</DialogHeader>
@@ -448,7 +448,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 					<Table className="table-auto">
 						<TableHeader>
 							<TableRow className="bg-muted/50">
-								<TableHead className="font-semibold border-r border-gray-300 text-left py-4 px-6">
+								<TableHead className="font-semibold border-r border-border text-left py-4 px-6">
 									Team Name
 								</TableHead>
 								{gameDateEntries.map(([gameTitle, date], index) => (
@@ -456,7 +456,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 										key={gameTitle}
 										className={`whitespace-nowrap text-center py-4 px-6 ${
 											index < gameDateEntries.length - 1
-												? "border-r border-gray-300"
+												? "border-r border-border"
 												: ""
 										}`}
 									>
@@ -476,11 +476,11 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 									key={key}
 									className={
 										rowIndex % 2 === 0
-											? "bg-white"
+											? "bg-background"
 											: "bg-muted/20"
 									}
 								>
-									<TableCell className="font-medium w-fit border-r border-gray-200 text-center">
+									<TableCell className="font-medium w-fit border-r border-border text-center">
 										<div>{key}</div>
 										<div>{teamData.teamName}</div>
 									</TableCell>
@@ -491,7 +491,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 												key={`${key}-${gameTitle}`}
 												className={`whitespace-nowrap py-4 px-6 ${
 													index < gameDateEntries.length - 1
-														? "border-r border-gray-300"
+														? "border-r border-border"
 														: ""
 												}`}
 											>
@@ -518,13 +518,13 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 																<Button
 																	variant="ghost"
 																	size="sm"
-																	className="border border-dashed border-gray-300 rounded-md h-9 w-9 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
+																	className="border border-dashed border-border rounded-md h-9 w-9 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
 																	title={`Add matchup for ${teamData.teamName}`}
 																>
 																	<Plus className="h-4 w-4" />
 																</Button>
 															</DialogTrigger>
-															<DialogContent className="bg-white">
+															<DialogContent className="bg-background">
 																<DialogHeader>
 																	<DialogTitle>Add Matchup</DialogTitle>
 																</DialogHeader>

@@ -45,7 +45,7 @@ const seasonFormSchema = z.object({
 
 // Define styles for the form container, checkbox, and input width
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const checkboxWidth = "h-5 w-5";
 const inputWidth = "w-24";
 
@@ -179,17 +179,17 @@ export default function SeasonEditForm({
 							/>
 						</div>
 						<div className="mt-2 max-w-[65vw] overflow-x-auto">
-							<Label className="whitespace-nowrap text-gray-500">
+							<Label className="whitespace-nowrap text-muted-foreground">
 								Existing Dates
 							</Label>
 							<Separator className="my-2" />
 							<Table>
 								<TableHeader>
 									<TableRow>
-										<TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+										<TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
 											Action Date
 										</TableHead>
-										<TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+										<TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
 											Date Selected
 										</TableHead>
 									</TableRow>
@@ -208,10 +208,10 @@ export default function SeasonEditForm({
 													datesObject
 												).map(([key, value], index) => (
 													<TableRow key={index}>
-														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 															{key}
 														</TableCell>
-														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 															<DatePicker
 																showIcon
 																selected={
@@ -228,7 +228,7 @@ export default function SeasonEditForm({
 																	)
 																}
 																dateFormat="MM/dd/yyyy"
-																className="w-full border border-gray-300 rounded-md p-2"
+																className="w-full border border-border rounded-md p-2"
 															/>
 														</TableCell>
 													</TableRow>
@@ -236,7 +236,7 @@ export default function SeasonEditForm({
 											} else {
 												return (
 													<TableRow>
-														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 															Invalid dates format
 														</TableCell>
 													</TableRow>
@@ -245,7 +245,7 @@ export default function SeasonEditForm({
 										} catch {
 											return (
 												<TableRow>
-													<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+													<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
 														Error parsing dates
 													</TableCell>
 												</TableRow>
@@ -275,16 +275,16 @@ export default function SeasonEditForm({
 				</div>
 				<div className="flex justify-between items-center">
 					{!handleRefresh && (
-						<Button type="button" onClick={onClose} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+						<Button variant="outline" type="button" onClick={onClose} className="hover:bg-muted border-border text-foreground">
 							Back
 						</Button>
 					)}
 					{handleRefresh && (
-						<Button type="button" onClick={handleRefresh} className="hover:bg-gray-100 border-gray-300 text-gray-700">
+						<Button variant="outline" type="button" onClick={handleRefresh} className="hover:bg-muted border-border text-foreground">
 							Back
 						</Button>
 					)}
-					<Button type="submit" className="hover:bg-gray-100 border-gray-300 text-gray-700">Update</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Update</Button>
 				</div>
 			</form>
 		</Form>

@@ -8,8 +8,8 @@ interface FolderTabProps {
 
 const FolderTab: React.FC<FolderTabProps> = ({ title, children }) => {
 	return (
-		<div className="relative bg-gray-100 rounded-lg shadow-md border border-gray-300">
-			<div className="absolute -top-3 left-4 bg-gray-200 px-3 py-1 rounded-t-md text-gray-800 font-semibold border border-gray-300">
+		<div className="relative bg-muted rounded-lg shadow-md border border-border">
+			<div className="absolute -top-3 left-4 bg-secondary px-3 py-1 rounded-t-md text-foreground font-semibold border border-border">
 				{title}
 			</div>
 			<div className="p-4">{children}</div>
@@ -24,11 +24,11 @@ export const FolderTabMed: React.FC<FolderTabProps> = ({
 }) => {
 	return (
 		<div
-			className={`relative bg-gray-50 rounded-lg shadow-md border border-gray-300 ${
+			className={`relative bg-muted rounded-lg shadow-md border border-border ${
 				className || ""
 			}`}
 		>
-			<div className="absolute -top-3 left-4 bg-gray-200 px-3 py-1 rounded-t-md text-gray-800 font-semibold border border-gray-300 text-sm">
+			<div className="absolute -top-3 left-4 bg-secondary px-3 py-1 rounded-t-md text-foreground font-semibold border border-border text-sm">
 				{title}
 			</div>
 			<div className="p-8">{children}</div>

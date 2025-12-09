@@ -80,7 +80,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild className="bg-white">
+					<PopoverTrigger asChild className="bg-background">
 						<Button
 							variant="outline"
 							role="combobox"
@@ -97,7 +97,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="w-[200px] p-0 bg-white"
+						className="w-[200px] p-0 bg-background"
 						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
@@ -112,7 +112,7 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 											onSelect={() => {
 												handleSelectSeasonCode(type.value);
 											}}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

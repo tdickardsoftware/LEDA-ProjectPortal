@@ -171,7 +171,7 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger
 						asChild
-						className="bg-white border-gray-200"
+						className="bg-background border-border"
 					>
 						<Button
 							variant="outline"
@@ -192,7 +192,7 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="w-[200px] p-0 bg-white border-gray-200"
+						className="w-[200px] p-0 bg-background border-border"
 						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
@@ -209,7 +209,7 @@ const ReportSelector: React.FC<ReportSelectorProps> = ({
 													report.value
 												);
 											}}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

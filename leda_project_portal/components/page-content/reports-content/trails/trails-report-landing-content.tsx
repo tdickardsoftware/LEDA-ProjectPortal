@@ -65,7 +65,7 @@ export default function TrailsReportLandingContent() {
 			return (
 				<div className="flex items-center justify-center h-full px-4 py-2">
 					<svg
-						className="animate-spin -ml-1 mr-2 h-4 w-4 text-black"
+						className="animate-spin -ml-1 mr-2 h-4 w-4 text-foreground"
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
@@ -84,7 +84,7 @@ export default function TrailsReportLandingContent() {
 							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 						></path>
 					</svg>
-					<span className="text-gray-600">Loading data...</span>
+					<span className="text-muted-foreground">Loading data...</span>
 				</div>
 			);
 		}
@@ -176,7 +176,7 @@ export default function TrailsReportLandingContent() {
 			<PDFDownloadLink
 				document={document}
 				fileName={fileName}
-				className="inline-flex items-center justify-center rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+				className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
 			>
 				{({ loading }) => (
 					<>
@@ -234,7 +234,7 @@ export default function TrailsReportLandingContent() {
 		if (!selectedReport) {
 			return (
 				<div className="flex h-full items-center justify-center">
-					<p className="text-gray-500 text-center">
+					<p className="text-muted-foreground text-center">
 						Select a report to continue...
 					</p>
 				</div>
@@ -303,11 +303,11 @@ export default function TrailsReportLandingContent() {
 					<h2 className="text-2xl font-semibold mb-4">
 						Report Selected
 					</h2>
-					<p className="text-gray-600">
+					<p className="text-muted-foreground">
 						You have selected:{" "}
 						<span className="font-medium">{selectedReport}</span>
 					</p>
-					<p className="text-sm text-gray-500 mt-2">
+					<p className="text-sm text-muted-foreground mt-2">
 						Report functionality will be implemented here.
 					</p>
 				</div>
@@ -339,7 +339,7 @@ export default function TrailsReportLandingContent() {
 			<div className="mt-4">
 				<Separator
 					orientation="horizontal"
-					className="bg-gray-400 w-100"
+					className="bg-muted w-100"
 				/>
 			</div>
 			<div className="flex flex-1 overflow-hidden">

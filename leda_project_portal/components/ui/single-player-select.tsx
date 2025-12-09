@@ -165,7 +165,7 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
+					<PopoverContent className="w-[200px] p-0 bg-background">
 						<Command>
 							<CommandInput placeholder="Search Player..." />
 							<CommandEmpty>No player found.</CommandEmpty>
@@ -180,7 +180,7 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({
 											key={type.value}
 											value={type.value}
 											onSelect={() => handleSelect(type)}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

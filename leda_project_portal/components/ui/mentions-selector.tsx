@@ -239,7 +239,7 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-fit p-0 bg-white">
+					<PopoverContent className="w-fit p-0 bg-background">
 						<Command>
 							<CommandInput placeholder="Search mention..." />
 							<CommandEmpty>No mention found.</CommandEmpty>
@@ -265,7 +265,7 @@ const PenaltySelectorContent: React.FC<MentionSelectorContentProps> = ({
 												key={type.label}
 												value={type.label}
 												onSelect={() => handleSelect(type)}
-												className="hover:bg-gray-200"
+												className="hover:bg-secondary"
 											>
 												<Check
 													className={cn(

@@ -72,7 +72,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
 							<Link
 								href={item.url}
 								className={
-									currentPage ? "bg-gray-800 text-white" : ""
+									currentPage ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
 								}
 							>
 								{item.icon && <item.icon />}

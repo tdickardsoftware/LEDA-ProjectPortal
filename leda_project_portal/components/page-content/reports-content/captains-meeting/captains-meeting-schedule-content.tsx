@@ -317,7 +317,7 @@ export default function CaptainsMeetingScheduleContent({
 		return (
 			<div className="flex flex-col items-center justify-center h-64">
 				<p className="text-red-500">Error loading schedule data</p>
-				<p className="text-sm text-gray-400">Please try again later</p>
+				<p className="text-sm text-muted-foreground">Please try again later</p>
 			</div>
 		);
 	}
@@ -325,7 +325,7 @@ export default function CaptainsMeetingScheduleContent({
 	if (!seasonCode) {
 		return (
 			<div className="flex flex-col items-center justify-center h-64">
-				<p className="text-gray-500">No season code available</p>
+				<p className="text-muted-foreground">No season code available</p>
 			</div>
 		);
 	}
@@ -333,8 +333,8 @@ export default function CaptainsMeetingScheduleContent({
 	if (Object.keys(divisionsData).length === 0) {
 		return (
 			<div className="flex flex-col items-center justify-center h-64">
-				<p className="text-gray-500">No division data available</p>
-				<p className="text-sm text-gray-400">Season Code: {seasonCode}</p>
+				<p className="text-muted-foreground">No division data available</p>
+				<p className="text-sm text-muted-foreground">Season Code: {seasonCode}</p>
 			</div>
 		);
 	}

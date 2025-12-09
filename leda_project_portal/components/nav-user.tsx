@@ -5,6 +5,9 @@ import {
 	LogOut,
 	Users,
 	Undo,
+	Moon,
+	Sun,
+	Monitor,
 } from "lucide-react";
 
 import {
@@ -28,10 +31,12 @@ import { authClient } from "@/lib/auth-client";
 import { useUserAbilities } from "@/lib/use-user-abilities";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 export function NavUser() {
 	const { isMobile } = useSidebar();
 	const { user, emulateRole } = useUserAbilities();
 	const router = useRouter();
+	const { theme, setTheme } = useTheme();
 
 	async function handleLogout() {
 		await authClient.signOut({
@@ -108,7 +113,7 @@ export function NavUser() {
 						</SidebarMenuButton>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
-						className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-white"
+						className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
 						side={isMobile ? "bottom" : "right"}
 						align="end"
 						sideOffset={4}
@@ -134,7 +139,7 @@ export function NavUser() {
 						<DropdownMenuSeparator />
 						{canEmulate && (
 							<>
-								<DropdownMenuLabel className="text-xs text-gray-500 px-2">
+								<DropdownMenuLabel className="text-xs text-muted-foreground px-2">
 									Role Emulation
 								</DropdownMenuLabel>
 								<DropdownMenuSub>
@@ -142,7 +147,7 @@ export function NavUser() {
 										<Users className="mr-2 size-4" />
 										<span>Emulate Role</span>
 									</DropdownMenuSubTrigger>
-									<DropdownMenuSubContent className="bg-white">
+									<DropdownMenuSubContent className="bg-background">
 										{user.emulatedRole && (
 											<DropdownMenuItem onClick={() => emulateRole(null)}>
 												<Undo className="mr-2 size-4" />
@@ -163,9 +168,31 @@ export function NavUser() {
 								<DropdownMenuSeparator />
 							</>
 						)}
-						<DropdownMenuLabel className="text-xs text-gray-500 px-2">
+						<DropdownMenuLabel className="text-xs text-muted-foreground px-2">
 							Account Management
 						</DropdownMenuLabel>
+						<DropdownMenuSub>
+							<DropdownMenuSubTrigger>
+								{theme === "light" && <Sun className="mr-2 size-4" />}
+								{theme === "dark" && <Moon className="mr-2 size-4" />}
+								{theme === "system" && <Monitor className="mr-2 size-4" />}
+								<span>Theme</span>
+							</DropdownMenuSubTrigger>
+							<DropdownMenuSubContent className="bg-background">
+								<DropdownMenuItem onClick={() => setTheme("light")}>
+									<Sun className="mr-2 size-4" />
+									Light
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => setTheme("dark")}>
+									<Moon className="mr-2 size-4" />
+									Dark
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => setTheme("system")}>
+									<Monitor className="mr-2 size-4" />
+									System
+								</DropdownMenuItem>
+							</DropdownMenuSubContent>
+						</DropdownMenuSub>
 						<DropdownMenuItem asChild>
 							<Button
 								type="button"

@@ -21,7 +21,7 @@ export default function RootLayout({
 							<SidebarTrigger className="-ml-1" />
 							<Separator
 								orientation="vertical"
-								className="mr-2 h-4 bg-gray-300"
+								className="mr-2 h-4 bg-muted"
 							/>
 							<div className="flex-1">
 								<Breadcrumb>

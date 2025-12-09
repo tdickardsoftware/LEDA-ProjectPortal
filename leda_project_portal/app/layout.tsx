@@ -1,6 +1,7 @@
 import "@/app/ui/globals.css";
 import { Metadata } from "next";
 import QueryProvider from "@/providers/query-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 export const metadata: Metadata = {
 	title: {
@@ -22,9 +23,18 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning>
 			<body>
-				<QueryProvider>{children}</QueryProvider>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="system"
+					enableSystem
+					disableTransitionOnChange
+					storageKey="leda-portal-theme"
+					enableColorScheme
+				>
+					<QueryProvider>{children}</QueryProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	);
