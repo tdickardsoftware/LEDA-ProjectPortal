@@ -21,6 +21,13 @@ export type Player = {
 	dateOfBirth: Date;
 };
 //
+// Define type to identify the shape of our data coming from postgres for place owner selector
+//
+export type PlaceOwner = {
+	ledaId: number;
+	fullName: string;
+};
+//
 //Define type to identify the shape of our data from postgres for players for datatable
 //
 export type PlayerDataTable = {

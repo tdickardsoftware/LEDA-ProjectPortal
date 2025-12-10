@@ -1,7 +1,7 @@
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
-import { Player } from "@/lib/definitions";
+import { PlaceOwner} from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
@@ -15,7 +15,7 @@ export default async function handler(
 		try {
 			// Execute the database query to fetch player information
 			const result =
-				await query<Player>(`SELECT p."ledaId", CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName" FROM public.leda_player_info p 
+				await query<PlaceOwner>(`SELECT p."ledaId", CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName" FROM public.leda_player_info p 
             JOIN public.leda_membership_info m ON p."ledaId" = m."ledaId" WHERE m."memberType" = 'BAR' OR m."memberType" = 'MEM' ORDER BY p."ledaId";`);
 			// Respond with the query result
 			res.status(200).json(result.rows);
