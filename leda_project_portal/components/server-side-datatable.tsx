@@ -29,7 +29,9 @@ import { playerRoute } from "@/lib/apiRoutes";
 
 type keyofFormComponents =
 	| "PlayerAddInformationForm"
-	| "PlayerEditInformationForm";
+	| "PlayerEditInformationForm"
+	| "PlaceAddForm"
+	| "PlaceEditForm";
 
 interface ServerSideDataTableProps<TData extends Record<string, unknown>, TValue> {
 	columns: ColumnDef<TData, TValue>[];

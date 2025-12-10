@@ -19,6 +19,7 @@ import {
 	TrailsDate,
 	TrailsDateData,
 	PlayerDataTable,
+	PlaceDataTable,
 } from "@/lib/definitions";
 import {
 	// relative API routes
@@ -28,6 +29,7 @@ import {
 	payoutTierRoute,
 	penaltyRoute,
 	peopleTypeRoute,
+	placeDataTableRoute,
 	placeRoute,
 	placeTypeRoute,
 	playerRoute,
@@ -262,6 +264,25 @@ export async function fetchPlaces() {
 	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
+	}
+}
+//
+// async function to get all place data from the database for datatable
+//
+export async function fetchPlacesDataTable() {
+	// attempt to get data
+	try {
+	const response = await fetchWithSession(placeDataTableRoute);
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}
+		const data = (await response.json()) as PlaceDataTable[];
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+	rethrowNextRedirect(error);
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Place DataTable Information");
 	}
 }
 //

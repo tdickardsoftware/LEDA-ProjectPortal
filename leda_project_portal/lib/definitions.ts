@@ -69,6 +69,16 @@ export type Place = {
 	placeType: string;
 };
 //
+// Define type to identify the shape of our data from postgres for place datatable
+// 
+export type PlaceDataTable = {
+	ledaId: number;
+	name: string;
+	addressFull: string;
+	phoneNumber: string;
+	placeType: string;
+};
+//
 //Define type to identify the shape of our data from postgres for divisions
 //
 export type Division = {

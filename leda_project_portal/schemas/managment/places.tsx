@@ -6,14 +6,14 @@
 // Imports
 //
 import { ColumnDef } from "@tanstack/react-table";
-import { Place } from "@/lib/definitions";
+import { Place, PlaceDataTable } from "@/lib/definitions";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 //
 //Define the columns
 //
-export const columns: ColumnDef<Place>[] = [
+export const columns: ColumnDef<PlaceDataTable>[] = [
 	{
 		id: "select",
 		header: ({ table }) => (
