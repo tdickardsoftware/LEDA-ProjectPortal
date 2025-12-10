@@ -21,6 +21,7 @@ import {
 	PlayerDataTable,
 	PlaceDataTable,
 	TeamDataTable,
+	SeasonDataTable,
 } from "@/lib/definitions";
 import {
 	// relative API routes
@@ -35,6 +36,7 @@ import {
 	placeTypeRoute,
 	playerRoute,
 	playersDataTableRoute,
+	seasonDataTableRoute,
 	seasonRoute,
 	teamRoute,
 	teamsDataTableRoute,
@@ -478,6 +480,25 @@ export async function fetchSeasons() {
 	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
+	}
+}
+//
+// async function to get Season data for datatable
+//
+export async function fetchSeasonsDataTable() {
+	// attempt to get data
+	try {
+		const response = await fetchWithSession(seasonDataTableRoute);
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}	
+		const data = (await response.json()) as SeasonDataTable[];
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+	rethrowNextRedirect(error);
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Season DataTable Information");
 	}
 }
 //

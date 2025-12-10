@@ -6,12 +6,12 @@
 // Imports
 //
 import { ColumnDef } from "@tanstack/react-table";
-import { Season } from "@/lib/definitions";
+import { SeasonDataTable } from "@/lib/definitions";
 import { Checkbox } from "@/components/ui/checkbox";
 //
 //Define the columns
 //
-export const columns: ColumnDef<Season>[] = [
+export const columns: ColumnDef<SeasonDataTable>[] = [
 	{
 		id: "select",
 		header: ({ table }) => (

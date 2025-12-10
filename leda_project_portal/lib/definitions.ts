@@ -149,6 +149,15 @@ export type Season = {
 	isCurrentSeason: boolean;
 };
 //
+// Define type to identify the shape of our data from postgres for Seasons Datatable
+//
+export type SeasonDataTable = {
+	seasonCode: string;
+	desc: string;
+	fiscalYear: string;
+	isCurrentSeason: boolean;
+};
+//
 // Define type to identify the shape of our data from postgres for Seasons
 //
 export type PlayerMemberInfo = {
