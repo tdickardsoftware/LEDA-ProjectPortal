@@ -41,6 +41,16 @@ export type Team = {
 	memberIdList: JSON;
 };
 //
+// Define type to identify the shape of our data from postgres for teams for datatable
+//
+export type TeamDataTable = {
+	ledaId: number;
+	teamName: string;
+	memo: string;
+	establishedDate: Date;
+	lastTeamFeePayment: string;
+};
+//
 //Define type to identify the shape of our data from postgres for places
 //
 export type Place = {

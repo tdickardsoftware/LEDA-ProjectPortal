@@ -16,6 +16,8 @@ export const placeRoute = "/api/management/place";
 export const placeDataTableRoute = "/api/management/place/datatable";
 // Define route for teams not on the serverside
 export const teamRoute = "/api/management/team";
+// Define route for teams for datatable not on the serverside
+export const teamsDataTableRoute = "/api/management/team/datatable";
 // Define route for division not on the serverside
 export const divisionRoute = "/api/maintenance/division";
 // Define route for mention not on the serverside

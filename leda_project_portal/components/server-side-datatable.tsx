@@ -31,7 +31,9 @@ type keyofFormComponents =
 	| "PlayerAddInformationForm"
 	| "PlayerEditInformationForm"
 	| "PlaceAddForm"
-	| "PlaceEditForm";
+	| "PlaceEditForm"
+	| "TeamAddForm"
+	| "TeamEditForm";
 
 interface ServerSideDataTableProps<TData extends Record<string, unknown>, TValue> {
 	columns: ColumnDef<TData, TValue>[];

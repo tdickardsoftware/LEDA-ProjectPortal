@@ -6,14 +6,14 @@
 // Imports
 //
 import { ColumnDef } from "@tanstack/react-table";
-import { Team } from "@/lib/definitions";
+import { Team, TeamDataTable } from "@/lib/definitions";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 //
 //Define the columns
 //
-export const columns: ColumnDef<Team>[] = [
+export const columns: ColumnDef<TeamDataTable>[] = [
 	{
 		id: "select",
 		header: ({ table }) => (
