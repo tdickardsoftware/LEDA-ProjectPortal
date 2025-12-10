@@ -85,26 +85,121 @@ const PlaceOwnerSelectContent: React.FC = () => {
 	const formContext = useFormContext<FormValues>();
 	const currentValue = formContext ? formContext.watch("contactId") : "";
 	const [open, setOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const [offset, setOffset] = useState(0);
+	const [allOwners, setAllOwners] = useState<Array<{ value: string; label: string }>>([]);
+	const [hasMore, setHasMore] = useState(true);
 
 	const justClosedRef = React.useRef(false);
 	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
 	const lastInputType = useLastInputType();
+	const scrollRef = React.useRef<HTMLDivElement>(null);
+	const isFetchingMore = React.useRef(false);
 
-	const { data: owners = [] } = useQuery({
-		queryKey: ["placeOwners"],
+	// Debounce search input
+	React.useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearch(searchQuery);
+			setOffset(0); // Reset offset when search changes
+			setAllOwners([]); // Clear existing results
+			setHasMore(true); // Reset hasMore flag
+		}, 300);
+
+		return () => clearTimeout(timer);
+	}, [searchQuery]);
+
+	// Fetch records based on search and offset
+	const { data: owners = [], isLoading, isFetching } = useQuery({
+		queryKey: ["placeOwners", debouncedSearch, offset],
 		queryFn: async () => {
-			const response = await fetch(placeOwnerRoute);
+			const params = new URLSearchParams({
+				search: debouncedSearch,
+				limit: "50",
+				offset: offset.toString(),
+			});
+			const response = await fetch(`${placeOwnerRoute}?${params}`);
+			if (!response.ok) {
+				throw new Error("Failed to fetch place owners");
+			}
 			const data = await response.json();
+			
+			// If we got fewer than 50 results, we've reached the end
+			if (data.length < 50) {
+				setHasMore(false);
+			}
+			
 			const mappedData = data.map((type: { ledaId: string; fullName: string }) => ({
 				value: type.ledaId,
 				label: type.ledaId + " - " + type.fullName,
 			}));
-			// Add None/Unknown option at the beginning
-			return [
-				{ value: "0", label: "0 - None/Unknown" },
-				...mappedData,
-			];
+			
+			return mappedData;
 		},
+		staleTime: 0, // Don't cache - always fetch fresh
+		enabled: open, // Only fetch when dropdown is open
+		refetchOnMount: true, // Refetch when component mounts
+	});
+
+	// Append new owners to the list when they arrive
+	React.useEffect(() => {
+		if (owners.length > 0 && !isFetching) {
+			if (offset === 0) {
+				// First batch or new search - replace with None/Unknown option
+				setAllOwners([
+					{ value: "0", label: "0 - None/Unknown" },
+					...owners,
+				]);
+			} else {
+				// Subsequent batches - append to existing
+				setAllOwners(prev => [...prev, ...owners]);
+			}
+			isFetchingMore.current = false;
+		}
+	}, [owners, offset, isFetching]);
+
+	// Handle scroll to load more
+	const handleScroll = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
+		const element = e.currentTarget;
+		const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 50;
+		
+		if (isNearBottom && hasMore && !isFetching && !isFetchingMore.current) {
+			isFetchingMore.current = true;
+			setOffset(prev => prev + 50);
+		}
+	}, [hasMore, isFetching]);
+
+	// Handle wheel events to allow smooth scrolling
+	const handleWheel = React.useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+		e.stopPropagation();
+	}, []);
+
+	// Fetch the selected owner's details if not in current list
+	const { data: selectedOwner } = useQuery({
+		queryKey: ["placeOwner", currentValue],
+		queryFn: async () => {
+			if (!currentValue || currentValue === "0") return null;
+			// Check if already in list
+			if (allOwners.find(o => o.value === currentValue)) return null;
+			
+			// Fetch specific owner by ID
+			const params = new URLSearchParams({
+				search: currentValue,
+				limit: "1",
+				offset: "0",
+			});
+			const response = await fetch(`${placeOwnerRoute}?${params}`);
+			if (!response.ok) return null;
+			const data = await response.json();
+			if (data.length > 0) {
+				return {
+					value: data[0].ledaId,
+					label: data[0].ledaId + " - " + data[0].fullName,
+				};
+			}
+			return null;
+		},
+		enabled: !!currentValue && currentValue !== "0",
 	});
 
 	const handleFocus = React.useCallback(() => {
@@ -119,7 +214,31 @@ const PlaceOwnerSelectContent: React.FC = () => {
 	const handleSelect = (type: { value: string; label: string }) => {
 		formContext.setValue("contactId", type.value);
 		setOpen(false);
+		setSearchQuery(""); // Reset search when selected
 		justClosedRef.current = true;
+	};
+
+	// Reset search and state when dropdown closes
+	React.useEffect(() => {
+		if (!open) {
+			setSearchQuery("");
+			setOffset(0);
+			setAllOwners([]);
+			setHasMore(true);
+		}
+	}, [open]);
+
+	// Get display label for selected value
+	const getDisplayLabel = () => {
+		if (!currentValue) return "Select a place owner...";
+		if (currentValue === "0") return "0 - None/Unknown";
+		
+		const found = allOwners.find((type) => type.value === currentValue);
+		if (found) return found.label;
+		
+		if (selectedOwner) return selectedOwner.label;
+		
+		return `ID: ${currentValue}`;
 	};
 
 	return (
@@ -135,28 +254,32 @@ const PlaceOwnerSelectContent: React.FC = () => {
 							className="w-[200px] justify-between"
 							onFocus={handleFocus}
 						>
-							{currentValue
-								? owners.find(
-										(type: { value: string; label: string }) => type.value === currentValue
-								  )?.label
-								: "Select a place owner..."}
+							{getDisplayLabel()}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent className="w-[200px] p-0 bg-background">
-						<Command>
-							<CommandInput placeholder="Search place owner..." />
-							<CommandEmpty>No place owner found.</CommandEmpty>
+						<Command shouldFilter={true}>
+							<CommandInput 
+								placeholder="Search place owner..." 
+								value={searchQuery}
+								onValueChange={setSearchQuery}
+							/>
+							<CommandEmpty>
+								{isLoading ? "Searching..." : "No place owner found."}
+							</CommandEmpty>
 							<CommandGroup>
 								<CommandList
+									ref={scrollRef}
 									className="max-h-60 overflow-y-auto"
 									tabIndex={0}
-									onWheel={e => e.stopPropagation()}
+									onScroll={handleScroll}
+									onWheel={handleWheel}
 								>
-									{owners.map((type: { value: string; label: string }) => (
+									{allOwners.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
-											value={type.value}
+											value={type.label}
 											onSelect={() => handleSelect(type)}
 											className="hover:bg-secondary"
 										>
@@ -171,6 +294,16 @@ const PlaceOwnerSelectContent: React.FC = () => {
 											{type.label}
 										</CommandItem>
 									))}
+									{isFetching && offset > 0 && (
+										<div className="p-2 text-xs text-muted-foreground text-center">
+											Loading more...
+										</div>
+									)}
+									{!hasMore && allOwners.length > 1 && (
+										<div className="p-2 text-xs text-muted-foreground text-center">
+											No more results
+										</div>
+									)}
 								</CommandList>
 							</CommandGroup>
 						</Command>
