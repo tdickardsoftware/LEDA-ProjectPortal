@@ -21,6 +21,15 @@ export type Player = {
 	dateOfBirth: Date;
 };
 //
+//Define type to identify the shape of our data from postgres for players for datatable
+//
+export type PlayerDataTable = {
+	ledaId: number;
+	fullName: string;
+	phoneNumber: string;
+	email: string;
+};
+//
 //Define type to identify the shape of our data from postgres for teams
 //
 export type Team = {

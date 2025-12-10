@@ -18,6 +18,7 @@ import {
 	Season,
 	TrailsDate,
 	TrailsDateData,
+	PlayerDataTable,
 } from "@/lib/definitions";
 import {
 	// relative API routes
@@ -30,6 +31,7 @@ import {
 	placeRoute,
 	placeTypeRoute,
 	playerRoute,
+	playersDataTableRoute,
 	seasonRoute,
 	teamRoute,
 	trailsDateRoute,
@@ -124,6 +126,23 @@ export async function fetchPlayers() {
 		return data;
 	} catch (error) {
 	rethrowNextRedirect(error);
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Player Information");
+	}
+}
+
+export async function fetchPlayersDataTable() {
+	// attempt to get data
+	try {
+		const response = await fetchWithSession(playersDataTableRoute);
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}
+		const data = (await response.json()) as PlayerDataTable[];
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+		rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
 	}

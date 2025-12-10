@@ -8,6 +8,8 @@ require("dotenv").config();
 export const placeOwnerRoute = "/api/management/player/placeOwner";
 // Define route for players not on the serverside
 export const playerRoute = "/api/management/player";
+// Define route for players for datatable not on the serverside
+export const playersDataTableRoute = "/api/management/player/datatable";
 // Define route for places not on the serverside
 export const placeRoute = "/api/management/place";
 // Define route for teams not on the serverside

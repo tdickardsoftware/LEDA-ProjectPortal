@@ -1,6 +1,6 @@
 import { DataTable } from "@/components/datatable";
-import { playerRoute } from "@/lib/apiRoutes";
-import { fetchPlayers } from "@/lib/getData";
+import { playerRoute, playersDataTableRoute } from "@/lib/apiRoutes";
+import { fetchPlayers, fetchPlayersDataTable } from "@/lib/getData";
 import { columns } from "@/schemas/managment/players";
 import { Metadata } from "next";
 
@@ -16,7 +16,7 @@ export default async function Page() {
 			 <div className="container mx-auto py-10">
 				 <DataTable
 					 columns={columns}
-					 data={await fetchPlayers()}
+					 data={await fetchPlayersDataTable()}
 					 pageName="Players Page"
 					 addDialogConfig={{
 						 form: "PlayerAddInformationForm",
@@ -37,7 +37,7 @@ export default async function Page() {
 						 linkName: "View Player",
 						 parentPage: "Players"
 					 }}
-					 apiEndpoint={playerRoute}
+					 apiEndpoint={playersDataTableRoute}
 					 defaultSort="ledaId"
 					 filter={true}
 				 />
