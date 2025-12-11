@@ -37,6 +37,14 @@ export type PlayerDataTable = {
 	email: string;
 };
 //
+// Define type to identify the shape of our data from postgres for players for selector
+//
+export type PlayerSelector = {
+	ledaId: number;
+	fullName: string;
+	cannotBeCaptain: boolean;
+};
+//
 //Define type to identify the shape of our data from postgres for teams
 //
 export type Team = {
