@@ -32,7 +32,7 @@ export function createColumnMapping(columns: ColumnMapping[]): Map<string, strin
 	const mapping = new Map<string, string>();
 	
 	columns.forEach(col => {
-		const { displayName, dataKey } = col;
+		const { displayName, dataKey, variations: providedVariations } = col;
 		const variations = new Set<string>();
 		
 		// Add display name variations if available
@@ -54,6 +54,15 @@ export function createColumnMapping(columns: ColumnMapping[]): Map<string, strin
 			variations.add(underscored);
 			const spaced = dataKey.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
 			variations.add(spaced);
+		}
+		
+		// Add custom provided variations (lowercase them for consistent matching)
+		if (providedVariations && Array.isArray(providedVariations)) {
+			providedVariations.forEach(variation => {
+				if (variation && variation.trim()) {
+					variations.add(variation.toLowerCase());
+				}
+			});
 		}
 		
 		// Add all variations to mapping
@@ -262,7 +271,10 @@ export function buildSQLWhereClause(
 		const andConditions: string[] = [];
 
 		group.fieldSearches.forEach(({ field, values, matchMode }) => {
-			const columnName = `${prefix}"${field}"`;
+			// Use the mapped column expression if available, otherwise fall back to field with prefix
+			const columnName = columnMapping.has(field) 
+				? columnMapping.get(field)! 
+				: `${prefix}"${field}"`;
 
 			switch (matchMode) {
 				case 'exact': {

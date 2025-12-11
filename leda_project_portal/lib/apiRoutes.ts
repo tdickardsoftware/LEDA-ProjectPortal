@@ -69,8 +69,7 @@ export const trailsPlayerHistoryRoute =
 export const mentionPlayerHistoryRoute =
 	"/api/maintenance/mention/mentionHistory";
 // Define route for playerPaymentHistory not on the serverside
-export const playerPaymentHistoryRoute =
-	"/api/maintenance/payment/playerPayment";
+export const playerPaymentHistoryRoute = "/api/maintenance/payment/playerPayment";
 // Define route for teamPaymentHistory not on the serverside
 export const teamPaymentHistoryRoute = "/api/maintenance/payment/teamPayment";
 // Define route for placePaymentHistory not on the serverside
