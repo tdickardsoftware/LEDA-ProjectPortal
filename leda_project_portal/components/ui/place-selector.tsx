@@ -18,7 +18,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { placeRoute } from "@/lib/apiRoutes";
+import { placeRoute, placeSelectorRoute } from "@/lib/apiRoutes";
 import {
 	FormControl,
 	FormField,
@@ -86,22 +86,100 @@ const DivisionSelectorContent = () => {
 	const { watch, setValue } = useFormContext<FormValues>();
 	const placeId = watch("placeId");
 	const [open, setOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = React.useState("");
+	const [debouncedSearch, setDebouncedSearch] = React.useState("");
+	const [offset, setOffset] = React.useState(0);
+	const [allPlaces, setAllPlaces] = React.useState<{ value: string; label: string }[]>([]);
+	const [hasMore, setHasMore] = React.useState(true);
 
 	const justClosedRef = React.useRef(false);
 	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
 	const lastInputType = useLastInputType();
 
-	const { data: teams = [] } = useQuery({
-		queryKey: ["places"],
+	// Reset search and state when dropdown closes
+	React.useEffect(() => {
+		if (!open) {
+			setSearchQuery("");
+			setOffset(0);
+			setAllPlaces([]);
+			setHasMore(true);
+		}
+	}, [open]);
+
+	// Debounce search input
+	React.useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearch(searchQuery);
+			setOffset(0);
+			setAllPlaces([]);
+			setHasMore(true);
+		}, 300);
+
+		return () => clearTimeout(timer);
+	}, [searchQuery]);
+
+	// Fetch records based on search and offset
+	const { data: places = [], isLoading, isFetching } = useQuery({
+		queryKey: ["places", debouncedSearch, offset],
 		queryFn: async () => {
-			const response = await fetch(placeRoute);
+			const params = new URLSearchParams({
+				search: debouncedSearch,
+				limit: "50",
+				offset: offset.toString(),
+			});
+			const response = await fetch(`${placeSelectorRoute}?${params}`);
+			if (!response.ok) {
+				throw new Error("Failed to fetch places");
+			}
 			const data = await response.json();
-			return data.map((type: { ledaId: string; name: string }) => ({
+			
+			// If we got fewer than 50 results, we've reached the end
+			if (data.length < 50) {
+				setHasMore(false);
+			}
+			
+			const mappedData = data.map((type: { ledaId: string; name: string }) => ({
 				value: type.ledaId,
 				label: type.ledaId + " - " + type.name,
 			}));
+			
+			return mappedData;
 		},
+		staleTime: 0,
+		enabled: open,
+		refetchOnMount: true,
 	});
+
+	// Append new places to the list when they arrive
+	React.useEffect(() => {
+		if (places.length > 0 && !isFetching) {
+			if (offset === 0) {
+				// First batch or new search - replace
+				setAllPlaces(places);
+			} else {
+				// Additional batches - append
+				setAllPlaces(prev => [...prev, ...places]);
+			}
+		}
+	}, [places, offset, isFetching]);
+
+	// Handle scroll to load more
+	const handleScroll = React.useCallback(
+		(e: React.UIEvent<HTMLDivElement>) => {
+			const target = e.currentTarget;
+			const scrolledToBottom =
+				target.scrollHeight - target.scrollTop <= target.clientHeight + 50;
+
+			if (scrolledToBottom && hasMore && !isFetching) {
+				setOffset(prev => prev + 50);
+			}
+		},
+		[hasMore, isFetching]
+	);
+
+	const handleWheel = React.useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+		e.stopPropagation();
+	}, []);
 
 	const handleFocus = React.useCallback(() => {
 		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
@@ -118,6 +196,10 @@ const DivisionSelectorContent = () => {
 		justClosedRef.current = true;
 	};
 
+	const displayValue = placeId
+		? allPlaces.find((type) => type.value === placeId)?.label || placeId
+		: "Select a Place";
+
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
@@ -131,27 +213,31 @@ const DivisionSelectorContent = () => {
 							className="w-[200px] justify-between"
 							onFocus={handleFocus}
 						>
-							{placeId
-								? teams.find((type: { value: string; label: string }) => type.value === placeId)
-										?.label
-								: "Select a Place"}
+							{displayValue}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent className="w-[200px] p-0 bg-background">
-						<Command>
-							<CommandInput placeholder="Search places..." />
-							<CommandEmpty>No place found.</CommandEmpty>
+						<Command shouldFilter={true}>
+							<CommandInput 
+								placeholder="Search places..." 
+								value={searchQuery}
+								onValueChange={setSearchQuery}
+							/>
+							<CommandEmpty>
+								{isLoading || isFetching ? "Loading..." : "No place found."}
+							</CommandEmpty>
 							<CommandGroup>
 								<CommandList
 									className="max-h-60 overflow-y-auto"
 									tabIndex={0}
-									onWheel={e => e.stopPropagation()}
+									onScroll={handleScroll}
+									onWheel={handleWheel}
 								>
-									{teams.map((type: { value: string; label: string }) => (
+									{allPlaces.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
-											value={type.value}
+											value={type.label}
 											onSelect={() => handleSelect(type)}
 											className="hover:bg-secondary"
 										>
@@ -166,6 +252,11 @@ const DivisionSelectorContent = () => {
 											{type.label}
 										</CommandItem>
 									))}
+									{isFetching && (
+										<div className="py-2 text-center text-sm text-muted-foreground">
+											Loading more...
+										</div>
+									)}
 								</CommandList>
 							</CommandGroup>
 						</Command>
