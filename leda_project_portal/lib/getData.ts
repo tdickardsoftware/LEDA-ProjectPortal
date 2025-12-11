@@ -18,6 +18,10 @@ import {
 	Season,
 	TrailsDate,
 	TrailsDateData,
+	PlayerDataTable,
+	PlaceDataTable,
+	TeamDataTable,
+	SeasonDataTable,
 } from "@/lib/definitions";
 import {
 	// relative API routes
@@ -27,11 +31,15 @@ import {
 	payoutTierRoute,
 	penaltyRoute,
 	peopleTypeRoute,
+	placeDataTableRoute,
 	placeRoute,
 	placeTypeRoute,
 	playerRoute,
+	playersDataTableRoute,
+	seasonDataTableRoute,
 	seasonRoute,
 	teamRoute,
+	teamsDataTableRoute,
 	trailsDateRoute,
 	trailsRoute,
 } from "@/lib/apiRoutes";
@@ -128,6 +136,23 @@ export async function fetchPlayers() {
 		throw new Error("Failed to fetch Player Information");
 	}
 }
+
+export async function fetchPlayersDataTable() {
+	// attempt to get data
+	try {
+		const response = await fetchWithSession(playersDataTableRoute);
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}
+		const data = (await response.json()) as PlayerDataTable[];
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+		rethrowNextRedirect(error);
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Player Information");
+	}
+}
 //
 // get data for a specific player with both player and membership information
 //
@@ -168,6 +193,25 @@ export async function fetchTeams() {
 	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
+	}
+}
+//
+// async function to get all team data from the database for datatable
+//
+export async function fetchTeamsDataTable() {
+	// attempt to get data
+	try {
+	const response = await fetchWithSession(teamsDataTableRoute);
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}			
+		const data = (await response.json()) as TeamDataTable[];
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+	rethrowNextRedirect(error);
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Team DataTable Information");
 	}
 }
 //
@@ -243,6 +287,25 @@ export async function fetchPlaces() {
 	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
+	}
+}
+//
+// async function to get all place data from the database for datatable
+//
+export async function fetchPlacesDataTable() {
+	// attempt to get data
+	try {
+	const response = await fetchWithSession(placeDataTableRoute);
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}
+		const data = (await response.json()) as PlaceDataTable[];
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+	rethrowNextRedirect(error);
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Place DataTable Information");
 	}
 }
 //
@@ -417,6 +480,25 @@ export async function fetchSeasons() {
 	rethrowNextRedirect(error);
 		console.error("API Error: ", error);
 		throw new Error("Failed to fetch Player Information");
+	}
+}
+//
+// async function to get Season data for datatable
+//
+export async function fetchSeasonsDataTable() {
+	// attempt to get data
+	try {
+		const response = await fetchWithSession(seasonDataTableRoute);
+		if (!response.ok) {
+			throw new Error("Network response was not ok");
+		}	
+		const data = (await response.json()) as SeasonDataTable[];
+		return data;
+		// if it cannot get data error out
+	} catch (error) {
+	rethrowNextRedirect(error);
+		console.error("API Error: ", error);
+		throw new Error("Failed to fetch Season DataTable Information");
 	}
 }
 //

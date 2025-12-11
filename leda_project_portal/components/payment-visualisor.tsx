@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { PaymentHistory } from "@/lib/definitions";
 import {
 	playerPaymentHistoryRoute,
@@ -9,7 +9,7 @@ import {
 	placePaymentHistoryRoute,
 } from "@/lib/apiRoutes";
 import { Button } from "./ui/button";
-import { DataTable } from "./datatable";
+import { ServerSideDataTable } from "./server-side-datatable";
 import { ColumnDef } from "@tanstack/react-table";
 import PaymentHistoryFormDialog from "./payment-history-form-dialog";
 import { Eye, PencilIcon, XIcon } from "lucide-react";
@@ -21,6 +21,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { usePlayerPaymentsData, PlayerPaymentHistoryDataTable } from "@/hooks/usePlayerPaymentsData";
+import { useTeamPaymentsData, TeamPaymentHistoryDataTable } from "@/hooks/useTeamPaymentsData";
+import { usePlacePaymentsData, PlacePaymentHistoryDataTable } from "@/hooks/usePlacePaymentsData";
+
+type PaymentDataType = PlayerPaymentHistoryDataTable | TeamPaymentHistoryDataTable | PlacePaymentHistoryDataTable;
 
 interface PaymentVisualisorProps {
 	type: "player" | "team" | "place";
@@ -28,8 +33,11 @@ interface PaymentVisualisorProps {
 }
 
 export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
-	const [selectedPayment, setSelectedPayment] = useState<PaymentHistory | null>(null);
+	const [selectedPayment, setSelectedPayment] = useState<PaymentDataType | null>(null);
 	const [detailsOpen, setDetailsOpen] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [search, setSearch] = useState("");
+	const pageSize = 10;
 	const queryClient = useQueryClient();
 
 	// Get the appropriate route for the payment type - wrapped in useCallback
@@ -51,58 +59,35 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 		return date.toLocaleDateString("en-US", { timeZone: "UTC" });
 	}, []);
 
-	// TanStack Query for payments
-	const {
-		data: payments = [],
-		error: paymentsError,
-		isLoading: paymentsLoading,
-		refetch: refetchPayments,
-	} = useQuery({
-		queryKey: ['paymentHistory', type, ledaId],
-		queryFn: async () => {
-			const baseUrl = getBaseRoute();
-			if (!baseUrl) return [];
-			
-			const url = ledaId ? `${baseUrl}?ledaId=${ledaId}` : baseUrl;
-			const response = await fetch(url);
-			
-			if (!response.ok) {
-				throw new Error(`API returned ${response.status}: ${response.statusText}`);
-			}
-			
-			let data = await response.json();
-			data = Array.isArray(data) ? data : data?.payments || [];
-			
-			// Format dates and sort by newest first
-			return data.map((payment: PaymentHistory) => {
-				// Ensure date is processed correctly
-				const formattedDate = formatDate(payment.date);
-				
-				return {
-					...payment,
-					date: payment.date, // Keep original date
-					formattedDate: formattedDate // Add formatted date for display
-				};
-			}).sort((a: PaymentHistory, b: PaymentHistory) => {
-				const dateA = new Date(String(a.date || "") + (String(a.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
-				const dateB = new Date(String(b.date || "") + (String(b.date || "").endsWith("Z") ? "" : "T00:00:00Z"));
-				return dateB.getTime() - dateA.getTime();
-			});
-		},
-		enabled: !!type,
-		staleTime: 2 * 60 * 1000,
-		retry: 1,
-	});
+	// Use appropriate hook based on type
+	const playerQuery = usePlayerPaymentsData(currentPage, pageSize, search, ledaId);
+	const teamQuery = useTeamPaymentsData(currentPage, pageSize, search, ledaId);
+	const placeQuery = usePlacePaymentsData(currentPage, pageSize, search, ledaId);
+
+	// Select the appropriate query result based on type
+	const currentQuery = type === "player" ? playerQuery : type === "team" ? teamQuery : placeQuery;
+	const { data: queryData, isLoading: paymentsLoading, error: paymentsError } = currentQuery;
+
+	const payments = queryData?.data || [];
+	const totalPages = queryData?.pagination?.totalPages || 1;
 
 	const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
 
 	const refreshPayments = React.useCallback(() => {
-		refetchPayments();
-		queryClient.invalidateQueries({ queryKey: ['paymentHistory'] });
-	}, [refetchPayments, queryClient]);
+		currentQuery.refetch();
+		queryClient.invalidateQueries({ queryKey: [type === "player" ? "player-payments-datatable" : type === "team" ? "team-payments-datatable" : "place-payments-datatable"] });
+	}, [currentQuery, queryClient, type]);
+
+	// Helper to convert PaymentDataType to PaymentHistory for form compatibility
+	const toPaymentHistory = React.useCallback((payment: PaymentDataType): PaymentHistory => {
+		return {
+			...payment,
+			date: new Date(payment.date),
+		};
+	}, []);
 
 	// Function to delete a payment record - wrapped in useCallback
-	const handleDeletePayment = React.useCallback(async (payment: PaymentHistory) => {
+	const handleDeletePayment = React.useCallback(async (payment: PaymentDataType) => {
 		if (!window.confirm("Are you sure you want to delete this payment record? This action cannot be undone.")) {
 			return;
 		}
@@ -111,10 +96,16 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 			const baseRoute = getBaseRoute();
 			if (!baseRoute) return;
 
+			// Convert string date to Date for API compatibility
+			const paymentForApi = {
+				...payment,
+				date: new Date(payment.date)
+			};
+
 			const response = await fetchWithSession(`${baseRoute}`, {
 				method: "DELETE",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(payment),
+				body: JSON.stringify(paymentForApi),
 			});
 			
 			if (!response.ok) {
@@ -129,16 +120,17 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 	}, [getBaseRoute, refreshPayments]);
 	
 	// Show payment details in dialog - wrapped in useCallback
-	const showPaymentDetails = React.useCallback((payment: PaymentHistory) => {
+	const showPaymentDetails = React.useCallback((payment: PaymentDataType) => {
 		setSelectedPayment(payment);
 		setDetailsOpen(true);
 	}, []);
 	
 	// Define columns for the DataTable
-	const columns = useMemo<ColumnDef<PaymentHistory>[]>(() => [
+	const columns = useMemo<ColumnDef<PaymentDataType>[]>(() => [
 		{
 			accessorKey: "paymentNbr",
 			header: "Payment #",
+			enableColumnFilter: false,
 		},
 		{
 			accessorKey: "ledaId",
@@ -185,7 +177,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 						onSuccess={refreshPayments}
 						initialLedaId={ledaId}
 						route={getBaseRoute()}
-						paymentData={row.original}
+						paymentData={toPaymentHistory(row.original)}
 						isEditing={true}
 						type={type}
 					/>
@@ -203,7 +195,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 				</div>
 			),
 		},
-	], [ledaId, type, showPaymentDetails, refreshPayments, getBaseRoute, handleDeletePayment, formatDate]);
+	], [ledaId, type, showPaymentDetails, refreshPayments, getBaseRoute, handleDeletePayment, formatDate, toPaymentHistory]);
 
 	return (
 		<div className="w-full">
@@ -231,13 +223,17 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 				</div>
 			) : (
 				<>
-					<DataTable 
+					<ServerSideDataTable 
 						columns={columns}
 						data={payments}
 						pageName={`${capitalizedType} Payments`}
-						apiEndpoint={getBaseRoute()}
-						filter={false}
 						defaultSort="paymentNbr"
+						isLoading={paymentsLoading}
+						totalPages={totalPages}
+						currentPage={currentPage}
+						onPageChange={setCurrentPage}
+						onSearchChange={setSearch}
+						searchValue={search}
 					/>
 					
 					{/* Payment Details Dialog */}
@@ -313,7 +309,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 											}}
 											initialLedaId={ledaId}
 											route={getBaseRoute()}
-											paymentData={selectedPayment}
+											paymentData={toPaymentHistory(selectedPayment)}
 											isEditing={true}
 											type={type}
 										/>

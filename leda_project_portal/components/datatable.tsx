@@ -6,6 +6,7 @@ import { DialogWithButton } from "@/components/dialog-with-button";
 import AlertDialogDelete from "@/components/alert-dialog-delete";
 import CustomLink from "@/components/ui/custom-link";
 import Fuse from "fuse.js";
+import { parseFieldSearch, filterDataBySearch, createColumnMapping, type ColumnMapping } from "@/lib/search-parser";
 import {
 	ColumnDef,
 	SortingState,
@@ -270,10 +271,9 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		return "";
 	}, []);
 
-	// Create column mapping for field name translation
+	// Create column mapping for field name translation using search-parser utility
 	const columnMapping = React.useMemo(() => {
-		const mapping = new Map<string, string>();
-		
+		const columnMappings: ColumnMapping[] = [];
 		
 		columns.forEach((col, index) => {
 			let displayName = "";
@@ -310,208 +310,22 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 				dataKey = col.accessorKey;
 			}
 			
-			if (dataKey) { // Only need dataKey to create mappings
-				const variations = new Set<string>();
-				
-				// Add display name variations if available
-				if (displayName && displayName.trim()) {
-					const cleanDisplayName = displayName.trim();
-					variations.add(cleanDisplayName.toLowerCase());
-					variations.add(cleanDisplayName.toLowerCase().replace(/\s+/g, ""));
-					variations.add(cleanDisplayName.toLowerCase().replace(/[^a-z0-9]/g, ""));
-				}
-				
-				// Add data key variations
-				variations.add(dataKey.toLowerCase());
-				variations.add(dataKey); // original case
-				
-				// Add camelCase variations
-				if (dataKey !== dataKey.toLowerCase()) {
-					variations.add(dataKey.toLowerCase());
-					const underscored = dataKey.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
-					variations.add(underscored);
-					const spaced = dataKey.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
-					variations.add(spaced);
-				}
-				
-				// Remove empty variations and add to mapping
-				Array.from(variations).forEach(variation => {
-					if (variation && variation.trim()) {
-						mapping.set(variation, dataKey);
-					}
+			if (dataKey) {
+				columnMappings.push({
+					displayName,
+					dataKey,
+					variations: []
 				});
 			}
 		});
 		
-		return mapping;
+		return createColumnMapping(columnMappings);
 	}, [columns, extractTextFromReactElement]);
 
-	// Helper function to resolve field name to actual data key
-	const resolveFieldName = React.useCallback((fieldName: string): string => {
-		const normalized = fieldName.toLowerCase();
-		
-		// Try exact match first
-		if (columnMapping.has(normalized)) {
-			const resolved = columnMapping.get(normalized)!;
-			return resolved;
-		}
-		
-		// Try without spaces and special characters
-		const cleanName = normalized.replace(/[^a-z0-9]/g, "");
-		if (columnMapping.has(cleanName)) {
-			const resolved = columnMapping.get(cleanName)!;
-			return resolved;
-		}
-		
-		// Return original if no mapping found
-		return fieldName;
+	// Parse field-specific search queries with AND/OR logic using search-parser utility
+	const parsedSearch = React.useCallback((query: string) => {
+		return parseFieldSearch(query, columnMapping);
 	}, [columnMapping]);
-
-	// Parse field-specific search queries with AND/OR logic
-	const parseFieldSearch = React.useCallback((query: string) => {
-		// Check for field-specific patterns (= or IN)
-		const hasFieldPattern = /["']?(\w+|\w+\s+\w+)["']?\s*(=|IN)/.test(query);
-		
-		if (!hasFieldPattern) {
-			return { type: "general", query: query.trim() };
-		}
-
-		// Split by OR first (case insensitive)
-		const orGroups = query.split(/\s+or\s+/gi);
-		
-		const searchGroups = orGroups.map(orGroup => {
-			// Within each OR group, split by AND
-			const andParts = orGroup.split(/\s+and\s+/gi);
-			
-			const fieldSearches: Array<{ field: string; values: string[]; matchMode: 'exact' | 'in' | 'contains' }> = [];
-			let remainingQuery = "";
-			
-			andParts.forEach(part => {
-				// Pattern 1: "Field" = "value" or Field = value (exact match)
-				const exactMatchQuoted = part.match(/"([^"]+)"\s*=\s*"([^"]+)"/);
-				const exactMatchMixed = part.match(/"([^"]+)"\s*=\s*([^"\s,]+)/);
-				const exactMatchUnquoted = part.match(/(\w+)\s*=\s*"([^"]+)"/);
-				const exactMatchPlain = part.match(/(\w+)\s*=\s*([^"\s,]+)/);
-				
-				// Pattern 2: "Field" IN ("value1", "value2") or Field IN (value1, value2)
-				const inMatchQuoted = part.match(/"([^"]+)"\s+IN\s*\((.+?)\)/i);
-				const inMatchUnquoted = part.match(/(\w+)\s+IN\s*\((.+?)\)/i);
-				
-				// Pattern 3a: ("value1", "value2") IN "Field" or (value1, value2) IN Field (multiple values contains)
-				const multiReverseInQuoted = part.match(/\((.+?)\)\s+IN\s+"([^"]+)"/i);
-				const multiReverseInUnquoted = part.match(/\((.+?)\)\s+IN\s+(\w+)/i);
-				
-				// Pattern 3b: "value" IN "Field" or value IN Field (single value contains/partial match)
-				const reverseInQuoted = part.match(/"([^"]+)"\s+IN\s+"([^"]+)"/i);
-				const reverseInMixed1 = part.match(/"([^"]+)"\s+IN\s+(\w+)/i);
-				const reverseInMixed2 = part.match(/([^"\s,]+)\s+IN\s+"([^"]+)"/i);
-				const reverseInUnquoted = part.match(/([^"\s,]+)\s+IN\s+(\w+)/i);
-				
-				if (exactMatchQuoted || exactMatchMixed || exactMatchUnquoted || exactMatchPlain) {
-					// Exact match pattern
-					const match = exactMatchQuoted || exactMatchMixed || exactMatchUnquoted || exactMatchPlain;
-					const originalField = match![1];
-					const resolvedField = resolveFieldName(originalField);
-					const value = match![2];
-					
-					fieldSearches.push({ 
-						field: resolvedField, 
-						values: [value], 
-						matchMode: 'exact' 
-					});
-				} else if (inMatchQuoted || inMatchUnquoted) {
-					// IN operator pattern: Field IN (values)
-					const match = inMatchQuoted || inMatchUnquoted;
-					const originalField = match![1];
-					const resolvedField = resolveFieldName(originalField);
-					const valuesPart = match![2];
-					
-					// Parse comma-separated values
-					const values: string[] = [];
-					const quotedValuePattern = /"([^"]*)"/g;
-					const quotedMatches = [...valuesPart.matchAll(quotedValuePattern)];
-					
-					if (quotedMatches.length > 0) {
-						quotedMatches.forEach(match => {
-							values.push(match[1]);
-						});
-					} else {
-						valuesPart.split(',').forEach(v => {
-							const trimmed = v.trim();
-							if (trimmed) values.push(trimmed);
-						});
-					}
-					
-					if (values.length > 0) {
-						fieldSearches.push({ 
-							field: resolvedField, 
-							values, 
-							matchMode: 'in' 
-						});
-					}
-				} else if (multiReverseInQuoted || multiReverseInUnquoted) {
-					// Multiple values reverse IN: (values) IN Field (partial match for any value)
-					const match = multiReverseInQuoted || multiReverseInUnquoted;
-					const valuesPart = match![1];
-					const originalField = match![2];
-					const resolvedField = resolveFieldName(originalField);
-					
-					// Parse comma-separated values
-					const values: string[] = [];
-					const quotedValuePattern = /"([^"]*)"/g;
-					const quotedMatches = [...valuesPart.matchAll(quotedValuePattern)];
-					
-					if (quotedMatches.length > 0) {
-						quotedMatches.forEach(match => {
-							values.push(match[1]);
-						});
-					} else {
-						valuesPart.split(',').forEach(v => {
-							const trimmed = v.trim();
-							if (trimmed) values.push(trimmed);
-						});
-					}
-					
-					if (values.length > 0) {
-						fieldSearches.push({ 
-							field: resolvedField, 
-							values, 
-							matchMode: 'contains' 
-						});
-					}
-				} else if (reverseInQuoted || reverseInMixed1 || reverseInMixed2 || reverseInUnquoted) {
-					// Reverse IN operator: value IN Field (partial match)
-					const match = reverseInQuoted || reverseInMixed1 || reverseInMixed2 || reverseInUnquoted;
-					const value = match![1];
-					const originalField = match![2];
-					const resolvedField = resolveFieldName(originalField);
-					
-					fieldSearches.push({ 
-						field: resolvedField, 
-						values: [value], 
-						matchMode: 'contains' 
-					});
-				} else {
-					// This part is general search text
-					if (part.trim()) {
-						remainingQuery += " " + part.trim();
-					}
-				}
-			});
-			
-			return {
-				fieldSearches,
-				remainingQuery: remainingQuery.trim(),
-				operator: "AND" as const
-			};
-		});
-
-		return {
-			type: "field-specific" as const,
-			searchGroups,
-			operator: "OR" as const
-		};
-	}, [resolveFieldName]);
 
 	// Enhanced filtered data with manual search execution
 	const filteredData = React.useMemo(() => {
@@ -524,64 +338,17 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		
 		if (!activeSearchQuery) return base;
 
-		const searchConfig = parseFieldSearch(activeSearchQuery);
+		const searchConfig = parsedSearch(activeSearchQuery);
 
 		if (searchConfig.type === "general") {
 			// Use Fuse.js for general search
-			const results = fuse.search(searchConfig.query);
+			const results = fuse.search(searchConfig.query || "");
 			return results.map(result => result.item);
 		} else {
-			// Handle field-specific searches with AND/OR logic
-			return base.filter(row => {
-				// OR logic: row matches if it satisfies ANY search group
-				if (!searchConfig.searchGroups) return false;
-				return searchConfig.searchGroups.some(group => {
-					// AND logic within group: row must satisfy ALL conditions in the group
-					let fieldMatches = true;
-					let generalMatches = true;
-					
-					// Check field-specific searches (all must match - AND logic)
-					if (group.fieldSearches.length > 0) {
-						fieldMatches = group.fieldSearches.every(({ field, values, matchMode }) => {
-							const cellValue = String(row[field] || "").toLowerCase();
-							
-							switch (matchMode) {
-								case 'exact':
-									// Exact match: "Field" = "value"
-									return cellValue === values[0].toLowerCase();
-									
-								case 'in':
-									// IN operator: "Field" IN ("value1", "value2")
-									return values.some(value => 
-										cellValue === value.toLowerCase()
-									);
-									
-								case 'contains':
-									// Reverse IN: "value" IN "Field" or ("value1", "value2") IN "Field" (partial match)
-									// Match if cell value contains ANY of the values
-									return values.some(value => 
-										cellValue.includes(value.toLowerCase())
-									);
-									
-								default:
-									return false;
-							}
-						});
-					}
-					
-					// Check remaining general search text
-					if (group.remainingQuery) {
-						const tempFuse = new Fuse([row], fuseOptions);
-						const results = tempFuse.search(group.remainingQuery);
-						generalMatches = results.length > 0;
-					}
-					
-					// Both field and general searches must match within this group
-					return fieldMatches && generalMatches;
-				});
-			});
+			// Use the reusable search-parser filter function
+			return filterDataBySearch(base, searchConfig);
 		}
-	}, [activeSearchQuery, tableData, filteredLedaIds, fuse, parseFieldSearch, fuseOptions]);
+	}, [activeSearchQuery, tableData, filteredLedaIds, fuse, parsedSearch]);
 
 	// Function to get payment status for a given ledaId
 	const getPaymentStatus = React.useCallback(

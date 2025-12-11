@@ -17,7 +17,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { playerRoute } from "@/lib/apiRoutes";
+import { playerRoute, playerSelectorRoute } from "@/lib/apiRoutes";
 import {
 	Tooltip,
 	TooltipProvider,
@@ -47,12 +47,54 @@ export default function PlayerSelector({
 }: PlayerSelectorProps) {
 	const [open, setOpen] = useState(false);
 	const [isLoadingExisting, setIsLoadingExisting] = useState(false);
+	const [searchQuery, setSearchQuery] = React.useState("");
+	const [debouncedSearch, setDebouncedSearch] = React.useState("");
+	const [offset, setOffset] = React.useState(0);
+	const [allPlayers, setAllPlayers] = React.useState<Player[]>([]);
+	const [hasMore, setHasMore] = React.useState(true);
 
-	const { data: players = [], isLoading: isLoadingPlayers } = useQuery({
-		queryKey: ["players"],
+	// Reset search and state when dropdown closes
+	React.useEffect(() => {
+		if (!open) {
+			setSearchQuery("");
+			setOffset(0);
+			setAllPlayers([]);
+			setHasMore(true);
+		}
+	}, [open]);
+
+	// Debounce search input
+	React.useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearch(searchQuery);
+			setOffset(0);
+			setAllPlayers([]);
+			setHasMore(true);
+		}, 300);
+
+		return () => clearTimeout(timer);
+	}, [searchQuery]);
+
+	// Fetch records based on search and offset
+	const { data: players = [], isLoading: isLoadingPlayers, isFetching } = useQuery({
+		queryKey: ["players", debouncedSearch, offset],
 		queryFn: async () => {
-			const response = await fetch(playerRoute);
+			const params = new URLSearchParams({
+				search: debouncedSearch,
+				limit: "50",
+				offset: offset.toString(),
+			});
+			const response = await fetch(`${playerSelectorRoute}?${params}`);
+			if (!response.ok) {
+				throw new Error("Failed to fetch players");
+			}
 			const data = await response.json();
+			
+			// If we got fewer than 50 results, we've reached the end
+			if (data.length < 50) {
+				setHasMore(false);
+			}
+			
 			return data.map(
 				(player: {
 					ledaId: string;
@@ -66,7 +108,41 @@ export default function PlayerSelector({
 				})
 			);
 		},
+		staleTime: 0,
+		enabled: open,
+		refetchOnMount: true,
 	});
+
+	// Append new players to the list when they arrive
+	React.useEffect(() => {
+		if (players.length > 0 && !isFetching) {
+			if (offset === 0) {
+				// First batch or new search - replace
+				setAllPlayers(players);
+			} else {
+				// Additional batches - append
+				setAllPlayers(prev => [...prev, ...players]);
+			}
+		}
+	}, [players, offset, isFetching]);
+
+	// Handle scroll to load more
+	const handleScroll = React.useCallback(
+		(e: React.UIEvent<HTMLDivElement>) => {
+			const target = e.currentTarget;
+			const scrolledToBottom =
+				target.scrollHeight - target.scrollTop <= target.clientHeight + 50;
+
+			if (scrolledToBottom && hasMore && !isFetching) {
+				setOffset(prev => prev + 50);
+			}
+		},
+		[hasMore, isFetching]
+	);
+
+	const handleWheel = React.useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+		e.stopPropagation();
+	}, []);
 
 	const [selectedPlayers, setSelectedPlayers] = useState<
 		{ ledaId: string; fullName: string; isCaptain: boolean; cannotBeCaptain: boolean }[]
@@ -85,24 +161,42 @@ export default function PlayerSelector({
 							isCaptain: parsedList[key].isCaptain,
 						})
 					);
-					// Fetch cannotBeCaptain for each player
+					// Fetch full player details for each existing player
 					const updatedPlayers: Player[] = await Promise.all(
 						playerEntries.map(async (entry) => {
 							let cannotBeCaptain = false;
+							let fullName = "";
+							
 							try {
-								const response = await fetch(
-									`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(
+								// Fetch player details including fullName
+								const playerResponse = await fetch(
+									`${playerSelectorRoute}?search=${encodeURIComponent(
 										entry.ledaId
-									)}`
+									)}&limit=1`
 								);
-								const data = await response.json();
-								cannotBeCaptain = !!data.cannotBeCaptain;
-							} catch {
+								if (playerResponse.ok) {
+									const playerData = await playerResponse.json();
+									if (playerData.length > 0) {
+										fullName = playerData[0].fullName;
+										cannotBeCaptain = playerData[0].cannotBeCaptain;
+									}
+								}
+								
+								// If we didn't get cannotBeCaptain from the selector, try the other endpoint
+								if (!fullName) {
+									const captainResponse = await fetch(
+										`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(
+											entry.ledaId
+										)}`
+									);
+									const captainData = await captainResponse.json();
+									cannotBeCaptain = !!captainData.cannotBeCaptain;
+								}
+							} catch (error) {
+								console.error(`Failed to fetch player ${entry.ledaId}`, error);
 								cannotBeCaptain = false;
 							}
-							const fullName =
-								players.find((p: Player) => p.ledaId === entry.ledaId)
-									?.fullName || "";
+							
 							return {
 								ledaId: entry.ledaId,
 								fullName,
@@ -121,7 +215,7 @@ export default function PlayerSelector({
 		}
 		loadExistingPlayers();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [existingJsonList, players]);
+	}, [existingJsonList]);
 
 	// Report loading state to parent
 	useEffect(() => {
@@ -131,7 +225,7 @@ export default function PlayerSelector({
 	}, [isLoadingPlayers, isLoadingExisting, onLoadingChange]);
 
 	// Filter out selected players from the list
-	const availablePlayers = players.filter(
+	const availablePlayers = allPlayers.filter(
 		(player: Player) => !selectedPlayers.some((p) => p.ledaId === player.ledaId)
 	);
 
@@ -231,15 +325,25 @@ export default function PlayerSelector({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent className="w-[200px] p-0 bg-background">
-						<Command>
-							<CommandInput placeholder="Search players..." />
-							<CommandEmpty>No player found.</CommandEmpty>
+						<Command shouldFilter={true}>
+							<CommandInput 
+								placeholder="Search players..." 
+								value={searchQuery}
+								onValueChange={setSearchQuery}
+							/>
+							<CommandEmpty>
+								{isLoadingPlayers || isFetching ? "Loading..." : "No player found."}
+							</CommandEmpty>
 							<CommandGroup>
-								<CommandList>
+								<CommandList
+									className="max-h-60 overflow-y-auto"
+									onScroll={handleScroll}
+									onWheel={handleWheel}
+								>
 									{availablePlayers.map((player: Player) => (
 										<CommandItem
 											key={player.ledaId}
-											value={player.ledaId}
+											value={`${player.ledaId} - ${player.fullName}`}
 											onSelect={() =>
 												handlePlayerSelection(player)
 											}
@@ -260,6 +364,11 @@ export default function PlayerSelector({
 											{player.ledaId} - {player.fullName}
 										</CommandItem>
 									))}
+									{isFetching && (
+										<div className="py-2 text-center text-sm text-muted-foreground">
+											Loading more...
+										</div>
+									)}
 								</CommandList>
 							</CommandGroup>
 						</Command>

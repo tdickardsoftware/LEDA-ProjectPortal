@@ -8,10 +8,22 @@ require("dotenv").config();
 export const placeOwnerRoute = "/api/management/player/placeOwner";
 // Define route for players not on the serverside
 export const playerRoute = "/api/management/player";
+// Define route for players for selector not on the serverside
+export const playerSelectorRoute = "/api/management/player/playerSelector";
+// Define route for single player selector not on the serverside
+export const singlePlayerSelectorRoute = "/api/management/singlePlayerSelector";
+// Define route for players for datatable not on the serverside
+export const playersDataTableRoute = "/api/management/player/datatable";
 // Define route for places not on the serverside
 export const placeRoute = "/api/management/place";
+// Define route for place datatable not on the serverside
+export const placeDataTableRoute = "/api/management/place/datatable";
+// Define route for place selector not on the serverside
+export const placeSelectorRoute = "/api/management/place/placeSelector";
 // Define route for teams not on the serverside
 export const teamRoute = "/api/management/team";
+// Define route for teams for datatable not on the serverside
+export const teamsDataTableRoute = "/api/management/team/datatable";
 // Define route for division not on the serverside
 export const divisionRoute = "/api/maintenance/division";
 // Define route for mention not on the serverside
@@ -28,6 +40,8 @@ export const peopleTypeRoute = "/api/maintenance/peopleType";
 export const placeTypeRoute = "/api/maintenance/placeType";
 // Define route for season not on the serverside
 export const seasonRoute = "/api/maintenance/season";
+// Define route for season datatable not on the serverside
+export const seasonDataTableRoute = "/api/maintenance/season/datatable";
 // Define route for seasonCode not on the serverside
 export const seasonCodeRoute = "/api/maintenance/season/seasonCode";
 // Define route for trailsDate not on the serverside
@@ -55,8 +69,7 @@ export const trailsPlayerHistoryRoute =
 export const mentionPlayerHistoryRoute =
 	"/api/maintenance/mention/mentionHistory";
 // Define route for playerPaymentHistory not on the serverside
-export const playerPaymentHistoryRoute =
-	"/api/maintenance/payment/playerPayment";
+export const playerPaymentHistoryRoute = "/api/maintenance/payment/playerPayment";
 // Define route for teamPaymentHistory not on the serverside
 export const teamPaymentHistoryRoute = "/api/maintenance/payment/teamPayment";
 // Define route for placePaymentHistory not on the serverside

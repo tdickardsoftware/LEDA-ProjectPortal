@@ -21,6 +21,37 @@ export type Player = {
 	dateOfBirth: Date;
 };
 //
+// Define type to identify the shape of our data coming from postgres for place owner selector
+//
+export type PlaceOwner = {
+	ledaId: number;
+	fullName: string;
+};
+//
+//Define type to identify the shape of our data from postgres for players for datatable
+//
+export type PlayerDataTable = {
+	ledaId: number;
+	fullName: string;
+	phoneNumber: string;
+	email: string;
+};
+//
+// Define type to identify the shape of our data from postgres for players for selector
+//
+export type PlayerSelector = {
+	ledaId: number;
+	fullName: string;
+	cannotBeCaptain: boolean;
+};
+//
+// Define type to identify the shape of our data from postgres for single player selector
+//
+export type PlayerSingleSelector = {
+	ledaId: number;
+	fullName: string;
+};
+//
 //Define type to identify the shape of our data from postgres for teams
 //
 export type Team = {
@@ -30,6 +61,16 @@ export type Team = {
 	memo: string;
 	lastTeamFeePayment: string;
 	memberIdList: JSON;
+};
+//
+// Define type to identify the shape of our data from postgres for teams for datatable
+//
+export type TeamDataTable = {
+	ledaId: number;
+	teamName: string;
+	memo: string;
+	establishedDate: Date;
+	lastTeamFeePayment: string;
 };
 //
 //Define type to identify the shape of our data from postgres for places
@@ -57,6 +98,23 @@ export type Place = {
 	lastBarFeePayment: string;
 	lastSanctioningDate: Date;
 	contactId: number;
+	placeType: string;
+};
+//
+// Define type to identify the shape of our data from postgres for places for selector
+//
+export type PlaceSelector = {
+	ledaId: number;
+	name: string;
+};
+//
+// Define type to identify the shape of our data from postgres for place datatable
+// 
+export type PlaceDataTable = {
+	ledaId: number;
+	name: string;
+	addressFull: string;
+	phoneNumber: string;
 	placeType: string;
 };
 //
@@ -117,6 +175,15 @@ export type Season = {
 	desc: string;
 	fiscalYear: string;
 	dates: JSON;
+	isCurrentSeason: boolean;
+};
+//
+// Define type to identify the shape of our data from postgres for Seasons Datatable
+//
+export type SeasonDataTable = {
+	seasonCode: string;
+	desc: string;
+	fiscalYear: string;
 	isCurrentSeason: boolean;
 };
 //

@@ -56,8 +56,8 @@ export function InputDefault({
 								disabled={disabled}
 								value={
 									type === "date"
-										? field.value?.split("T")[0]
-										: field.value
+										? field.value?.split("T")[0] || ""
+										: field.value ?? ""
 								}
 							/>
 						</FormControl>
