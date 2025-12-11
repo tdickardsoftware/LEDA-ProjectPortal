@@ -10,6 +10,8 @@ export const placeOwnerRoute = "/api/management/player/placeOwner";
 export const playerRoute = "/api/management/player";
 // Define route for players for selector not on the serverside
 export const playerSelectorRoute = "/api/management/player/playerSelector";
+// Define route for single player selector not on the serverside
+export const singlePlayerSelectorRoute = "/api/management/singlePlayerSelector";
 // Define route for players for datatable not on the serverside
 export const playersDataTableRoute = "/api/management/player/datatable";
 // Define route for places not on the serverside

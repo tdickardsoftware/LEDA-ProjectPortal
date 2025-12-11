@@ -45,6 +45,13 @@ export type PlayerSelector = {
 	cannotBeCaptain: boolean;
 };
 //
+// Define type to identify the shape of our data from postgres for single player selector
+//
+export type PlayerSingleSelector = {
+	ledaId: number;
+	fullName: string;
+};
+//
 //Define type to identify the shape of our data from postgres for teams
 //
 export type Team = {
