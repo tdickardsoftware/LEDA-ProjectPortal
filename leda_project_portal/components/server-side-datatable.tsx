@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
 import { Spinner } from "@/components/ui/skeleton";
 import { playerRoute } from "@/lib/apiRoutes";
+import { useQueryClient } from "@tanstack/react-query";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -392,13 +393,16 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 			.map((row) => row.original);
 	}, [rowSelection, table]);
 
+	const queryClient = useQueryClient();
+
 	React.useEffect(() => {
 		setSelectedRowCount(Object.keys(rowSelection).length);
 	}, [rowSelection]);
 
 	// Refresh handler
 	const handleRefresh = () => {
-		onPageChange(currentPage); // Trigger refetch
+		// Invalidate queries to refetch fresh data
+		queryClient.invalidateQueries({ queryKey: ['seasons-datatable'] });
 		setRowSelection({});
 	};
 

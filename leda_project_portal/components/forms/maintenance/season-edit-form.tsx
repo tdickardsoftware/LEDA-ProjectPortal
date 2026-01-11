@@ -22,17 +22,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { seasonRoute } from "@/lib/apiRoutes";
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import { DatePickerCustom } from "@/components/ui/date-picker"
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the schema for form validation using zod
 const seasonFormSchema = z.object({
@@ -58,26 +51,52 @@ export default function SeasonEditForm({
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
-	rowData: {
+	rowData?: {
 		seasonCode: string;
-		fiscalYear: string;
-		dates: JSON;
-		isCurrentSeason: boolean;
-		desc?: string;
 	};
 	handleRefresh?: () => void;
 }) {
+	// Fetch season data using the seasonCode
+	const { data: seasonData, isLoading, isError } = useQuery({
+		queryKey: ['season', rowData?.seasonCode],
+		queryFn: async () => {
+			const response = await fetchWithSession(
+				`${seasonRoute}?seasonCode=${rowData?.seasonCode}`
+			);
+			if (!response.ok) {
+				throw new Error('Failed to fetch season data');
+			}
+			return response.json();
+		},
+		enabled: !!rowData?.seasonCode,
+	});
+
 	// Move all hooks to the top-level, before any conditional returns
 	const form = useForm<z.infer<typeof seasonFormSchema>>({
 		resolver: zodResolver(seasonFormSchema),
 		defaultValues: {
-			...rowData,
-			dates: JSON.stringify(rowData.dates),
+			seasonCode: "",
+			fiscalYear: "",
+			dates: "",
+			isCurrentSeason: false,
+			desc: "",
 		},
 	});
-	const [dates, setDates] = React.useState<string>(
-		JSON.stringify(rowData.dates)
-	);
+	const [dates, setDates] = React.useState<string>("");
+
+	// Update form and dates when seasonData is loaded
+	React.useEffect(() => {
+		if (seasonData) {
+			form.reset({
+				seasonCode: seasonData.seasonCode,
+				fiscalYear: seasonData.fiscalYear,
+				dates: JSON.stringify(seasonData.dates),
+				isCurrentSeason: seasonData.isCurrentSeason,
+				desc: seasonData.desc || "",
+			});
+			setDates(JSON.stringify(seasonData.dates));
+		}
+	}, [seasonData, form]);
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof seasonFormSchema>) => {
@@ -119,16 +138,35 @@ export default function SeasonEditForm({
 		return null;
 	}
 
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center p-8">
+				<div className="text-lg">Loading season data...</div>
+			</div>
+		);
+	}
+
+	if (isError) {
+		return (
+			<div className="flex items-center justify-center p-8">
+				<div className="text-lg text-red-500">Error loading season data</div>
+			</div>
+		);
+	}
+
+	if (!seasonData) {
+		return null;
+	}
+
 	async function onSubmit(values: z.infer<typeof seasonFormSchema>) {
 		mutation.mutate(values);
 	}
 
 	// Handle date change for manual date selection
-	const handleDateChange = (selectedDate: Date | null, index: number) => {
+	const handleDateChange = (selectedDate: Date | undefined, dateKey: string) => {
 		if (selectedDate) {
 			const updatedDates = JSON.parse(dates || "{}");
-			updatedDates[`Date${index + 1}`] =
-				selectedDate.toLocaleDateString("en-US");
+			updatedDates[dateKey] = selectedDate.toLocaleDateString("en-US");
 			setDates(JSON.stringify(updatedDates));
 		}
 	};
@@ -138,139 +176,120 @@ export default function SeasonEditForm({
 		<Form {...form}>
 			<form
 				onSubmit={form.handleSubmit(onSubmit)}
-				className="space-y-4 mx-auto"
+				className="space-y-6 mx-auto max-w-2xl"
 			>
-				<div className="flex space-x-4">
-					<div className={formContainerStyle}>
-						<FormField
+				<div className={formContainerStyle}>
+					<h2 className="text-2xl font-semibold mb-6">Edit Season</h2>
+					
+					{/* Season Code and Fiscal Year Row */}
+					<div className="grid grid-cols-2 gap-4 mb-4">
+						<InputDefault
 							control={form.control}
-							name="isCurrentSeason"
-							render={({ field }) => (
-								<FormItem>
-									<Label
-										className="whitespace-nowrap pr-2"
-										htmlFor="isCurrentSeasonCheckbox"
-									>
-										Current Season?
-									</Label>
-									<FormControl>
-										<Checkbox
-											id="isCurrentSeasonCheckbox"
-											checked={field.value}
-											onCheckedChange={field.onChange}
-											className={checkboxWidth}
-										/>
-									</FormControl>
-								</FormItem>
-							)}
+							name="seasonCode"
+							label="Season Code *"
 						/>
-						<div className="flex space-x-4">
-							<InputDefault
-								control={form.control}
-								name="seasonCode"
-								label="Season Code *"
-								customClass={inputWidth}
-							/>
-							<InputDefault
-								control={form.control}
-								name="fiscalYear"
-								label="Fiscal Year *"
-								customClass={inputWidth}
-							/>
-						</div>
-						<div className="mt-2 max-w-[65vw] overflow-x-auto">
-							<Label className="whitespace-nowrap text-muted-foreground">
-								Existing Dates
-							</Label>
-							<Separator className="my-2" />
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-											Action Date
-										</TableHead>
-										<TableHead className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-											Date Selected
-										</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{(() => {
-										try {
-											const datesObject = JSON.parse(
-												dates || "{}"
-											);
-											if (
-												datesObject &&
-												typeof datesObject === "object"
-											) {
-												return Object.entries(
-													datesObject
-												).map(([key, value], index) => (
-													<TableRow key={index}>
-														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-															{key}
-														</TableCell>
-														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-															<DatePicker
-																showIcon
-																selected={
-																	new Date(
-																		value as string
-																	)
-																}
-																onChange={(
-																	date
-																) =>
-																	handleDateChange(
-																		date,
-																		index
-																	)
-																}
-																dateFormat="MM/dd/yyyy"
-																className="w-full border border-border rounded-md p-2"
-															/>
-														</TableCell>
-													</TableRow>
-												));
-											} else {
-												return (
-													<TableRow>
-														<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-															Invalid dates format
-														</TableCell>
-													</TableRow>
-												);
-											}
-										} catch {
-											return (
-												<TableRow>
-													<TableCell className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-														Error parsing dates
-													</TableCell>
-												</TableRow>
-											);
-										}
-									})()}
-								</TableBody>
-							</Table>
-						</div>
-						<FormField
+						<InputDefault
 							control={form.control}
-							name="desc"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Description</FormLabel>
-									<FormControl>
-										<Textarea
-											placeholder="Additional Data Here..."
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
+							name="fiscalYear"
+							label="Fiscal Year *"
 						/>
+					</div>
+
+					{/* Current Season Checkbox */}
+					<FormField
+						control={form.control}
+						name="isCurrentSeason"
+						render={({ field }) => (
+							<FormItem className="flex flex-row items-center space-x-3 mb-4">
+								<FormControl>
+									<Checkbox
+										id="isCurrentSeasonCheckbox"
+										checked={field.value}
+										onCheckedChange={field.onChange}
+										className={checkboxWidth}
+									/>
+								</FormControl>
+								<Label
+									className="whitespace-nowrap !mt-0 cursor-pointer"
+									htmlFor="isCurrentSeasonCheckbox"
+								>
+									Current Season
+								</Label>
+							</FormItem>
+						)}
+					/>
+
+					{/* Description */}
+					<FormField
+						control={form.control}
+						name="desc"
+						render={({ field }) => (
+							<FormItem className="mb-4">
+								<FormLabel>Description</FormLabel>
+								<FormControl>
+									<Textarea
+										placeholder="Additional Data Here..."
+										{...field}
+										className="min-h-[100px]"
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<Separator className="my-6" />
+
+					{/* Existing Dates Tiles */}
+					<div className="mt-6">
+						<Label className="block mb-3 text-sm font-medium text-muted-foreground">
+							Existing Dates
+						</Label>
+						<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto pr-2">
+							{(() => {
+								try {
+									const datesObject = JSON.parse(dates || "{}");
+									if (datesObject && typeof datesObject === "object") {
+										return Object.entries(datesObject).map(([key, value], index) => (
+											<div 
+												key={index}
+												className="group relative p-3 border border-border rounded-lg bg-card hover:border-primary/50 transition-all overflow-hidden"
+											>
+												<div className="group-hover:blur-sm transition-all">
+													<div className="text-xs font-medium text-muted-foreground mb-2">
+														{key}
+													</div>
+													<div className="text-sm font-semibold">
+														{value as string}
+													</div>
+												</div>
+												<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+													<DatePickerCustom
+														onDateChange={(selectedDate) => {
+															handleDateChange(selectedDate, key);
+														}}
+														initialMonth={new Date(value as string)}
+														dateSelected={new Date(value as string)}
+													/>
+												</div>
+											</div>
+										));
+									} else {
+										return (
+											<div className="text-sm text-muted-foreground">
+												Invalid dates format
+											</div>
+										);
+									}
+								} catch {
+									return (
+										<div className="text-sm text-muted-foreground">
+											Error parsing dates
+										</div>
+									);
+								}
+							})()}
+						</div>
 					</div>
 				</div>
 				<div className="flex justify-between items-center">
@@ -284,7 +303,7 @@ export default function SeasonEditForm({
 							Back
 						</Button>
 					)}
-					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Update</Button>
+						<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground px-8">Update</Button>
 				</div>
 			</form>
 		</Form>
