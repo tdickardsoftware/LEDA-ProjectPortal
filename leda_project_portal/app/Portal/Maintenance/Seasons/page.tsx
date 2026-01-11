@@ -60,6 +60,10 @@ export default function Page() {
 					linkName: "View Season",
 					parentPage: "Seasons"
 				}}
+				customLink={{
+					buttonName: "View Calendar",
+					link: "/Maintenance/Seasons/Calendar"
+				}}
 				isLoading={isLoading}
 				totalPages={data?.pagination.totalPages || 1}
 				currentPage={page}
