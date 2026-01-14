@@ -139,7 +139,7 @@ export default function PlaceEditForm({
 		resolver: zodResolver(placeFormSchema),
 		mode: "onChange",
 		defaultValues: {
-			ledaId: formData.ledaId ?? undefined,
+			ledaId: formData.ledaId ?? 0,
 			name: formData.name || "",
 			addressOne: formData.addressOne || "",
 			addressTwo: formData.addressTwo || "",
@@ -152,9 +152,9 @@ export default function PlaceEditForm({
 			website: formData.website || "",
 			establishDate: formData.establishDate
 				? new Date(formData.establishDate).toISOString().split("T")[0]
-				: undefined,
+				: "",
 			memo: formData.memo || "",
-			numberOfBoards: formData.numberOfBoards || undefined,
+			numberOfBoards: formData.numberOfBoards || 0,
 			sendMailings: formData.sendMailings || false,
 			regularSponsor: formData.regularSponsor || false,
 			currentSponsor: formData.currentSponsor || false,
@@ -163,7 +163,7 @@ export default function PlaceEditForm({
 				? new Date(formData.lastSanctioningDate)
 						.toISOString()
 						.split("T")[0]
-				: undefined,
+				: "",
 			placeType: formData.placeType || "",
 			contactId: formData.contactId ? String(formData.contactId) : "",
 		},

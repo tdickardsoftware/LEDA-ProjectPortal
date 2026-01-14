@@ -177,11 +177,11 @@ export default function PlayerEditInformationForm({
 			gender: formData.gender || "",
 			dateOfBirth: formData.dateOfBirth
 				? new Date(formData.dateOfBirth).toISOString().split("T")[0]
-				: undefined,
-			ledaId: formData.ledaId ?? undefined,
+				: "",
+			ledaId: formData.ledaId ?? 0,
 			establishedDate: formData.establishedDate
 				? new Date(formData.establishedDate).toISOString().split("T")[0]
-				: undefined,
+				: "",
 			badStanding: formData.badStanding || false,
 			badStandingReason: formData.badStandingReason || "",
 			takeOffMailing: formData.takeOffMailing || false,
@@ -190,10 +190,10 @@ export default function PlayerEditInformationForm({
 			needsMemberCard: formData.needsMemberCard || false,
 			inactiveDate: formData.inactiveDate
 				? new Date(formData.inactiveDate).toISOString().split("T")[0]
-				: undefined,
+				: "",
 			lastTrailsDate: formData.lastTrailsDate
 				? new Date(formData.lastTrailsDate).toISOString().split("T")[0]
-				: undefined,
+				: "",
 			memberType: formData.memberType || "",
 			cannotBeCaptain: formData.cannotBeCaptain || false,
 			lifetimeMember: formData.lifetimeMember || false,
