@@ -51,6 +51,12 @@ export default async function handler(
 		try {
 			const results = req.body as Season;
 
+			// If this season is being set as current, unset all other current seasons
+			if (results.isCurrentSeason) {
+				const clearCurrentQuery = `UPDATE maint.leda_maint_seasons SET "isCurrentSeason" = false WHERE "isCurrentSeason" = true;`;
+				await queryPost(clearCurrentQuery, []);
+			}
+
 			// Define the query to insert a new season
 			const query = `INSERT INTO maint.leda_maint_seasons(
                         "seasonCode", "fiscalYear", "dates", "desc", "isCurrentSeason")
@@ -99,6 +105,13 @@ export default async function handler(
 	} else if (req.method === "PUT") {
 		try {
 			const data = req.body as Season;
+
+			// If this season is being set as current, unset all other current seasons
+			if (data.isCurrentSeason) {
+				const clearCurrentQuery = `UPDATE maint.leda_maint_seasons SET "isCurrentSeason" = false WHERE "isCurrentSeason" = true AND "seasonCode" != $1;`;
+				await queryPost(clearCurrentQuery, [data.seasonCode]);
+			}
+
 			const query = `UPDATE maint.leda_maint_seasons SET "fiscalYear" = $2, "dates" = $3, "desc" = $4, "isCurrentSeason" = $5 WHERE "seasonCode" = $1;`;
 			const values = [
 				data.seasonCode,

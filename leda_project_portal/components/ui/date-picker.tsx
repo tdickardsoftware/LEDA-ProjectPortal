@@ -17,16 +17,22 @@ export function DatePickerCustom({
 	onDateChange,
 	initialMonth,
 	dateSelected,
+	showInput = false,
+	disabledDates = [],
 }: {
 	onDateChange: (date: Date | undefined) => void;
 	initialMonth?: Date;
-	dateSelected: Date;
+	dateSelected?: Date;
+	showInput?: boolean;
+	disabledDates?: Date[];
 }) {
 	// State to manage the selected date
-	const [date, setDate] = React.useState<Date>(
-		new Date(
-			dateSelected.getTime() + dateSelected.getTimezoneOffset() * 60000
-		)
+	const [date, setDate] = React.useState<Date | undefined>(
+		dateSelected 
+			? new Date(
+				dateSelected.getTime() + dateSelected.getTimezoneOffset() * 60000
+			)
+			: undefined
 	);
 	// State to manage the visibility of the popover
 	const [isOpen, setIsOpen] = React.useState(false);
@@ -45,17 +51,40 @@ export function DatePickerCustom({
 		}
 	};
 
+	// Format date to MM/DD/YYYY
+	const formatDate = (date: Date | undefined) => {
+		if (!date) return "Pick a date";
+		return date.toLocaleDateString("en-US", {
+			month: "2-digit",
+			day: "2-digit",
+			year: "numeric",
+		});
+	};
+
 	return (
 		// Popover component to display the date picker
 		<Popover open={isOpen} onOpenChange={setIsOpen}>
 			<PopoverTrigger asChild>
-				<Button
-					variant={"ghost"}
-					size="icon"
-					className={cn("h-8 w-8", !date && "text-muted-foreground")}
-				>
-					<CalendarIcon className="h-4 w-4" />
-				</Button>
+				{showInput ? (
+					<Button
+						variant={"outline"}
+						className={cn(
+							"w-full justify-start text-left font-normal",
+							!date && "text-muted-foreground"
+						)}
+					>
+						<CalendarIcon className="mr-2 h-4 w-4" />
+						{date ? formatDate(date) : <span>Pick a date</span>}
+					</Button>
+				) : (
+					<Button
+						variant={"ghost"}
+						size="icon"
+						className={cn("h-8 w-8", !date && "text-muted-foreground")}
+					>
+						<CalendarIcon className="h-4 w-4" />
+					</Button>
+				)}
 			</PopoverTrigger>
 			<PopoverContent className="w-auto p-0 bg-background">
 				<DayPicker
@@ -64,6 +93,15 @@ export function DatePickerCustom({
 					onSelect={handleDateChange}
 					initialFocus
 					defaultMonth={initialMonth}
+					disabled={disabledDates.map(d => {
+						const normalized = new Date(d);
+						normalized.setHours(0, 0, 0, 0);
+						return (date: Date) => {
+							const checkDate = new Date(date);
+							checkDate.setHours(0, 0, 0, 0);
+							return checkDate.getTime() === normalized.getTime();
+						};
+					})}
 				/>
 			</PopoverContent>
 		</Popover>

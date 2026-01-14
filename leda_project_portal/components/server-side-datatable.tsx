@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
 import { Spinner } from "@/components/ui/skeleton";
 import { playerRoute } from "@/lib/apiRoutes";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -45,6 +47,7 @@ interface ServerSideDataTableProps<TData extends Record<string, unknown>, TValue
 	editDialogConfig?: { form: keyofFormComponents; title: string; buttonName: string };
 	deleteDialogConfig?: { buttonName: string; title: string; apiEndpoint: string };
 	viewLinkConfig?: { linkName: string; parentPage: string };
+	customLink?: { buttonName: string; link: string };
 	defaultSort?: string;
 	// Server-side props
 	isLoading?: boolean;
@@ -63,6 +66,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	editDialogConfig,
 	deleteDialogConfig,
 	viewLinkConfig,
+	customLink,
 	defaultSort,
 	isLoading = false,
 	totalPages,
@@ -392,13 +396,17 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 			.map((row) => row.original);
 	}, [rowSelection, table]);
 
+	const queryClient = useQueryClient();
+	const router = useRouter();
+
 	React.useEffect(() => {
 		setSelectedRowCount(Object.keys(rowSelection).length);
 	}, [rowSelection]);
 
 	// Refresh handler
 	const handleRefresh = () => {
-		onPageChange(currentPage); // Trigger refetch
+		// Invalidate queries to refetch fresh data
+		queryClient.invalidateQueries({ queryKey: ['seasons-datatable'] });
 		setRowSelection({});
 	};
 
@@ -418,8 +426,15 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 								onRefresh={handleRefresh}
 							/>
 						)}
-						<div className="flex space-x-2">
-							{viewLinkConfig && (
+						<div className="flex space-x-2">						{customLink && (
+							<Button
+								variant="outline"
+								onClick={() => router.push(`/Portal/${customLink.link}`)}
+								className="hover:bg-muted border-border text-foreground"
+							>
+								{customLink.buttonName}
+							</Button>
+						)}							{viewLinkConfig && (
 								<CustomLink
 									linkName={viewLinkConfig.linkName}
 									parentPage={viewLinkConfig.parentPage}
@@ -437,7 +452,8 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 									disabled={selectedRowCount !== 1}
 								/>
 							)}
-							{deleteDialogConfig && (
+
+						{deleteDialogConfig && (
 								<AlertDialogDelete
 									buttonName={deleteDialogConfig.buttonName}
 									title={deleteDialogConfig.title}

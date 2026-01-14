@@ -808,3 +808,10 @@ export type WeeklyScoresheetsScoresheetTeamInfo = {
 	ledaid: number;
 	teamLetter: string;
 }
+//
+// Define type to identify the shape of our data from postgres for maintenance calendar blocked dates
+//
+export type Calendar = {
+	date: Date;
+	desc: string;
+};

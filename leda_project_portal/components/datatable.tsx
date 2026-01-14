@@ -49,6 +49,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 // Add interface for payment status data
 interface PaymentStatus {
@@ -87,6 +88,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 		editDialogConfig?: { form: keyofFormComponents; title: string; buttonName: string };
 		deleteDialogConfig?: { buttonName: string; title: string; apiEndpoint: string };
 		viewLinkConfig?: { linkName: string; parentPage: string };
+		customLink?: { buttonName: string; link: string };
 		onRefresh?: (api: string) => void;
 		apiEndpoint: string;
 		defaultSort?: string;
@@ -104,6 +106,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	editDialogConfig,
 	deleteDialogConfig,
 	viewLinkConfig,
+	customLink,
 	onRefresh,
 	apiEndpoint,
 	defaultSort,
@@ -112,6 +115,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	defaultSelectedRow,
 	filter,
 }: DataTableProps<TData, TValue>) {
+	const router = useRouter();
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
 	const [activeSearchQuery, setActiveSearchQuery] = React.useState(""); // State for executed search
@@ -942,6 +946,15 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 										</div>
 									</PopoverContent>
 								</Popover>
+							)}
+							{customLink && (
+								<Button
+									variant="outline"
+									onClick={() => router.push(`/Portal/${customLink.link}`)}
+									className="hover:bg-muted border-border text-foreground"
+								>
+									{customLink.buttonName}
+								</Button>
 							)}
 							{viewLinkConfig && (
 								<CustomLink
