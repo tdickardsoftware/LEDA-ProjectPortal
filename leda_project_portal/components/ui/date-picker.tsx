@@ -18,11 +18,13 @@ export function DatePickerCustom({
 	initialMonth,
 	dateSelected,
 	showInput = false,
+	disabledDates = [],
 }: {
 	onDateChange: (date: Date | undefined) => void;
 	initialMonth?: Date;
 	dateSelected?: Date;
 	showInput?: boolean;
+	disabledDates?: Date[];
 }) {
 	// State to manage the selected date
 	const [date, setDate] = React.useState<Date | undefined>(
@@ -91,6 +93,15 @@ export function DatePickerCustom({
 					onSelect={handleDateChange}
 					initialFocus
 					defaultMonth={initialMonth}
+					disabled={disabledDates.map(d => {
+						const normalized = new Date(d);
+						normalized.setHours(0, 0, 0, 0);
+						return (date: Date) => {
+							const checkDate = new Date(date);
+							checkDate.setHours(0, 0, 0, 0);
+							return checkDate.getTime() === normalized.getTime();
+						};
+					})}
 				/>
 			</PopoverContent>
 		</Popover>

@@ -76,6 +76,8 @@ export const teamPaymentHistoryRoute = "/api/maintenance/payment/teamPayment";
 export const placePaymentHistoryRoute = "/api/maintenance/payment/placePayment";
 // Define route for Users not on the serverside
 export const userRoute = "/api/user";
+// Define route for calendar route not on serverside
+export const calendarRoute = "/api/maintenance/calendar";
 
 //
 // Server Routes

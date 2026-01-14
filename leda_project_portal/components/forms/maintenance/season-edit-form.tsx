@@ -26,6 +26,7 @@ import { DatePickerCustom } from "@/components/ui/date-picker"
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 import { useQuery } from "@tanstack/react-query";
+import { useCalendarData } from "@/hooks/useCalendarData";
 
 // Define the schema for form validation using zod
 const seasonFormSchema = z.object({
@@ -83,6 +84,16 @@ export default function SeasonEditForm({
 		},
 	});
 	const [dates, setDates] = React.useState<string>("");
+
+	// Fetch blocked dates from calendar
+	const currentYear = new Date().getFullYear();
+	const { data: calendarData } = useCalendarData(currentYear);
+
+	// Convert to Date array for DatePickerCustom
+	const disabledDates = React.useMemo(() => {
+		if (!calendarData) return [];
+		return calendarData.map(item => new Date(item.date));
+	}, [calendarData]);
 
 	// Update form and dates when seasonData is loaded
 	React.useEffect(() => {
@@ -269,8 +280,7 @@ export default function SeasonEditForm({
 															handleDateChange(selectedDate, key);
 														}}
 														initialMonth={new Date(value as string)}
-														dateSelected={new Date(value as string)}
-													/>
+														dateSelected={new Date(value as string)}													disabledDates={disabledDates}													/>
 												</div>
 											</div>
 										));
