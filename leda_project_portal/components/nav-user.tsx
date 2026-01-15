@@ -8,6 +8,7 @@ import {
 	Moon,
 	Sun,
 	Monitor,
+	Bug,
 } from "lucide-react";
 
 import {
@@ -22,6 +23,19 @@ import {
 	DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
@@ -32,11 +46,18 @@ import { useUserAbilities } from "@/lib/use-user-abilities";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { useState } from "react";
+import { toast } from "sonner";
+
 export function NavUser() {
 	const { isMobile } = useSidebar();
 	const { user, emulateRole } = useUserAbilities();
 	const router = useRouter();
 	const { theme, setTheme } = useTheme();
+	const [showIssueDialog, setShowIssueDialog] = useState(false);
+	const [issueSubject, setIssueSubject] = useState("");
+	const [issueDescription, setIssueDescription] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	async function handleLogout() {
 		await authClient.signOut({
@@ -76,6 +97,54 @@ export function NavUser() {
 		} catch (err) {
 			console.error("Error deleting user account:", err);
 			// optionally show UI feedback here
+		}
+	}
+
+	async function handleSubmitIssue() {
+		if (!issueSubject.trim() || !issueDescription.trim()) {
+			toast.error("Please provide both a subject and description.");
+			return;
+		}
+
+		setIsSubmitting(true);
+		try {
+			// Get CSRF token from cookie
+			const getCookie = (name: string) => {
+				const value = `; ${document.cookie}`;
+				const parts = value.split(`; ${name}=`);
+				if (parts.length === 2) return parts.pop()?.split(';').shift();
+			};
+			const csrfToken = getCookie('csrfToken');
+
+			const response = await fetch("/api/github/create-issue", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					...(csrfToken && { "x-csrf-token": csrfToken }),
+				},
+				credentials: "include",
+				body: JSON.stringify({
+					title: issueSubject,
+					body: issueDescription,
+					labels: ["bug"],
+				}),
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				console.log(errorData)
+				throw new Error(errorData.message);
+			}
+
+			toast.success("Issue submitted successfully!");
+			setShowIssueDialog(false);
+			setIssueSubject("");
+			setIssueDescription("");
+		} catch (error) {
+			console.error("Error submitting issue:", error);
+			toast.error(`Failed to submit issue: ${(error as Error).message}`);
+		} finally {
+			setIsSubmitting(false);
 		}
 	}
 
@@ -169,6 +238,14 @@ export function NavUser() {
 							</>
 						)}
 						<DropdownMenuLabel className="text-xs text-muted-foreground px-2">
+							Help
+						</DropdownMenuLabel>
+						<DropdownMenuItem onClick={() => setShowIssueDialog(true)}>
+							<Bug className="mr-2 size-4" />
+							<span>Found an Issue?</span>
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuLabel className="text-xs text-muted-foreground px-2">
 							Account Management
 						</DropdownMenuLabel>
 						<DropdownMenuSub>
@@ -229,6 +306,50 @@ export function NavUser() {
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</SidebarMenuItem>
+
+			<AlertDialog open={showIssueDialog} onOpenChange={setShowIssueDialog}>
+				<AlertDialogContent className="max-w-lg">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Report an Issue</AlertDialogTitle>
+						<AlertDialogDescription>
+							Describe the issue you encountered. This will create a bug report in our GitHub repository.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label htmlFor="issue-subject">Subject *</Label>
+							<Input
+								id="issue-subject"
+								placeholder="Brief description of the issue"
+								value={issueSubject}
+								onChange={(e) => setIssueSubject(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="issue-description">Description *</Label>
+							<Textarea
+								id="issue-description"
+								placeholder="Detailed description of the issue, steps to reproduce, etc."
+								value={issueDescription}
+								onChange={(e) => setIssueDescription(e.target.value)}
+								className="min-h-[150px]"
+							/>
+						</div>
+					</div>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={(e) => {
+								e.preventDefault();
+								handleSubmitIssue();
+							}}
+							disabled={isSubmitting}
+						>
+							{isSubmitting ? "Submitting..." : "Submit Issue"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</SidebarMenu>
 	);
 }
