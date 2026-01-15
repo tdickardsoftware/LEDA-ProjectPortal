@@ -9,6 +9,7 @@ import {
 	Sun,
 	Monitor,
 	Bug,
+	Info,
 } from "lucide-react";
 
 import {
@@ -244,6 +245,20 @@ export function NavUser() {
 							<Bug className="mr-2 size-4" />
 							<span>Found an Issue?</span>
 						</DropdownMenuItem>
+						<DropdownMenuSub>
+							<DropdownMenuSubTrigger>
+								<Info className="mr-2 size-4" />
+								<span>Information</span>
+							</DropdownMenuSubTrigger>
+							<DropdownMenuSubContent className="bg-background">
+								<DropdownMenuItem className="flex flex-col items-start gap-1">
+									<span>Version: 1.0.0</span>
+									<span>Last Updated Date: {process.env.NEXT_PUBLIC_UPDATE_DATE}</span>
+									<span>Developer: Tyler Dickard</span>
+									<span>Repository: <a href="https://github.com/tdickardsoftware/LEDA-ProjectPortal" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">GitHub</a></span>
+								</DropdownMenuItem>
+							</DropdownMenuSubContent>
+						</DropdownMenuSub>
 						<DropdownMenuSeparator />
 						<DropdownMenuLabel className="text-xs text-muted-foreground px-2">
 							Account Management
