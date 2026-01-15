@@ -1,6 +1,7 @@
 // Import necessary components and types
 import SignupPageContent from "@/components/page-content/landing-content/signup-page-content";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 // Define metadata for the page
 export const metadata: Metadata = {
@@ -12,7 +13,9 @@ export default function Page() {
 	return (
 		// Main container for the page content
 		<main>
-            <SignupPageContent />
+			<Suspense fallback={<div>Loading...</div>}>
+				<SignupPageContent />
+			</Suspense>
 		</main>
 	);
 }
