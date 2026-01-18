@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { requireApiSession } from "@/lib/require-session";
-import { transport } from "@/lib/email";
+import { client } from "@/lib/email";
 
 function getBaseUrl(req: NextApiRequest) {
   const proto = (req.headers["x-forwarded-proto"] as string) || "";
@@ -26,21 +26,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const base = getBaseUrl(req);
   const link = `${base}/sign-up/?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
 
-    await transport.sendMail({
-      from: `Office <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: "Create your account",
-      html: `
+    try {
+      const message = await client.sendAsync({
+        text: `Hello,
+
+An administrator has invited you to create an account. Visit the link below to complete your registration:
+${link}
+
+If the link doesn't work, copy and paste this URL into your browser:
+${link}`,
+        from: `"Account Management" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Create your account",
+        attachment: [
+          {
+            data: `
         <p>Hello,</p>
         <p>An administrator has invited you to create an account. Click the link below to complete your registration:</p>
         <p><a href="${link}" target="_blank" rel="noopener noreferrer">Create your account</a></p>
         <p>If the button doesn't work, copy and paste this URL into your browser:</p>
         <p><code>${link}</code></p>
       `,
-    });
+            alternative: true,
+          },
+        ],
+      });
 
-    return res.status(200).json({ ok: true });
+      return res.status(200).json({ ok: true });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: String(error), details: String(error) });
+    } finally {
+      client.smtp.close();
+    }
   } catch (error) {
-    return res.status(500).json({ error: "Failed to send invite", details: String(error) });
-  }
-}
+    return res.status(500).json({ error: "Internal server error" });
+}}

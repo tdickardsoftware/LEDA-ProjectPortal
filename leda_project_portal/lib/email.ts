@@ -1,11 +1,10 @@
-import nodemailer from 'nodemailer';
+import { SMTPClient } from 'emailjs';
 
-export const transport = nodemailer.createTransport({
+export const client = new SMTPClient({
+    user: process.env.SMTP_USER,
+    password: process.env.SMTP_PASS,
     host: process.env.SMTP_HOST,
+    ssl: false,
+    tls: true,
     port: Number(process.env.SMTP_PORT),
-    secure: true,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-    }
-})
+});
