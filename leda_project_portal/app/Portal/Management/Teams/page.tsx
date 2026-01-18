@@ -4,12 +4,13 @@ import { ServerSideDataTable } from "@/components/server-side-datatable";
 import { teamRoute } from "@/lib/apiRoutes";
 import { columns } from "@/schemas/managment/teams";
 import { useTeamsData } from "@/hooks/useTeamsData";
-import { useState } from "react";
 import { Spinner } from "@/components/ui/skeleton";
+import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
 
 export default function Page() {
-	const [page, setPage] = useState(1);
-	const [search, setSearch] = useState("");
+	const { page, setPage, search, setSearch } = usePersistedDataTableState(
+		"datatable:/Portal/Management/Teams"
+	);
 	const pageSize = 10;
 
 	const { data, isLoading, error } = useTeamsData(page, pageSize, search);

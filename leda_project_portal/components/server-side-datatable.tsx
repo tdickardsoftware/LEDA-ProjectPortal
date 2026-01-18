@@ -84,6 +84,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 
 	// Debounced search
 	const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+	const isInitialSearchEffect = React.useRef(true);
 
 	// Add state for context menus
 	const [contextMenu, setContextMenu] = React.useState<{
@@ -132,14 +133,20 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	}, [searchQuery, onSearchChange, onPageChange, clearSearch]);
 
 	// Trigger search as user types (debounced)
+	// Important: skip initial mount so we don't reset to page 1 when returning to a table.
 	React.useEffect(() => {
+		if (isInitialSearchEffect.current) {
+			isInitialSearchEffect.current = false;
+			return;
+		}
+
 		executeSearch();
 		return () => {
 			if (searchTimeoutRef.current) {
 				clearTimeout(searchTimeoutRef.current);
 			}
 		};
-	}, [searchQuery]);
+	}, [searchQuery, executeSearch]);
 
 	// Helper function to extract text from React elements
 	const extractTextFromReactElement = React.useCallback((element: unknown): string => {

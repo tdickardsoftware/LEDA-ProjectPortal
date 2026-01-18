@@ -24,6 +24,7 @@ import {
 import { usePlayerPaymentsData, PlayerPaymentHistoryDataTable } from "@/hooks/usePlayerPaymentsData";
 import { useTeamPaymentsData, TeamPaymentHistoryDataTable } from "@/hooks/useTeamPaymentsData";
 import { usePlacePaymentsData, PlacePaymentHistoryDataTable } from "@/hooks/usePlacePaymentsData";
+import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
 
 type PaymentDataType = PlayerPaymentHistoryDataTable | TeamPaymentHistoryDataTable | PlacePaymentHistoryDataTable;
 
@@ -35,8 +36,8 @@ interface PaymentVisualisorProps {
 export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 	const [selectedPayment, setSelectedPayment] = useState<PaymentDataType | null>(null);
 	const [detailsOpen, setDetailsOpen] = useState(false);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [search, setSearch] = useState("");
+	const { page: currentPage, setPage: setCurrentPage, search, setSearch } =
+		usePersistedDataTableState(`datatable:/Payments/${type}/${ledaId ?? "all"}`);
 	const pageSize = 10;
 	const queryClient = useQueryClient();
 
