@@ -53,6 +53,16 @@ export default function TrailsDateEditForm({
 		},
 	});
 
+	// Reset form when component mounts or rowData changes to ensure clean state
+	React.useEffect(() => {
+		form.reset({
+			singlesPlace: rowData.singlesPlace || undefined,
+			doublesPlace: rowData.doublesPlace || undefined,
+			trailsPoints: rowData.trailsPoints || undefined,
+			notes: rowData.notes || "",
+		});
+	}, [form, rowData]);
+
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof TrailsDateDataFormSchema>) => {
 			const response = await fetchWithSession(trailsRoute, {

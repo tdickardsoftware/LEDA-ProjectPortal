@@ -89,6 +89,14 @@ export default function PlaceTypeAddForm({
 		},
 	});
 
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPlaceTypeExists(false);
+		form.reset({
+			placeTypeCode: "",
+		});
+	}, [form]);
+
 	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
 		setPlaceTypeExists(false);
 		mutation.mutate(values);

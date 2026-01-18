@@ -125,7 +125,10 @@ export function DialogWithButton({
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>
-				{renderForm(rowData)}
+				{/* Key prop forces remount when dialog opens/closes, ensuring form is reset */}
+				<div key={open ? 'open' : 'closed'}>
+					{renderForm(rowData)}
+				</div>
 			</DialogContent>
 		</Dialog>
 	);

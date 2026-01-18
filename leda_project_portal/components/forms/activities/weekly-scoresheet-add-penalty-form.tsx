@@ -102,6 +102,13 @@ export default function PenaltyAddForm({
 				points: initialPenalty.points,
 				notes: initialPenalty.notes,
 			});
+		} else if (!isEditMode) {
+			// Reset to defaults when not in edit mode (ensures clean state on reopen)
+			form.reset({
+				penaltyCode: "",
+				points: undefined,
+				notes: "",
+			});
 		}
 	}, [form, isEditMode, initialPenalty]);
 

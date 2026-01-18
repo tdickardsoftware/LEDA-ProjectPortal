@@ -13,7 +13,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import React from "react";
+import React, { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -64,6 +64,15 @@ export default function AdjustmentForm({
 			notes: adjustmentData?.notes || "",
 		},
 	});
+
+	// Reset form when component mounts or adjustmentData changes to ensure clean state
+	useEffect(() => {
+		form.reset({
+			amount: adjustmentData?.amount || undefined,
+			type: adjustmentData?.type ?? true,
+			notes: adjustmentData?.notes || "",
+		});
+	}, [form, adjustmentData]);
 
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof adjustmentFormSchema>) {

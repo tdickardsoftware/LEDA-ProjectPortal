@@ -77,6 +77,16 @@ export default function SchedulingAddMatchupForm({
 		},
 	});
 
+	// Reset form when component mounts to ensure clean state when dialog reopens
+	React.useEffect(() => {
+		form.reset({
+			matchTime: "",
+			home: true,
+			opposingTeamId: "",
+			teamId: selectedTeam,
+		});
+	}, [form, selectedTeam]);
+
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars

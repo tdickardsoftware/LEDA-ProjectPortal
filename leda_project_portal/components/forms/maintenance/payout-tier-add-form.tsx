@@ -89,6 +89,15 @@ export default function PayoutTierAddForm({
 		},
 	});
 
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPayoutTierExists(false);
+		form.reset({
+			place: undefined,
+			amount: undefined,
+		});
+	}, [form]);
+
 	async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
 		setPayoutTierExists(false);
 		mutation.mutate(values);

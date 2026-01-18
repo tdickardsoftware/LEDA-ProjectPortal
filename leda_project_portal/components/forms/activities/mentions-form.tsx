@@ -117,6 +117,21 @@ export default function MentionForm({
 			form.setValue("points", initialMention.points);
 			form.setValue("count", initialMention.count ?? undefined); // Properly set the count field
 			form.setValue("notes", initialMention.notes || "");
+		} else if (!isEditMode) {
+			// Reset to defaults when not in edit mode (ensures clean state on reopen)
+			form.reset({
+				mentionData: {
+					mentionCode: "",
+					desc: "",
+					points: "",
+					mentionBasis: "",
+				},
+				points: undefined,
+				count: undefined,
+				mentionCode: "",
+				mentionDesc: "",
+				notes: "",
+			});
 		}
 	}, [form, isEditMode, initialMention]);
 

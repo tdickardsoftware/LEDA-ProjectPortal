@@ -85,6 +85,12 @@ export default function DivisionAddForm({
 		},
 	});
 
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setDivisionNameExists(false);
+		form.reset({ divisionName: "" });
+	}, [form]);
+
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
 		setDivisionNameExists(false);
 		mutation.mutate(values);

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import React from "react";
+import React, { useEffect } from "react";
 import DivisionSelector from "@/components/ui/division-selector";
 
 // Define the schema for form validation using zod
@@ -35,6 +35,13 @@ export default function DivisionAddForm({
 			divisionName: "",
 		},
 	});
+
+	// Reset form when component mounts to ensure clean state when dialog reopens
+	useEffect(() => {
+		form.reset({
+			divisionName: "",
+		});
+	}, [form]);
 
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {

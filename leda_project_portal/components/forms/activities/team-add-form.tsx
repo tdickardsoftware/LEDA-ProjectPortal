@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import React from "react";
+import React, { useEffect } from "react";
 import TeamSelector from "@/components/ui/team-selector";
 import PlaceSelector from "@/components/ui/place-selector";
 
@@ -50,6 +50,15 @@ export default function TeamAddForm({
 			teamName: "",
 		},
 	});
+
+	// Reset form when component mounts to ensure clean state when dialog reopens
+	useEffect(() => {
+		form.reset({
+			teamLedaId: "",
+			placeId: "",
+			teamName: "",
+		});
+	}, [form]);
 
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {

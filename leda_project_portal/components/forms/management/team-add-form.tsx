@@ -77,6 +77,22 @@ export default function PlaceAddForm({
 		},
 	});
 
+	// Reset form and all state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setGenerateIDStatus(true);
+		setLedaIdExists(false);
+		setMemberIdList("");
+		setCurrentStep(0);
+		form.reset({
+			ledaId: undefined,
+			teamName: "",
+			establishedDate: "",
+			memo: "",
+			lastTeamFeePayment: "UNPAID - NEW TEAM ADDED",
+			memberIdList: "",
+		});
+	}, [form]);
+
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof teamFormSchema>) => {
 			const submissionValues = generateIDStatus

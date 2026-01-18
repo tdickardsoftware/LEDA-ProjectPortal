@@ -86,6 +86,14 @@ export default function PenaltyAddForm({
 		},
 	});
 
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPenaltyExists(false);
+		form.reset({
+			penaltyCode: "",
+		});
+	}, [form]);
+
 	async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
 		setPenaltyExists(false);
 		mutation.mutate(values);

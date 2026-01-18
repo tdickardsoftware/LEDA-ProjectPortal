@@ -88,6 +88,14 @@ export default function PeopleTypeAddForm({
 		},
 	});
 
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPeopleTypeExists(false);
+		form.reset({
+			peopleTypeCode: "",
+		});
+	}, [form]);
+
 	async function onSubmit(values: z.infer<typeof peopleTypeFormSchema>) {
 		setPeopleTypeExists(false);
 		mutation.mutate(values);

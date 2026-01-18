@@ -161,6 +161,37 @@ export default function PlaceAddForm({
 		},
 	});
 
+	// Reset form and all state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setGenerateIDStatus(true);
+		setLedaIdExists(false);
+		setCurrentStep(0);
+		form.reset({
+			ledaId: undefined,
+			name: "",
+			addressOne: "",
+			addressTwo: "",
+			city: "",
+			state: "OH",
+			zip: "",
+			phoneNumber: "",
+			otherNumber: "",
+			email: "",
+			website: "",
+			establishDate: "",
+			memo: "",
+			numberOfBoards: undefined,
+			sendMailings: false,
+			regularSponsor: false,
+			currentSponsor: false,
+			issues: false,
+			lastBarFeePayment: "UNPAID - NEW PLACE ADDED",
+			lastSanctioningDate: "",
+			placeType: "",
+			contactId: "",
+		});
+	}, [form]);
+
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof placeFormSchema>) => {
 			const submissionValues = generateIDStatus

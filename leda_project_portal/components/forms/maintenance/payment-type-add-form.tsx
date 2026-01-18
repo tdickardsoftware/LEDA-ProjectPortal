@@ -88,6 +88,15 @@ export default function PaymentTypeAddForm({
 		},
 	});
 
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPaymentTypeExists(false);
+		form.reset({
+			paymentType: "",
+			desc: "",
+		});
+	}, [form]);
+
 	async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
 		setPaymentTypeExists(false);
 		mutation.mutate(values);

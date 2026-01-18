@@ -60,6 +60,18 @@ export default function TrailsDateAddForm({
 		},
 	});
 
+	// Reset form when component mounts or editData changes to ensure clean state
+	React.useEffect(() => {
+		form.reset({
+			singlesPlace: editData?.singlesPlace || undefined,
+			doublesPlace: editData?.doublesPlace || undefined,
+			trailsPoints: editData?.trailsPoints || undefined,
+			notes: editData?.notes || "",
+			ledaId: editData?.ledaId || undefined,
+			fullName: editData?.fullName || "",
+		});
+	}, [form, editData]);
+
 	async function onSubmit(values: z.infer<typeof TrailsDateDataFormSchema>) {
 		try {
 			// Convert ledaId to a number

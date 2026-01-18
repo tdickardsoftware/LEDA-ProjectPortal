@@ -136,6 +136,41 @@ export default function PlayerAddInformationForm({
 		},
 	});
 
+	// Reset form and all state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setGenerateIDStatus(true);
+		setBadStandingStatus(false);
+		setLifetimeMemberStatus(false);
+		setLedaIdExists(false);
+		setCurrentStep(0);
+		form.reset({
+			lifetimeMember: false,
+			cannotBeCaptain: false,
+			needsMemberCard: true,
+			formOnFile: false,
+			mailStandings: false,
+			takeOffMailing: false,
+			badStanding: false,
+			lifetimeMemberReason: "",
+			otherNumber: "",
+			middleInitial: "",
+			addressTwo: "",
+			badStandingReason: "",
+			addressOne: "",
+			firstName: "",
+			lastName: "",
+			city: "",
+			state: "OH",
+			zip: "",
+			email: "",
+			phoneNumber: "",
+			gender: "",
+			ledaId: undefined,
+			lastMembershipFeePayment: "UNPAID - New Player",
+			memberType: "",
+		});
+	}, [form]);
+
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
 			const submissionValues = generateIDStatus

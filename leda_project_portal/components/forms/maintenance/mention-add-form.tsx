@@ -95,6 +95,17 @@ export default function MentionAddForm({
 		},
 	});
 
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setMentionCodeExists(false);
+		form.reset({
+			mentionCode: "",
+			desc: "",
+			mentionBasis: "",
+			points: undefined,
+		});
+	}, [form]);
+
 	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
 		setMentionCodeExists(false);
 		mutation.mutate(values);
