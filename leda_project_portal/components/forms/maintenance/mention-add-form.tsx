@@ -27,7 +27,10 @@ import { fetchWithSession } from "@/lib/getData";
 const mentionFormSchema = z.object({
 	mentionCode: z.string().min(1, { message: "Mention Code is required." }),
 	desc: z.string().optional(),
-	points: z.number().min(0, { message: "Points must be a positive number." }),
+	points: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Points must be a positive number." })
+	),
 	mentionBasis: z.string().min(1, { message: "Mention Basis is required." }),
 });
 
@@ -51,7 +54,7 @@ export default function MentionAddForm({
 			mentionCode: "",
 			desc: "",
 			mentionBasis: "",
-			points: undefined,
+			points: "" as any,
 		},
 	});
 
@@ -102,7 +105,7 @@ export default function MentionAddForm({
 			mentionCode: "",
 			desc: "",
 			mentionBasis: "",
-			points: undefined,
+			points: "" as any,
 		});
 	}, [form]);
 
@@ -145,7 +148,7 @@ export default function MentionAddForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target.value
 														  )
