@@ -20,10 +20,19 @@ import { TrailsDateData } from "@/lib/definitions";
 import PlayerSelect from "@/components/ui/single-player-select";
 
 const TrailsDateDataFormSchema = z.object({
-	singlesPlace: z.number().positive(),
-	doublesPlace: z.number().positive(),
+	singlesPlace: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Singles place must be 0 or greater." })
+	),
+	doublesPlace: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Doubles place must be 0 or greater." })
+	),
 	notes: z.string().optional(),
-	trailsPoints: z.number().positive(),
+	trailsPoints: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Trails points must be 0 or greater." })
+	),
 	ledaId: z.number().positive(),
 	trailsDate: z.string().optional(),
 	fullName: z.string().optional(),
@@ -51,9 +60,9 @@ export default function TrailsDateAddForm({
 	const form = useForm<z.infer<typeof TrailsDateDataFormSchema>>({
 		resolver: zodResolver(TrailsDateDataFormSchema),
 		defaultValues: {
-			singlesPlace: editData?.singlesPlace || undefined,
-			doublesPlace: editData?.doublesPlace || undefined,
-			trailsPoints: editData?.trailsPoints || undefined,
+			singlesPlace: editData?.singlesPlace !== undefined ? editData.singlesPlace : ("" as any),
+			doublesPlace: editData?.doublesPlace !== undefined ? editData.doublesPlace : ("" as any),
+			trailsPoints: editData?.trailsPoints !== undefined ? editData.trailsPoints : ("" as any),
 			notes: editData?.notes || "",
 			ledaId: editData?.ledaId || undefined,
 			fullName: editData?.fullName || "",
@@ -63,9 +72,9 @@ export default function TrailsDateAddForm({
 	// Reset form when component mounts or editData changes to ensure clean state
 	React.useEffect(() => {
 		form.reset({
-			singlesPlace: editData?.singlesPlace || undefined,
-			doublesPlace: editData?.doublesPlace || undefined,
-			trailsPoints: editData?.trailsPoints || undefined,
+			singlesPlace: editData?.singlesPlace !== undefined ? editData.singlesPlace : ("" as any),
+			doublesPlace: editData?.doublesPlace !== undefined ? editData.doublesPlace : ("" as any),
+			trailsPoints: editData?.trailsPoints !== undefined ? editData.trailsPoints : ("" as any),
 			notes: editData?.notes || "",
 			ledaId: editData?.ledaId || undefined,
 			fullName: editData?.fullName || "",
@@ -130,7 +139,7 @@ export default function TrailsDateAddForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target.value
 														  )
@@ -156,7 +165,7 @@ export default function TrailsDateAddForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target.value
 														  )
@@ -182,7 +191,7 @@ export default function TrailsDateAddForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target.value
 														  )

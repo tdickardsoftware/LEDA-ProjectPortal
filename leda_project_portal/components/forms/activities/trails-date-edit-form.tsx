@@ -22,10 +22,19 @@ import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
 const TrailsDateDataFormSchema = z.object({
-	singlesPlace: z.number().positive().optional(),
-	doublesPlace: z.number().positive().optional(),
+	singlesPlace: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Singles place must be 0 or greater." })
+	).optional(),
+	doublesPlace: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Doubles place must be 0 or greater." })
+	).optional(),
 	notes: z.string().optional(),
-	trailsPoints: z.number().positive().optional(),
+	trailsPoints: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Trails points must be 0 or greater." })
+	).optional(),
 	ledaId: z.number().positive().optional(),
 	trailsDate: z.string().optional(),
 });
@@ -46,9 +55,9 @@ export default function TrailsDateEditForm({
 	const form = useForm<z.infer<typeof TrailsDateDataFormSchema>>({
 		resolver: zodResolver(TrailsDateDataFormSchema),
 		defaultValues: {
-			singlesPlace: rowData.singlesPlace || undefined,
-			doublesPlace: rowData.doublesPlace || undefined,
-			trailsPoints: rowData.trailsPoints || undefined,
+			singlesPlace: rowData.singlesPlace !== undefined ? rowData.singlesPlace : ("" as any),
+			doublesPlace: rowData.doublesPlace !== undefined ? rowData.doublesPlace : ("" as any),
+			trailsPoints: rowData.trailsPoints !== undefined ? rowData.trailsPoints : ("" as any),
 			notes: rowData.notes || "",
 		},
 	});
@@ -56,9 +65,9 @@ export default function TrailsDateEditForm({
 	// Reset form when component mounts or rowData changes to ensure clean state
 	React.useEffect(() => {
 		form.reset({
-			singlesPlace: rowData.singlesPlace || undefined,
-			doublesPlace: rowData.doublesPlace || undefined,
-			trailsPoints: rowData.trailsPoints || undefined,
+			singlesPlace: rowData.singlesPlace !== undefined ? rowData.singlesPlace : ("" as any),
+			doublesPlace: rowData.doublesPlace !== undefined ? rowData.doublesPlace : ("" as any),
+			trailsPoints: rowData.trailsPoints !== undefined ? rowData.trailsPoints : ("" as any),
 			notes: rowData.notes || "",
 		});
 	}, [form, rowData]);
@@ -104,12 +113,6 @@ export default function TrailsDateEditForm({
 	async function onSubmit(values: z.infer<typeof TrailsDateDataFormSchema>) {
 		values.ledaId = rowData.ledaId;
 		values.trailsDate = rowData.trailsDate;
-		values.singlesPlace = values.singlesPlace
-			? Number(values.singlesPlace)
-			: undefined;
-		values.doublesPlace = values.doublesPlace
-			? Number(values.doublesPlace)
-			: undefined;
 		mutation.mutate(values);
 	}
 
@@ -139,7 +142,7 @@ export default function TrailsDateEditForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+													? ""
 														: parseFloat(
 																e.target.value
 														  )
