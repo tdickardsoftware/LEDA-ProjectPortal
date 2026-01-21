@@ -39,16 +39,20 @@ export function DatePickerCustom({
 
 	// Handle date change
 	const handleDateChange = (selectedDate: Date | undefined) => {
-		if (selectedDate) {
-			// Convert selected date to local time
-			const localDate = new Date(
-				selectedDate.getTime() +
-					selectedDate.getTimezoneOffset() * 60000
-			);
-			setDate(localDate);
-			onDateChange(localDate);
+		if (!selectedDate) {
+			setDate(undefined);
+			onDateChange(undefined);
 			setIsOpen(false);
+			return;
 		}
+		// Convert selected date to local time
+		const localDate = new Date(
+			selectedDate.getTime() +
+				selectedDate.getTimezoneOffset() * 60000
+		);
+		setDate(localDate);
+		onDateChange(localDate);
+		setIsOpen(false);
 	};
 
 	// Format date to MM/DD/YYYY

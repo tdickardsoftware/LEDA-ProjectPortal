@@ -24,6 +24,7 @@ import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
+import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { useMutation } from "@tanstack/react-query";
@@ -356,11 +357,10 @@ export default function PlayerAddInformationForm({
 							control={form.control}
 							name="gender"
 						/>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="dateOfBirth"
 							label="Date of Birth"
-							type="date"
 						/>
 					</div>
 				)}
@@ -476,11 +476,10 @@ export default function PlayerAddInformationForm({
 							name="memberType"
 							label="Member Type"
 						/>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="establishedDate"
 							label="Established Date *"
-							type="date"
 						/>
 						{/* Bad Standing Checkbox */}
 						<FormField
@@ -631,17 +630,15 @@ export default function PlayerAddInformationForm({
 							label="Cannot be Captain"
 							className={checkboxWidth}
 						/>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="inactiveDate"
 							label="Inactive Date"
-							type="date"
 						/>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="lastTrailsDate"
 							label="Last Trails Date"
-							type="date"
 						/>
 					</div>
 				)}

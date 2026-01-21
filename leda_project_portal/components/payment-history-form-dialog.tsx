@@ -34,15 +34,7 @@ import {
 } from "@/components/ui/select";
 import PaymentTypeSelector from "@/components/ui/payment-type-selector";
 import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { DatePickerCustom } from "@/components/ui/date-picker";
 // Import all selector components
 import PlayerSelect from "@/components/ui/single-player-select";
 import TeamSelector from "@/components/ui/team-selector";
@@ -366,41 +358,14 @@ export default function PaymentHistoryFormDialog({
 							render={({ field }) => (
 								<FormItem className="flex flex-col">
 									<FormLabel>Date</FormLabel>
-									<Popover>
-										<PopoverTrigger asChild>
-											<FormControl>
-												<Button
-													variant={"outline"}
-													className={cn(
-														"w-full pl-3 text-left font-normal",
-														!field.value &&
-															"text-muted-foreground"
-													)}
-												>
-													{field.value ? (
-														format(
-															field.value,
-															"PPP"
-														)
-													) : (
-														<span>Pick a date</span>
-													)}
-													<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-												</Button>
-											</FormControl>
-										</PopoverTrigger>
-										<PopoverContent
-											className="w-auto p-0 bg-background"
-											align="start"
-										>
-											<Calendar
-												mode="single"
-												selected={field.value}
-												onSelect={field.onChange}
-												initialFocus
-											/>
-										</PopoverContent>
-									</Popover>
+									<FormControl>
+										<DatePickerCustom
+											showInput={true}
+											dateSelected={field.value}
+											initialMonth={field.value}
+											onDateChange={(date) => field.onChange(date)}
+										/>
+									</FormControl>
 									<FormMessage />
 								</FormItem>
 							)}

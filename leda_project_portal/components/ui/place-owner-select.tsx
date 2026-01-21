@@ -89,13 +89,43 @@ const PlaceOwnerSelectContent: React.FC = () => {
 	const [debouncedSearch, setDebouncedSearch] = useState("");
 	const [offset, setOffset] = useState(0);
 	const [allOwners, setAllOwners] = useState<Array<{ value: string; label: string }>>([]);
+	const [selectedDisplay, setSelectedDisplay] = useState<{ value: string; label: string } | null>(null);
 	const [hasMore, setHasMore] = useState(true);
 
 	const justClosedRef = React.useRef(false);
+	const closeFromTabRef = React.useRef(false);
 	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
 	const lastInputType = useLastInputType();
 	const scrollRef = React.useRef<HTMLDivElement>(null);
 	const isFetchingMore = React.useRef(false);
+
+	const focusAdjacentField = React.useCallback((direction: "next" | "prev") => {
+		const trigger = popoverTriggerRef.current;
+		if (!trigger) return;
+
+		const root = trigger.closest("form") ?? trigger.closest("[role='dialog']") ?? document;
+		const focusableSelector =
+			"a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
+
+		const focusables = Array.from(
+			root.querySelectorAll<HTMLElement>(focusableSelector)
+		).filter((el) => {
+			if (el.hasAttribute("disabled")) return false;
+			if (el.getAttribute("aria-disabled") === "true") return false;
+			if (el.tabIndex < 0) return false;
+			if (el.offsetParent === null) {
+				const style = window.getComputedStyle(el);
+				if (style.position !== "fixed") return false;
+			}
+			return true;
+		});
+
+		const index = focusables.indexOf(trigger);
+		if (index === -1) return;
+		const nextIndex = direction === "next" ? index + 1 : index - 1;
+		const nextEl = focusables[nextIndex];
+		if (nextEl) nextEl.focus();
+	}, []);
 
 	// Debounce search input
 	React.useEffect(() => {
@@ -213,6 +243,7 @@ const PlaceOwnerSelectContent: React.FC = () => {
 
 	const handleSelect = (type: { value: string; label: string }) => {
 		formContext.setValue("contactId", type.value);
+		setSelectedDisplay(type);
 		setOpen(false);
 		setSearchQuery(""); // Reset search when selected
 		justClosedRef.current = true;
@@ -232,6 +263,7 @@ const PlaceOwnerSelectContent: React.FC = () => {
 	const getDisplayLabel = () => {
 		if (!currentValue) return "Select a place owner...";
 		if (currentValue === "0") return "0 - None/Unknown";
+		if (selectedDisplay && selectedDisplay.value === currentValue) return selectedDisplay.label;
 		
 		const found = allOwners.find((type) => type.value === currentValue);
 		if (found) return found.label;
@@ -240,6 +272,22 @@ const PlaceOwnerSelectContent: React.FC = () => {
 		
 		return `ID: ${currentValue}`;
 	};
+
+	// Keep the trigger label stable even when the dropdown closes and clears its results.
+	React.useEffect(() => {
+		if (!currentValue) {
+			setSelectedDisplay(null);
+			return;
+		}
+		if (currentValue === "0") {
+			setSelectedDisplay({ value: "0", label: "0 - None/Unknown" });
+			return;
+		}
+		// If we fetched the selected owner label, cache it.
+		if (selectedOwner && selectedOwner.value === currentValue) {
+			setSelectedDisplay(selectedOwner);
+		}
+	}, [currentValue, selectedOwner]);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -258,7 +306,29 @@ const PlaceOwnerSelectContent: React.FC = () => {
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-background">
+					<PopoverContent
+						className="w-[200px] p-0 bg-background"
+						onKeyDownCapture={(e) => {
+							if (e.key === "Tab") {
+								closeFromTabRef.current = true;
+								e.preventDefault();
+								setOpen(false);
+								justClosedRef.current = true;
+								const direction = e.shiftKey ? "prev" : "next";
+								requestAnimationFrame(() => focusAdjacentField(direction));
+							}
+						}}
+						onFocusOutside={() => {
+							setOpen(false);
+							justClosedRef.current = true;
+						}}
+						onCloseAutoFocus={(e) => {
+							if (closeFromTabRef.current) {
+								e.preventDefault();
+								closeFromTabRef.current = false;
+							}
+						}}
+					>
 						<Command shouldFilter={true}>
 							<CommandInput 
 								placeholder="Search place owner..." 

@@ -30,6 +30,7 @@ import { Place } from "@/lib/definitions";
 import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
+import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 
 const placeFormSchema = z.object({
 	ledaId: z
@@ -474,11 +475,10 @@ export default function PlaceEditForm({
 									name="placeType"
 									label="Place Type *"
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="establishDate"
 									label="Established Date *"
-									type="date"
 								/>
 							</div>
 						</Tab.Panel>
@@ -488,11 +488,10 @@ export default function PlaceEditForm({
 							<div className={formContainerStyle}>
 								<h1>Additional Information</h1>
 								<hr className="bg-muted mb-4"></hr>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="lastSanctioningDate"
 									label="Last Sanctioning Date *"
-									type="date"
 								/>
 								<CheckboxDefault
 									control={form.control}

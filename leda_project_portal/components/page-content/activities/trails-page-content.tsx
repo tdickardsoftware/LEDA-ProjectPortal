@@ -5,7 +5,7 @@ import { DataTable } from "@/components/datatable";
 import { columns } from "@/schemas/activities/trails_dates";
 import { fetchTrailsDateData, fetchTrailsDates } from "@/lib/getData";
 import { trailsDateRoute, trailsRoute } from "@/lib/apiRoutes";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import {  useEffect, useState } from "react";
 import { TrailsDateData } from "@/lib/definitions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,9 +21,7 @@ import TrailsDateEditForm from "@/components/forms/activities/trails-date-edit-f
 import { Spinner } from "@/components/ui/skeleton";
 import TrailsDateAddForm from "@/components/forms/activities/trails-date-add-form";
 import { Separator } from "@/components/ui/separator";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { Calendar } from "lucide-react";
+import { DatePickerCustom } from "@/components/ui/date-picker";
 import {
 	useQuery,
 	useMutation,
@@ -57,12 +55,6 @@ export default function TrailsPageContent() {
 	const [addTrailsDate, setAddTrailsDate] = useState<string | null>(
 		format(getEasternTime(), "MM-dd-yyyy")
 	);
-
-	// State for currently rendered month/year in DatePicker
-	const [renderedMonthYear, setRenderedMonthYear] = useState<{ month: number; year: number }>(() => {
-		const today = addTrailsDate ? new Date(addTrailsDate) : getEasternTime();
-		return { month: today.getMonth(), year: today.getFullYear() };
-	});
 
 	// Queries
 	const { 
@@ -211,17 +203,6 @@ export default function TrailsPageContent() {
 		const selectedDate = getEasternTime(date);
 		const formattedDate = format(selectedDate, "MM-dd-yyyy");
 		setAddTrailsDate(formattedDate);
-		setRenderedMonthYear({ month: selectedDate.getMonth(), year: selectedDate.getFullYear() });
-	};
-
-	// Handler for month change in DatePicker
-	const handleMonthChange = (date: Date) => {
-		setRenderedMonthYear({ month: date.getMonth(), year: date.getFullYear() });
-	};
-
-	// Handler for year change in DatePicker
-	const handleYearChange = (date: Date) => {
-		setRenderedMonthYear({ month: date.getMonth(), year: date.getFullYear() });
 	};
 	//
 	// Function Name: handleSetTrailsDate
@@ -292,22 +273,9 @@ export default function TrailsPageContent() {
 		addTrailsDateMutation.mutate(values);
 	};
 
-	const CustomDatePickerInput = ({
-		value,
-		onClick,
-	}: {
-		value: string;
-		onClick: () => void;
-	}) => (
-		<Button
-			variant="outline"
-			onClick={onClick}
-			className="flex items-center justify-between text-left px-4 py-2 border border-border rounded-lg" // removed w-full
-		>
-			<span>{value || "Select a date"}</span>
-			<Calendar className="text-muted-foreground" />
-		</Button>
-	);
+	const disabledTrailsDates = data
+		.map((item) => parse(item.trailsDate, "MM-dd-yyyy", new Date()))
+		.filter((d) => !isNaN(d.getTime()));
 
 	return (
 		<div className="flex gap-20 w-fit">
@@ -489,43 +457,24 @@ export default function TrailsPageContent() {
 						</CardHeader>
 						<CardContent>
 							<div className="flex flex-row justify-center items-center gap-8">
-												<DatePicker
-													selected={
-														addTrailsDate
-															? new Date(addTrailsDate)
-															: null
-													}
-													onChange={handleDateSelect}
-												excludeDates={(() => {
-													const { month: renderedMonth, year: renderedYear } = renderedMonthYear;
-													const prevMonth = renderedMonth === 0 ? 11 : renderedMonth - 1;
-													const nextMonth = renderedMonth === 11 ? 0 : renderedMonth + 1;
-													return data
-														.map((item) => new Date(item.trailsDate))
-														.filter((date) => {
-															const month = date.getMonth();
-															const year = date.getFullYear();
-															return (
-																(month === renderedMonth && year === renderedYear) ||
-																(month === prevMonth && year === (renderedMonth === 0 ? renderedYear - 1 : renderedYear)) ||
-																(month === nextMonth && year === (renderedMonth === 11 ? renderedYear + 1 : renderedYear))
-															);
-														});
-												})()}
-												onMonthChange={handleMonthChange}
-												onYearChange={handleYearChange}
-									dateFormat="yyyy-MM-dd"
-									showYearDropdown
-									yearDropdownItemNumber={15}
-									scrollableYearDropdown
-									customInput={
-										<CustomDatePickerInput
-											value={addTrailsDate || ""}
-											onClick={() => {}}
-										/>
-									}
-									
-								/>
+											<DatePickerCustom
+												showInput={true}
+												dateSelected={
+													addTrailsDate
+														? parse(addTrailsDate, "MM-dd-yyyy", new Date())
+														: undefined
+												}
+												initialMonth={
+													addTrailsDate
+														? parse(addTrailsDate, "MM-dd-yyyy", new Date())
+														: getEasternTime()
+												}
+												disabledDates={disabledTrailsDates}
+												onDateChange={(date) => {
+													if (!date) return;
+													handleDateSelect(date);
+												}}
+											/>
 								{!addPlayer && (
 									<Button
 										variant={"outline"}
