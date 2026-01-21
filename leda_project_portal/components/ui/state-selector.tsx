@@ -139,8 +139,39 @@ function useLastInputType() {
 const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
 	const [open, setOpen] = React.useState(false);
 	const justClosedRef = React.useRef(false);
+	const closeFromTabRef = React.useRef(false);
 	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
 	const lastInputType = useLastInputType();
+
+	const focusAdjacentField = React.useCallback((direction: "next" | "prev") => {
+		const trigger = popoverTriggerRef.current;
+		if (!trigger) return;
+
+		const root = trigger.closest("form") ?? trigger.closest("[role='dialog']") ?? document;
+		const focusableSelector =
+			"a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
+
+		const focusables = Array.from(
+			root.querySelectorAll<HTMLElement>(focusableSelector)
+		).filter((el) => {
+			// Filter out elements not actually focusable/visible
+			if (el.hasAttribute("disabled")) return false;
+			if (el.getAttribute("aria-disabled") === "true") return false;
+			if (el.tabIndex < 0) return false;
+			// offsetParent is null for display:none; allow fixed-position elements (offsetParent null)
+			if ((el as HTMLElement).offsetParent === null) {
+				const style = window.getComputedStyle(el);
+				if (style.position !== "fixed") return false;
+			}
+			return true;
+		});
+
+		const index = focusables.indexOf(trigger);
+		if (index === -1) return;
+		const nextIndex = direction === "next" ? index + 1 : index - 1;
+		const nextEl = focusables[nextIndex];
+		if (nextEl) nextEl.focus();
+	}, []);
 
 	const handleFocus = React.useCallback(() => {
 		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
@@ -177,7 +208,35 @@ const StatePickerContent: React.FC<StatePickerContentProps> = ({ field }) => {
 						<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent className="w-[200px] p-0 bg-background" tabIndex={0}>
+				<PopoverContent
+					className="w-[200px] p-0 bg-background"
+					tabIndex={0}
+					onKeyDownCapture={(e) => {
+						// If the user tabs away, close the menu and allow focus to move on.
+						if (e.key === "Tab") {
+							closeFromTabRef.current = true;
+							e.preventDefault();
+							setOpen(false);
+							justClosedRef.current = true;
+							// Because the popover content is rendered in a portal, native tab order
+							// won't naturally continue within the form. Manually move focus.
+							const direction = e.shiftKey ? "prev" : "next";
+							requestAnimationFrame(() => focusAdjacentField(direction));
+						}
+					}}
+					onFocusOutside={() => {
+						// Close when focus leaves the popover (e.g., keyboard tabbing).
+						setOpen(false);
+						justClosedRef.current = true;
+					}}
+					onCloseAutoFocus={(e) => {
+						// When closing via Tab, don't restore focus to the trigger (so Tab continues naturally).
+						if (closeFromTabRef.current) {
+							e.preventDefault();
+							closeFromTabRef.current = false;
+						}
+					}}
+				>
 					<Command>
 						<CommandInput placeholder="Search state..." autoFocus />
 						<CommandEmpty>No state found.</CommandEmpty>
