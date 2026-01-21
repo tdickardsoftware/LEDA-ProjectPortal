@@ -23,15 +23,6 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { DatePickerCustom } from "@/components/ui/date-picker";
 import { seasonRoute } from "@/lib/apiRoutes";
-import DatePicker from "react-datepicker";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 import { useCalendarData } from "@/hooks/useCalendarData";

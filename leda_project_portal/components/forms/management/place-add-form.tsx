@@ -70,9 +70,12 @@ const placeFormSchema = z.object({
 		}),
 	establishDate: z.string(),
 	memo: z.string().nullable().optional(),
-	numberOfBoards: z
-		.number()
-		.min(0, { message: "Number of Boards Must be a Postive Number." }),
+	numberOfBoards: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, {
+			message: "Number of Boards Must be a Postive Number.",
+		})
+	),
 	sendMailings: z.boolean(),
 	regularSponsor: z.boolean(),
 	currentSponsor: z.boolean(),
@@ -149,7 +152,7 @@ export default function PlaceAddForm({
 			website: "",
 			establishDate: "",
 			memo: "",
-			numberOfBoards: undefined,
+			numberOfBoards: ("" as any),
 			sendMailings: false,
 			regularSponsor: false,
 			currentSponsor: false,
@@ -180,7 +183,7 @@ export default function PlaceAddForm({
 			website: "",
 			establishDate: "",
 			memo: "",
-			numberOfBoards: undefined,
+			numberOfBoards: ("" as any),
 			sendMailings: false,
 			regularSponsor: false,
 			currentSponsor: false,
@@ -324,13 +327,14 @@ export default function PlaceAddForm({
 										<Input
 											placeholder="Number of Boards..."
 											{...field}
+											value={field.value ?? ""}
 											className={inputWidth}
 											type="number"
 											onChange={(e) => {
 												field.onChange(
 													e.target.value ===
 														""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target
 																	.value

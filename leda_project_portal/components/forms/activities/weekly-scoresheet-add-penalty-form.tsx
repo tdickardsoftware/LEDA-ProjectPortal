@@ -32,10 +32,10 @@ import { Input } from "@/components/ui/input";
 // Validation schema for the penalty form
 const divisionFormSchema = z.object({
 	penaltyCode: z.string().min(1, { message: "Division Name is required." }),
-	points: z
-		.number()
-		.min(0, { message: "Points must be a positive number." })
-		.optional(),
+	points: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Points must be a positive number." })
+	),
 	notes: z.string().optional(),
 });
 
@@ -89,7 +89,7 @@ export default function PenaltyAddForm({
 		resolver: zodResolver(divisionFormSchema),
 		defaultValues: {
 			penaltyCode: "",
-			points: undefined,
+			points: ("" as any),
 			notes: "",
 		},
 	});
@@ -106,7 +106,7 @@ export default function PenaltyAddForm({
 			// Reset to defaults when not in edit mode (ensures clean state on reopen)
 			form.reset({
 				penaltyCode: "",
-				points: undefined,
+				points: ("" as any),
 				notes: "",
 			});
 		}
@@ -117,10 +117,6 @@ export default function PenaltyAddForm({
 	 * Delegates to either updatePenalty or handlePenaltySubmit based on mode
 	 */
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
-		if (values.points === undefined) {
-			values.points = 0; // Default to 0 if points are not provided
-		}
-
 		if (isEditMode && initialPenalty && updatePenalty) {
 			// Call updatePenalty with the penalty ID and the new values
 			updatePenalty(
@@ -170,13 +166,12 @@ export default function PenaltyAddForm({
 											placeholder="Points"
 											type="number"
 											{...field}
+											value={field.value ?? ""}
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
-														: parseFloat(
-																e.target.value
-														  )
+														? ""
+														: parseFloat(e.target.value)
 												);
 											}}
 										/>
