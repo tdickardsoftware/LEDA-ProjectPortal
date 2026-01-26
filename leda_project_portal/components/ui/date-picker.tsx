@@ -1,11 +1,10 @@
 // Import necessary modules and components
 "use client";
 import * as React from "react";
-import { DayPicker } from "react-day-picker";
 import { CalendarIcon } from "lucide-react";
-import "react-day-picker/dist/style.css";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	Popover,
 	PopoverContent,
@@ -91,7 +90,7 @@ export function DatePickerCustom({
 				)}
 			</PopoverTrigger>
 			<PopoverContent className="w-auto p-0 bg-background">
-				<DayPicker
+				<Calendar
 					mode="single"
 					selected={date}
 					onSelect={handleDateChange}
