@@ -12,15 +12,27 @@ export interface PaginatedPlacesResponse {
 	};
 }
 
-export function usePlacesData(page: number, pageSize: number, search: string) {
+type SortingStateLike = { id: string; desc: boolean }[];
+
+export function usePlacesData(
+	page: number,
+	pageSize: number,
+	search: string,
+	sorting: SortingStateLike = []
+) {
 	return useQuery<PaginatedPlacesResponse>({
-		queryKey: ["places-datatable", page, pageSize, search],
+		queryKey: ["places-datatable", page, pageSize, search, sorting],
 		queryFn: async () => {
 			const params = new URLSearchParams({
 				page: page.toString(),
 				pageSize: pageSize.toString(),
 				search: search,
 			});
+
+			if (sorting[0]?.id) {
+				params.set("sortBy", sorting[0].id);
+				params.set("sortDir", sorting[0].desc ? "desc" : "asc");
+			}
 
 			const response = await fetch(`${placeDataTableRoute}?${params}`);
 			if (!response.ok) {

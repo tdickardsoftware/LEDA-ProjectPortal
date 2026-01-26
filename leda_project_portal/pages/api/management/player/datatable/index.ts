@@ -26,7 +26,18 @@ export default async function handler(
 			const page = parseInt(req.query.page as string) || 1;
 			const pageSize = parseInt(req.query.pageSize as string) || 10;
 			const search = (req.query.search as string) || "";
+			const sortBy = (req.query.sortBy as string) || "ledaId";
+			const sortDirRaw = ((req.query.sortDir as string) || "asc").toLowerCase();
+			const sortDir = sortDirRaw === "desc" ? "DESC" : "ASC";
 			const offset = (page - 1) * pageSize;
+
+			const orderByMap: Record<string, string> = {
+				ledaId: '"ledaId"',
+				fullName: `CONCAT(COALESCE("firstName", ''), ' ', COALESCE("middleInitial", ''), ' ', COALESCE("lastName", ''))`,
+				phoneNumber: '"phoneNumber"',
+				email: '"email"',
+			};
+			const orderBySql = orderByMap[sortBy] ?? orderByMap.ledaId;
 
 			// Build search condition
 			let searchCondition = "";
@@ -72,7 +83,7 @@ export default async function handler(
 					"email" 
 				FROM public.leda_player_info 
 				${searchCondition}
-				ORDER BY "ledaId" ASC
+				ORDER BY ${orderBySql} ${sortDir}
 				LIMIT $${searchParams.length + 1} OFFSET $${searchParams.length + 2}
 			`;
 			

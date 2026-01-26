@@ -26,7 +26,18 @@ export default async function handler(
 			const page = parseInt(req.query.page as string) || 1;
 			const pageSize = parseInt(req.query.pageSize as string) || 10;
 			const search = (req.query.search as string) || "";
+			const sortBy = (req.query.sortBy as string) || "seasonCode";
+			const sortDirRaw = ((req.query.sortDir as string) || "asc").toLowerCase();
+			const sortDir = sortDirRaw === "desc" ? "DESC" : "ASC";
 			const offset = (page - 1) * pageSize;
+
+			const orderByMap: Record<string, string> = {
+				seasonCode: '"seasonCode"',
+				desc: '"desc"',
+				fiscalYear: '"fiscalYear"',
+				isCurrentSeason: '"isCurrentSeason"',
+			};
+			const orderBySql = orderByMap[sortBy] ?? orderByMap.seasonCode;
 
 			// Build search condition
 			let searchCondition = "";
@@ -71,7 +82,7 @@ export default async function handler(
 					"isCurrentSeason" 
 				FROM maint.leda_maint_seasons 
 				${searchCondition}
-				ORDER BY "seasonCode" ASC
+				ORDER BY ${orderBySql} ${sortDir}
 				LIMIT $${searchParams.length + 1} OFFSET $${searchParams.length + 2}
 			`;
 			

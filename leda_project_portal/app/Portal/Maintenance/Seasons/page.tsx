@@ -8,12 +8,12 @@ import { Spinner } from "@/components/ui/skeleton";
 import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
 
 export default function Page() {
-	const { page, setPage, search, setSearch } = usePersistedDataTableState(
+	const { page, setPage, search, setSearch, sorting, setSorting } = usePersistedDataTableState(
 		"datatable:/Portal/Maintenance/Seasons"
 	);
 	const pageSize = 10;
 
-	const { data, isLoading, error } = useSeasonsData(page, pageSize, search);
+	const { data, isLoading, error } = useSeasonsData(page, pageSize, search, sorting);
 
 	if (error) {
 		return (
@@ -66,6 +66,8 @@ export default function Page() {
 					link: "/Maintenance/Seasons/Calendar"
 				}}
 				isLoading={isLoading}
+				sorting={sorting}
+				onSortingChange={setSorting}
 				totalPages={data?.pagination.totalPages || 1}
 				currentPage={page}
 				onPageChange={setPage}

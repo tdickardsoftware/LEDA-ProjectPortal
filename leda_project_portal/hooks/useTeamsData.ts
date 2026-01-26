@@ -12,15 +12,27 @@ export interface PaginatedTeamsResponse {
 	};
 }
 
-export function useTeamsData(page: number, pageSize: number, search: string) {
+type SortingStateLike = { id: string; desc: boolean }[];
+
+export function useTeamsData(
+	page: number,
+	pageSize: number,
+	search: string,
+	sorting: SortingStateLike = []
+) {
 	return useQuery<PaginatedTeamsResponse>({
-		queryKey: ["teams-datatable", page, pageSize, search],
+		queryKey: ["teams-datatable", page, pageSize, search, sorting],
 		queryFn: async () => {
 			const params = new URLSearchParams({
 				page: page.toString(),
 				pageSize: pageSize.toString(),
 				search: search,
 			});
+
+			if (sorting[0]?.id) {
+				params.set("sortBy", sorting[0].id);
+				params.set("sortDir", sorting[0].desc ? "desc" : "asc");
+			}
 
 			const response = await fetch(`${teamsDataTableRoute}?${params}`);
 			if (!response.ok) {

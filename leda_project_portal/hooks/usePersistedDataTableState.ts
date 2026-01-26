@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 type PersistedDataTableState = {
 	page: number;
 	search: string;
+	sorting: { id: string; desc: boolean }[];
 };
 
 type PersistedDataTableStateOptions = {
@@ -29,6 +30,20 @@ function safeParseState(raw: string | null): Partial<PersistedDataTableState> | 
 			result.search = maybe.search;
 		}
 
+		if (Array.isArray((maybe as any).sorting)) {
+			const sortingRaw = (maybe as any).sorting as unknown[];
+			const sorting = sortingRaw
+				.map((item) => {
+					if (!item || typeof item !== "object") return null;
+					const obj = item as { id?: unknown; desc?: unknown };
+					if (typeof obj.id !== "string" || !obj.id) return null;
+					return { id: obj.id, desc: Boolean(obj.desc) };
+				})
+				.filter(Boolean) as { id: string; desc: boolean }[];
+
+			result.sorting = sorting;
+		}
+
 		return result;
 	} catch {
 		return null;
@@ -43,7 +58,8 @@ export function usePersistedDataTableState(storageKey: string, options?: Persist
 	const defaults = useMemo(
 		() => ({
 			page: options?.defaultPage ?? 1,
-			search: options?.defaultSearch ?? ""
+			search: options?.defaultSearch ?? "",
+			sorting: [] as { id: string; desc: boolean }[]
 		}),
 		[options?.defaultPage, options?.defaultSearch]
 	);
@@ -54,7 +70,8 @@ export function usePersistedDataTableState(storageKey: string, options?: Persist
 		const parsed = safeParseState(sessionStorage.getItem(storageKey));
 		return {
 			page: parsed?.page ?? defaults.page,
-			search: parsed?.search ?? defaults.search
+			search: parsed?.search ?? defaults.search,
+			sorting: parsed?.sorting ?? defaults.sorting
 		};
 	});
 
@@ -75,10 +92,16 @@ export function usePersistedDataTableState(storageKey: string, options?: Persist
 		setState((prev) => ({ ...prev, search }));
 	}, []);
 
+	const setSorting = useCallback((sorting: { id: string; desc: boolean }[]) => {
+		setState((prev) => ({ ...prev, sorting }));
+	}, []);
+
 	return {
 		page: state.page,
 		search: state.search,
+		sorting: state.sorting,
 		setPage,
-		setSearch
+		setSearch,
+		setSorting
 	};
 }

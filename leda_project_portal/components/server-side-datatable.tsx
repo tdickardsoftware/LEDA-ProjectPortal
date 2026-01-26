@@ -10,7 +10,6 @@ import {
 	flexRender,
 	getCoreRowModel,
 	useReactTable,
-	getSortedRowModel,
 } from "@tanstack/react-table";
 import {
 	Table,
@@ -49,6 +48,9 @@ interface ServerSideDataTableProps<TData extends Record<string, unknown>, TValue
 	viewLinkConfig?: { linkName: string; parentPage: string };
 	customLink?: { buttonName: string; link: string };
 	defaultSort?: string;
+	// Optional controlled sorting (recommended for server-side sorting)
+	sorting?: SortingState;
+	onSortingChange?: (sorting: SortingState) => void;
 	// Server-side props
 	isLoading?: boolean;
 	totalPages: number;
@@ -68,6 +70,8 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	viewLinkConfig,
 	customLink,
 	defaultSort,
+	sorting: sortingProp,
+	onSortingChange,
 	isLoading = false,
 	totalPages,
 	currentPage,
@@ -75,7 +79,22 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	onSearchChange,
 	searchValue,
 }: ServerSideDataTableProps<TData, TValue>) {
-	const [sorting, setSorting] = React.useState<SortingState>([]);
+	const [internalSorting, setInternalSorting] = React.useState<SortingState>(() =>
+		defaultSort ? [{ id: defaultSort, desc: false }] : []
+	);
+	const sorting = sortingProp ?? internalSorting;
+
+	const handleSortingChange = React.useCallback(
+		(updater: SortingState | ((old: SortingState) => SortingState)) => {
+			const next = typeof updater === "function" ? updater(sorting) : updater;
+			if (onSortingChange) {
+				onSortingChange(next);
+			} else {
+				setInternalSorting(next);
+			}
+		},
+		[onSortingChange, sorting]
+	);
 	const [searchQuery, setSearchQuery] = React.useState(searchValue);
 	const [rowSelection, setRowSelection] = React.useState({});
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0);
@@ -85,6 +104,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	// Debounced search
 	const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 	const isInitialSearchEffect = React.useRef(true);
+	const isInitialSortEffect = React.useRef(true);
 
 	// Add state for context menus
 	const [contextMenu, setContextMenu] = React.useState<{
@@ -147,6 +167,15 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 			}
 		};
 	}, [searchQuery, executeSearch]);
+
+	// When sorting changes, reset to page 1 (skip initial mount).
+	React.useEffect(() => {
+		if (isInitialSortEffect.current) {
+			isInitialSortEffect.current = false;
+			return;
+		}
+		onPageChange(1);
+	}, [sorting, onPageChange]);
 
 	// Helper function to extract text from React elements
 	const extractTextFromReactElement = React.useCallback((element: unknown): string => {
@@ -380,8 +409,8 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 		data,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
-		onSortingChange: setSorting,
-		getSortedRowModel: getSortedRowModel(),
+		onSortingChange: handleSortingChange,
+		manualSorting: true,
 		onRowSelectionChange: setRowSelection,
 		enableRowSelection: true,
 		manualPagination: true, // Important for server-side pagination
@@ -391,7 +420,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 			rowSelection,
 		},
 		initialState: {
-			sorting: [{ id: defaultSort || "", desc: false }],
+			sorting: defaultSort ? [{ id: defaultSort, desc: false }] : [],
 		},
 	});
 
