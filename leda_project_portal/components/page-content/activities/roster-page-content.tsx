@@ -43,6 +43,26 @@ import {
 } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+async function safeReadJson<T>(response: Response): Promise<T | null> {
+	// Avoid "Unexpected end of JSON input" when backend returns 200 with an empty body.
+	const text = await response.text();
+	if (!text) return null;
+	try {
+		return JSON.parse(text) as T;
+	} catch {
+		return null;
+	}
+}
+
+function deepCloneOrEmptyObject<T extends object>(value: unknown): T {
+	if (!value || typeof value !== "object") return {} as T;
+	try {
+		return JSON.parse(JSON.stringify(value)) as T;
+	} catch {
+		return {} as T;
+	}
+}
+
 // Define types for better code readability
 type TeamInfo = {
 	teamId: string;
@@ -100,7 +120,9 @@ const fetchRoster = async (seasonCode: string | null): Promise<{teamInformation:
 	});
 	
 	if (result.status === 200) {
-		return result.json();
+		const json = await safeReadJson<{ teamInformation?: RosterData | null }>(result);
+		if (!json) return null;
+		return { teamInformation: deepCloneOrEmptyObject<RosterData>(json.teamInformation) };
 	}
 	
 	if (result.status === 404) {
@@ -166,7 +188,9 @@ const fetchSchedule = async (seasonCode: string): Promise<{scheduleData: Schedul
 	});
 	
 	if (response.status === 200) {
-		return response.json();
+		const json = await safeReadJson<{ scheduleData?: ScheduleData | null }>(response);
+		if (!json) return null;
+		return { scheduleData: deepCloneOrEmptyObject<ScheduleData>(json.scheduleData) };
 	}
 	
 	return null;
@@ -230,6 +254,7 @@ export default function RostersContent({
 	const [currentSeason, setCurrentSeason] = useState(
 		renderSeasonCode ? false : true
 	);
+	const [isRosterInitialized, setIsRosterInitialized] = useState(false);
 	
 	// Setup QueryClient
 	const queryClient = useQueryClient();
@@ -238,6 +263,7 @@ export default function RostersContent({
 	const { 
 		data: rosterData, 
 		isLoading: rosterLoading, 
+		isFetching: rosterFetching,
 	} = useQuery({
 		queryKey: ['roster', seasonCode],
 		queryFn: () => fetchRoster(seasonCode),
@@ -249,7 +275,7 @@ export default function RostersContent({
 		if (rosterData !== undefined) {
 			const data = rosterData;
 			if (data) {
-				const fetchedData = JSON.parse(JSON.stringify(data.teamInformation));
+				const fetchedData = deepCloneOrEmptyObject<RosterData>(data.teamInformation);
 				const divisions = Object.keys(fetchedData);
 				const teamIds = extractTeamIds(fetchedData);
 
@@ -260,6 +286,7 @@ export default function RostersContent({
 				setUpdate(true);
 				setHasChanges(false);
 				setDisabled(false);
+				setIsRosterInitialized(true);
 			} else {
 				setInitialData({});
 				setDivisionsData({});
@@ -268,10 +295,20 @@ export default function RostersContent({
 				setUpdate(false);
 				setHasChanges(false);
 				setDisabled(false);
+				setIsRosterInitialized(true);
 			}
 		}
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [rosterData]);
+
+	// When changing seasons (or toggling to current season), ensure we don't render stale/half-initialized state.
+	useEffect(() => {
+		if (!seasonCode) {
+			setIsRosterInitialized(true);
+			return;
+		}
+		setIsRosterInitialized(false);
+	}, [seasonCode]);
 	
 	// Mutations
 	const updateRosterMutation = useMutation({
@@ -969,7 +1006,7 @@ export default function RostersContent({
 	}, [seasonCode, deleteRosterMutation]);
 
 	// Determine if we're in a loading state from any mutation
-	const isLoading = rosterLoading || 
+	const isLoading = (seasonCode ? (rosterLoading || rosterFetching || !isRosterInitialized) : false) ||
 		updateRosterMutation.isPending || 
 		saveRosterMutation.isPending || 
 		deleteRosterMutation.isPending;
