@@ -83,7 +83,7 @@ function SubdivisionRangeSelector({
 
 	return (
 		<div className="flex items-center gap-2">
-			<Label htmlFor="subdivision-min" className="text-xs">Subdivision</Label>
+			<Label htmlFor="subdivision-min" className="text-sm font-medium text-foreground">Subdivision</Label>
 			<Input
 				id="subdivision-min"
 				type="number"
@@ -94,9 +94,9 @@ function SubdivisionRangeSelector({
 					const val = e.target.value;
 					setMinValue(val === "" ? undefined : Number(val));
 				}}
-				className="w-14 px-1 py-0.5 text-xs"
+				className="w-16 px-2 py-1 text-sm bg-background border-border text-foreground"
 			/>
-			<span className="text-xs">to</span>
+			<span className="text-sm font-medium text-foreground">to</span>
 			<Input
 				id="subdivision-max"
 				type="number"
@@ -107,7 +107,7 @@ function SubdivisionRangeSelector({
 					const val = e.target.value;
 					setMaxValue(val === "" ? undefined : Number(val));
 				}}
-				className="w-14 px-1 py-0.5 text-xs"
+				className="w-16 px-2 py-1 text-sm bg-background border-border text-foreground"
 			/>
 		</div>
 	);
@@ -1040,41 +1040,6 @@ export default function ListsReportLandingContent() {
 				<FolderTabMed title="Report Selection" className="w-fit">
 					<div className="flex gap-6">
 						<div className="flex gap-4 flex-row">
-							{needSeasonCode && (
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="season-code-selector">Season</Label>
-									<div className="flex flex-col gap-1">
-										<SeasonCodeSelector
-											disabled={currentSeason}
-											handleSelect={handleSeasonCodeSelect}
-											useCurrentSeason={currentSeason}
-											seasonCode={seasonCode}
-										/>
-										<div className="flex items-center gap-2 mt-2">
-											<Checkbox
-												id="current-season-checkbox"
-												checked={currentSeason}
-												onCheckedChange={() =>
-													setCurrentSeason(!currentSeason)
-												}
-											/>
-											<Label htmlFor="current-season-checkbox">
-												Current Season?
-											</Label>
-										</div>
-									</div>
-								</div>
-							)}
-							{needsFiscalYearSelector && (
-								<div className="flex flex-col gap-1">
-									<Label htmlFor="fiscal-year-selector">Fiscal Year</Label>
-									<FiscalYearSelector
-										disabled={currentSeason}
-										handleSelect={handleFiscalYearSelect}
-										fiscalYear={fiscalYear}
-									/>
-								</div>
-							)}
 							<div className="flex flex-col gap-1">
 								<Label htmlFor="report-selector">Report</Label>
 								<div className="flex items-center gap-2">
@@ -1082,7 +1047,7 @@ export default function ListsReportLandingContent() {
 										handleSelect={handleReportSelect}
 										selectedReport={selectedReport}
 										type="lists"
-										disabled={needSeasonCode ? !seasonCode : false}
+										disabled={false}
 									/>
 									{selectedReport.includes("mailingLabels") && (
 										<>
@@ -1180,6 +1145,41 @@ export default function ListsReportLandingContent() {
 									</div>
 								)}
 							</div>
+							{needSeasonCode && (
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="season-code-selector">Season</Label>
+									<div className="flex flex-col gap-1">
+										<SeasonCodeSelector
+											disabled={currentSeason}
+											handleSelect={handleSeasonCodeSelect}
+											useCurrentSeason={currentSeason}
+											seasonCode={seasonCode}
+										/>
+										<div className="flex items-center gap-2 mt-2">
+											<Checkbox
+												id="current-season-checkbox"
+												checked={currentSeason}
+												onCheckedChange={() =>
+													setCurrentSeason(!currentSeason)
+												}
+											/>
+											<Label htmlFor="current-season-checkbox">
+												Current Season?
+											</Label>
+										</div>
+									</div>
+								</div>
+							)}
+							{needsFiscalYearSelector && (
+								<div className="flex flex-col gap-1">
+									<Label htmlFor="fiscal-year-selector">Fiscal Year</Label>
+									<FiscalYearSelector
+										disabled={currentSeason}
+										handleSelect={handleFiscalYearSelect}
+										fiscalYear={fiscalYear}
+									/>
+								</div>
+							)}
 							{(needsDivisionSelector && (!selectedReport.includes("membershipList") || !selectedReport.includes("placesReport") || !selectedReport.includes("teamReportLists"))) && (
 								<div className="flex items-center gap-4">
 									<Label htmlFor="all-divisions-checkbox">
