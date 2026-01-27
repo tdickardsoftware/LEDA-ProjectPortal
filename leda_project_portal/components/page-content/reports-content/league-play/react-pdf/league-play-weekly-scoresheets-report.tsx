@@ -103,6 +103,30 @@ function groupByDivisionAndSubdivision(data: LeaguePlayWeeklyScoresheets[]) {
 	return map;
 }
 
+// Natural sort function to handle division names with numbers
+function naturalSort(a: string, b: string): number {
+	const regex = /(\d+)|(\D+)/g;
+	const aParts = a.match(regex) || [];
+	const bParts = b.match(regex) || [];
+	
+	for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+		const aPart = aParts[i] || "";
+		const bPart = bParts[i] || "";
+		
+		const aNum = parseInt(aPart, 10);
+		const bNum = parseInt(bPart, 10);
+		
+		if (!isNaN(aNum) && !isNaN(bNum)) {
+			if (aNum !== bNum) return aNum - bNum;
+		} else {
+			const compare = aPart.localeCompare(bPart);
+			if (compare !== 0) return compare;
+		}
+	}
+	
+	return 0;
+}
+
 const LeaguePlayWeeklyScoresheetsReport: React.FC<LeaguePlayWeeklyScoresheetsReportProps> = ({
 	data,
 	weekNum,
@@ -119,13 +143,13 @@ const LeaguePlayWeeklyScoresheetsReport: React.FC<LeaguePlayWeeklyScoresheetsRep
 		.replace(",", ""),
 }) => {
 	const divisionMap = groupByDivisionAndSubdivision(data);
-	const divisionNames = Object.keys(divisionMap);
+	const divisionNames = Object.keys(divisionMap).sort(naturalSort);
 
 	return (
 		<Document>
 			{divisionNames.map((division) => {
 				const subdivisionMap = divisionMap[division];
-				const subdivisionNames = Object.keys(subdivisionMap);
+				const subdivisionNames = Object.keys(subdivisionMap).sort(naturalSort);
 				return (
 					<Page key={division} size="A4" style={styles.page}>
 						<ReportsHeader
