@@ -41,7 +41,7 @@ async function getLastPaidSeasonInfo(
 	const queryStr = `
         SELECT "seasonCode", "fiscalYear"
         FROM public.leda_player_paid_status
-        WHERE "ledaId" = $1 AND status = 'PAID'
+        WHERE "playerId" = $1 AND status = 'PAID'
         ${excludeSeasonCode ? `AND "seasonCode" != $2` : ""}
         ORDER BY date1 DESC
         LIMIT 1;
