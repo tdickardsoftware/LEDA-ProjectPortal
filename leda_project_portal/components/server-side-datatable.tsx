@@ -613,13 +613,15 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 											{headerGroup.headers.map((header) => {
 												const isSelectColumn = header.column.columnDef.id === "select";
 												const isActionsColumn = header.column.columnDef.id === "actions";
+												const isCurrentSeasonColumn = header.column.columnDef.id === "isCurrentSeason" || 
+													("accessorKey" in header.column.columnDef && header.column.columnDef.accessorKey === "isCurrentSeason");
 												const displayName = isSelectColumn ? "" : getColumnDisplayName(header.column.columnDef);
 												
 												return (
 													<TableHead
 														key={header.id}
 														className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
-													onContextMenu={isSelectColumn || isActionsColumn ? undefined : (e) => handleColumnRightClick(e, displayName)}
+													onContextMenu={isSelectColumn || isActionsColumn || isCurrentSeasonColumn ? undefined : (e) => handleColumnRightClick(e, displayName)}
 														style={{ userSelect: 'none' }}
 													>
 														{header.isPlaceholder
@@ -646,6 +648,8 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 													const columnKey = cell.column.id;
 													const isSelectColumn = columnKey === "select";
 													const isActionsColumn = columnKey === "actions";
+													const isCurrentSeasonColumn = columnKey === "isCurrentSeason" ||
+														("accessorKey" in cell.column.columnDef && cell.column.columnDef.accessorKey === "isCurrentSeason");
 													const columnName = isSelectColumn ? "" : getColumnDisplayName(cell.column.columnDef);
 													const cellValue = cell.getValue();
 												
@@ -653,7 +657,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 														<TableCell
 															key={cell.id}
 															className="px-6 py-3 text-sm text-foreground"
-														onContextMenu={isSelectColumn || isActionsColumn ? undefined : (e) => 
+														onContextMenu={isSelectColumn || isActionsColumn || isCurrentSeasonColumn ? undefined : (e) => 
 																handleCellRightClick(e, columnKey, columnName, cellValue)
 															}
 														>
