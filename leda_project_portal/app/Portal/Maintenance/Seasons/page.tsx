@@ -12,17 +12,7 @@ export default function Page() {
 		"datatable:/Portal/Maintenance/Seasons"
 	);
 
-	const { data, isLoading, error } = useSeasonsData(page, pageSize, search, sorting);
-
-	if (error) {
-		return (
-			<div className="container mx-auto py-10">
-				<div className="text-center text-red-500">
-					Error loading seasons: {(error as Error).message}
-				</div>
-			</div>
-		);
-	}
+	const { data, isLoading } = useSeasonsData(page, pageSize, search, sorting);
 
 	// Show initial loading state
 	if (isLoading && !data) {

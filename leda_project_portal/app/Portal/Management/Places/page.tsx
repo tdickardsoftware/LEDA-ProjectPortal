@@ -12,17 +12,7 @@ export default function Page() {
 		"datatable:/Portal/Management/Places"
 	);
 
-	const { data, isLoading, error } = usePlacesData(page, pageSize, search, sorting);
-
-	if (error) {
-		return (
-			<div className="container mx-auto py-10">
-				<div className="text-center text-red-500">
-					Error loading places: {(error as Error).message}
-				</div>
-			</div>
-		);
-	}
+	const { data, isLoading } = usePlacesData(page, pageSize, search, sorting);
 
 	// Show initial loading state
 	if (isLoading && !data) {

@@ -12,17 +12,7 @@ export default function Page() {
 		"datatable:/Portal/Management/Players"
 	);
 
-	const { data, isLoading, error } = usePlayersData(page, pageSize, search, sorting);
-
-	if (error) {
-		return (
-			<div className="container mx-auto py-10">
-				<div className="text-center text-red-500">
-					Error loading players: {(error as Error).message}
-				</div>
-			</div>
-		);
-	}
+	const { data, isLoading } = usePlayersData(page, pageSize, search, sorting);
 
 	// Show initial loading state
 	if (isLoading && !data) {
