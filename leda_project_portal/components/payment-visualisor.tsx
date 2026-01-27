@@ -162,6 +162,8 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 		{
 			id: "actions",
 			header: "Actions",
+			enableColumnFilter: false,
+			enableGlobalFilter: false,
 			cell: ({ row }) => (
 				<div className="flex gap-2 justify-left">
 					<Button
