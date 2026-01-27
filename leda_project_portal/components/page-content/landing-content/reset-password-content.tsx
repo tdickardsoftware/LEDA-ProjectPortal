@@ -12,6 +12,7 @@ import { Check, X } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { fetchWithSession } from "@/lib/getData";
+import { useQueryClient } from "@tanstack/react-query";
 
 const resetSchema = z.object({
   password: z.string()
@@ -30,6 +31,7 @@ export default function ResetPasswordContent() {
   const token = searchParams?.get("token") || "";
   const email = searchParams?.get("email") || "";
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof resetSchema>>({
     resolver: zodResolver(resetSchema),
@@ -98,6 +100,7 @@ export default function ResetPasswordContent() {
       } catch { /* swallow */ }
       // Ensure no active session so /login isn’t redirected to /Portal by middleware
       try { await authClient.signOut(); } catch { /* ignore */ }
+      queryClient.removeQueries({ queryKey: ["auth", "session"] });
       setSubmitted(true);
       setTimeout(() => {
         router.push("/login");

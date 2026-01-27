@@ -1,7 +1,7 @@
-import { headers, cookies } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { defineAbilitesFor, type Subjects } from "@/lib/abilities";
+import { getServerSession } from "@/lib/get-server-session";
 
 /**
  * Guard for App Router pages/layouts.
@@ -9,12 +9,7 @@ import { defineAbilitesFor, type Subjects } from "@/lib/abilities";
  * can `manage` the given subject; otherwise redirects to /Portal.
  */
 export async function requirePageAccess(subject: Subjects) {
-  // Get session via request headers (Next 15 headers() is async)
-  const roHeaders = await headers();
-  // Convert to standard Web Headers for better-auth
-  const hdrs = new Headers();
-  for (const [k, v] of roHeaders) hdrs.set(k, v);
-  const session = await auth.api.getSession({ headers: hdrs });
+  const session = await getServerSession();
 
   if (!session) {
     // Middleware should have redirected already, but double-safeguard

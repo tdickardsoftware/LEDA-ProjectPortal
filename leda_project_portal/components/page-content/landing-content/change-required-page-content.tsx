@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ChangeRequiredPageContent() {
   const [email, setEmail] = useState<string>("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     authClient.getSession().then((s) => {
@@ -36,6 +38,7 @@ export default function ChangeRequiredPageContent() {
     try {
       await authClient.signOut();
     } finally {
+      queryClient.removeQueries({ queryKey: ["auth", "session"] });
       router.push("/login");
     }
   };

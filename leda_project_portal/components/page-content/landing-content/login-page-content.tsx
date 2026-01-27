@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import React from "react";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Accepts either a valid email or a username (alphanumeric, 3-32 chars)
 const loginSchema = z.object({
@@ -24,6 +25,8 @@ const loginSchema = z.object({
 });
 
 export default function LoginPageContent() {
+
+  const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -70,6 +73,8 @@ export default function LoginPageContent() {
           { email: emailOrUsername, password, callbackURL: `/Portal` },
           {
             onSuccess: async () => {
+              // Ensure any previously cached session is replaced.
+              queryClient.removeQueries({ queryKey: ["auth", "session"] });
               const session = await authClient.getSession();
               const u = (session?.data && typeof session.data === 'object' ? (session.data as Record<string, unknown>).user : undefined) as Record<string, unknown> | undefined;
               const mustReset = Boolean(u && typeof u === 'object' && 'mustResetPassword' in u ? u.mustResetPassword : false);
@@ -106,6 +111,8 @@ export default function LoginPageContent() {
           { username: emailOrUsername, password, callbackURL: `/Portal` },
           {
             onSuccess: async () => {
+              // Ensure any previously cached session is replaced.
+              queryClient.removeQueries({ queryKey: ["auth", "session"] });
               const session = await authClient.getSession();
               const u = (session?.data && typeof session.data === 'object' ? (session.data as Record<string, unknown>).user : undefined) as Record<string, unknown> | undefined;
               const mustReset = Boolean(u && typeof u === 'object' && 'mustResetPassword' in u ? u.mustResetPassword : false);

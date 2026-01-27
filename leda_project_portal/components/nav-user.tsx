@@ -49,12 +49,14 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function NavUser() {
 	const { isMobile } = useSidebar();
 	const { user, emulateRole } = useUserAbilities();
 	const router = useRouter();
 	const { theme, setTheme } = useTheme();
+	const queryClient = useQueryClient();
 	const [showIssueDialog, setShowIssueDialog] = useState(false);
 	const [issueSubject, setIssueSubject] = useState("");
 	const [issueDescription, setIssueDescription] = useState("");
@@ -64,6 +66,7 @@ export function NavUser() {
 		await authClient.signOut({
 			fetchOptions: {
 				onSuccess: () => {
+					queryClient.removeQueries({ queryKey: ["auth", "session"] });
 					router.push("/login");
 				},
 			},
@@ -75,9 +78,11 @@ export function NavUser() {
 			await authClient.revokeSessions();
 			// Clear session cookie in the browser as well
 			await authClient.signOut();
+			queryClient.removeQueries({ queryKey: ["auth", "session"] });
 			router.push("/login");
 		} catch {
 			// no-op; best-effort logout
+			queryClient.removeQueries({ queryKey: ["auth", "session"] });
 			router.push("/login");
 		}
 	}
@@ -93,6 +98,7 @@ export function NavUser() {
 			await authClient.deleteUser({
 				callbackURL: "/login"
 			});
+			queryClient.removeQueries({ queryKey: ["auth", "session"] });
 			// authClient.deleteUser should redirect via callbackURL, but push as fallback:
 			router.push("/login");
 		} catch (err) {
