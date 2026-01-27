@@ -50,6 +50,13 @@ import {
 } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 // Add interface for payment status data
 interface PaymentStatus {
@@ -127,7 +134,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
 	const [isRefreshing, setIsRefreshing] = React.useState(false);
 	const [didRestorePageIndex, setDidRestorePageIndex] = React.useState(false);
-	const pageSize = 10;
+	const [pageSize, setPageSize] = React.useState<number>(10);
 	// Always start at 0 for the first render (prevents SSR/client hydration mismatches).
 	// We restore the persisted value in an effect after mount.
 	const [pageIndex, setPageIndex] = React.useState<number>(0);
@@ -482,18 +489,23 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			}, // Add pagination state
 		},
 		onPaginationChange: (updater) => {
-			// updater can be a function or value
-			if (typeof updater === "function") {
-				setPageIndex((prev) => {
-					const next = updater({
-						pageIndex: prev,
-						pageSize,
-					}).pageIndex;
-					return next;
-				});
-			} else if (typeof updater === "object" && updater !== null && "pageIndex" in updater) {
-				const newIndex = updater.pageIndex;
-				setPageIndex(newIndex);
+			const next =
+				typeof updater === "function"
+					? updater({ pageIndex, pageSize })
+					: updater;
+
+			if (next && typeof next === "object") {
+				if ("pageSize" in next && typeof (next as any).pageSize === "number") {
+					const nextSize = (next as any).pageSize as number;
+					if (nextSize !== pageSize) {
+						setPageSize(nextSize);
+						setPageIndex(0);
+						return;
+					}
+				}
+				if ("pageIndex" in next && typeof (next as any).pageIndex === "number") {
+					setPageIndex((next as any).pageIndex as number);
+				}
 			}
 		},
 		initialState: {
@@ -892,6 +904,26 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									}
 								/>
 							</Button>
+							<Select
+								value={String(pageSize)}
+								onValueChange={(value) => {
+									const next = Number(value);
+									if (!Number.isFinite(next)) return;
+									setPageSize(next);
+									setPageIndex(0);
+								}}
+								disabled={isRefreshing}
+							>
+								<SelectTrigger className="w-[120px]">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="10">10 rows</SelectItem>
+									<SelectItem value="25">25 rows</SelectItem>
+									<SelectItem value="50">50 rows</SelectItem>
+									<SelectItem value="100">100 rows</SelectItem>
+								</SelectContent>
+							</Select>
 							{/* Filter By Season Button and Popover */}
 							{filter && (
 								<Popover

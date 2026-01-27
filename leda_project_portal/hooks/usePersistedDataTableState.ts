@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 type PersistedDataTableState = {
 	page: number;
+	pageSize: number;
 	search: string;
 	sorting: { id: string; desc: boolean }[];
 };
 
 type PersistedDataTableStateOptions = {
 	defaultPage?: number;
+	defaultPageSize?: number;
 	defaultSearch?: string;
 };
 
@@ -24,6 +26,10 @@ function safeParseState(raw: string | null): Partial<PersistedDataTableState> | 
 
 		if (typeof maybe.page === "number" && Number.isFinite(maybe.page) && maybe.page >= 1) {
 			result.page = Math.floor(maybe.page);
+		}
+
+		if (typeof (maybe as any).pageSize === "number" && Number.isFinite((maybe as any).pageSize) && (maybe as any).pageSize >= 1) {
+			result.pageSize = Math.floor((maybe as any).pageSize);
 		}
 
 		if (typeof maybe.search === "string") {
@@ -58,10 +64,11 @@ export function usePersistedDataTableState(storageKey: string, options?: Persist
 	const defaults = useMemo(
 		() => ({
 			page: options?.defaultPage ?? 1,
+			pageSize: options?.defaultPageSize ?? 10,
 			search: options?.defaultSearch ?? "",
 			sorting: [] as { id: string; desc: boolean }[]
 		}),
-		[options?.defaultPage, options?.defaultSearch]
+		[options?.defaultPage, options?.defaultPageSize, options?.defaultSearch]
 	);
 
 	const [state, setState] = useState<PersistedDataTableState>(() => {
@@ -70,6 +77,7 @@ export function usePersistedDataTableState(storageKey: string, options?: Persist
 		const parsed = safeParseState(sessionStorage.getItem(storageKey));
 		return {
 			page: parsed?.page ?? defaults.page,
+			pageSize: parsed?.pageSize ?? defaults.pageSize,
 			search: parsed?.search ?? defaults.search,
 			sorting: parsed?.sorting ?? defaults.sorting
 		};
@@ -103,6 +111,7 @@ export function usePersistedDataTableState(storageKey: string, options?: Persist
 					storageKey,
 					JSON.stringify({
 						page: defaults.page,
+						pageSize: parsed?.pageSize ?? defaults.pageSize,
 						search: parsed?.search ?? defaults.search,
 						sorting: parsed?.sorting ?? defaults.sorting,
 					})
@@ -111,10 +120,14 @@ export function usePersistedDataTableState(storageKey: string, options?: Persist
 				// Ignore storage errors.
 			}
 		};
-	}, [storageKey, defaults.page, defaults.search, defaults.sorting]);
+	}, [storageKey, defaults.page, defaults.pageSize, defaults.search, defaults.sorting]);
 
 	const setPage = useCallback((page: number) => {
 		setState((prev) => ({ ...prev, page }));
+	}, []);
+
+	const setPageSize = useCallback((pageSize: number) => {
+		setState((prev) => ({ ...prev, pageSize }));
 	}, []);
 
 	const setSearch = useCallback((search: string) => {
@@ -127,9 +140,11 @@ export function usePersistedDataTableState(storageKey: string, options?: Persist
 
 	return {
 		page: state.page,
+		pageSize: state.pageSize,
 		search: state.search,
 		sorting: state.sorting,
 		setPage,
+		setPageSize,
 		setSearch,
 		setSorting
 	};

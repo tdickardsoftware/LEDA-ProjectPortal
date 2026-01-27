@@ -8,10 +8,9 @@ import { Spinner } from "@/components/ui/skeleton";
 import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
 
 export default function Page() {
-	const { page, setPage, search, setSearch, sorting, setSorting } = usePersistedDataTableState(
+	const { page, setPage, pageSize, setPageSize, search, setSearch, sorting, setSorting } = usePersistedDataTableState(
 		"datatable:/Portal/Management/Teams"
 	);
-	const pageSize = 10;
 
 	const { data, isLoading, error } = useTeamsData(page, pageSize, search, sorting);
 
@@ -44,6 +43,8 @@ export default function Page() {
 				pageName="Teams Page"
 				stateKey="datatable:/Portal/Management/Teams"
 				queryKey={["teams-datatable"]}
+				pageSize={pageSize}
+				onPageSizeChange={setPageSize}
 				addDialogConfig={{
 					form: "TeamAddForm",
 					title: "Add Team",

@@ -36,9 +36,8 @@ interface PaymentVisualisorProps {
 export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 	const [selectedPayment, setSelectedPayment] = useState<PaymentDataType | null>(null);
 	const [detailsOpen, setDetailsOpen] = useState(false);
-	const { page: currentPage, setPage: setCurrentPage, search, setSearch } =
+	const { page: currentPage, setPage: setCurrentPage, pageSize, setPageSize, search, setSearch } =
 		usePersistedDataTableState(`datatable:/Payments/${type}/${ledaId ?? "all"}`);
-	const pageSize = 10;
 	const queryClient = useQueryClient();
 
 	// Get the appropriate route for the payment type - wrapped in useCallback
@@ -240,6 +239,8 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 						]}
 						defaultSort="paymentNbr"
 						isLoading={paymentsLoading}
+						pageSize={pageSize}
+						onPageSizeChange={setPageSize}
 						totalPages={totalPages}
 						currentPage={currentPage}
 						onPageChange={setCurrentPage}

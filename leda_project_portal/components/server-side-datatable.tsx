@@ -25,6 +25,13 @@ import { Spinner } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { RotateCw } from "lucide-react";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -63,6 +70,8 @@ interface ServerSideDataTableProps<TData extends Record<string, unknown>, TValue
 	onSortingChange?: (sorting: SortingState) => void;
 	// Server-side props
 	isLoading?: boolean;
+	pageSize: number;
+	onPageSizeChange: (pageSize: number) => void;
 	totalPages: number;
 	currentPage: number;
 	onPageChange: (page: number) => void;
@@ -85,6 +94,8 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	sorting: sortingProp,
 	onSortingChange,
 	isLoading = false,
+	pageSize,
+	onPageSizeChange,
 	totalPages,
 	currentPage,
 	onPageChange,
@@ -490,6 +501,26 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 										<RotateCw className="h-4 w-4" />
 									</Button>
 								)}
+									<Select
+										value={String(pageSize)}
+										onValueChange={(value) => {
+											const next = Number(value);
+											if (!Number.isFinite(next)) return;
+											onPageSizeChange(next);
+											onPageChange(1);
+										}}
+										disabled={isLoading}
+									>
+										<SelectTrigger className="w-[120px]">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="10">10 rows</SelectItem>
+											<SelectItem value="25">25 rows</SelectItem>
+											<SelectItem value="50">50 rows</SelectItem>
+											<SelectItem value="100">100 rows</SelectItem>
+										</SelectContent>
+									</Select>
 								{customLink && (
 									<Button
 										variant="outline"
