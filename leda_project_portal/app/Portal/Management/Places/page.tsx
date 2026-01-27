@@ -42,6 +42,7 @@ export default function Page() {
 				columns={columns}
 				data={data?.data || []}
 				pageName="Places Page"
+				queryKey={["places-datatable"]}
 				addDialogConfig={{
 					form: "PlaceAddForm",
 					title: "Add Place",

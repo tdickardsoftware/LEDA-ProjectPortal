@@ -71,9 +71,15 @@ const placeFormSchema = z.object({
 		}),
 	establishDate: z.string(),
 	memo: z.string().nullable().optional(),
-	numberOfBoards: z
-		.number()
-		.min(0, { message: "Number of Boards Must be a Postive Number." }),
+	numberOfBoards: z.preprocess(
+		(value) => (value === "" ? undefined : value),
+		z
+			.number({
+				required_error: "Number of Boards is required.",
+				invalid_type_error: "Number of Boards must be a number.",
+			})
+			.min(0, { message: "Number of Boards Must be a Postive Number." })
+	),
 	sendMailings: z.boolean(),
 	regularSponsor: z.boolean(),
 	currentSponsor: z.boolean(),
@@ -140,7 +146,7 @@ export default function PlaceEditForm({
 		resolver: zodResolver(placeFormSchema),
 		mode: "onChange",
 		defaultValues: {
-			ledaId: formData.ledaId ?? 0,
+				ledaId: formData.ledaId ?? undefined,
 			name: formData.name || "",
 			addressOne: formData.addressOne || "",
 			addressTwo: formData.addressTwo || "",
@@ -155,7 +161,7 @@ export default function PlaceEditForm({
 				? new Date(formData.establishDate).toISOString().split("T")[0]
 				: "",
 			memo: formData.memo || "",
-			numberOfBoards: formData.numberOfBoards || 0,
+			numberOfBoards: formData.numberOfBoards ?? undefined,
 			sendMailings: formData.sendMailings || false,
 			regularSponsor: formData.regularSponsor || false,
 			currentSponsor: formData.currentSponsor || false,
@@ -169,6 +175,8 @@ export default function PlaceEditForm({
 			contactId: formData.contactId ? String(formData.contactId) : "",
 		},
 	});
+
+	const hasChanges = form.formState.isDirty;
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof placeFormSchema>) => {
@@ -361,6 +369,7 @@ export default function PlaceEditForm({
 													{...field}
 													className={inputWidth}
 													type="number"
+													value={field.value ?? ""}
 													onChange={(e) => {
 														field.onChange(
 															e.target.value ===
@@ -448,6 +457,7 @@ export default function PlaceEditForm({
 													disabled
 													className={inputWidth}
 													type="number"
+													value={field.value ?? ""}
 													onChange={(e) => {
 														field.onChange(
 															e.target.value ===
@@ -547,9 +557,21 @@ export default function PlaceEditForm({
 								: "Back"
 							: "Back"}
 					</Button>
-					<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
-						{currentStep === steps.length - 1 ? "Update" : "Next"}
-					</Button>
+					<div className="flex gap-2">
+						{hasChanges && currentStep < steps.length - 1 && (
+							<Button
+								variant="outline"
+								type="button"
+								onClick={() => setCurrentStep(steps.length - 1)}
+								className="hover:bg-muted border-border text-foreground"
+							>
+								Skip to Update
+							</Button>
+						)}
+						<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
+							{currentStep === steps.length - 1 ? "Update" : "Next"}
+						</Button>
+					</div>
 				</div>
 			</form>
 		</Form>

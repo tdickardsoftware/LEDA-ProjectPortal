@@ -179,7 +179,7 @@ export default function PlayerEditInformationForm({
 			dateOfBirth: formData.dateOfBirth
 				? new Date(formData.dateOfBirth).toISOString().split("T")[0]
 				: "",
-			ledaId: formData.ledaId ?? 0,
+			ledaId: formData.ledaId ?? undefined,
 			establishedDate: formData.establishedDate
 				? new Date(formData.establishedDate).toISOString().split("T")[0]
 				: "",
@@ -201,6 +201,8 @@ export default function PlayerEditInformationForm({
 			lifetimeMemberReason: formData.lifetimeMemberReason || "",
 		},
 	});
+
+	const hasChanges = form.formState.isDirty;
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
@@ -468,6 +470,7 @@ export default function PlayerEditInformationForm({
 													disabled
 													className={inputWidth}
 													type="number"
+													value={field.value ?? ""}
 													onChange={(e) => {
 														field.onChange(
 															e.target.value ===
@@ -667,9 +670,21 @@ export default function PlayerEditInformationForm({
 								: "Back"
 							: "Back"}
 					</Button>
-					<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
-						{currentStep === steps.length - 1 ? "Update" : "Next"}
-					</Button>
+					<div className="flex gap-2">
+						{hasChanges && currentStep < steps.length - 1 && (
+							<Button
+								variant="outline"
+								type="button"
+								onClick={() => setCurrentStep(steps.length - 1)}
+								className="hover:bg-muted border-border text-foreground"
+							>
+								Skip to Update
+							</Button>
+						)}
+						<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
+							{currentStep === steps.length - 1 ? "Update" : "Next"}
+						</Button>
+					</div>
 				</div>
 			</form>
 		</Form>

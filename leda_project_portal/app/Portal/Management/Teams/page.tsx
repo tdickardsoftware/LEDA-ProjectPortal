@@ -42,6 +42,7 @@ export default function Page() {
 				columns={columns}
 				data={data?.data || []}
 				pageName="Teams Page"
+				queryKey={["teams-datatable"]}
 				addDialogConfig={{
 					form: "TeamAddForm",
 					title: "Add Team",

@@ -22,9 +22,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
 import { Spinner } from "@/components/ui/skeleton";
-import { playerRoute } from "@/lib/apiRoutes";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { RotateCw } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -48,6 +48,11 @@ interface ServerSideDataTableProps<TData extends Record<string, unknown>, TValue
 	viewLinkConfig?: { linkName: string; parentPage: string };
 	customLink?: { buttonName: string; link: string };
 	defaultSort?: string;
+	/**
+	 * React Query key prefix used to invalidate/refetch when data changes.
+	 * Example: ['players-datatable']
+	 */
+	queryKey?: unknown[];
 	// Optional controlled sorting (recommended for server-side sorting)
 	sorting?: SortingState;
 	onSortingChange?: (sorting: SortingState) => void;
@@ -70,6 +75,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	viewLinkConfig,
 	customLink,
 	defaultSort,
+	queryKey,
 	sorting: sortingProp,
 	onSortingChange,
 	isLoading = false,
@@ -440,11 +446,14 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	}, [rowSelection]);
 
 	// Refresh handler
-	const handleRefresh = () => {
-		// Invalidate queries to refetch fresh data
-		queryClient.invalidateQueries({ queryKey: ['seasons-datatable'] });
+	const handleRefresh = React.useCallback(() => {
+		if (queryKey && queryKey.length) {
+			// Invalidate and refetch to ensure fresh data immediately
+			queryClient.invalidateQueries({ queryKey, exact: false });
+			queryClient.refetchQueries({ queryKey, exact: false, type: "active" });
+		}
 		setRowSelection({});
-	};
+	}, [queryClient, queryKey]);
 
 	return (
 		<div className="w-full">
@@ -462,15 +471,29 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 								onRefresh={handleRefresh}
 							/>
 						)}
-						<div className="flex space-x-2">						{customLink && (
-							<Button
-								variant="outline"
-								onClick={() => router.push(`/Portal/${customLink.link}`)}
-								className="hover:bg-muted border-border text-foreground"
-							>
-								{customLink.buttonName}
-							</Button>
-						)}							{viewLinkConfig && (
+							<div className="flex space-x-2">
+								{queryKey && queryKey.length > 0 && (
+									<Button
+										variant="outline"
+										onClick={handleRefresh}
+										disabled={isLoading}
+										className="hover:bg-muted border-border text-foreground"
+										size="icon"
+										title="Refresh"
+									>
+										<RotateCw className="h-4 w-4" />
+									</Button>
+								)}
+								{customLink && (
+									<Button
+										variant="outline"
+										onClick={() => router.push(`/Portal/${customLink.link}`)}
+										className="hover:bg-muted border-border text-foreground"
+									>
+										{customLink.buttonName}
+									</Button>
+								)}
+								{viewLinkConfig && (
 								<CustomLink
 									linkName={viewLinkConfig.linkName}
 									parentPage={viewLinkConfig.parentPage}

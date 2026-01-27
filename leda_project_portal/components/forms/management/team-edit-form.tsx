@@ -52,6 +52,7 @@ export default function TeamEditForm({
 }) {
 	const [formData, setFormData] = useState<Team>({} as Team);
 	const [memberIdList, setMemberIdList] = useState<string>("");
+	const initialMemberIdListRef = React.useRef<string>("");
 	const [currentStep, setCurrentStep] = useState(0);
 
 	// Define the steps
@@ -77,6 +78,9 @@ export default function TeamEditForm({
 			memo: formData.memo || "",
 		},
 	});
+
+	const hasChanges =
+		form.formState.isDirty || memberIdList !== initialMemberIdListRef.current;
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof teamInfoSchema>) => {
@@ -180,7 +184,9 @@ export default function TeamEditForm({
 			}
 			const data = await response.json();
 			setFormData(data);
-			setMemberIdList(JSON.stringify(data.memberIdList));
+			const initialMemberIdList = JSON.stringify(data.memberIdList);
+			initialMemberIdListRef.current = initialMemberIdList;
+			setMemberIdList(initialMemberIdList);
 			form.reset({
 				...data,
 				ledaId: data.ledaId ? Number(data.ledaId) : undefined,
@@ -266,6 +272,7 @@ export default function TeamEditForm({
 													disabled
 													className={inputWidth}
 													type="number"
+													value={field.value ?? ""}
 													onChange={(e) => {
 														field.onChange(
 															e.target.value ===
@@ -346,9 +353,21 @@ export default function TeamEditForm({
 								: "Cancel"
 							: "Back"}
 					</Button>
-					<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
-						{currentStep === steps.length - 1 ? "Update" : "Next"}
-					</Button>
+					<div className="flex gap-2">
+						{hasChanges && currentStep < steps.length - 1 && (
+							<Button
+								variant="outline"
+								type="button"
+								onClick={() => setCurrentStep(steps.length - 1)}
+								className="hover:bg-muted border-border text-foreground"
+							>
+								Skip to Update
+							</Button>
+						)}
+						<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
+							{currentStep === steps.length - 1 ? "Update" : "Next"}
+						</Button>
+					</div>
 				</div>
 			</form>
 		</Form>

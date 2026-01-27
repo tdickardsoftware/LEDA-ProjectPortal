@@ -228,6 +228,13 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 						columns={columns}
 						data={payments}
 						pageName={`${capitalizedType} Payments`}
+						queryKey={[
+							type === "player"
+								? "player-payments-datatable"
+								: type === "team"
+									? "team-payments-datatable"
+									: "place-payments-datatable",
+						]}
 						defaultSort="paymentNbr"
 						isLoading={paymentsLoading}
 						totalPages={totalPages}
