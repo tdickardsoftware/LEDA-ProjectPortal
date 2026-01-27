@@ -42,6 +42,7 @@ export default function Page() {
 				columns={columns}
 				data={data?.data || []}
 				pageName="Players Page"
+				stateKey="datatable:/Portal/Management/Players"
 				queryKey={["players-datatable"]}
 				addDialogConfig={{
 					form: "PlayerAddInformationForm",

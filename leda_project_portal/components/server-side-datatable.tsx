@@ -49,6 +49,11 @@ interface ServerSideDataTableProps<TData extends Record<string, unknown>, TValue
 	customLink?: { buttonName: string; link: string };
 	defaultSort?: string;
 	/**
+	 * Session storage key used by usePersistedDataTableState on the parent page.
+	 * When set, the table can preserve state for view/detail navigation.
+	 */
+	stateKey?: string;
+	/**
 	 * React Query key prefix used to invalidate/refetch when data changes.
 	 * Example: ['players-datatable']
 	 */
@@ -75,6 +80,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	viewLinkConfig,
 	customLink,
 	defaultSort,
+	stateKey,
 	queryKey,
 	sorting: sortingProp,
 	onSortingChange,
@@ -498,6 +504,14 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 									linkName={viewLinkConfig.linkName}
 									parentPage={viewLinkConfig.parentPage}
 									disabled={selectedRowCount !== 1}
+										onClick={() => {
+											if (typeof window === "undefined" || !stateKey) return;
+											try {
+												sessionStorage.setItem(`datatable:preserve:${stateKey}`, "1");
+											} catch {
+												// Ignore storage errors
+											}
+										}}
 									href={`/Portal/${selectedRowsData[0]?.ledaId ? "Management" : "Maintenance"}/**REPLACE**/${selectedRowsData[0]?.ledaId ?? selectedRowsData[0]?.seasonCode}`}
 								/>
 							)}

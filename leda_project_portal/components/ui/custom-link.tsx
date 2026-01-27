@@ -15,6 +15,7 @@ interface CustomLinkProps {
     className?: string;
     disabled?: boolean;
     parentPage: string;
+	onClick?: () => void;
 }
 
 export default function CustomLink({
@@ -22,12 +23,13 @@ export default function CustomLink({
     linkName,
     className,
     disabled,
-    parentPage
+    parentPage,
+	onClick
 }: CustomLinkProps) {
     href = href.replace("**REPLACE**", parentPage);
     return (
         <Button disabled={disabled} variant={"outline"} className="hover:bg-muted border-border text-foreground">
-            <Link href={href} className={className} prefetch={true}>{linkName}</Link>
+			<Link href={href} className={className} prefetch={true} onClick={onClick}>{linkName}</Link>
         </Button>
     )
 }

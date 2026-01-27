@@ -84,6 +84,35 @@ export function usePersistedDataTableState(storageKey: string, options?: Persist
 		}
 	}, [storageKey, state]);
 
+	// Reset persisted page when leaving the page, unless the next navigation
+	// was explicitly marked as "preserve" (used for view/detail pages).
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		return () => {
+			try {
+				const preserveKey = `datatable:preserve:${storageKey}`;
+				const shouldPreserve = sessionStorage.getItem(preserveKey) === "1";
+				if (shouldPreserve) {
+					sessionStorage.removeItem(preserveKey);
+					return;
+				}
+
+				const raw = sessionStorage.getItem(storageKey);
+				const parsed = safeParseState(raw);
+				sessionStorage.setItem(
+					storageKey,
+					JSON.stringify({
+						page: defaults.page,
+						search: parsed?.search ?? defaults.search,
+						sorting: parsed?.sorting ?? defaults.sorting,
+					})
+				);
+			} catch {
+				// Ignore storage errors.
+			}
+		};
+	}, [storageKey, defaults.page, defaults.search, defaults.sorting]);
+
 	const setPage = useCallback((page: number) => {
 		setState((prev) => ({ ...prev, page }));
 	}, []);

@@ -42,6 +42,7 @@ export default function Page() {
 				columns={columns}
 				data={data?.data || []}
 				pageName="Seasons Page"
+				stateKey="datatable:/Portal/Maintenance/Seasons"
 				queryKey={["seasons-datatable"]}
 				addDialogConfig={{
 					form: "SeasonAddForm",

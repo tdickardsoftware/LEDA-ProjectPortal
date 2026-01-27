@@ -228,6 +228,7 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 						columns={columns}
 						data={payments}
 						pageName={`${capitalizedType} Payments`}
+						stateKey={`datatable:/Payments/${type}/${ledaId ?? "all"}`}
 						queryKey={[
 							type === "player"
 								? "player-payments-datatable"

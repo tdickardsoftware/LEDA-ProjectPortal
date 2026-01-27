@@ -42,6 +42,7 @@ export default function Page() {
 				columns={columns}
 				data={data?.data || []}
 				pageName="Places Page"
+				stateKey="datatable:/Portal/Management/Places"
 				queryKey={["places-datatable"]}
 				addDialogConfig={{
 					form: "PlaceAddForm",
