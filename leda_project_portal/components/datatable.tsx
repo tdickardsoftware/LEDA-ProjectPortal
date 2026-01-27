@@ -40,7 +40,7 @@ import {
 	teamPaymentHistoryRoute,
 } from "@/lib/apiRoutes";
 // Import the required icons and paymentRoute
-import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, RotateCw } from "lucide-react";
 import { playerPaymentHistoryRoute } from "@/lib/apiRoutes";
 import {
 	Tooltip,
@@ -84,6 +84,7 @@ interface DataTableProps<TData extends Record<string, unknown>, TValue> {
 		columns: ColumnDef<TData, TValue>[];
 		data: TData[];
 		pageName: string;
+		stateKey?: string;
 		addDialogConfig?: { form: keyofFormComponents; title: string; buttonName: string };
 		editDialogConfig?: { form: keyofFormComponents; title: string; buttonName: string };
 		deleteDialogConfig?: { buttonName: string; title: string; apiEndpoint: string };
@@ -102,6 +103,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	columns,
 	data,
 	pageName,
+	stateKey,
 	addDialogConfig,
 	editDialogConfig,
 	deleteDialogConfig,
@@ -116,16 +118,21 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	filter,
 }: DataTableProps<TData, TValue>) {
 	const router = useRouter();
+	const effectiveStateKey = stateKey ?? pageName;
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
 	const [activeSearchQuery, setActiveSearchQuery] = React.useState(""); // State for executed search
 	const [tableData, setTableData] = React.useState(data); // State for table data
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
-	// Initialize pageIndex from localStorage immediately
+	const [isRefreshing, setIsRefreshing] = React.useState(false);
+	const pageSize = 10;
+	// Initialize pageIndex from sessionStorage immediately
 	const [pageIndex, setPageIndex] = React.useState<number>(() => {
-		if (typeof window !== 'undefined') {
-			const savedPageIndex = localStorage.getItem(`datatable_pageIndex_${pageName}`);
+		if (typeof window !== "undefined") {
+			const savedPageIndex = sessionStorage.getItem(
+				`datatable:pageIndex:${effectiveStateKey}`
+			);
 			if (savedPageIndex !== null) {
 				const parsedIndex = parseInt(savedPageIndex, 10);
 				if (!isNaN(parsedIndex) && parsedIndex >= 0) {
@@ -136,7 +143,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		return 0;
 	});
 	// Define a unique storage key for page index based on pageName
-	const pageIndexStorageKey = `datatable_pageIndex_${pageName}`;
+	const pageIndexStorageKey = `datatable:pageIndex:${effectiveStateKey}`;
+	const preserveKey = `datatable:preserve:${effectiveStateKey}`;
 
 	// Filter state
 	const [filterPopoverOpen, setFilterPopoverOpen] = React.useState(false);
@@ -481,7 +489,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			rowSelection,
 			pagination: {
 				pageIndex,
-				pageSize: 10
+				pageSize,
 			}, // Add pagination state
 		},
 		onPaginationChange: (updater) => {
@@ -490,22 +498,18 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 				setPageIndex((prev) => {
 					const next = updater({
 						pageIndex: prev,
-						pageSize: 5
+						pageSize,
 					}).pageIndex;
-					// Save to localStorage immediately
-					localStorage.setItem(pageIndexStorageKey, next.toString());
 					return next;
 				});
 			} else if (typeof updater === "object" && updater !== null && "pageIndex" in updater) {
 				const newIndex = updater.pageIndex;
 				setPageIndex(newIndex);
-				// Save to localStorage immediately
-				localStorage.setItem(pageIndexStorageKey, newIndex.toString());
 			}
 		},
 		initialState: {
 			sorting: [{ id: defaultSort ? defaultSort : "", desc: false }],
-			pagination: { pageIndex, pageSize: 5 }, // Use the initialized pageIndex
+			pagination: { pageIndex, pageSize }, // Use the initialized pageIndex
 		},
 	});
 
@@ -529,6 +533,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	// Refresh the table data
 	const handleRefresh = async () => {
 		try {
+			setIsRefreshing(true);
 			const response = await fetch(apiEndpoint); // Use the dynamic API endpoint
 			const newData = await response.json();
 			setTableData(newData);
@@ -536,13 +541,14 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			// Don't reset page index on refresh - keep user's current position
 		} catch (error) {
 			console.error("Failed to refresh data", error);
+		} finally {
+			setIsRefreshing(false);
 		}
 	};
 
 	React.useEffect(() => {
-		handleRefresh(); // Call handleRefresh without arguments
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [onRefresh]);
+		setTableData(data);
+	}, [data]);
 
 	// Set default selected row if provided
 	React.useEffect(() => {
@@ -819,10 +825,24 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		return "";
 	}, [extractTextFromReactElement]);
 
-	// Save page index to localStorage whenever it changes
+	// Save page index for the current session
 	React.useEffect(() => {
-		localStorage.setItem(pageIndexStorageKey, pageIndex.toString());
+		if (typeof window === "undefined") return;
+		sessionStorage.setItem(pageIndexStorageKey, pageIndex.toString());
 	}, [pageIndex, pageIndexStorageKey]);
+
+	// Reset persisted page index when leaving this page unless explicitly preserved (e.g., navigating to a View page)
+	React.useEffect(() => {
+		return () => {
+			if (typeof window === "undefined") return;
+			const shouldPreserve = sessionStorage.getItem(preserveKey) === "1";
+			if (shouldPreserve) {
+				sessionStorage.removeItem(preserveKey);
+				return;
+			}
+			sessionStorage.setItem(pageIndexStorageKey, "0");
+		};
+	}, [pageIndexStorageKey, preserveKey]);
 
 	return (
 		<div className="w-full">
@@ -841,6 +861,22 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 							/>
 						)}
 						<div className="flex space-x-2">
+							<Button
+								variant="outline"
+								size="icon"
+								onClick={handleRefresh}
+								disabled={isRefreshing}
+								className="hover:bg-muted border-border text-foreground transition-colors"
+								aria-label="Refresh"
+							>
+								<RotateCw
+									className={
+										isRefreshing
+											? "h-4 w-4 animate-spin"
+											: "h-4 w-4"
+									}
+								/>
+							</Button>
 							{/* Filter By Season Button and Popover */}
 							{filter && (
 								<Popover
@@ -962,6 +998,10 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									parentPage={viewLinkConfig.parentPage}
 									disabled={selectedRowCount !== 1}
 									href={`/Portal/${selectedRowsData[0]?.ledaId ? "Management" : "Maintenance"}/**REPLACE**/${selectedRowsData[0]?.ledaId ?? selectedRowsData[0]?.seasonCode}`}
+									onClick={() => {
+										if (typeof window === "undefined") return;
+										sessionStorage.setItem(preserveKey, "1");
+									}}
 								/>
 							)}
 							{editDialogConfig && (
@@ -1151,10 +1191,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						variant="outline"
 						size="sm"
 						onClick={() => {
-							table.previousPage();
-							const newIndex = table.getState().pagination.pageIndex - 1;
-							setPageIndex(newIndex);
-							localStorage.setItem(pageIndexStorageKey, newIndex.toString());
+								table.previousPage();
 						}}
 						disabled={!table.getCanPreviousPage()}
 						className="hover:bg-muted border-border text-foreground transition-colors"
@@ -1169,10 +1206,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						variant="outline"
 						size="sm"
 						onClick={() => {
-							table.nextPage();
-							const newIndex = table.getState().pagination.pageIndex + 1;
-							setPageIndex(newIndex);
-							localStorage.setItem(pageIndexStorageKey, newIndex.toString());
+								table.nextPage();
 						}}
 						disabled={!table.getCanNextPage()}
 						className="hover:bg-muted border-border text-foreground transition-colors"
