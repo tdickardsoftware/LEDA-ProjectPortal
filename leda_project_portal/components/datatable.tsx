@@ -40,7 +40,7 @@ import {
 	teamPaymentHistoryRoute,
 } from "@/lib/apiRoutes";
 // Import the required icons and paymentRoute
-import { CheckCircle2, AlertTriangle, XCircle, RotateCw } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, RotateCw, Loader2 } from "lucide-react";
 import { playerPaymentHistoryRoute } from "@/lib/apiRoutes";
 import {
 	Tooltip,
@@ -126,22 +126,11 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
 	const [isRefreshing, setIsRefreshing] = React.useState(false);
+	const [didRestorePageIndex, setDidRestorePageIndex] = React.useState(false);
 	const pageSize = 10;
-	// Initialize pageIndex from sessionStorage immediately
-	const [pageIndex, setPageIndex] = React.useState<number>(() => {
-		if (typeof window !== "undefined") {
-			const savedPageIndex = sessionStorage.getItem(
-				`datatable:pageIndex:${effectiveStateKey}`
-			);
-			if (savedPageIndex !== null) {
-				const parsedIndex = parseInt(savedPageIndex, 10);
-				if (!isNaN(parsedIndex) && parsedIndex >= 0) {
-					return parsedIndex;
-				}
-			}
-		}
-		return 0;
-	});
+	// Always start at 0 for the first render (prevents SSR/client hydration mismatches).
+	// We restore the persisted value in an effect after mount.
+	const [pageIndex, setPageIndex] = React.useState<number>(0);
 	// Define a unique storage key for page index based on pageName
 	const pageIndexStorageKey = `datatable:pageIndex:${effectiveStateKey}`;
 	const preserveKey = `datatable:preserve:${effectiveStateKey}`;
@@ -828,8 +817,21 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	// Save page index for the current session
 	React.useEffect(() => {
 		if (typeof window === "undefined") return;
+		if (!didRestorePageIndex) return;
 		sessionStorage.setItem(pageIndexStorageKey, pageIndex.toString());
-	}, [pageIndex, pageIndexStorageKey]);
+	}, [didRestorePageIndex, pageIndex, pageIndexStorageKey]);
+
+	// Restore page index after mount (client-only) to avoid hydration mismatch.
+	React.useEffect(() => {
+		if (typeof window === "undefined") return;
+		const savedPageIndex = sessionStorage.getItem(pageIndexStorageKey);
+		const parsedIndex = savedPageIndex ? parseInt(savedPageIndex, 10) : 0;
+		if (!isNaN(parsedIndex) && parsedIndex >= 0) {
+			setPageIndex(parsedIndex);
+		}
+		setDidRestorePageIndex(true);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [pageIndexStorageKey]);
 
 	// Reset persisted page index when leaving this page unless explicitly preserved (e.g., navigating to a View page)
 	React.useEffect(() => {
@@ -843,6 +845,19 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			sessionStorage.setItem(pageIndexStorageKey, "0");
 		};
 	}, [pageIndexStorageKey, preserveKey]);
+
+	if (!didRestorePageIndex) {
+		return (
+			<div className="w-full">
+				<div className="p-5 shadow-sm bg-background rounded-xl border border-border w-full transition-all">
+					<div className="flex items-center justify-center py-16 gap-3 text-muted-foreground">
+						<Loader2 className="h-6 w-6 animate-spin" />
+						<span className="text-sm">Loading table…</span>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="w-full">
