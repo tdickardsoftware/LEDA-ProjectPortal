@@ -109,6 +109,10 @@ export default async function handler(
 	if (req.method === "POST") {
 		try {
 			const data = req.body as PaymentHistory;
+			// Defensive: if amount is blank, treat it as $0.00.
+			data.amount = String((data as unknown as { amount?: unknown }).amount ?? "")
+				.trim();
+			if (data.amount === "") data.amount = "0.00";
 			let queryAdd: string | undefined;
 			let values: (string | number | boolean | Date)[] | undefined;
 

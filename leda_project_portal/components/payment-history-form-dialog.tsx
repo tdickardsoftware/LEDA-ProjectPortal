@@ -55,7 +55,8 @@ const formSchema = z.object({
 	paymentType: z.string({
 		required_error: "Please select payment type",
 	}),
-	amount: z.string().min(1, "Amount is required"),
+	// Allow blank in the UI; normalize to 0.00 on submit.
+	amount: z.string().trim().default(""),
 	seasonCode: z.string().min(1, "Season code is required"),
 	comp: z.boolean().default(false),
 	notes: z.string().optional(),
@@ -229,7 +230,10 @@ export default function PaymentHistoryFormDialog({
 
 	// Handle form submission
 	const onSubmit = (data: FormValues) => {
-		mutation.mutate(data);
+		mutation.mutate({
+			...data,
+			amount: data.amount.trim() === "" ? "0.00" : data.amount,
+		});
 	};
 
 	return (
