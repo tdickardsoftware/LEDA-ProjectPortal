@@ -26,7 +26,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import ShadcnBigCalendar from "@/components/shadcn-big-calendar/shadcn-big-calendar";
+import ShadcnBigCalendar from "@/components/ui/shadcn-big-calendar/shadcn-big-calendar";
 import { Calendar, momentLocalizer, Views } from "react-big-calendar";
 import moment from "moment";
 import type { CalendarProps } from "react-big-calendar";
