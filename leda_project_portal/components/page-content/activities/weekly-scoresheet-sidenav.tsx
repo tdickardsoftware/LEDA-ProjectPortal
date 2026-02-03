@@ -42,6 +42,16 @@ interface SideNavProps {
 }
 
 const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelection = true }: SideNavProps) => {
+	const isByeMatchup = (game: { homeTeamId?: string; awayTeamId?: string; homeTeamLetter: string; awayTeamLetter: string }) => {
+		const homeId = game.homeTeamId ? String(game.homeTeamId) : "";
+		const awayId = game.awayTeamId ? String(game.awayTeamId) : "";
+		if (homeId === "0" || awayId === "0") return true;
+		// Fallback for any upstream data that uses a BYE marker in the letters
+		if (String(game.homeTeamLetter).toUpperCase() === "BYE") return true;
+		if (String(game.awayTeamLetter).toUpperCase() === "BYE") return true;
+		return false;
+	};
+
 	const { data: matchupsResponse } = useQuery({
 		queryKey: ["v2-matchups", seasonCode, weekNum],
 		queryFn: async () => {
@@ -100,7 +110,14 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 	// State to track expanded divisions and subdivisions
 	const [openDivisions, setOpenDivisions] = useState<Record<string, boolean>>({});
 	const [openSubdivisions, setOpenSubdivisions] = useState<Record<string, boolean>>({});
-	const [selectedMatchup, setSelectedMatchup] = useState<{ home: string; away: string } | null>(null);
+	const [selectedMatchup, setSelectedMatchup] = useState<{
+		divisionName: string;
+		subdivisionName: string;
+		homeTeamLetter: string;
+		awayTeamLetter: string;
+		homeTeamId?: string;
+		awayTeamId?: string;
+	} | null>(null);
 
 	// Collapse / reset navigation whenever season or week changes
 	useEffect(() => {
@@ -116,7 +133,8 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 	const requestedStatusRef = useRef<Set<string>>(new Set());
 
 	const toggleDivision = (division: string) => setOpenDivisions(prev => ({ ...prev, [division]: !prev[division] }));
-	const toggleSubdivision = (division: string, subdivision: string) => setOpenSubdivisions(prev => ({ ...prev, [`${division}-${subdivision}`]: !prev[`${division}-${subdivision}`] }));
+	const toggleSubdivision = (division: string, subdivision: string) =>
+		setOpenSubdivisions(prev => ({ ...prev, [`${division}-${subdivision}`]: !prev[`${division}-${subdivision}`] }));
 
 	// When a subdivision opens, probe
 	useEffect(() => {
@@ -128,6 +146,15 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 			Object.keys(games).forEach(async gameNumber => {
 				const g = games[gameNumber];
 				const letterStatusKey = `${divisionName}-${subdivisionName}-${g.homeTeamLetter}-${g.awayTeamLetter}`;
+				if (isByeMatchup({
+					homeTeamId: g.homeTeamId,
+					awayTeamId: g.awayTeamId,
+					homeTeamLetter: g.homeTeamLetter,
+					awayTeamLetter: g.awayTeamLetter,
+				})) {
+					// Don't probe completion status for BYE matchups
+					return;
+				}
 				if (!g.homeTeamId || !g.awayTeamId) {
 					try {
 						const teamInfoRes = await fetchWithSession(`/api/activities/scoresheets/weeklyScoresheetsV2/teamInfo?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&teamLetter=${encodeURIComponent(g.homeTeamLetter)}`, { method: 'GET' });
@@ -136,14 +163,27 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 							const homeRow = rows[0];
 							const awayRow = rows[1];
 							if (homeRow && awayRow) {
+								const homeId = String(homeRow.teamId);
+								const awayId = String(awayRow.teamId);
+								// If this is a BYE matchup (teamId 0), remove it from the nav entirely.
+								if (homeId === "0" || awayId === "0") {
+									setData(prev => {
+										const clone: DivisionData = JSON.parse(JSON.stringify(prev));
+										if (clone?.[divisionName]?.[subdivisionName]?.[gameNumber]) {
+											delete clone[divisionName][subdivisionName][gameNumber];
+										}
+										return clone;
+									});
+									return;
+								}
 								setData(prev => {
 									const clone: DivisionData = JSON.parse(JSON.stringify(prev));
 									const game = clone[divisionName][subdivisionName][gameNumber];
-									game.homeTeamId = String(homeRow.teamId);
-									game.awayTeamId = String(awayRow.teamId);
+									game.homeTeamId = homeId;
+									game.awayTeamId = awayId;
 									return clone;
 								});
-								g.homeTeamId = homeRow.teamId; g.awayTeamId = awayRow.teamId;
+								g.homeTeamId = homeId; g.awayTeamId = awayId;
 							}
 						} else {
 							setCompletionMap(prev => ({ ...prev, [letterStatusKey]: false }));
@@ -153,6 +193,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 					}
 				}
 				if (g.homeTeamId && g.awayTeamId) {
+					if (String(g.homeTeamId) === "0" || String(g.awayTeamId) === "0") return;
 					const statusKey = `${divisionName}-${subdivisionName}-${g.homeTeamId}-${g.awayTeamId}`;
 					if (requestedStatusRef.current.has(statusKey) || completionMap[statusKey] !== undefined) return;
 					requestedStatusRef.current.add(statusKey);
@@ -180,6 +221,12 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 		const games = data[divisionName][subdivisionName];
 		return Object.keys(games).every(gn => {
 			const g = games[gn];
+			if (isByeMatchup({
+				homeTeamId: g.homeTeamId,
+				awayTeamId: g.awayTeamId,
+				homeTeamLetter: g.homeTeamLetter,
+				awayTeamLetter: g.awayTeamLetter,
+			})) return true;
 			const idKey = g.homeTeamId && g.awayTeamId ? `${divisionName}-${subdivisionName}-${g.homeTeamId}-${g.awayTeamId}` : null;
 			const letterKey = `${divisionName}-${subdivisionName}-${g.homeTeamLetter}-${g.awayTeamLetter}`;
 			return (idKey !== null && completionMap[idKey] !== undefined) || completionMap[letterKey] !== undefined;
@@ -214,7 +261,42 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 											<CollapsibleContent className="ml-4 mt-1 space-y-1">
 												{Object.keys(gamesObj).map(gameNumber => {
 													const game = gamesObj[gameNumber];
-													const isSelected = selectedMatchup?.home === game.homeTeamLetter && selectedMatchup?.away === game.awayTeamLetter;
+													if (isByeMatchup({
+														homeTeamId: game.homeTeamId,
+														awayTeamId: game.awayTeamId,
+														homeTeamLetter: game.homeTeamLetter,
+														awayTeamLetter: game.awayTeamLetter,
+													})) {
+														return null;
+													}
+													const isSelected = (() => {
+														if (!selectedMatchup) return false;
+														if (
+															selectedMatchup.divisionName !== divisionName ||
+															selectedMatchup.subdivisionName !== subdivisionName
+														) {
+															return false;
+														}
+
+														// Prefer stable identity: team IDs (when known)
+														if (
+															selectedMatchup.homeTeamId &&
+															selectedMatchup.awayTeamId &&
+															game.homeTeamId &&
+															game.awayTeamId
+														) {
+															return (
+																selectedMatchup.homeTeamId === game.homeTeamId &&
+																selectedMatchup.awayTeamId === game.awayTeamId
+															);
+														}
+
+														// Fallback: letters + division/subdivision (prevents cross-subdivision collisions)
+														return (
+															selectedMatchup.homeTeamLetter === game.homeTeamLetter &&
+															selectedMatchup.awayTeamLetter === game.awayTeamLetter
+														);
+													})();
 													return (
 														<Button
 															key={`${subdivKey}-${gameNumber}`}
@@ -224,7 +306,14 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 															aria-disabled={isSelected}
 															onClick={() => {
 																if (isSelected) return; // safety
-																setSelectedMatchup({ home: game.homeTeamLetter, away: game.awayTeamLetter });
+																setSelectedMatchup({
+																	divisionName,
+																	subdivisionName,
+																	homeTeamLetter: game.homeTeamLetter,
+																	awayTeamLetter: game.awayTeamLetter,
+																	homeTeamId: game.homeTeamId || undefined,
+																	awayTeamId: game.awayTeamId || undefined,
+																});
 																handleMatchupSelection(game.homeTeamLetter, game.awayTeamLetter, divisionName, subdivisionName);
 																// Collapse sidenav after selection if enabled
 																if (collapseOnSelection) {

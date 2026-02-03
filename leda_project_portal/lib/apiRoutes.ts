@@ -8,6 +8,8 @@ require("dotenv").config();
 export const placeOwnerRoute = "/api/management/player/placeOwner";
 // Define route for players not on the serverside
 export const playerRoute = "/api/management/player";
+// Define route for batch player fetch (reduces N+1 requests)
+export const playerBatchRoute = "/api/management/player/batch";
 // Define route for players for selector not on the serverside
 export const playerSelectorRoute = "/api/management/player/playerSelector";
 // Define route for single player selector not on the serverside

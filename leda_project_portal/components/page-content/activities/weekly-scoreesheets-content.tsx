@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import WeekSelector from "@/components/ui/week-selector";
-import { teamRoute, playerRoute, mentionPlayerHistoryRoute, rosterTeamViewRoute, memberInfoRoute } from "@/lib/apiRoutes";
+import { teamRoute, playerRoute, playerBatchRoute, mentionPlayerHistoryRoute, rosterTeamViewRoute, memberInfoRoute } from "@/lib/apiRoutes";
 import FolderTab, { FolderTabMed } from "@/components/ui/folder-tab";
 import { Player } from "@/lib/definitions";
 import {
@@ -114,6 +114,16 @@ const createMentionHistory = async (data: {
 		)}`;
 		const response = await fetchWithSession(url, { method: "GET" });
 		return response.json();
+	};
+
+	const fetchPlayersBatch = async (playerIds: Array<string | number>) => {
+		const normalized = playerIds.map((id) => String(id)).filter(Boolean);
+		const response = await fetchWithSession(playerBatchRoute, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ playerIds: normalized }),
+		});
+		return response.json() as Promise<Record<string, Player | null>>;
 	};
 
 	const fetchRosterTeamId = async ({
@@ -699,14 +709,19 @@ export default function WeeklyScoresheetsContent({
 		queryKey: ["teamPlayers", selectedHomeTeamId],
 		queryFn: async () => {
 			if (!homeTeamData?.memberIdList) return [];
-			
-			const players: Player[] = [];
-			for (const playerKey in homeTeamData.memberIdList) {
-				const playerInfo = homeTeamData.memberIdList[playerKey];
-				const playerData = await fetchPlayer(playerInfo.ledaId);
-				players.push(playerData);
-			}
-			return players;
+
+			const ids = Object.values(
+				homeTeamData.memberIdList as Record<string, { ledaId: string | number }>
+			)
+				.map((p) => p?.ledaId)
+				.filter((id): id is string | number => id !== undefined && id !== null);
+
+			if (ids.length === 0) return [];
+
+			const playersById = await fetchPlayersBatch(ids);
+			return ids
+				.map((id) => playersById[String(id)])
+				.filter((p): p is Player => !!p);
 		},
 		enabled: !!homeTeamData && !!homeTeamData.memberIdList,
 		staleTime: 1000 * 60 * 10, // 10 minutes
@@ -716,14 +731,19 @@ export default function WeeklyScoresheetsContent({
 		queryKey: ["teamPlayers", selectedAwayTeamId],
 		queryFn: async () => {
 			if (!awayTeamData?.memberIdList) return [];
-			
-			const players: Player[] = [];
-			for (const playerKey in awayTeamData.memberIdList) {
-				const playerInfo = awayTeamData.memberIdList[playerKey];
-				const playerData = await fetchPlayer(playerInfo.ledaId);
-				players.push(playerData);
-			}
-			return players;
+
+			const ids = Object.values(
+				awayTeamData.memberIdList as Record<string, { ledaId: string | number }>
+			)
+				.map((p) => p?.ledaId)
+				.filter((id): id is string | number => id !== undefined && id !== null);
+
+			if (ids.length === 0) return [];
+
+			const playersById = await fetchPlayersBatch(ids);
+			return ids
+				.map((id) => playersById[String(id)])
+				.filter((p): p is Player => !!p);
 		},
 		enabled: !!awayTeamData && !!awayTeamData.memberIdList,
 		staleTime: 1000 * 60 * 10, // 10 minutes
