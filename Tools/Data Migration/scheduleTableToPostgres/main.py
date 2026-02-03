@@ -30,10 +30,39 @@ def get_team_name(team_id):
 def is_home(team_letter, opponent_letter):
     return opponent_letter.isupper()
 
-# Helper: get match date (Week N: Jan 3 + 7*(N-1) days, 2024 season assumed)
-def get_match_date(week_num):
+# Helper: parse season code to get year and season type
+def parse_season_code(season_code):
+    """
+    Parse season code like 'F25' or 'S24' to get season type and year.
+    F = Fall, S = Spring, W = Winter
+    Returns: (season_type, year)
+    """
+    season_type = season_code[0].upper()
+    year_suffix = season_code[1:]
+    
+    # Convert 2-digit year to 4-digit year
+    year = 2000 + int(year_suffix)
+    
+    return season_type, year
+
+# Helper: get match date based on season code and week number
+def get_match_date(season_code, week_num):
     from datetime import datetime, timedelta
-    base_date = datetime(2024, 1, 3)
+    
+    season_type, year = parse_season_code(season_code)
+    
+    # Determine base date based on season type
+    if season_type == 'F':  # Fall - starts in September
+        base_date = datetime(year, 9, 4)  # First Wednesday of September (approximately)
+    elif season_type == 'S':  # Spring - starts in January
+        base_date = datetime(year, 1, 8)  # Second Wednesday of January (approximately)
+    elif season_type == 'W':  # Winter - starts in November
+        base_date = datetime(year, 11, 6)  # First Wednesday of November (approximately)
+    else:
+        # Default to January if unknown
+        base_date = datetime(year, 1, 3)
+    
+    # Calculate match date (weeks are 7 days apart)
     match_date = base_date + timedelta(days=7*(week_num-1))
     return f"{match_date.month}/{match_date.day}/{match_date.year}"
 
@@ -67,7 +96,7 @@ def process_season(season):
                     opp_id = opp_row['Team ID Number'] if opp_row else ""
                     match_key = f'Date{week}'
                     matches_obj[match_key] = {
-                        "matchDate": get_match_date(week),
+                        "matchDate": get_match_date(season, week),
                         "matchTime": "19:30",
                         "home": is_home(team_letter, opp_letter),
                         "opposingTeamId": str(opp_id),
