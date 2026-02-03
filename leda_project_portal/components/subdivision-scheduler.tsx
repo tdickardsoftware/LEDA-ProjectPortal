@@ -78,7 +78,7 @@ interface MatchupDisplayProps {
 // Memoized matchup display component
 const MatchupDisplay = memo<MatchupDisplayProps>(
 	({ matchup, teamData, teams, getPlaceNameById, onEdit, onDelete, viewMode = false, hasPointsLogged = false }) => {
-		const isByeWeek = matchup.opposingTeamId === "0" || matchup.opposingTeamLetter === "BYE";
+		const isByeWeek = matchup.opposingTeamId === "0" || matchup.opposingTeamLetter === "BYE" || matchup.opposingTeamLetter === "X";
 
 		const getTeamNameById = useCallback(
 			(teamId: string): string => {
@@ -432,7 +432,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 							matchTime: "",
 							home: !!home,
 							opposingTeamId: "0",
-							opposingTeamLetter: "BYE",
+							opposingTeamLetter: "X",
 							subdivisionId,
 						};
 					} else {
@@ -556,7 +556,8 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				if (
 					previousOpposingTeamLetter &&
 					(previousOpposingTeamLetter !== opposingTeamLetter || isByeWeek) &&
-					previousOpposingTeamLetter !== "BYE"
+					previousOpposingTeamLetter !== "BYE" &&
+					previousOpposingTeamLetter !== "X"
 				) {
 					const previousOpposingTeam = updatedMatchData[division][subdivision][
 						previousOpposingTeamLetter
@@ -579,12 +580,17 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 
 				if (isByeWeek) {
 					// BYE week: only update the selected team with BYE matchup
+					// Preserve existing opposingTeamLetter if already a BYE week, otherwise use "X"
+					const existingMatchup = selectedTeam.matchesData?.[gameTitle];
+					const existingIsBye = existingMatchup?.opposingTeamId === "0";
+					const byeTeamLetter = existingIsBye ? existingMatchup.opposingTeamLetter : "X";
+					
 					selectedTeam.matchesData[gameTitle] = {
 						matchDate: date,
 						matchTime: "",
 						home,
 						opposingTeamId: "0",
-						opposingTeamLetter: "BYE",
+						opposingTeamLetter: byeTeamLetter,
 						subdivisionId,
 					};
 				} else {
@@ -669,7 +675,12 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 								}
 								selectedTeamLetter={editingMatchup.teamLetter}
 								initialValues={editingMatchup.matchData}
-								hasPointsLogged={hasPointsLogged}							isCheckingPoints={isCheckingPoints}							/>
+								hasPointsLogged={hasPointsLogged}
+								isCheckingPoints={isCheckingPoints}
+								teamsWithMatchups={getTeamsWithMatchups(editingMatchup.gameTitle).filter(
+									(id) => id !== editingMatchup.matchData.opposingTeamId
+								)}
+							/>
 						)}
 					</DialogContent>
 				</Dialog>
@@ -706,7 +717,9 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{teamEntries.map(([key, teamData], rowIndex) => (
+							{teamEntries
+								.filter(([, teamData]) => teamData.teamId !== "0")
+								.map(([key, teamData], rowIndex) => (
 								<TableRow
 									key={key}
 									className={

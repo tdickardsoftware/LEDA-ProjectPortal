@@ -112,7 +112,7 @@ export default function SchedulingAddMatchupForm({
 				"", // no match time for BYE
 				values.home,
 				"0", // opposing team ID is 0 for BYE
-				"BYE", // opposing team letter is BYE
+				"X", // opposing team letter is X for BYE week
 				true // isByeWeek flag
 			);
 		} else {

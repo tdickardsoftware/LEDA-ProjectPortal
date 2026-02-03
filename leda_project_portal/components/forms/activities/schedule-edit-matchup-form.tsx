@@ -53,6 +53,7 @@ export default function SchedulingEditMatchupForm({
 	initialValues,
 	hasPointsLogged = false,
 	isCheckingPoints = false,
+	teamsWithMatchups = [],
 }: {
 	teamEntries: [
 		string,
@@ -83,6 +84,7 @@ export default function SchedulingEditMatchupForm({
 	};
 	hasPointsLogged?: boolean;
 	isCheckingPoints?: boolean;
+	teamsWithMatchups?: string[];
 }) {
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
@@ -90,7 +92,7 @@ export default function SchedulingEditMatchupForm({
 		defaultValues: {
 			matchTime: initialValues.matchTime || "",
 			home: initialValues.home,
-			isByeWeek: initialValues.opposingTeamId === "0" || initialValues.opposingTeamLetter === "BYE",
+			isByeWeek: initialValues.opposingTeamId === "0" || initialValues.opposingTeamLetter === "BYE" || initialValues.opposingTeamLetter === "X",
 			opposingTeamId: initialValues.opposingTeamId || "",
 			teamId: teamId,
 		},
@@ -103,7 +105,7 @@ export default function SchedulingEditMatchupForm({
 		form.reset({
 			matchTime: initialValues.matchTime || "",
 			home: initialValues.home,
-			isByeWeek: initialValues.opposingTeamId === "0" || initialValues.opposingTeamLetter === "BYE",
+			isByeWeek: initialValues.opposingTeamId === "0" || initialValues.opposingTeamLetter === "BYE" || initialValues.opposingTeamLetter === "X",
 			opposingTeamId: initialValues.opposingTeamId || "",
 			teamId: teamId,
 		});
@@ -121,7 +123,7 @@ export default function SchedulingEditMatchupForm({
 				"", // no match time for BYE
 				values.home,
 				"0", // opposing team ID is 0 for BYE
-				"BYE", // opposing team letter is BYE
+				"X", // opposing team letter is X for BYE week
 				true // isByeWeek flag
 			);
 		} else {
@@ -210,7 +212,7 @@ export default function SchedulingEditMatchupForm({
 								control={form.control}
 								name="opposingTeamId"
 								label="Opposing Team"
-								selectedTeams={[teamId]}
+								selectedTeams={[teamId, ...teamsWithMatchups]}
 								teamEntries={teamEntries}
 								defaultId={initialValues.opposingTeamId}
 								disabled={hasPointsLogged || isCheckingPoints}
