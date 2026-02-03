@@ -17,15 +17,24 @@ import React, { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import TeamSelector from "@/components/team-selector-scheduling";
 import CheckboxDefault from "@/components/ui/checkbox-default";
+import { Spinner } from "@/components/ui/skeleton";
 
 // Define the schema for form validation using zod
 const divisionFormSchema = z.object({
-	matchTime: z.string().min(1, { message: "Match Time is required." }),
+	matchTime: z.string(),
 	home: z.boolean(),
-	opposingTeamId: z
-		.string()
-		.min(1, { message: "Opposing Team is required." }),
+	isByeWeek: z.boolean(),
+	opposingTeamId: z.string(),
 	teamId: z.string().min(1, { message: "Team ID is required." }),
+}).refine((data) => {
+	// If not a BYE week, require matchTime and opposingTeamId
+	if (!data.isByeWeek) {
+		return data.matchTime.length > 0 && data.opposingTeamId.length > 0;
+	}
+	return true;
+}, {
+	message: "Match Time and Opposing Team are required for non-BYE weeks.",
+	path: ["opposingTeamId"],
 });
 
 // Define styles for the form container
@@ -42,6 +51,8 @@ export default function SchedulingEditMatchupForm({
 	setOpen,
 	selectedTeamLetter,
 	initialValues,
+	hasPointsLogged = false,
+	isCheckingPoints = false,
 }: {
 	teamEntries: [
 		string,
@@ -55,7 +66,8 @@ export default function SchedulingEditMatchupForm({
 		matchTime: string,
 		home: boolean,
 		opposingTeamId: string,
-		opposingTeamLetter: string
+		opposingTeamLetter: string,
+		isByeWeek?: boolean
 	) => void;
 	setOpen: (value: boolean) => void;
 	teamId: string;
@@ -69,6 +81,8 @@ export default function SchedulingEditMatchupForm({
 		opposingTeamId: string;
 		opposingTeamLetter: string;
 	};
+	hasPointsLogged?: boolean;
+	isCheckingPoints?: boolean;
 }) {
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
@@ -76,16 +90,20 @@ export default function SchedulingEditMatchupForm({
 		defaultValues: {
 			matchTime: initialValues.matchTime || "",
 			home: initialValues.home,
+			isByeWeek: initialValues.opposingTeamId === "0" || initialValues.opposingTeamLetter === "BYE",
 			opposingTeamId: initialValues.opposingTeamId || "",
 			teamId: teamId,
 		},
 	});
+
+	const isByeWeek = form.watch("isByeWeek");
 
 	// Reset form when initialValues change
 	useEffect(() => {
 		form.reset({
 			matchTime: initialValues.matchTime || "",
 			home: initialValues.home,
+			isByeWeek: initialValues.opposingTeamId === "0" || initialValues.opposingTeamLetter === "BYE",
 			opposingTeamId: initialValues.opposingTeamId || "",
 			teamId: teamId,
 		});
@@ -93,21 +111,37 @@ export default function SchedulingEditMatchupForm({
 
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const opposingTeamKey =
-			teamEntries.find(
-				([, value]) => value.teamId === values.opposingTeamId
-			)?.[0] || "";
-		handleEditMatchup(
-			selectedTeamLetter,
-			teamId,
-			gameTitle,
-			date,
-			values.matchTime,
-			values.home,
-			values.opposingTeamId,
-			opposingTeamKey
-		);
+		if (values.isByeWeek) {
+			// For BYE week, use special values
+			handleEditMatchup(
+				selectedTeamLetter,
+				teamId,
+				gameTitle,
+				date,
+				"", // no match time for BYE
+				values.home,
+				"0", // opposing team ID is 0 for BYE
+				"BYE", // opposing team letter is BYE
+				true // isByeWeek flag
+			);
+		} else {
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const opposingTeamKey =
+				teamEntries.find(
+					([, value]) => value.teamId === values.opposingTeamId
+				)?.[0] || "";
+			handleEditMatchup(
+				selectedTeamLetter,
+				teamId,
+				gameTitle,
+				date,
+				values.matchTime,
+				values.home,
+				values.opposingTeamId,
+				opposingTeamKey,
+				false // not a BYE week
+			);
+		}
 		setOpen(false);
 	}
 
@@ -120,25 +154,27 @@ export default function SchedulingEditMatchupForm({
 			>
 				<div className="flex space-x-4">
 					<div className={formContainerStyle}>
-						<FormField
-							control={form.control}
-							name="matchTime"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Match Start Time *</FormLabel>
-									<FormControl>
-										<Input
-											{...field}
-											type="time"
-											onChange={(e) => {
-												field.onChange(e.target.value);
-											}}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+						{!isByeWeek && (
+							<FormField
+								control={form.control}
+								name="matchTime"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Match Start Time *</FormLabel>
+										<FormControl>
+											<Input
+												{...field}
+												type="time"
+												onChange={(e) => {
+													field.onChange(e.target.value);
+												}}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						)}
 						<div className="flex gap-4">
 							<TeamSelector
 								control={form.control}
@@ -156,14 +192,30 @@ export default function SchedulingEditMatchupForm({
 								className="h-5 w-5"
 							/>
 						</div>
-						<TeamSelector
-							control={form.control}
-							name="opposingTeamId"
-							label="Opposing Team *"
-							selectedTeams={[teamId]}
-							teamEntries={teamEntries}
-							defaultId={initialValues.opposingTeamId}
-						/>
+						{isCheckingPoints ? (
+							<div className="flex items-center gap-2">
+								<Spinner />
+								<span className="text-sm text-muted-foreground">Checking points...</span>
+							</div>
+						) : !hasPointsLogged && (
+							<CheckboxDefault
+								control={form.control}
+								name="isByeWeek"
+								label="BYE Week"
+								className="h-5 w-5"
+							/>
+						)}
+						{!isByeWeek && (
+							<TeamSelector
+								control={form.control}
+								name="opposingTeamId"
+								label="Opposing Team"
+								selectedTeams={[teamId]}
+								teamEntries={teamEntries}
+								defaultId={initialValues.opposingTeamId}
+								disabled={hasPointsLogged || isCheckingPoints}
+							/>
+						)}
 					</div>
 				</div>
 				<div className="flex justify-center">

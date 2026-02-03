@@ -15,6 +15,7 @@ interface CheckboxDefaultProps {
 	name: string;
 	label: string;
 	className?: string;
+	disabled?: boolean;
 }
 
 const CheckboxDefault: React.FC<CheckboxDefaultProps> = ({
@@ -22,6 +23,7 @@ const CheckboxDefault: React.FC<CheckboxDefaultProps> = ({
 	name,
 	label,
 	className,
+	disabled,
 }) => {
 	return (
 		<FormProvider {...useFormContext()}>
@@ -38,6 +40,7 @@ const CheckboxDefault: React.FC<CheckboxDefaultProps> = ({
 								checked={field.value}
 								onCheckedChange={field.onChange}
 								className={className}
+								disabled={disabled}
 							/>
 						</FormControl>
 						<FormMessage />

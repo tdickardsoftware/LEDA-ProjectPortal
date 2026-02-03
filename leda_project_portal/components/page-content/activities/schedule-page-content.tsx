@@ -25,6 +25,7 @@ interface DivisionAccordionProps {
 	matchData: ScheduleData;
 	handleSetEnableSaveButton: (value: boolean) => void;
 	handleFetchUpdatedData: (data: ScheduleData) => void;
+	seasonCode: string | null;
 }
 
 const DivisionAccordion = memo<DivisionAccordionProps>(
@@ -36,13 +37,13 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 		matchData,
 		handleSetEnableSaveButton,
 		handleFetchUpdatedData,
+		seasonCode,
 	}) => (
 		<Accordion
 			key={index}
 			type="single"
 			collapsible
 			className="w-full mb-4"
-			defaultValue={`division-${index}`}
 		>
 			<AccordionItem value={`division-${index}`}>
 				<AccordionTrigger className="underline">{division}</AccordionTrigger>
@@ -54,7 +55,6 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 								type="single"
 								collapsible
 								className="w-full mt-2"
-								defaultValue={`subdivision-${subIndex}`}
 							>
 								<AccordionItem
 									value={`subdivision-${subIndex}`}
@@ -75,6 +75,7 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 													handleSetEnableSaveButton
 												}
 												handleSaveData={handleFetchUpdatedData}
+												seasonCode={seasonCode}
 											/>
 										)}
 									</AccordionContent>
@@ -181,8 +182,7 @@ export default function ScheduleContent() {
 							gameDates={gameDates}
 							matchData={matchData}
 							handleSetEnableSaveButton={handleSetEnableSaveButton}
-							handleFetchUpdatedData={handleFetchUpdatedData}
-						/>
+							handleFetchUpdatedData={handleFetchUpdatedData}						seasonCode={seasonCode}						/>
 					))}
 				</div>
 			)}
