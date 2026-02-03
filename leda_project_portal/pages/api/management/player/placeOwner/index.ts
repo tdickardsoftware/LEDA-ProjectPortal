@@ -23,7 +23,7 @@ export default async function handler(
 			
 			if (search) {
 				const searchTerm = `%${search}%`;
-				searchCondition = `AND (CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) ILIKE $1 OR CAST(p."ledaId" AS TEXT) ILIKE $1)`;
+				searchCondition = `AND (p."fullName" ILIKE $1 OR CAST(p."ledaId" AS TEXT) ILIKE $1)`;
 				searchParams.push(searchTerm);
 			}
 			
@@ -31,7 +31,7 @@ export default async function handler(
 			const sqlQuery = `
 				SELECT 
 					p."ledaId", 
-					CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName" 
+					p."fullName" 
 				FROM public.leda_player_info p 
 				JOIN public.leda_membership_info m ON p."ledaId" = m."ledaId" 
 				WHERE (m."memberType" = 'BAR' OR m."memberType" = 'MEM') 

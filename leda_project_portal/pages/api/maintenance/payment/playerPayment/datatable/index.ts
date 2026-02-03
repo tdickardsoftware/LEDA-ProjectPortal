@@ -61,7 +61,7 @@ export default async function handler(
 					searchCondition = `WHERE 
 						CAST(h."paymentNbr" AS TEXT) ILIKE $1
 						OR CAST(h."ledaId" AS TEXT) ILIKE $1
-						OR CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) ILIKE $1
+						OR p."fullName" ILIKE $1
 						OR h."type" ILIKE $1
 						OR h."seasonCode" ILIKE $1`;
 					searchParams = [searchTerm];
@@ -109,7 +109,7 @@ export default async function handler(
 					h."notes", 
 					h."paidOff", 
 					h."date",
-					CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName",
+					p."fullName",
 					s."fiscalYear"
 				FROM maint.leda_maint_player_payment_history h
 				LEFT JOIN public.leda_player_info p ON h."ledaId" = p."ledaId"

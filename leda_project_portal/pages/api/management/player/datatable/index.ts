@@ -33,7 +33,7 @@ export default async function handler(
 
 			const orderByMap: Record<string, string> = {
 				ledaId: '"ledaId"',
-				fullName: `CONCAT(COALESCE("firstName", ''), ' ', COALESCE("middleInitial", ''), ' ', COALESCE("lastName", ''))`,
+				fullName: `"fullName"`,
 				phoneNumber: '"phoneNumber"',
 				email: '"email"',
 			};
@@ -51,7 +51,7 @@ export default async function handler(
 					// General search across all fields
 					const searchTerm = `%${parsedSearch.query}%`;
 					searchCondition = `WHERE 
-						CONCAT(COALESCE("firstName", ''), ' ', COALESCE("middleInitial", ''), ' ', COALESCE("lastName", '')) ILIKE $1
+						"fullName" ILIKE $1
 						OR "email" ILIKE $1
 						OR "phoneNumber" ILIKE $1
 						OR CAST("ledaId" AS TEXT) ILIKE $1`;
@@ -78,7 +78,7 @@ export default async function handler(
 			const dataQuery = `
 				SELECT 
 					"ledaId", 
-					CONCAT(COALESCE("firstName", ''), ' ', COALESCE("middleInitial", ''), ' ', COALESCE("lastName", '')) as "fullName", 
+					"fullName", 
 					CONCAT('(', SUBSTRING("phoneNumber", 1, 3), ')-', SUBSTRING("phoneNumber", 4, 3), '-', SUBSTRING("phoneNumber", 7, 4)) as "phoneNumber", 
 					"email" 
 				FROM public.leda_player_info 

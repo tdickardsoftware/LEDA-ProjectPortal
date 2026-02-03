@@ -83,7 +83,7 @@ export default async function handler(
 		try {
 			const baseQuery = `
                 SELECT h."paymentNbr", h."ledaId", h."type", h."paymentType", h."amount", h."seasonCode", h."comp", h."notes", h."paidOff", h."date",
-                CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName",
+                p."fullName",
                 s."fiscalYear"
                 FROM maint.leda_maint_player_payment_history h
                 LEFT JOIN public.leda_player_info p ON h."ledaId" = p."ledaId"

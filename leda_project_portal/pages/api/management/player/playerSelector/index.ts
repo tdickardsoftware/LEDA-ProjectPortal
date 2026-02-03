@@ -17,7 +17,7 @@ export default async function handler(
 			
 			// Build search condition
 			const searchCondition = search
-				? `AND (CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) ILIKE $1 OR p."ledaId"::text ILIKE $1)`
+				? `AND (p."fullName" ILIKE $1 OR p."ledaId"::text ILIKE $1)`
 				: "";
 			
 			const params = search ? [`%${search}%`] : [];
@@ -32,7 +32,7 @@ export default async function handler(
 			// Execute the database query to fetch player information
 			const result = await query<PlayerSelector>(
 				`SELECT p."ledaId", 
-				        CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName", 
+				        p."fullName", 
 				        m."cannotBeCaptain" 
 				 FROM public.leda_player_info p 
 				 JOIN public.leda_membership_info m ON p."ledaId" = m."ledaId"
