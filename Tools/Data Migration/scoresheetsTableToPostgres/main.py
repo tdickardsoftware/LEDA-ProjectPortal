@@ -1,8 +1,6 @@
 def export_weekly_team_scores():
-    input_csv = 'Working/leda_weekly_scoresheets_table.csv'
-    output_file = 'Output/team_scores_inserts.sql'
     # Load all rows
-    with open(input_csv, newline='', encoding='utf-8') as csvfile:
+    with open(INPUT_CSV, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         rows = list(reader)
 
@@ -13,6 +11,7 @@ def export_weekly_team_scores():
     try:
         from tqdm import tqdm
         pbar = tqdm(total=len(rows), desc='Exporting team scores', unit='row')
+        
     except ImportError:
         tqdm = None
         pbar = None
@@ -29,22 +28,37 @@ def export_weekly_team_scores():
         
         # Home team
         home_team_id = row.get('Home Team Number', '').strip()
+        away_team_id = row.get('Away Team Number', '').strip()
+        
+        # Check if this is a BYE week (either team is 0)
+        is_bye_week = (home_team_id == '0' or away_team_id == '0')
+        
         home_points = row.get('Home Points', row.get('Home Score', ''))
         try:
             home_points = int(home_points) if home_points and str(home_points).isdigit() else 0
         except Exception:
             home_points = 0
+        
+        # BYE week: no points scored
+        if is_bye_week:
+            home_points = 0
+        
         if home_team_id:
             key = (season, week, home_team_id)
             if key not in team_week_points:
                 team_week_points[key] = (home_points, division, subdivision)
+        
         # Away team
-        away_team_id = row.get('Away Team Number', '').strip()
         away_points = row.get('Away Points', row.get('Away Score', ''))
         try:
             away_points = int(away_points) if away_points and str(away_points).isdigit() else 0
         except Exception:
             away_points = 0
+        
+        # BYE week: no points scored
+        if is_bye_week:
+            away_points = 0
+        
         if away_team_id:
             key = (season, week, away_team_id)
             if key not in team_week_points:
@@ -73,7 +87,7 @@ def export_weekly_team_scores():
 
     # Write SQL insert
     if values:
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(TEAM_SCORES_OUTPUT, 'w', encoding='utf-8') as f:
             f.write('INSERT INTO leda_weekly_team_scores ("seasonCode", "weekNum", "division", "subdivision", "teamLedaId", "prevTotalPoints", "totalPoints") VALUES\n')
             f.write(",\n".join(values))
             f.write(';\n')
@@ -84,6 +98,23 @@ import json
 import os
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# ========== FILE PATHS ==========
+# Input files
+INPUT_CSV = 'Working/leda_weekly_scoresheets_table.csv'
+
+# Lookup files
+PENALTY_LOOKUP_PATH = os.path.join('Lookups', 'leda_penalty_points_export.csv')
+TEAMS_LOOKUP_PATH = os.path.join('Lookups', 'leda_teams_table_export.csv')
+PEOPLE_LOOKUP_PATH = os.path.join('Lookups', 'leda_people_table_export.csv')
+
+# Output files
+PLAYER_INFO_OUTPUT = 'Output/weekly_scoresheets_player_info_inserts.sql'
+TEAM_GAME_INFO_OUTPUT = 'Output/weekly_scoresheets_team_game_info_inserts.sql'
+TEAM_INFO_OUTPUT = 'Output/weekly_scoresheets_team_info_inserts.sql'
+TEAM_SCORES_OUTPUT = 'Output/team_scores_inserts.sql'
+PLAYER_POINTS_OUTPUT = 'Output/player_points_inserts.sql'
+# ================================
 
 def parse_bool(val):
     val = str(val).strip().upper()
@@ -222,9 +253,8 @@ def main():
         "Z": "NF"
     }
     # Load penalty points from Working/leda_penalty_points_export.csv
-    penalty_lookup_path = os.path.join('Lookups', 'leda_penalty_points_export.csv')
     penalties_by_key = {}
-    if os.path.exists(penalty_lookup_path):
+    if os.path.exists(PENALTY_LOOKUP_PATH):
         def map_penalty_code(type_val, letter_val):
             # Prefer mapping by type, fallback to letter
             code = PENALTY_TYPE_MAP.get(type_val.strip(), None)
@@ -234,7 +264,7 @@ def main():
         def map_penalty_description(code):
             return PENALTY_CODE_DESCRIPTION.get(code, "Other")
         try:
-            with open(penalty_lookup_path, newline='', encoding='utf-8') as penaltyfile:
+            with open(PENALTY_LOOKUP_PATH, newline='', encoding='utf-8') as penaltyfile:
                 penalty_reader = csv.DictReader(penaltyfile)
                 for prow in penalty_reader:
                     season = prow['Season Code'].upper()
@@ -252,7 +282,7 @@ def main():
                         penalties_by_key[key] = {}
                     penalties_by_key[key][prow['Penalty Record Number']] = penalty
         except UnicodeDecodeError:
-            with open(penalty_lookup_path, newline='', encoding='latin1') as penaltyfile:
+            with open(PENALTY_LOOKUP_PATH, newline='', encoding='latin1') as penaltyfile:
                 penalty_reader = csv.DictReader(penaltyfile)
                 for prow in penalty_reader:
                     season = prow['Season Code'].upper()
@@ -270,18 +300,17 @@ def main():
                         penalties_by_key[key] = {}
                     penalties_by_key[key][prow['Penalty Record Number']] = penalty
     # Load team names from lookup CSV
-    teams_lookup_path = os.path.join('Lookups', 'leda_teams_table_export.csv')
     team_names = {}
-    if os.path.exists(teams_lookup_path):
+    if os.path.exists(TEAMS_LOOKUP_PATH):
         try:
-            with open(teams_lookup_path, newline='', encoding='utf-8') as teamsfile:
+            with open(TEAMS_LOOKUP_PATH, newline='', encoding='utf-8') as teamsfile:
                 teams_reader = csv.DictReader(teamsfile)
                 for trow in teams_reader:
                     tid = str(trow['ID Number']).strip()
                     tname = trow['Team Name'].strip()
                     team_names[tid] = tname
         except UnicodeDecodeError:
-            with open(teams_lookup_path, newline='', encoding='latin1') as teamsfile:
+            with open(TEAMS_LOOKUP_PATH, newline='', encoding='latin1') as teamsfile:
                 teams_reader = csv.DictReader(teamsfile)
                 for trow in teams_reader:
                     tid = str(trow['ID Number']).strip()
@@ -289,31 +318,26 @@ def main():
                     team_names[tid] = tname
 
     # Load player names from lookup CSV
-    people_lookup_path = os.path.join('Lookups', 'leda_people_table_export.csv')
     player_names = {}
-    if os.path.exists(people_lookup_path):
+    if os.path.exists(PEOPLE_LOOKUP_PATH):
         try:
-            with open(people_lookup_path, newline='', encoding='utf-8') as peoplefile:
+            with open(PEOPLE_LOOKUP_PATH, newline='', encoding='utf-8') as peoplefile:
                 people_reader = csv.DictReader(peoplefile)
                 for prow in people_reader:
                     pid = str(prow['ID Number']).strip()
                     name = f"{prow['First Name']} {prow['Middle Initial'] + ' ' if prow['Middle Initial'] else ''}{prow['Last Name']}".strip()
                     player_names[pid] = name
         except UnicodeDecodeError:
-            with open(people_lookup_path, newline='', encoding='latin1') as peoplefile:
+            with open(PEOPLE_LOOKUP_PATH, newline='', encoding='latin1') as peoplefile:
                 people_reader = csv.DictReader(peoplefile)
                 for prow in people_reader:
                     pid = str(prow['ID Number']).strip()
                     name = f"{prow['First Name']} {prow['Middle Initial'] + ' ' if prow['Middle Initial'] else ''}{prow['Last Name']}".strip()
                     player_names[pid] = name
-    input_csv = 'Working/leda_weekly_scoresheets_table.csv'
+    
     # New multi-table output files
-    player_info_output = 'Output/weekly_scoresheets_player_info_inserts.sql'
-    team_game_info_output = 'Output/weekly_scoresheets_team_game_info_inserts.sql'
-    team_info_output = 'Output/weekly_scoresheets_team_info_inserts.sql'
-
     grouped = defaultdict(list)
-    with open(input_csv, newline='', encoding='utf-8') as csvfile:
+    with open(INPUT_CSV, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         # Dynamically determine game columns
         game_columns = [col for col in reader.fieldnames if col.startswith('Game ') and not col.startswith('Game Points')]
@@ -378,32 +402,49 @@ def main():
 
             # Build game info JSON for team_game_info (only if both teams present)
             if home_row and away_row and home_team_id and away_team_id:
+                # Check if this is a BYE week (opponent ID is 0)
+                is_bye_week = (home_team_id == '0' or away_team_id == '0')
+                
                 games = {}
                 for col in GAME_COLUMNS:
                     game_num = ''.join(filter(str.isdigit, col))
                     points_col = f'Points Game {game_num}'
                     won_col = f'Won Game {game_num}'
-                    home_points = home_row.get(points_col, '') if home_row else ''
-                    away_points = away_row.get(points_col, '') if away_row else ''
-                    if away_points == '':
+                    
+                    if is_bye_week:
+                        # BYE week: no points scored, no winners
+                        home_points = '0'
                         away_points = '0'
-                    home_win = parse_bool(home_row.get(won_col, '')) if home_row else False
+                        home_win = False
+                    else:
+                        home_points = home_row.get(points_col, '') if home_row else ''
+                        away_points = away_row.get(points_col, '') if away_row else ''
+                        if away_points == '':
+                            away_points = '0'
+                        home_win = parse_bool(home_row.get(won_col, '')) if home_row else False
+                    
                     games[col] = {
                         "homeWin": home_win,
                         "homePoints": home_points,
                         "awayPoints": away_points
                     }
                 game_info_json = json.dumps(games).replace("'", "''")
+                
                 # Determine team points (integers, default 0)
-                try:
-                    h_pts = int(home_row.get('Home Score', '0')) if home_row and str(home_row.get('Home Score', '0')).isdigit() else 0
-                except Exception:
+                if is_bye_week:
+                    # BYE week: no points for either team
                     h_pts = 0
-                try:
-                    a_raw = away_row.get('Away Score', '0') if away_row else '0'
-                    a_pts = int(a_raw) if a_raw and str(a_raw).isdigit() else 0
-                except Exception:
                     a_pts = 0
+                else:
+                    try:
+                        h_pts = int(home_row.get('Home Score', '0')) if home_row and str(home_row.get('Home Score', '0')).isdigit() else 0
+                    except Exception:
+                        h_pts = 0
+                    try:
+                        a_raw = away_row.get('Away Score', '0') if away_row else '0'
+                        a_pts = int(a_raw) if a_raw and str(a_raw).isdigit() else 0
+                    except Exception:
+                        a_pts = 0
                 # Assume completed true per requirement
                 completed_flag = 'true'
                 team_game_values.append(
@@ -465,8 +506,16 @@ def main():
                         continue
                     if player_id not in players:
                         players[player_id] = {col: False for col in GAME_COLUMNS}
+                    # Check if this is a BYE week
+                    opposing_team = away_team_id if is_home else home_team_id
+                    is_bye_week = (opposing_team == '0')
+                    
                     for col in GAME_COLUMNS:
-                        players[player_id][col] = players[player_id][col] or parse_bool(r.get(col, ''))
+                        if is_bye_week:
+                            # BYE week: no games won
+                            players[player_id][col] = False
+                        else:
+                            players[player_id][col] = players[player_id][col] or parse_bool(r.get(col, ''))
                 team_id = home_team_id if is_home else away_team_id
                 for pid, stats in players.items():
                     stats_json = json.dumps(stats).replace("'", "''")
@@ -544,32 +593,30 @@ def main():
 
     # Write player info inserts
     if all_player_values:
-        with open(player_info_output, 'w', encoding='utf-8') as f:
+        with open(PLAYER_INFO_OUTPUT, 'w', encoding='utf-8') as f:
             f.write('INSERT INTO leda_weekly_scoresheets_player_info ("seasonCode","weekNum","division","subdivision","ledaId","teamId","gameStats") VALUES\n')
             f.write(',\n'.join(all_player_values))
             f.write(';\n')
     # Write team game info inserts
     if all_team_game_values:
-        with open(team_game_info_output, 'w', encoding='utf-8') as f:
+        with open(TEAM_GAME_INFO_OUTPUT, 'w', encoding='utf-8') as f:
             f.write('INSERT INTO leda_weekly_scoresheets_team_game_info ("seasonCode","weekNum","division","subdivision","homeTeamId","awayTeamId","homePoints","awayPoints","gameInfo","completed") VALUES\n')
             f.write(',\n'.join(all_team_game_values))
             f.write(';\n')
     # Write team info inserts
     if all_team_info_values:
-        with open(team_info_output, 'w', encoding='utf-8') as f:
+        with open(TEAM_INFO_OUTPUT, 'w', encoding='utf-8') as f:
             f.write('INSERT INTO leda_weekly_scoresheets_team_info ("seasonCode","weekNum",division,subdivision,home,"teamId","teamName","teamLetter","opposingTeamId",penalties,"previousPenaltyPoints","totalPenaltyPoints","teamLabel") VALUES\n')
             f.write(',\n'.join(all_team_info_values))
             f.write(';\n')
     print('Weekly scoresheets conversion complete:')
-    print(f'  Player info rows: {len(all_player_values)} -> {player_info_output}')
-    print(f'  Team game info rows: {len(all_team_game_values)} -> {team_game_info_output}')
-    print(f'  Team info rows: {len(all_team_info_values)} -> {team_info_output}')
+    print(f'  Player info rows: {len(all_player_values)} -> {PLAYER_INFO_OUTPUT}')
+    print(f'  Team game info rows: {len(all_team_game_values)} -> {TEAM_GAME_INFO_OUTPUT}')
+    print(f'  Team info rows: {len(all_team_info_values)} -> {TEAM_INFO_OUTPUT}')
 
 def export_weekly_player_scores():
-    input_csv = 'Working/leda_weekly_scoresheets_table.csv'
-    output_file = 'Output/player_points_inserts.sql'
     # Load all rows
-    with open(input_csv, newline='', encoding='utf-8') as csvfile:
+    with open(INPUT_CSV, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         rows = list(reader)
 
@@ -593,11 +640,17 @@ def export_weekly_player_scores():
         subdivision = f"Subdivision {subdivision_raw}" if subdivision_raw and not subdivision_raw.startswith('Subdivision ') else subdivision_raw
         
         # Determine team and player
+        home_team_id = row.get('Home Team Number', '').strip()
+        away_team_id = row.get('Away Team Number', '').strip()
+        
+        # Check if this is a BYE week
+        is_bye_week = (home_team_id == '0' or away_team_id == '0')
+        
         if row.get('Home or Away', '').strip().upper() == 'H':
-            team_id = row['Home Team Number']
+            team_id = home_team_id
             points = row.get('Home Score', '')
         elif row.get('Home or Away', '').strip().upper() == 'A':
-            team_id = row['Away Team Number']
+            team_id = away_team_id
             points = row.get('Away Score', '')
         else:
             if pbar:
@@ -611,6 +664,10 @@ def export_weekly_player_scores():
         try:
             points = int(points) if points and str(points).isdigit() else 0
         except Exception:
+            points = 0
+        
+        # BYE week: no points for players
+        if is_bye_week:
             points = 0
         key = (season, player_id, team_id)
         prev_key = (season, player_id, team_id, week-1)
@@ -626,7 +683,7 @@ def export_weekly_player_scores():
 
     # Write SQL insert
     if values:
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(PLAYER_POINTS_OUTPUT, 'w', encoding='utf-8') as f:
             f.write('INSERT INTO leda_weekly_player_points ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "prevTotalPoints", "totalPoints", "teamLedaId") VALUES\n')
             f.write(",\n".join(values))
             f.write(';\n')
