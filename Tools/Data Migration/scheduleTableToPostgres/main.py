@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 # File paths
 schedule_csv = r'Working\leda_schedule_table_export.csv'
 lookup_csv = r'Lookup\leda_teams_table_export.csv'
+seasons_csv = r'Lookup\leda_seasons_table_export.csv'
 output_sql = r'Output\leda_schedule_insert.sql'
 
 # Read schedule and lookup CSVs using csv module
@@ -16,11 +17,28 @@ def read_csv_dicts(filepath):
 
 schedule_rows = read_csv_dicts(schedule_csv)
 lookup_rows = read_csv_dicts(lookup_csv)
+seasons_rows = read_csv_dicts(seasons_csv)
 
 # Build team name lookup: {teamId: teamName}
 team_lookup = {}
 for row in lookup_rows:
     team_lookup[str(row['ID Number'])] = row['Team Name']
+
+# Build season dates lookup: {seasonCode: {week_num: date_string}}
+season_dates_lookup = {}
+for row in seasons_rows:
+    season_code = row['Season Code'].upper()
+    dates = {}
+    for i in range(1, 16):  # Date1 through Date15
+        date_key = f'Date{i}'
+        if date_key in row and row[date_key]:
+            # Parse the date string (format: "9/13/2000 0:00:00")
+            date_str = row[date_key].strip()
+            if date_str:
+                # Extract just the date part (before the space)
+                date_part = date_str.split(' ')[0]
+                dates[i] = date_part
+    season_dates_lookup[season_code] = dates
 
 # Helper: get team name by id
 def get_team_name(team_id):
@@ -30,41 +48,19 @@ def get_team_name(team_id):
 def is_home(team_letter, opponent_letter):
     return opponent_letter.isupper()
 
-# Helper: parse season code to get year and season type
-def parse_season_code(season_code):
-    """
-    Parse season code like 'F25' or 'S24' to get season type and year.
-    F = Fall, S = Spring, W = Winter
-    Returns: (season_type, year)
-    """
-    season_type = season_code[0].upper()
-    year_suffix = season_code[1:]
-    
-    # Convert 2-digit year to 4-digit year
-    year = 2000 + int(year_suffix)
-    
-    return season_type, year
-
 # Helper: get match date based on season code and week number
 def get_match_date(season_code, week_num):
-    from datetime import datetime, timedelta
-    
-    season_type, year = parse_season_code(season_code)
-    
-    # Determine base date based on season type
-    if season_type == 'F':  # Fall - starts in September
-        base_date = datetime(year, 9, 4)  # First Wednesday of September (approximately)
-    elif season_type == 'S':  # Spring - starts in January
-        base_date = datetime(year, 1, 8)  # Second Wednesday of January (approximately)
-    elif season_type == 'W':  # Winter - starts in November
-        base_date = datetime(year, 11, 6)  # First Wednesday of November (approximately)
-    else:
-        # Default to January if unknown
-        base_date = datetime(year, 1, 3)
-    
-    # Calculate match date (weeks are 7 days apart)
-    match_date = base_date + timedelta(days=7*(week_num-1))
-    return f"{match_date.month}/{match_date.day}/{match_date.year}"
+    """
+    Get match date from the seasons lookup table.
+    Returns the date string in M/D/YYYY format.
+    """
+    season_code_upper = season_code.upper()
+    if season_code_upper in season_dates_lookup:
+        dates = season_dates_lookup[season_code_upper]
+        if week_num in dates:
+            return dates[week_num]
+    # Fallback if date not found
+    return ""
 
 # Normalize season codes to uppercase
 for row in schedule_rows:
