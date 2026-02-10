@@ -1,5 +1,51 @@
+"""
+LEDA Weekly Scoresheets Migration Tool
+
+This script processes weekly scoresheet data and migrates it to PostgreSQL format.
+It now leverages the normalized schedule CSV to ensure complete matchup data,
+including proper handling of BYE weeks.
+
+Requirements:
+- Run scheduleTableToPostgres migration first to generate leda_schedule_normalized.csv
+- The normalized schedule CSV will be automatically copied to Lookups folder if needed
+
+BYE Week Handling:
+- All matchups against team ID 0 (BYE) are automatically included
+- BYE week games have 0 points for both teams
+- Teams facing BYE are always marked as "home"
+"""
+
+def load_schedule_matchups():
+    """Load all matchups from the normalized schedule CSV"""
+    matchups = {}
+    try:
+        with open(SCHEDULE_LOOKUP_PATH, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                season = row['seasonCode'].upper()
+                week = int(row['weekNum'])
+                division = row['division']
+                subdivision = row['subdivision']
+                team_id = row['teamId']
+                opp_team_id = row['oppTeamId']
+                home = row['home'].lower() == 'true'
+                
+                key = (season, week, division, subdivision, team_id)
+                matchups[key] = {
+                    'oppTeamId': opp_team_id,
+                    'home': home,
+                    'isBye': opp_team_id == '0'
+                }
+    except FileNotFoundError:
+        print(f"Warning: Schedule lookup file not found at {SCHEDULE_LOOKUP_PATH}")
+        print("BYE week entries may be incomplete. Please run the schedule migration first.")
+    return matchups
+
 def export_weekly_team_scores():
-    # Load all rows
+    # Load schedule matchups for complete data
+    schedule_matchups = load_schedule_matchups()
+    
+    # Load all scoresheet rows
     with open(INPUT_CSV, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         rows = list(reader)
@@ -64,6 +110,13 @@ def export_weekly_team_scores():
             if key not in team_week_points:
                 team_week_points[key] = (away_points, division, subdivision)
 
+    # Add entries from schedule for any missing matchups (especially BYE weeks)
+    for key, matchup_info in schedule_matchups.items():
+        season, week, division, subdivision, team_id = key
+        if (season, week, team_id) not in team_week_points:
+            # No scoresheet entry - add with 0 points (BYE week or missing data)
+            team_week_points[(season, week, team_id)] = (0, division, subdivision)
+    
     # Now calculate prevTotalPoints and totalPoints for each team across weeks
     # Sort keys for cumulative calculation
     sorted_keys = sorted(team_week_points.keys(), key=lambda k: (k[0], k[2], k[1]))  # season, team, week
@@ -97,7 +150,6 @@ import csv
 import json
 import os
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ========== FILE PATHS ==========
 # Input files
@@ -107,6 +159,10 @@ INPUT_CSV = 'Working/leda_weekly_scoresheets_table.csv'
 PENALTY_LOOKUP_PATH = os.path.join('Lookups', 'leda_penalty_points_export.csv')
 TEAMS_LOOKUP_PATH = os.path.join('Lookups', 'leda_teams_table_export.csv')
 PEOPLE_LOOKUP_PATH = os.path.join('Lookups', 'leda_people_table_export.csv')
+SCHEDULE_LOOKUP_PATH = os.path.join('Lookups', 'leda_schedule_normalized.csv')
+
+# To be copied from schedule migration output
+SCHEDULE_SOURCE_PATH = r'..\scheduleTableToPostgres\Output\leda_schedule_normalized.csv'
 
 # Output files
 PLAYER_INFO_OUTPUT = 'Output/weekly_scoresheets_player_info_inserts.sql'
@@ -115,6 +171,51 @@ TEAM_INFO_OUTPUT = 'Output/weekly_scoresheets_team_info_inserts.sql'
 TEAM_SCORES_OUTPUT = 'Output/team_scores_inserts.sql'
 PLAYER_POINTS_OUTPUT = 'Output/player_points_inserts.sql'
 # ================================
+
+def load_schedule_matchups():
+    """Load all matchups from the normalized schedule CSV"""
+    matchups = {}
+    
+    # Check if file exists in Lookups, if not try to copy from source
+    if not os.path.exists(SCHEDULE_LOOKUP_PATH):
+        if os.path.exists(SCHEDULE_SOURCE_PATH):
+            import shutil
+            os.makedirs('Lookups', exist_ok=True)
+            shutil.copy(SCHEDULE_SOURCE_PATH, SCHEDULE_LOOKUP_PATH)
+            print(f"Copied schedule from {SCHEDULE_SOURCE_PATH}")
+        else:
+            print(f"Warning: Schedule lookup file not found at {SCHEDULE_LOOKUP_PATH}")
+            print(f"Also not found at source: {SCHEDULE_SOURCE_PATH}")
+            print("BYE week entries may be incomplete. Please run the schedule migration first.")
+            return matchups
+    
+    try:
+        with open(SCHEDULE_LOOKUP_PATH, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                season = row['seasonCode'].upper()
+                week = int(row['weekNum'])
+                division = row['division']
+                subdivision = row['subdivision']
+                team_id = row['teamId']
+                opp_team_id = row['oppTeamId']
+                home = row['home'].lower() == 'true'
+                team_letter = row['teamLetter']
+                opp_team_letter = row['oppTeamLetter']
+                
+                key = (season, week, division, subdivision, team_id)
+                matchups[key] = {
+                    'oppTeamId': opp_team_id,
+                    'home': home,
+                    'isBye': opp_team_id == '0',
+                    'teamLetter': team_letter,
+                    'oppTeamLetter': opp_team_letter
+                }
+        print(f"Loaded {len(matchups)} matchups from schedule")
+    except Exception as e:
+        print(f"Error loading schedule: {e}")
+    
+    return matchups
 
 def parse_bool(val):
     val = str(val).strip().upper()
@@ -209,6 +310,9 @@ def parse_team_points(row):
     }
 
 def main():
+    # Load schedule matchups early
+    schedule_matchups = load_schedule_matchups()
+    
     PENALTY_CODE_DESCRIPTION = {
         "LSS": "Late Score Sheet",
         "WF": "Weekly Fee",
@@ -354,6 +458,84 @@ def main():
             # Also update the row's season code to upper for consistency in output
             row['Season Code'] = season_code
             grouped[key].append(row)
+    
+    # Supplement with BYE week entries from schedule
+    if schedule_matchups:
+        print("Checking for missing BYE week entries...")
+        bye_entries_added = 0
+        for (season, week, division, subdivision, team_id), matchup_info in schedule_matchups.items():
+            if matchup_info['isBye']:
+                # Check if this BYE week entry exists in grouped data
+                key = (season, str(week))
+                existing_entry = False
+                for row in grouped.get(key, []):
+                    if (row.get('Home Team Number') == team_id or row.get('Away Team Number') == team_id):
+                        existing_entry = True
+                        break
+                
+                if not existing_entry:
+                    # Add placeholder rows for this BYE week
+                    # BYE weeks always have the real team as HOME and BYE (0) as AWAY
+                    home_team_id = team_id
+                    home_team_letter = matchup_info['teamLetter']
+                    away_team_id = '0'
+                    away_team_letter = matchup_info['oppTeamLetter']
+                    
+                    # Extract subdivision number for proper formatting
+                    sub_num = subdivision.replace('Subdivision ', '').strip()
+                    
+                    # Create HOME team row (the real team)
+                    home_bye_row = {
+                        'Season Code': season,
+                        'Week Number': str(week),
+                        'Division': division,
+                        'Subdivision': sub_num,
+                        'Home Team Number': home_team_id,
+                        'Home Team Letter': home_team_letter,
+                        'Away Team Number': away_team_id,
+                        'Away Team Letter': away_team_letter,
+                        'Home or Away': 'H',
+                        'Home Score': '0',
+                        'Away Score': '0',
+                        'Player Number': '',
+                    }
+                    # Add empty game columns
+                    for col in game_columns:
+                        home_bye_row[col] = ''
+                    for col in points_columns:
+                        home_bye_row[col] = '0'
+                    for col in won_columns:
+                        home_bye_row[col] = ''
+                    
+                    # Create AWAY team row (BYE team)
+                    away_bye_row = {
+                        'Season Code': season,
+                        'Week Number': str(week),
+                        'Division': division,
+                        'Subdivision': sub_num,
+                        'Home Team Number': home_team_id,
+                        'Home Team Letter': home_team_letter,
+                        'Away Team Number': away_team_id,
+                        'Away Team Letter': away_team_letter,
+                        'Home or Away': 'A',
+                        'Home Score': '0',
+                        'Away Score': '0',
+                        'Player Number': '',
+                    }
+                    # Add empty game columns
+                    for col in game_columns:
+                        away_bye_row[col] = ''
+                    for col in points_columns:
+                        away_bye_row[col] = '0'
+                    for col in won_columns:
+                        away_bye_row[col] = ''
+                    
+                    grouped[key].append(home_bye_row)
+                    grouped[key].append(away_bye_row)
+                    bye_entries_added += 1
+        
+        if bye_entries_added > 0:
+            print(f"Added {bye_entries_added} BYE week entries from schedule")
 
     def process_week(args):
         """Process a (season, week) group into three sets of insert value rows for:
@@ -400,8 +582,9 @@ def main():
             home_team_name = team_names.get(home_team_id, '')
             away_team_name = team_names.get(away_team_id, '')
 
-            # Build game info JSON for team_game_info (only if both teams present)
-            if home_row and away_row and home_team_id and away_team_id:
+            # Build game info JSON for team_game_info
+            # Create this whenever we have both team IDs (including BYE weeks)
+            if home_team_id and away_team_id:
                 # Check if this is a BYE week (opponent ID is 0)
                 is_bye_week = (home_team_id == '0' or away_team_id == '0')
                 
@@ -417,9 +600,9 @@ def main():
                         away_points = '0'
                         home_win = False
                     else:
-                        home_points = home_row.get(points_col, '') if home_row else ''
-                        away_points = away_row.get(points_col, '') if away_row else ''
-                        if away_points == '':
+                        home_points = home_row.get(points_col, '0') if home_row else '0'
+                        away_points = away_row.get(points_col, '0') if away_row else '0'
+                        if away_points == '' or away_points is None:
                             away_points = '0'
                         home_win = parse_bool(home_row.get(won_col, '')) if home_row else False
                     
@@ -453,6 +636,10 @@ def main():
 
             # Penalties lookup per team
             def penalties_json_for(team_id):
+                # BYE weeks have no penalties
+                is_bye_week = (home_team_id == '0' or away_team_id == '0')
+                if is_bye_week:
+                    return '{}'
                 key = (season, str(week_int), str(team_id))
                 penalties = penalties_by_key.get(key, {})
                 if not penalties:
@@ -470,12 +657,20 @@ def main():
 
             # Team info rows (home and away separately)
             if home_team_id and away_team_id:
-                # Calculate penalty points for home team
-                home_penalty_pts = calculate_penalty_points(home_team_id)
-                teams_in_week.add((home_team_id, home_penalty_pts))
+                # Check if this is a BYE week
+                is_bye_week = (home_team_id == '0' or away_team_id == '0')
                 
-                # Calculate penalty points for away team
-                away_penalty_pts = calculate_penalty_points(away_team_id)
+                # For BYE weeks, no new penalties are added (0 points)
+                if is_bye_week:
+                    home_penalty_pts = 0
+                    away_penalty_pts = 0
+                else:
+                    # Calculate penalty points for home team
+                    home_penalty_pts = calculate_penalty_points(home_team_id)
+                    # Calculate penalty points for away team
+                    away_penalty_pts = calculate_penalty_points(away_team_id)
+                
+                teams_in_week.add((home_team_id, home_penalty_pts))
                 teams_in_week.add((away_team_id, away_penalty_pts))
                 
                 # Extract subdivision number (e.g., "Subdivision 1" -> "1")
@@ -486,43 +681,55 @@ def main():
                 home_team_label = f"{division[0].upper()}{subdivision_num}{home_team_letter.upper()}"
                 away_team_label = f"{division[0].upper()}{subdivision_num}{away_team_letter.upper()}"
                 
-                team_info_values.append(
-                    (season, week_int, division, formatted_subdivision, True, home_team_id, 
-                     home_team_name, home_team_letter, away_team_id, 
-                     penalties_json_for(home_team_id), home_penalty_pts, home_team_label)
-                )
-                team_info_values.append(
-                    (season, week_int, division, formatted_subdivision, False, away_team_id,
-                     away_team_name, away_team_letter, home_team_id,
-                     penalties_json_for(away_team_id), away_penalty_pts, away_team_label)
-                )
+                # Add team info for home team (exclude BYE team ID 0)
+                if home_team_id != '0':
+                    team_info_values.append(
+                        (season, week_int, division, formatted_subdivision, True, home_team_id, 
+                         home_team_name, home_team_letter, away_team_id, 
+                         penalties_json_for(home_team_id), home_penalty_pts, home_team_label)
+                    )
+                
+                # Add team info for away team (exclude BYE team ID 0)
+                if away_team_id != '0':
+                    team_info_values.append(
+                        (season, week_int, division, formatted_subdivision, False, away_team_id,
+                         away_team_name, away_team_letter, home_team_id,
+                         penalties_json_for(away_team_id), away_penalty_pts, away_team_label)
+                    )
 
             # Player info rows: aggregate game stats across multiple rows per player
             def aggregate_players(team_rows, is_home):
                 players = {}
+                opposing_team = away_team_id if is_home else home_team_id
+                team_id = home_team_id if is_home else away_team_id
+                
+                # Don't create player records for BYE team (ID 0)
+                if team_id == '0':
+                    return
+                
+                # Check if this is a BYE week
+                is_bye_week = (opposing_team == '0')
+                
                 for r in team_rows:
                     player_id = str(r.get('Player Number', '')).strip()
                     if not player_id:
                         continue
                     if player_id not in players:
                         players[player_id] = {col: False for col in GAME_COLUMNS}
-                    # Check if this is a BYE week
-                    opposing_team = away_team_id if is_home else home_team_id
-                    is_bye_week = (opposing_team == '0')
                     
                     for col in GAME_COLUMNS:
                         if is_bye_week:
-                            # BYE week: no games won
+                            # BYE week: no games won, keep all as False
                             players[player_id][col] = False
                         else:
                             players[player_id][col] = players[player_id][col] or parse_bool(r.get(col, ''))
-                team_id = home_team_id if is_home else away_team_id
+                
                 for pid, stats in players.items():
                     stats_json = json.dumps(stats).replace("'", "''")
-                    if team_id:
-                        player_values.append(
-                            f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', {pid}, {team_id}, '{stats_json}')"
-                        )
+                    player_values.append(
+                        f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', {pid}, {team_id}, '{stats_json}')"
+                    )
+            
             if home_rows:
                 aggregate_players(home_rows, True)
             if away_rows:
@@ -546,19 +753,19 @@ def main():
         pbar = None
         print('tqdm not installed, progress bar will not be shown.')
 
-    with ThreadPoolExecutor() as executor:
-        futures = {executor.submit(process_week, item): item for item in items}
-        completed = 0
-        for future in as_completed(futures):
-            sql_results.append(future.result())
-            completed += 1
-            if pbar:
-                pbar.n = completed
-                pbar.refresh()
-            else:
-                print(f'Processed {completed}/{total} weeks', end='\r')
+    # Process weeks sequentially
+    for idx, item in enumerate(items, 1):
+        result = process_week(item)
+        sql_results.append(result)
         if pbar:
-            pbar.close()
+            pbar.update(1)
+        else:
+            print(f'Processed {idx}/{total} weeks', end='\r')
+    
+    if pbar:
+        pbar.close()
+    elif total > 0:
+        print()  # New line after progress
 
     # Flatten and sort outputs by (season, week) for deterministic ordering
     all_player_values = []
@@ -615,6 +822,9 @@ def main():
     print(f'  Team info rows: {len(all_team_info_values)} -> {TEAM_INFO_OUTPUT}')
 
 def export_weekly_player_scores():
+    # Load schedule matchups for complete week coverage
+    schedule_matchups = load_schedule_matchups()
+    
     # Load all rows
     with open(INPUT_CSV, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -623,23 +833,17 @@ def export_weekly_player_scores():
     # Sort rows by season, week, then team, then player
     rows.sort(key=lambda r: (r['Season Code'].upper(), int(r['Week Number']), r['Home Team Number'], r['Away Team Number'], r.get('Player Number', '')))
 
-    # Progress bar setup
-    try:
-        from tqdm import tqdm
-        pbar = tqdm(total=len(rows), desc='Exporting player scores', unit='row')
-    except ImportError:
-        tqdm = None
-        pbar = None
-    prev_points = {}
-    values = []
-    for idx, row in enumerate(rows):
+    # First pass: collect all player-team-season combinations and their scores per week
+    player_week_data = {}  # key: (season, week, team_id, player_id), value: points
+    player_team_seasons = {}  # key: (season, team_id), value: set of player_ids
+    
+    for row in rows:
         season = row['Season Code'].upper()
         week = int(row['Week Number'])
         division = row.get('Division', '').strip()
         subdivision_raw = row.get('Subdivision', '').strip()
         subdivision = f"Subdivision {subdivision_raw}" if subdivision_raw and not subdivision_raw.startswith('Subdivision ') else subdivision_raw
         
-        # Determine team and player
         home_team_id = row.get('Home Team Number', '').strip()
         away_team_id = row.get('Away Team Number', '').strip()
         
@@ -653,14 +857,12 @@ def export_weekly_player_scores():
             team_id = away_team_id
             points = row.get('Away Score', '')
         else:
-            if pbar:
-                pbar.update(1)
             continue
+            
         player_id = row.get('Player Number', '').strip()
-        if not player_id or not team_id:
-            if pbar:
-                pbar.update(1)
+        if not player_id or not team_id or team_id == '0':
             continue
+        
         try:
             points = int(points) if points and str(points).isdigit() else 0
         except Exception:
@@ -669,15 +871,71 @@ def export_weekly_player_scores():
         # BYE week: no points for players
         if is_bye_week:
             points = 0
-        key = (season, player_id, team_id)
-        prev_key = (season, player_id, team_id, week-1)
-        prev_total = prev_points.get(key, 0)
+        
+        # Track this player-team combination
+        pts_key = (season, team_id)
+        if pts_key not in player_team_seasons:
+            player_team_seasons[pts_key] = set()
+        player_team_seasons[pts_key].add(player_id)
+        
+        # Store the week data
+        week_key = (season, week, team_id, player_id)
+        if week_key not in player_week_data:
+            player_week_data[week_key] = {
+                'points': points,
+                'division': division,
+                'subdivision': subdivision
+            }
+    
+    # Second pass: ensure all players have entries for all their team's weeks (including BYE weeks)
+    if schedule_matchups:
+        for (season, week, division, subdivision, team_id), matchup_info in schedule_matchups.items():
+            pts_key = (season, team_id)
+            if pts_key in player_team_seasons:
+                # This team has players, ensure all players have entries for this week
+                for player_id in player_team_seasons[pts_key]:
+                    week_key = (season, week, team_id, player_id)
+                    if week_key not in player_week_data:
+                        # Missing entry - add with 0 points (likely a BYE week)
+                        player_week_data[week_key] = {
+                            'points': 0,
+                            'division': division,
+                            'subdivision': subdivision
+                        }
+    
+    # Build final output with cumulative points
+    prev_points = {}
+    values = []
+    
+    # Sort by season, team, player, then week for proper cumulative calculation
+    sorted_keys = sorted(player_week_data.keys(), key=lambda k: (k[0], k[2], k[3], k[1]))
+    
+    try:
+        from tqdm import tqdm
+        pbar = tqdm(total=len(sorted_keys), desc='Exporting player scores', unit='record')
+    except ImportError:
+        tqdm = None
+        pbar = None
+    
+    for key in sorted_keys:
+        season, week, team_id, player_id = key
+        data = player_week_data[key]
+        points = data['points']
+        division = data['division']
+        subdivision = data['subdivision']
+        
+        prev_key = (season, player_id, team_id)
+        prev_total = prev_points.get(prev_key, 0)
         total = prev_total + points
+        
         values.append(f"('{season}', {week}, '{division.replace("'", "''")}', '{subdivision.replace("'", "''")}', {player_id}, {prev_total}, {total}, {team_id})")
+        
         # Update for next week
-        prev_points[key] = total
+        prev_points[prev_key] = total
+        
         if pbar:
             pbar.update(1)
+    
     if pbar:
         pbar.close()
 
@@ -693,6 +951,7 @@ if __name__ == "__main__":
     print("1. Convert Weekly Scoresheets")
     print("2. Export Weekly Team Scores")
     print("3. Export Weekly Player Scores")
+    print("4. Run All Extracts")
     choice = input("Select an option (1): ").strip()
     if choice == "1" or choice == "":
         main()
@@ -700,5 +959,14 @@ if __name__ == "__main__":
         export_weekly_team_scores()
     elif choice == "3":
         export_weekly_player_scores()
+    elif choice == "4":
+        print("\n=== Running All Extracts ===")
+        print("\n--- Step 1/3: Converting Weekly Scoresheets ---")
+        main()
+        print("\n--- Step 2/3: Exporting Weekly Team Scores ---")
+        export_weekly_team_scores()
+        print("\n--- Step 3/3: Exporting Weekly Player Scores ---")
+        export_weekly_player_scores()
+        print("\n=== All Extracts Complete ===")
     else:
         print("Invalid option. Exiting.")
