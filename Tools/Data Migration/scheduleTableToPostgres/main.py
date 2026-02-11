@@ -1,7 +1,6 @@
 import csv
 import json
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor
 
 # File paths
 schedule_csv = r'Working\leda_schedule_table_export.csv'
@@ -136,57 +135,6 @@ def process_season_to_csv(season):
     
     return csv_rows
 
-def process_season(season):
-    season_rows = [r for r in schedule_rows if r['Season Code'] == season]
-    divisions = sorted(set(r['Division'] for r in season_rows))
-    schedule_json = {}
-    for division in tqdm(divisions, desc=f"Season {season} divisions", leave=False):
-        div_rows = [r for r in season_rows if r['Division'] == division]
-        subdivisions = sorted(set(str(r['Subdivision']) for r in div_rows))
-        division_obj = {}
-        for subdivision in tqdm(subdivisions, desc=f"Season {season} {division} subdivisions", leave=False):
-            sub_rows = [r for r in div_rows if str(r['Subdivision']) == subdivision]
-            subdivision_obj = {}
-            for team_row in tqdm(sub_rows, total=len(sub_rows), desc=f"Season {season} {division} Subdiv {subdivision} teams", leave=False):
-                team_letter = team_row['Team Letter']
-                team_id = team_row['Team ID Number']
-                team_name = get_team_name(team_id)
-                matches_obj = {}
-                num_weeks = int(team_row['Number of Weeks'])
-                for week in range(1, num_weeks+1):
-                    opp_letter = team_row.get(f'Week {week} Opponent', '')
-                    if opp_letter is None or opp_letter == '':
-                        continue
-                    # Find opponent team id in same subdivision
-                    opp_row = next((r for r in sub_rows if str(r['Team Letter']).upper() == str(opp_letter).upper()), None)
-                    opp_id = opp_row['Team ID Number'] if opp_row else ""
-                    match_key = f'Date{week}'
-                    
-                    # Determine if home (BYE team handling)
-                    if is_bye_team(opp_id):
-                        home = True
-                    else:
-                        home = is_home(team_letter, opp_letter)
-                    
-                    matches_obj[match_key] = {
-                        "matchDate": get_match_date(season, week),
-                        "matchTime": "19:30",
-                        "home": home,
-                        "opposingTeamId": str(opp_id),
-                        "opposingTeamLetter": str(opp_letter).upper(),
-                        "subdivisionId": f"{division}-Subdivision {subdivision}"
-                    }
-                subdivision_obj[team_letter] = {
-                    "teamName": team_name,
-                    "teamId": str(team_id),
-                    "matchesData": matches_obj
-                }
-            division_obj[f"Subdivision {subdivision}"] = subdivision_obj
-        schedule_json[division] = division_obj
-    # Properly escape the JSON string for SQL insertion
-    json_string = json.dumps(schedule_json, separators=(',', ':')).replace("'", "''")
-    return f"('{season.upper()}', '{json_string}')"
-
 # Group by seasonCode (already normalized to upper)
 seasons = sorted(set(r['Season Code'] for r in schedule_rows))
 
@@ -194,20 +142,53 @@ seasons = sorted(set(r['Season Code'] for r in schedule_rows))
 output_format = show_menu()
 
 if output_format == '1':
-    # SQL Output
+    # SQL Output - Normalized format
+    all_rows = []
+    
+    for season in tqdm(seasons, desc="Processing seasons"):
+        season_rows_data = process_season_to_csv(season)
+        all_rows.extend(season_rows_data)
+    
+    # Build SQL insert values
     values = []
+    for row in all_rows:
+        # Combine matchDate and matchTime into matchTimestamp
+        match_date = row['matchDate']
+        match_time = row['matchTime']
+        if match_date and match_time:
+            # Format: YYYY-MM-DD HH:MM:SS (PostgreSQL time without timezone format)
+            # Convert M/D/YYYY to YYYY-MM-DD
+            date_parts = match_date.split('/')
+            if len(date_parts) == 3:
+                month, day, year = date_parts
+                match_timestamp = f"{year}-{month.zfill(2)}-{day.zfill(2)} {match_time}:00"
+            else:
+                match_timestamp = ""
+        else:
+            match_timestamp = ""
+        
+        # Escape single quotes in strings
+        season_code = row['seasonCode']
+        division = row['division'].replace("'", "''")
+        subdivision = row['subdivision'].replace("'", "''")
+        team_name = row['teamName'].replace("'", "''")
+        home = row['home'].lower()
+        
+        values.append(
+            f"('{season_code}', {row['weekNum']}, '{division}', '{subdivision}', "
+            f"{row['teamId']}, '{team_name}', '{row['teamLetter']}', {row['oppTeamId']}, "
+            f"'{row['oppTeamLetter']}', '{match_timestamp}', {home})"
+        )
     
-    with ThreadPoolExecutor() as executor:
-        results = list(tqdm(executor.map(process_season, seasons), total=len(seasons), desc="Processing seasons"))
-        values.extend(results)
-    
-    # Write output SQL with properly escaped JSON
+    # Write output SQL
     with open(output_sql, 'w', encoding='utf-8') as f:
-        f.write("INSERT INTO public.leda_schedule (\"seasonCode\", \"scheduleData\") VALUES\n")
+        f.write('INSERT INTO public.leda_schedule ("seasonCode", "weekNum", "division", "subdivision", '
+                '"teamId", "teamName", "teamLetter", "oppTeamId", "oppTeamLetter", "matchDateTime", "home") VALUES\n')
         f.write(",\n".join(values))
         f.write(";\n")
     
     print(f"SQL insert script written to {output_sql}")
+    print(f"Total matchups: {len(values)}")
 
 elif output_format == '2':
     # CSV Output
