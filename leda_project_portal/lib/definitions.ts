@@ -248,7 +248,8 @@ export type Roster = {
 	teamInformation: JSON;
 };
 //
-// Define type to identify the shape of our data from postgres for a Schedule
+// Define type to identify the shape of our data from postgres for a Schedule (DEPRECATED - now normalized)
+// Note: The API now stores schedule as normalized rows but returns it in nested format for backward compatibility
 //
 export type Schedule = {
 	seasonCode: string;

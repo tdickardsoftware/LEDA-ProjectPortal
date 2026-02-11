@@ -29,6 +29,8 @@ const fetchGameDates = async (seasonCode: string) => {
 	return res.json() as Promise<SeasonApiResponse>;
 };
 
+// NOTE: This function is no longer used - subdivisions fetch their own data
+// Keeping it for backward compatibility if needed
 const fetchSchedule = async (seasonCode: string) => {
 	const res = await fetch(`${scheduleRoute}?seasonCode=${seasonCode}`, {
 		method: 'GET',
@@ -98,27 +100,20 @@ export function useScheduleData() {
 		enabled: !!seasonCode,
 	});
 
-	const {
-		data: scheduleData,
-		isLoading: scheduleLoading,
-	} = useQuery({
-		queryKey: ['schedule', seasonCode],
-		queryFn: () => seasonCode ? fetchSchedule(seasonCode) : Promise.reject(),
-		enabled: !!seasonCode,
-	});
+	// NOTE: We no longer fetch all schedule data upfront
+	// Each subdivision will fetch its own matchup data when opened
+	// This improves performance with normalized data structure
 
 	// Derived data
 	const divisionsData: DivisionsData = rosterData?.teamInformation || {};
 	const gameDates: Record<string, string> = gameDatesData?.dates || {};
-	let matchData: ScheduleData = {};
+	
+	// Initialize empty match data structure
+	const matchData: ScheduleData = divisionsData && Object.keys(divisionsData).length > 0 
+		? initializeEmptyMatchData(divisionsData) 
+		: {};
 
-	if (scheduleData?.scheduleData) {
-		matchData = ensureSubdivisionIsolation(structuredClone(scheduleData.scheduleData));
-	} else if (divisionsData && Object.keys(divisionsData).length > 0) {
-		matchData = initializeEmptyMatchData(divisionsData);
-	}
-
-	const loading = rosterLoading || gameDatesLoading || scheduleLoading;
+	const loading = rosterLoading || gameDatesLoading;
 
 	// Save mutation
 	const saveMutation = useMutation({

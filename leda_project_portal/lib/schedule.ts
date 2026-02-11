@@ -1,3 +1,7 @@
+// Note: These types represent the nested structure used by the UI.
+// The database now stores schedule data in normalized rows, but the API
+// transforms between normalized and nested formats for backward compatibility.
+
 export interface TeamData {
 	teamId: string;
 	placeId: string;

@@ -222,7 +222,8 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 		seasonCode,
 	}) => {
 		const [localMatchData, setLocalMatchData] = useState<ScheduleData>(matchData);
-		const [initialMatchData] = useState<ScheduleData>(matchData);
+		const [initialMatchData, setInitialMatchData] = useState<ScheduleData>(matchData);
+		const [isLoadingMatchups, setIsLoadingMatchups] = useState(true);
 		const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 		const [deletingMatchup, setDeletingMatchup] = useState<DeleteMatchupState | null>(
 			null
@@ -239,7 +240,67 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 
 		// Memoized values
 		const teamEntries = useMemo(() => Object.entries(teams), [teams]);
-		const gameDateEntries = useMemo(() => Object.entries(gameDates), [gameDates]);
+		const gameDateEntries = useMemo(() => {
+			// Convert gameDates to match "weekN" format used in matchesData
+			const entries = Object.entries(gameDates).map(([key, date]) => {
+				// Extract number from keys like "Date 1", "Date1", "Game 1", etc.
+				const match = key.match(/\d+/);
+				const weekNum = match ? match[0] : '1';
+				const weekKey = `week${weekNum}`;
+				return [weekKey, date] as [string, string];
+			});
+			console.log('Game date entries mapped:', entries);
+			return entries;
+		}, [gameDates]);
+
+		// Fetch matchup data for this subdivision when component mounts
+		useEffect(() => {
+			if (!seasonCode) {
+				setIsLoadingMatchups(false);
+				return;
+			}
+
+			let cancelled = false;
+
+			const fetchSubdivisionMatchups = async () => {
+				setIsLoadingMatchups(true);
+				try {
+					const res = await fetch(
+						`/api/activities/schedule/subdivision?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}`,
+						{
+							method: 'GET',
+							headers: { 'Content-Type': 'application/json' },
+						}
+					);
+
+					if (res.ok && !cancelled) {
+						const data = await res.json();
+						console.log('Fetched subdivision data:', data);
+						if (data.scheduleData) {
+							console.log('Setting matchData:', data.scheduleData);
+							setLocalMatchData(data.scheduleData);
+							setInitialMatchData(data.scheduleData);
+						} else {
+							console.warn('No scheduleData in response');
+						}
+					} else if (!cancelled) {
+						console.error('Failed to fetch subdivision matchups:', res.status, await res.text());
+					}
+				} catch (error) {
+					console.error('Error fetching subdivision matchups:', error);
+				} finally {
+					if (!cancelled) {
+						setIsLoadingMatchups(false);
+					}
+				}
+			};
+
+			fetchSubdivisionMatchups();
+
+			return () => {
+				cancelled = true;
+			};
+		}, [seasonCode, division, subdivision]);
 
 		// Batch fetch points status for all teams and all weeks in a single call
 		useEffect(() => {
@@ -686,7 +747,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				</Dialog>
 
 				<div className="overflow-auto relative">
-					{isLoadingPointsStatus && (
+					{(isLoadingPointsStatus || isLoadingMatchups) && (
 						<div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
 							<Spinner />
 						</div>
