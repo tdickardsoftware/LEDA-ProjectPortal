@@ -165,17 +165,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 							if (homeRow && awayRow) {
 								const homeId = String(homeRow.teamId);
 								const awayId = String(awayRow.teamId);
-								// If this is a BYE matchup (teamId 0), remove it from the nav entirely.
-								if (homeId === "0" || awayId === "0") {
-									setData(prev => {
-										const clone: DivisionData = JSON.parse(JSON.stringify(prev));
-										if (clone?.[divisionName]?.[subdivisionName]?.[gameNumber]) {
-											delete clone[divisionName][subdivisionName][gameNumber];
-										}
-										return clone;
-									});
-									return;
-								}
+								// Store team IDs (including BYE matchups with teamId "0")
 								setData(prev => {
 									const clone: DivisionData = JSON.parse(JSON.stringify(prev));
 									const game = clone[divisionName][subdivisionName][gameNumber];
@@ -261,14 +251,29 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 											<CollapsibleContent className="ml-4 mt-1 space-y-1">
 												{Object.keys(gamesObj).map(gameNumber => {
 													const game = gamesObj[gameNumber];
-													if (isByeMatchup({
+													const isBye = isByeMatchup({
 														homeTeamId: game.homeTeamId,
 														awayTeamId: game.awayTeamId,
 														homeTeamLetter: game.homeTeamLetter,
 														awayTeamLetter: game.awayTeamLetter,
-													})) {
-														return null;
+													});
+													
+													// Format display text for BYE matchups
+													let displayText = `${game.homeTeamLetter} - ${game.awayTeamLetter}`;
+													if (isBye) {
+														const homeId = game.homeTeamId ? String(game.homeTeamId) : "";
+														const awayId = game.awayTeamId ? String(game.awayTeamId) : "";
+														if (homeId === "0") {
+															displayText = `${game.awayTeamLetter} - Bye`;
+														} else if (awayId === "0") {
+															displayText = `${game.homeTeamLetter} - Bye`;
+														} else if (String(game.homeTeamLetter).toUpperCase() === "BYE") {
+															displayText = `${game.awayTeamLetter} - Bye`;
+														} else if (String(game.awayTeamLetter).toUpperCase() === "BYE") {
+															displayText = `${game.homeTeamLetter} - Bye`;
+														}
 													}
+													
 													const isSelected = (() => {
 														if (!selectedMatchup) return false;
 														if (
@@ -302,10 +307,10 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 															key={`${subdivKey}-${gameNumber}`}
 															variant="ghost"
 															className={`w-full justify-start text-sm p-1 h-auto ${isSelected ? 'bg-secondary cursor-not-allowed opacity-75' : 'hover:bg-muted'}`}
-															disabled={isSelected}
-															aria-disabled={isSelected}
+															disabled={isSelected || isBye}
+															aria-disabled={isSelected || isBye}
 															onClick={() => {
-																if (isSelected) return; // safety
+																if (isSelected || isBye) return; // safety
 																setSelectedMatchup({
 																	divisionName,
 																	subdivisionName,
@@ -323,8 +328,8 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 															}}
 														>
 															<div className="flex items-center gap-2">
-																<span>{game.homeTeamLetter} - {game.awayTeamLetter}</span>
-																{loaded && (() => { const idKey = game.homeTeamId && game.awayTeamId ? `${divisionName}-${subdivisionName}-${game.homeTeamId}-${game.awayTeamId}` : null; const letterKey = `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`; const completed = idKey !== null ? completionMap[idKey] === true : completionMap[letterKey] === true; return completed ? <CheckCircle className="h-4 w-4 text-green-500" /> : <AlertTriangle className="h-4 w-4 text-yellow-500" />; })()}
+																<span>{displayText}</span>
+																{!isBye && loaded && (() => { const idKey = game.homeTeamId && game.awayTeamId ? `${divisionName}-${subdivisionName}-${game.homeTeamId}-${game.awayTeamId}` : null; const letterKey = `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`; const completed = idKey !== null ? completionMap[idKey] === true : completionMap[letterKey] === true; return completed ? <CheckCircle className="h-4 w-4 text-green-500" /> : <AlertTriangle className="h-4 w-4 text-yellow-500" />; })()}
 															</div>
 														</Button>
 													);

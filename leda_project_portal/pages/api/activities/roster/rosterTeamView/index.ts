@@ -12,7 +12,7 @@ export default async function handler(
 		if (req.query.seasonCode && req.query.division && req.query.subdivision && req.query.teamLetter) {
 			try {
 				const result = await query<WeeklyScoresheetsScoresheetTeamInfo>(
-					`SELECT "seasonCode", "ledaid", "teamLetter" FROM public.leda_roster_teams_view where "seasonCode" = $1 AND "division" = $2 AND "subdivision" = $3 AND "teamLetter" = $4`,
+					`SELECT "seasonCode", "teamId", "teamLetter" FROM public.leda_roster_teams_view where "seasonCode" = $1 AND "division" = $2 AND "subdivision_number" = $3 AND "teamLetter" = $4`,
 					[req.query.seasonCode as string, req.query.division as string, req.query.subdivision as string, req.query.teamLetter as string]
 				);
 				res.status(200).json(result.rows);
@@ -25,7 +25,7 @@ export default async function handler(
 		} else if (req.query.seasonCode) {
 			try {
 				const result = await query<HistoryView>(
-					`SELECT "ledaid" FROM public.leda_roster_teams_view where "seasonCode" = $1`,
+					`SELECT "teamId" FROM public.leda_roster_teams_view where "seasonCode" = $1`,
 					[req.query.seasonCode as string]
 				);
 				res.status(200).json(result.rows);

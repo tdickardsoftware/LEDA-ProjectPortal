@@ -50,6 +50,15 @@ def export_weekly_team_scores():
         reader = csv.DictReader(csvfile)
         rows = list(reader)
 
+    # Determine which weeks exist in the scoresheet data for filtering
+    existing_weeks_per_season = {}
+    for row in rows:
+        season = row['Season Code'].upper()
+        week = int(row['Week Number'])
+        if season not in existing_weeks_per_season:
+            existing_weeks_per_season[season] = set()
+        existing_weeks_per_season[season].add(week)
+
     # Sort rows by season, week, team
     rows.sort(key=lambda r: (r['Season Code'].upper(), int(r['Week Number']), r['Home Team Number'], r['Away Team Number']))
 
@@ -111,11 +120,14 @@ def export_weekly_team_scores():
                 team_week_points[key] = (away_points, division, subdivision)
 
     # Add entries from schedule for any missing matchups (especially BYE weeks)
+    # Only for weeks that exist in the scoresheet data
     for key, matchup_info in schedule_matchups.items():
         season, week, division, subdivision, team_id = key
-        if (season, week, team_id) not in team_week_points:
-            # No scoresheet entry - add with 0 points (BYE week or missing data)
-            team_week_points[(season, week, team_id)] = (0, division, subdivision)
+        # Only add if this week exists in the scoresheet data for this season
+        if season in existing_weeks_per_season and week in existing_weeks_per_season[season]:
+            if (season, week, team_id) not in team_week_points:
+                # No scoresheet entry - add with 0 points (BYE week or missing data)
+                team_week_points[(season, week, team_id)] = (0, division, subdivision)
     
     # Now calculate prevTotalPoints and totalPoints for each team across weeks
     # Sort keys for cumulative calculation
@@ -462,11 +474,18 @@ def main():
     # Supplement with BYE week entries from schedule
     if schedule_matchups:
         print("Checking for missing BYE week entries...")
+        # First, determine which weeks exist in the scoresheet data
+        existing_weeks = set(grouped.keys())  # Set of (season, week) tuples
+        
         bye_entries_added = 0
         for (season, week, division, subdivision, team_id), matchup_info in schedule_matchups.items():
             if matchup_info['isBye']:
-                # Check if this BYE week entry exists in grouped data
+                # Only process if this week exists in the scoresheet data
                 key = (season, str(week))
+                if key not in existing_weeks:
+                    continue
+                    
+                # Check if this BYE week entry exists in grouped data
                 existing_entry = False
                 for row in grouped.get(key, []):
                     if (row.get('Home Team Number') == team_id or row.get('Away Team Number') == team_id):
@@ -554,6 +573,10 @@ def main():
         
         # Track teams in this week for penalty accumulation
         teams_in_week = set()
+        
+        # Track unique team info entries to avoid duplicates
+        # Key: (season, week, division, subdivision, teamId)
+        unique_team_info = {}
 
         # Group rows by matchup (home/away team letters) and by team (home/away)
         matchups = {}
@@ -681,20 +704,22 @@ def main():
                 home_team_label = f"{division[0].upper()}{subdivision_num}{home_team_letter.upper()}"
                 away_team_label = f"{division[0].upper()}{subdivision_num}{away_team_letter.upper()}"
                 
-                # Add team info for home team (exclude BYE team ID 0)
-                if home_team_id != '0':
-                    team_info_values.append(
-                        (season, week_int, division, formatted_subdivision, True, home_team_id, 
-                         home_team_name, home_team_letter, away_team_id, 
-                         penalties_json_for(home_team_id), home_penalty_pts, home_team_label)
+                # Add team info for home team (including BYE teams) - only if not already added
+                home_key = (season, week_int, division, formatted_subdivision, home_team_id)
+                if home_key not in unique_team_info:
+                    unique_team_info[home_key] = (
+                        season, week_int, division, formatted_subdivision, True, home_team_id, 
+                        home_team_name, home_team_letter, away_team_id, 
+                        penalties_json_for(home_team_id), home_penalty_pts, home_team_label
                     )
                 
-                # Add team info for away team (exclude BYE team ID 0)
-                if away_team_id != '0':
-                    team_info_values.append(
-                        (season, week_int, division, formatted_subdivision, False, away_team_id,
-                         away_team_name, away_team_letter, home_team_id,
-                         penalties_json_for(away_team_id), away_penalty_pts, away_team_label)
+                # Add team info for away team (including BYE teams) - only if not already added
+                away_key = (season, week_int, division, formatted_subdivision, away_team_id)
+                if away_key not in unique_team_info:
+                    unique_team_info[away_key] = (
+                        season, week_int, division, formatted_subdivision, False, away_team_id,
+                        away_team_name, away_team_letter, home_team_id,
+                        penalties_json_for(away_team_id), away_penalty_pts, away_team_label
                     )
 
             # Player info rows: aggregate game stats across multiple rows per player
@@ -730,10 +755,13 @@ def main():
                         f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', {pid}, {team_id}, '{stats_json}')"
                     )
             
-            if home_rows:
-                aggregate_players(home_rows, True)
-            if away_rows:
-                aggregate_players(away_rows, False)
+        
+        # Convert unique team info dict to list
+        team_info_values = list(unique_team_info.values())
+        if home_rows:
+            aggregate_players(home_rows, True)
+        if away_rows:
+            aggregate_players(away_rows, False)
 
         return (season, week_int, player_values, team_game_values, team_info_values)
 
@@ -830,6 +858,21 @@ def export_weekly_player_scores():
         reader = csv.DictReader(csvfile)
         rows = list(reader)
 
+    # Determine which weeks exist in the scoresheet data per season and team
+    existing_weeks_per_season_team = {}
+    for row in rows:
+        season = row['Season Code'].upper()
+        week = int(row['Week Number'])
+        home_team_id = row.get('Home Team Number', '').strip()
+        away_team_id = row.get('Away Team Number', '').strip()
+        
+        for team_id in [home_team_id, away_team_id]:
+            if team_id and team_id != '0':
+                key = (season, team_id)
+                if key not in existing_weeks_per_season_team:
+                    existing_weeks_per_season_team[key] = set()
+                existing_weeks_per_season_team[key].add(week)
+
     # Sort rows by season, week, then team, then player
     rows.sort(key=lambda r: (r['Season Code'].upper(), int(r['Week Number']), r['Home Team Number'], r['Away Team Number'], r.get('Player Number', '')))
 
@@ -888,20 +931,24 @@ def export_weekly_player_scores():
             }
     
     # Second pass: ensure all players have entries for all their team's weeks (including BYE weeks)
+    # Only for weeks that exist in the scoresheet data for that team
     if schedule_matchups:
         for (season, week, division, subdivision, team_id), matchup_info in schedule_matchups.items():
             pts_key = (season, team_id)
-            if pts_key in player_team_seasons:
-                # This team has players, ensure all players have entries for this week
-                for player_id in player_team_seasons[pts_key]:
-                    week_key = (season, week, team_id, player_id)
-                    if week_key not in player_week_data:
-                        # Missing entry - add with 0 points (likely a BYE week)
-                        player_week_data[week_key] = {
-                            'points': 0,
-                            'division': division,
-                            'subdivision': subdivision
-                        }
+            # Only add if this week exists in the scoresheet data for this team
+            weeks_key = (season, team_id)
+            if weeks_key in existing_weeks_per_season_team and week in existing_weeks_per_season_team[weeks_key]:
+                if pts_key in player_team_seasons:
+                    # This team has players, ensure all players have entries for this week
+                    for player_id in player_team_seasons[pts_key]:
+                        week_key = (season, week, team_id, player_id)
+                        if week_key not in player_week_data:
+                            # Missing entry - add with 0 points (likely a BYE week)
+                            player_week_data[week_key] = {
+                                'points': 0,
+                                'division': division,
+                                'subdivision': subdivision
+                            }
     
     # Build final output with cumulative points
     prev_points = {}

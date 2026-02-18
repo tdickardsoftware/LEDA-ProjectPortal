@@ -275,11 +275,14 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 
 					if (res.ok && !cancelled) {
 						const data = await res.json();
-						console.log('Fetched subdivision data:', data);
-						if (data.scheduleData) {
-							console.log('Setting matchData:', data.scheduleData);
-							setLocalMatchData(data.scheduleData);
-							setInitialMatchData(data.scheduleData);
+					console.log('RAW response:', JSON.stringify(data, null, 2));
+					console.log('scheduleData exists?', 'scheduleData' in data);
+					console.log('scheduleData value:', data.scheduleData);
+					console.log('scheduleData type:', typeof data.scheduleData);
+					
+					if (data.scheduleData) {
+						setLocalMatchData(data.scheduleData);
+						setInitialMatchData(data.scheduleData);
 						} else {
 							console.warn('No scheduleData in response');
 						}
@@ -758,23 +761,28 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 								<TableHead className="font-semibold border-r border-border text-left py-4 px-6">
 									Team Name
 								</TableHead>
-								{gameDateEntries.map(([gameTitle, date], index) => (
-									<TableHead
-										key={gameTitle}
-										className={`whitespace-nowrap text-center py-4 px-6 ${
-											index < gameDateEntries.length - 1
-												? "border-r border-border"
-												: ""
-										}`}
-									>
-										<div className="font-medium text-sm">
-											{gameTitle.replace(/(\d+)/, " $1")}
-										</div>
-										<div className="text-xs text-muted-foreground mt-1">
-											{date}
-										</div>
-									</TableHead>
-								))}
+								{gameDateEntries.map(([gameTitle, date], index) => {
+									// Extract week number and display as "Date X"
+									const weekMatch = gameTitle.match(/\d+/);
+									const dateNum = weekMatch ? weekMatch[0] : '1';
+									return (
+										<TableHead
+											key={gameTitle}
+											className={`whitespace-nowrap text-center py-4 px-6 ${
+												index < gameDateEntries.length - 1
+													? "border-r border-border"
+													: ""
+											}`}
+										>
+											<div className="font-medium text-sm">
+												Date {dateNum}
+											</div>
+											<div className="text-xs text-muted-foreground mt-1">
+												{date}
+											</div>
+										</TableHead>
+									);
+								})}
 							</TableRow>
 						</TableHeader>
 						<TableBody>

@@ -152,21 +152,27 @@ export default async function handler(
 				[data.seasonCode]
 			);
 
+			// Also delete existing team info records for this season
+			await queryPost(
+				`DELETE FROM public.leda_weekly_scoresheets_team_info WHERE "seasonCode" = $1`,
+				[data.seasonCode]
+			);
+
 			// Transform nested structure to normalized rows
 			const rows = transformToNormalizedRows(data.seasonCode, data.scheduleData);
 
-			// Insert all rows
+			// Insert all rows in a single batch query
 			if (rows.length > 0) {
-				const insertQuery = `
-					INSERT INTO public.leda_schedule (
-						"seasonCode", "weekNum", division, subdivision,
-						"teamId", "teamName", "teamLetter",
-						"oppTeamId", "oppTeamLetter", "matchDateTime", home
-					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-				`;
-
-				for (const row of rows) {
-					await queryPost(insertQuery, [
+				// Build batch insert query with multiple value sets
+				const valueParams: any[] = [];
+				const valueSets: string[] = [];
+				
+				rows.forEach((row, index) => {
+					const baseIndex = index * 11; // 11 columns per row
+					valueSets.push(
+						`($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7}, $${baseIndex + 8}, $${baseIndex + 9}, $${baseIndex + 10}, $${baseIndex + 11})`
+					);
+					valueParams.push(
 						row.seasonCode,
 						row.weekNum,
 						row.division,
@@ -177,9 +183,53 @@ export default async function handler(
 						row.oppTeamId,
 						row.oppTeamLetter,
 						row.matchDateTime,
+						row.home
+					);
+				});
+
+				const batchInsertQuery = `
+					INSERT INTO public.leda_schedule (
+						"seasonCode", "weekNum", division, subdivision,
+						"teamId", "teamName", "teamLetter",
+						"oppTeamId", "oppTeamLetter", "matchDateTime", home
+					) VALUES ${valueSets.join(', ')}
+				`;
+
+				await queryPost(batchInsertQuery, valueParams);
+
+				// Also populate weekly scoresheets team info table for each matchup
+				// This creates baseline records so matchups can be accessed immediately
+				const teamInfoValueParams: any[] = [];
+				const teamInfoValueSets: string[] = [];
+				
+				rows.forEach((row, index) => {
+					const baseIndex = index * 9; // 9 columns per row for team info
+					teamInfoValueSets.push(
+						`($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7}, $${baseIndex + 8}, $${baseIndex + 9})`
+					);
+					teamInfoValueParams.push(
+						row.seasonCode,
+						row.weekNum,
+						row.division,
+						row.subdivision,
 						row.home,
-					]);
-				}
+						row.teamId,
+						row.teamName,
+						row.teamLetter,
+						row.oppTeamId
+					);
+				});
+
+				const teamInfoInsertQuery = `
+					INSERT INTO public.leda_weekly_scoresheets_team_info (
+						"seasonCode", "weekNum", division, subdivision, home,
+						"teamId", "teamName", "teamLetter", "opposingTeamId"
+					) VALUES ${teamInfoValueSets.join(', ')}
+					ON CONFLICT ("seasonCode", "weekNum", division, subdivision, "teamId")
+					DO NOTHING
+				`;
+
+				await queryPost(teamInfoInsertQuery, teamInfoValueParams);
 			}
 
 			res.status(201).json({ message: "Schedule saved successfully" });

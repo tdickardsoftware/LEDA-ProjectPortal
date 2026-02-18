@@ -105,6 +105,8 @@ const createMentionHistory = async (data: {
 	const fetchTeam = async (teamId: string) => {
 		const url = `${teamRoute}?ledaId=${encodeURIComponent(teamId)}`;
 		const response = await fetchWithSession(url, { method: "GET" });
+		if (response.status === 204 || response.status === 404) return null;
+		if (!response.ok) return null;
 		return response.json();
 	};
 
@@ -113,6 +115,8 @@ const createMentionHistory = async (data: {
 			String(playerId)
 		)}`;
 		const response = await fetchWithSession(url, { method: "GET" });
+		if (response.status === 204 || response.status === 404) return null;
+		if (!response.ok) return null;
 		return response.json();
 	};
 
@@ -123,6 +127,7 @@ const createMentionHistory = async (data: {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ playerIds: normalized }),
 		});
+		if (!response.ok) return {} as Record<string, Player | null>;
 		return response.json() as Promise<Record<string, Player | null>>;
 	};
 
@@ -139,15 +144,17 @@ const createMentionHistory = async (data: {
 	}) => {
 		const url = `${rosterTeamViewRoute}?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}&teamLetter=${encodeURIComponent(teamLetter)}`;
 		const res = await fetchWithSession(url, { method: "GET" });
-		if (res.status === 204) return null;
+		if (res.status === 204 || res.status === 404) return null;
+		if (!res.ok) return null;
 		const data = await res.json();
-		return data[0]?.ledaid || null;
+		return data[0]?.teamId || data[0]?.ledaid || data[0]?.ledaId || null;
 	};
 
 	const fetchTeamMembers = async (teamId: string) => {
 		const url = `${memberInfoRoute}?ledaId=${encodeURIComponent(teamId)}`;
 		const res = await fetchWithSession(url, { method: "GET" });
-		if (res.status === 204) return [];
+		if (res.status === 204 || res.status === 404) return [];
+		if (!res.ok) return [];
 		return res.json();
 	};
 
@@ -160,7 +167,8 @@ const createMentionHistory = async (data: {
 	}: { seasonCode: string; weekNum: string; division: string; subdivision: string; teamLetter: string; }) => {
 		const url = `${weeklyScoresheetsV2TeamInfoRoute}?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}&teamLetter=${encodeURIComponent(teamLetter)}`;
 		const res = await fetchWithSession(url, { method: "GET" });
-		if (res.status === 204) return null;
+		if (res.status === 204 || res.status === 404) return null;
+		if (!res.ok) return null;
 		return res.json();
 	};
 
@@ -189,7 +197,8 @@ const createMentionHistory = async (data: {
 			homeTeamId
 		)}&awayTeamId=${encodeURIComponent(awayTeamId)}`;
 		const res = await fetchWithSession(url, { method: "GET" });
-		if (res.status === 204) return null;
+		if (res.status === 204 || res.status === 404) return null;
+		if (!res.ok) return null;
 		return res.json();
 	};
 
@@ -548,6 +557,12 @@ export default function WeeklyScoresheetsContent({
 	const [homeHydrated, setHomeHydrated] = useState<boolean>(false);
 	const [awayHydrated, setAwayHydrated] = useState<boolean>(false);
 
+	// Team display info — populated imperatively in handleMatchupSelection
+	const [homeTeamName, setHomeTeamName] = useState<string>("");
+	const [awayTeamName, setAwayTeamName] = useState<string>("");
+	const [homeTeamMemberIds, setHomeTeamMemberIds] = useState<string[]>([]);
+	const [awayTeamMemberIds, setAwayTeamMemberIds] = useState<string[]>([]);
+
 	// Penalty management state
 	const [homePenaltyDialogOpen, setHomePenaltyDialogOpen] =
 		useState<boolean>(false);
@@ -601,152 +616,52 @@ export default function WeeklyScoresheetsContent({
 	const [mentionCount, setMentionCount] = useState<number>(0);
 	const [mentionNotes, setMentionNotes] = useState<string>("");
 
+	// Bye week processing state
+	const [isProcessingByeWeeks, setIsProcessingByeWeeks] = useState<boolean>(false);
+
 	// React Query hooks
 	// Schedule data query
 // Removed legacy schedule query
 
 	// Removed legacy scoresheet query; V2 per-matchup flow only
 
-	// Team data queries - with fallback to roster if not yet created
-	const { data: homeTeamData, isLoading: isHomeTeamLoading } = useQuery({
-		queryKey: ["team", selectedHomeTeamId, seasonCode, selectedDivision, selectedSubdivision, selectedHomeLetter],
-		queryFn: async () => {
-			if (!selectedHomeTeamId) return null;
-			
-			// First try to fetch existing team
-			const teamData = await fetchTeam(selectedHomeTeamId);
-			if (teamData && teamData.ledaId) {
-				return teamData;
-			}
-
-			// If team doesn't exist yet, fetch from roster view and member info
-			const subdivisionNum = selectedSubdivision.replace('Subdivision ', '');
-			const teamId = await fetchRosterTeamId({
-				seasonCode,
-				division: selectedDivision,
-				subdivision: subdivisionNum,
-				teamLetter: selectedHomeLetter,
-			});
-
-			if (!teamId) return null;
-
-			// Fetch members for this team
-			const members = await fetchTeamMembers(teamId);
-			
-			// Format to match Team interface (map ledaid from DB to ledaId for interface)
-			const memberIdList: Record<string, { ledaId: string }> = {};
-			members.forEach((member: { ledaid: string }, idx: number) => {
-				memberIdList[idx] = { ledaId: member.ledaid };
-			});
-
-			return {
-				ledaId: teamId,
-				memberIdList,
-				teamLetter: selectedHomeLetter,
-				division: selectedDivision,
-				subdivision: selectedSubdivision,
-			};
-		},
-		enabled: !!selectedHomeTeamId && matchSelected,
-		staleTime: 1000 * 60 * 10, // 10 minutes
-	});
-
-	const { data: awayTeamData, isLoading: isAwayTeamLoading } = useQuery({
-		queryKey: ["team", selectedAwayTeamId, seasonCode, selectedDivision, selectedSubdivision, selectedAwayLetter],
-		queryFn: async () => {
-			if (!selectedAwayTeamId) return null;
-			
-			// First try to fetch existing team
-			const teamData = await fetchTeam(selectedAwayTeamId);
-			if (teamData && teamData.ledaId) {
-				return teamData;
-			}
-
-			// If team doesn't exist yet, fetch from roster view and member info
-			const subdivisionNum = selectedSubdivision.replace('Subdivision ', '');
-			const teamId = await fetchRosterTeamId({
-				seasonCode,
-				division: selectedDivision,
-				subdivision: subdivisionNum,
-				teamLetter: selectedAwayLetter,
-			});
-
-			if (!teamId) return null;
-
-			// Fetch members for this team
-			const members = await fetchTeamMembers(teamId);
-			
-			// Format to match Team interface (map ledaid from DB to ledaId for interface)
-			const memberIdList: Record<string, { ledaId: string }> = {};
-			members.forEach((member: { ledaid: string }, idx: number) => {
-				memberIdList[idx] = { ledaId: member.ledaid };
-			});
-
-			return {
-				ledaId: teamId,
-				memberIdList,
-				teamLetter: selectedAwayLetter,
-				division: selectedDivision,
-				subdivision: selectedSubdivision,
-			};
-		},
-		enabled: !!selectedAwayTeamId && matchSelected,
-		staleTime: 1000 * 60 * 10, // 10 minutes
-	});
-
-	// Player data queries
-// Mentions data queries for current matchup players
-// Removed getMentionsForPlayers function - no longer needed since mentions are fetched on-demand
-
-// homePlayerIds and awayPlayerIds must be defined after homeTeamPlayerData and awayTeamPlayerData
-	// ...existing code for useQuery hooks for homeTeamPlayerData and awayTeamPlayerData...
-
-	// Removed homeMentionsByPlayer and awayMentionsByPlayer state - no longer needed since mentions are fetched on-demand
-
-
-	
+	// Player data queries — keyed on member IDs set imperatively in handleMatchupSelection
 	const { data: homeTeamPlayerData, isLoading: isHomePlayersLoading } = useQuery({
-		queryKey: ["teamPlayers", selectedHomeTeamId],
+		queryKey: ["teamPlayers", homeTeamMemberIds.join(",")],
 		queryFn: async () => {
-			if (!homeTeamData?.memberIdList) return [];
-
-			const ids = Object.values(
-				homeTeamData.memberIdList as Record<string, { ledaId: string | number }>
-			)
-				.map((p) => p?.ledaId)
-				.filter((id): id is string | number => id !== undefined && id !== null);
-
-			if (ids.length === 0) return [];
-
-			const playersById = await fetchPlayersBatch(ids);
-			return ids
-				.map((id) => playersById[String(id)])
-				.filter((p): p is Player => !!p);
+			try {
+				if (homeTeamMemberIds.length === 0) return [];
+				const playersById = await fetchPlayersBatch(homeTeamMemberIds);
+				return homeTeamMemberIds
+					.map((id) => playersById[id])
+					.filter((p): p is Player => !!p);
+			} catch (error) {
+				console.error("Error fetching home team players:", error);
+				return [];
+			}
 		},
-		enabled: !!homeTeamData && !!homeTeamData.memberIdList,
-		staleTime: 1000 * 60 * 10, // 10 minutes
+		enabled: homeTeamMemberIds.length > 0 && matchSelected,
+		staleTime: 1000 * 60 * 10,
+		retry: false,
 	});
 
 	const { data: awayTeamPlayerData, isLoading: isAwayPlayersLoading } = useQuery({
-		queryKey: ["teamPlayers", selectedAwayTeamId],
+		queryKey: ["teamPlayers", awayTeamMemberIds.join(",")],
 		queryFn: async () => {
-			if (!awayTeamData?.memberIdList) return [];
-
-			const ids = Object.values(
-				awayTeamData.memberIdList as Record<string, { ledaId: string | number }>
-			)
-				.map((p) => p?.ledaId)
-				.filter((id): id is string | number => id !== undefined && id !== null);
-
-			if (ids.length === 0) return [];
-
-			const playersById = await fetchPlayersBatch(ids);
-			return ids
-				.map((id) => playersById[String(id)])
-				.filter((p): p is Player => !!p);
+			try {
+				if (awayTeamMemberIds.length === 0) return [];
+				const playersById = await fetchPlayersBatch(awayTeamMemberIds);
+				return awayTeamMemberIds
+					.map((id) => playersById[id])
+					.filter((p): p is Player => !!p);
+			} catch (error) {
+				console.error("Error fetching away team players:", error);
+				return [];
+			}
 		},
-		enabled: !!awayTeamData && !!awayTeamData.memberIdList,
-		staleTime: 1000 * 60 * 10, // 10 minutes
+		enabled: awayTeamMemberIds.length > 0 && matchSelected,
+		staleTime: 1000 * 60 * 10,
+		retry: false,
 	});
 
 	// Helper: build blank TeamGameData map from roster players
@@ -768,70 +683,98 @@ export default function WeeklyScoresheetsContent({
 	const { isLoading: isHomeGameStatsLoading } = useQuery({
 		queryKey: ["v2-playerPoints", seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, homeTeamPlayerData?.length || 0, matchupLoadToken],
 		queryFn: async () => {
-			if (!seasonCode || !selectedWeek || !selectedHomeTeamId) return [];
-			const url = `${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(String(seasonCode))}&weekNum=${encodeURIComponent(String(selectedWeek))}&teamId=${encodeURIComponent(String(selectedHomeTeamId))}`;
-			console.log("[v2-playerPoints] Fetch HOME gameStats", { url, selectedHomeTeamId, selectedDivision, selectedSubdivision, matchupLoadToken });
-			const res = await fetchWithSession(url, { method: "GET" });
-			if (res.status === 204) {
-				// No saved stats yet: fall back to roster with blank gameStats
+			try {
+				if (!seasonCode || !selectedWeek || !selectedHomeTeamId) return [];
+				const url = `${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(String(seasonCode))}&weekNum=${encodeURIComponent(String(selectedWeek))}&teamId=${encodeURIComponent(String(selectedHomeTeamId))}`;
+				const res = await fetchWithSession(url, { method: "GET" });
+				if (res.status === 204) {
+					// No saved stats yet: fall back to roster with blank gameStats
+					setHomeTeamGameData(buildBlankGameData(homeTeamPlayerData as Player[]));
+					setHomeHydrated(true);
+					return [];
+				}
+				if (!res.ok) {
+					// Error response: initialize with blank data
+					setHomeTeamGameData(buildBlankGameData(homeTeamPlayerData as Player[]));
+					setHomeHydrated(true);
+					return [];
+				}
+				const rows = await res.json();
+				if (!Array.isArray(rows) || rows.length === 0) {
+					setHomeTeamGameData(buildBlankGameData(homeTeamPlayerData as Player[]));
+					setHomeHydrated(true);
+					return rows;
+				}
+				const map: TeamGameData = {};
+				(rows || []).forEach((r: { ledaId: string | number; gameStats?: Record<string, boolean> }) => {
+					map[String(r.ledaId)] = r.gameStats || {};
+				});
+				setHomeTeamGameData(map);
+				setHomeHydrated(true);
+				return rows;
+			} catch (error) {
+				console.error("Error fetching home game stats:", error);
+				// On error, initialize with blank data so UI can proceed
 				setHomeTeamGameData(buildBlankGameData(homeTeamPlayerData as Player[]));
 				setHomeHydrated(true);
 				return [];
 			}
-			const rows = await res.json();
-			if (!Array.isArray(rows) || rows.length === 0) {
-				setHomeTeamGameData(buildBlankGameData(homeTeamPlayerData as Player[]));
-				setHomeHydrated(true);
-				return rows;
-			}
-			const map: TeamGameData = {};
-			(rows || []).forEach((r: { ledaId: string | number; gameStats?: Record<string, boolean> }) => {
-				map[String(r.ledaId)] = r.gameStats || {};
-			});
-			setHomeTeamGameData(map);
-			setHomeHydrated(true);
-			return rows;
 		},
-		enabled: !!seasonCode && !!selectedWeek && !!selectedHomeTeamId && matchSelected && !!homeTeamPlayerData,
+		enabled: !!seasonCode && !!selectedWeek && !!selectedHomeTeamId && matchSelected && homeTeamPlayerData !== undefined,
 		staleTime: 1000 * 60 * 5,
 		refetchOnMount: true,
 		refetchOnReconnect: true,
 		refetchOnWindowFocus: false,
+		retry: false,
 	});
 
 	const { isLoading: isAwayGameStatsLoading } = useQuery({
 		queryKey: ["v2-playerPoints", seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedAwayTeamId, awayTeamPlayerData?.length || 0, matchupLoadToken],
 		queryFn: async () => {
-			if (!seasonCode || !selectedWeek || !selectedAwayTeamId) return [];
-			const url = `${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(String(seasonCode))}&weekNum=${encodeURIComponent(String(selectedWeek))}&teamId=${encodeURIComponent(String(selectedAwayTeamId))}`;
-			console.log("[v2-playerPoints] Fetch AWAY gameStats", { url, selectedAwayTeamId, selectedDivision, selectedSubdivision, matchupLoadToken });
-			const res = await fetchWithSession(url, { method: "GET" });
-			if (res.status === 204) {
+			try {
+				if (!seasonCode || !selectedWeek || !selectedAwayTeamId) return [];
+				const url = `${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(String(seasonCode))}&weekNum=${encodeURIComponent(String(selectedWeek))}&teamId=${encodeURIComponent(String(selectedAwayTeamId))}`;
+				const res = await fetchWithSession(url, { method: "GET" });
+				if (res.status === 204) {
+					setAwayTeamGameData(buildBlankGameData(awayTeamPlayerData as Player[]));
+					setAwayHydrated(true);
+					return [];
+				}
+				if (!res.ok) {
+					// Error response: initialize with blank data
+					setAwayTeamGameData(buildBlankGameData(awayTeamPlayerData as Player[]));
+					setAwayHydrated(true);
+					return [];
+				}
+				const rows = await res.json();
+				if (!Array.isArray(rows) || rows.length === 0) {
+					setAwayTeamGameData(buildBlankGameData(awayTeamPlayerData as Player[]));
+					setAwayHydrated(true);
+					return rows;
+				}
+				const map: TeamGameData = {};
+				(rows || []).forEach((r: { ledaId: string | number; gameStats?: Record<string, boolean> }) => {
+					map[String(r.ledaId)] = r.gameStats || {};
+				});
+				setAwayTeamGameData(map);
+				setAwayHydrated(true);
+				return rows;
+			} catch (error) {
+				console.error("Error fetching away game stats:", error);
+				// On error, initialize with blank data so UI can proceed
 				setAwayTeamGameData(buildBlankGameData(awayTeamPlayerData as Player[]));
 				setAwayHydrated(true);
 				return [];
 			}
-			const rows = await res.json();
-			if (!Array.isArray(rows) || rows.length === 0) {
-				setAwayTeamGameData(buildBlankGameData(awayTeamPlayerData as Player[]));
-				setAwayHydrated(true);
-				return rows;
-			}
-			const map: TeamGameData = {};
-			(rows || []).forEach((r: { ledaId: string | number; gameStats?: Record<string, boolean> }) => {
-				map[String(r.ledaId)] = r.gameStats || {};
-			});
-			setAwayTeamGameData(map);
-			setAwayHydrated(true);
-			return rows;
 		},
-		enabled: !!seasonCode && !!selectedWeek && !!selectedAwayTeamId && matchSelected && !!awayTeamPlayerData,
+		enabled: !!seasonCode && !!selectedWeek && !!selectedAwayTeamId && matchSelected && awayTeamPlayerData !== undefined,
 		staleTime: 1000 * 60 * 5,
 		refetchOnMount: true,
 		refetchOnReconnect: true,
 		refetchOnWindowFocus: false,
-	});
-	// Local state for mentions by player (must be after player data queries)
+	retry: false,
+});
+// Local state for mentions by player (must be after player data queries)
 // Declare only once, after player data queries
 
 // ...existing code for useQuery hooks for homeTeamPlayerData and awayTeamPlayerData...
@@ -893,8 +836,6 @@ export default function WeeklyScoresheetsContent({
 
 	// Derived state
 	const isLoading = 
-		isHomeTeamLoading || 
-		isAwayTeamLoading || 
 		isHomePlayersLoading || 
 		isAwayPlayersLoading ||
 		isHomeGameStatsLoading ||
@@ -904,8 +845,6 @@ export default function WeeklyScoresheetsContent({
 		saveGameInfoMutation.isPending || 
 		savePlayerPointsMutation.isPending;
 
-	const homeTeamInformation = homeTeamData as Team | undefined;
-	const awayTeamInformation = awayTeamData as Team | undefined;
 	const homeTeamPlayerInformation = homeTeamPlayerData as Player[] | undefined;
 	const awayTeamPlayerInformation = awayTeamPlayerData as Player[] | undefined;
 
@@ -968,6 +907,10 @@ export default function WeeklyScoresheetsContent({
 		setAwayPenalties({});
 		setIsMatchupCompleted(false);
 		setIsDataChanged(false);
+		setHomeTeamName("");
+		setAwayTeamName("");
+		setHomeTeamMemberIds([]);
+		setAwayTeamMemberIds([]);
 	};
 
 	// confirmPendingChanges is defined after saveMatchup to avoid TDZ issues
@@ -1028,7 +971,7 @@ const confirmPendingChangesPlaceholder = () => true;
 						subdivision: selectedSubdivision,
 						home: true,
 						teamId: selectedHomeTeamId,
-						teamName: homeTeamInformation?.teamName || "",
+						teamName: homeTeamName || "",
 						teamLetter: selectedHomeLetter,
 						opposingTeamId: selectedAwayTeamId,
 						penalties: homePenalties,
@@ -1044,7 +987,7 @@ const confirmPendingChangesPlaceholder = () => true;
 						subdivision: selectedSubdivision,
 						home: false,
 						teamId: selectedAwayTeamId,
-						teamName: awayTeamInformation?.teamName || "",
+						teamName: awayTeamName || "",
 						teamLetter: selectedAwayLetter,
 						opposingTeamId: selectedHomeTeamId,
 						penalties: awayPenalties,
@@ -1178,7 +1121,7 @@ const confirmPendingChangesPlaceholder = () => true;
 		} catch (err) {
 			console.error("Error saving matchup", err);
 		}
-	}, [seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, selectedAwayTeamId, homeTeamInformation, awayTeamInformation, selectedHomeLetter, selectedAwayLetter, homePenalties, awayPenalties, homeWins, homePoints, awayPoints, calculatePoints, saveTeamInfoMutation, saveGameInfoMutation, homeTeamGameData, awayTeamGameData, savePlayerPointsMutation, saveWeeklyTeamPointsMutation, saveWeeklyPlayerPointsMutation, originalMatchupSnapshot, lastSavedSnapshot]);
+	}, [seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, selectedAwayTeamId, homeTeamName, awayTeamName, selectedHomeLetter, selectedAwayLetter, homePenalties, awayPenalties, homeWins, homePoints, awayPoints, calculatePoints, saveTeamInfoMutation, saveGameInfoMutation, homeTeamGameData, awayTeamGameData, savePlayerPointsMutation, saveWeeklyTeamPointsMutation, saveWeeklyPlayerPointsMutation, originalMatchupSnapshot, lastSavedSnapshot]);
 		
 	// removed stray fragment from prior handler
 
@@ -1290,6 +1233,11 @@ const confirmPendingChangesPlaceholder = () => true;
 		setLastSavedSnapshot(null);
 		setHomeHydrated(false);
 		setAwayHydrated(false);
+		// reset team display state for new matchup
+		setHomeTeamName("");
+		setAwayTeamName("");
+		setHomeTeamMemberIds([]);
+		setAwayTeamMemberIds([]);
 		try {
 			const teamRows = await fetchTeamInfoV2({
 				seasonCode,
@@ -1344,6 +1292,16 @@ const confirmPendingChangesPlaceholder = () => true;
 					setHomePoints(Array(11).fill("0"));
 					setAwayPoints(Array(11).fill("0"));
 					setIsMatchupCompleted(false);
+
+					// Fetch roster members for player list
+					const [homeMembers, awayMembers] = await Promise.all([
+						fetchTeamMembers(homeTeamId),
+						fetchTeamMembers(awayTeamId),
+					]);
+					setHomeTeamName(`Team ${homeLetter}`);
+					setAwayTeamName(`Team ${awayLetter}`);
+					setHomeTeamMemberIds(homeMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
+					setAwayTeamMemberIds(awayMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
 				} else {
 					// Could not find team IDs in roster
 					setSelectedHomeTeamId("");
@@ -1358,6 +1316,17 @@ const confirmPendingChangesPlaceholder = () => true;
 				setSelectedAwayTeamId(awayTeamId);
 				setHomePenalties(teamRows[0]?.penalties || {});
 				setAwayPenalties(teamRows[1]?.penalties || {});
+
+				// Set team names from saved data
+				setHomeTeamName(teamRows[0]?.teamName || `Team ${homeLetter}`);
+				setAwayTeamName(teamRows[1]?.teamName || `Team ${awayLetter}`);
+				// Fetch current roster members for player list
+				const [homeMembers, awayMembers] = await Promise.all([
+					fetchTeamMembers(homeTeamId),
+					fetchTeamMembers(awayTeamId),
+				]);
+				setHomeTeamMemberIds(homeMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
+				setAwayTeamMemberIds(awayMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
 
 				// Hydrate existing game info
 				const giRows = await fetchGameInfoV2({
@@ -1404,6 +1373,35 @@ const confirmPendingChangesPlaceholder = () => true;
 			setMatchupLoadToken(prev => prev + 1);
 		} catch (e) {
 			console.error("Failed to load matchup team info", e);
+			// Fallback: try to get team IDs from roster to allow rendering empty matchup
+			try {
+				const subdivisionNum = subdivisionName.replace('Subdivision ', '');
+				const homeTeamIdResult = await fetchRosterTeamId({
+					seasonCode,
+					division: divisionName,
+					subdivision: subdivisionNum,
+					teamLetter: homeLetter,
+				});
+				const awayTeamIdResult = await fetchRosterTeamId({
+					seasonCode,
+					division: divisionName,
+					subdivision: subdivisionNum,
+					teamLetter: awayLetter,
+				});
+				if (homeTeamIdResult && awayTeamIdResult) {
+					setSelectedHomeTeamId(homeTeamIdResult);
+					setSelectedAwayTeamId(awayTeamIdResult);
+					setHomePenalties({});
+					setAwayPenalties({});
+					setHomeWins(Array(11).fill(false));
+					setHomePoints(Array(11).fill("0"));
+					setAwayPoints(Array(11).fill("0"));
+					setIsMatchupCompleted(false);
+					setMatchupLoadToken(prev => prev + 1);
+				}
+			} catch (fallbackError) {
+				console.error("Failed to load team IDs from roster", fallbackError);
+			}
 		}
 	// fetchTeamInfoV2 & fetchGameInfoV2 are stable local functions; exclude from deps to satisfy lint
 	// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1448,6 +1446,10 @@ const confirmPendingChangesPlaceholder = () => true;
 		setHomePenaltyCounter(0);
 		setAwayPenaltyCounter(0);
 		setMentionCounters({});
+		setHomeTeamName("");
+		setAwayTeamName("");
+		setHomeTeamMemberIds([]);
+		setAwayTeamMemberIds([]);
 	};
 
 	// Process mention history using React Query mutations
@@ -1509,7 +1511,7 @@ const confirmPendingChangesPlaceholder = () => true;
 		});
 		setSelectedPenaltyTeamId(teamId);
 		setSelectedPenaltyTeamName(
-			isHomeTeam ? homeTeamInformation?.teamName || "" : awayTeamInformation?.teamName || ""
+			isHomeTeam ? homeTeamName || "" : awayTeamName || ""
 		);
 		if (isHomeTeam) setHomePenaltyDialogOpen(true); else setAwayPenaltyDialogOpen(true);
 	};
@@ -1556,13 +1558,13 @@ const confirmPendingChangesPlaceholder = () => true;
 				(p) => String(p.ledaId) === playerId
 			);
 			playerName = player?.fullName || "";
-			teamName = homeTeamInformation?.teamName || "";
+			teamName = homeTeamName || "";
 		} else {
 			const player = awayTeamPlayerInformation?.find(
 				(p) => String(p.ledaId) === playerId
 			);
 			playerName = player?.fullName || "";
-			teamName = awayTeamInformation?.teamName || "";
+			teamName = awayTeamName || "";
 		}
 
 		// Set the selected player for mention
@@ -1644,13 +1646,13 @@ const confirmPendingChangesPlaceholder = () => true;
 					(p) => String(p.ledaId) === playerId
 				);
 				playerName = player?.fullName || "";
-				teamName = homeTeamInformation?.teamName || "";
+				teamName = homeTeamName || "";
 			} else {
 				const player = awayTeamPlayerInformation?.find(
 					(p) => String(p.ledaId) === playerId
 				);
 				playerName = player?.fullName || "";
-				teamName = awayTeamInformation?.teamName || "";
+				teamName = awayTeamName || "";
 			}
 
 			// Set the selected player for mention
@@ -1727,13 +1729,8 @@ const confirmPendingChangesPlaceholder = () => true;
 		count: number,
 		notes?: string
 	) => {
-		console.log("handleMentionSubmit called with:", { mentionCode, desc, points, count, notes });
-		console.log("selectedPlayerForMention:", selectedPlayerForMention);
-		console.log("seasonCode:", seasonCode);
-		console.log("selectedWeek:", selectedWeek);
 		
 		if (!selectedPlayerForMention || !seasonCode || !selectedWeek) {
-			console.log("Missing required data, returning early");
 			return;
 		}
 
@@ -1770,20 +1767,6 @@ const confirmPendingChangesPlaceholder = () => true;
 		});
 
 		try {
-			// Add the mention directly to the database
-			console.log("Calling createMentionHistoryMutation with:", {
-				ledaId: playerId,
-				mentionId: newCounter.toString(),
-				mentionCode: mentionCode,
-				mentionDesc: desc,
-				mentionPoints: points,
-				seasonCode: seasonCode,
-				weekNum: typeof selectedWeek === 'string' ? parseInt(selectedWeek) : selectedWeek,
-				notes: notes || "",
-				count: count || 0,
-				teamId: teamId,
-			});
-			
 			const result = await createMentionHistoryMutation.mutateAsync({
 				ledaId: playerId,
 				mentionId: newCounter.toString(),
@@ -1797,7 +1780,6 @@ const confirmPendingChangesPlaceholder = () => true;
 				teamId: teamId,
 			});
 			
-			console.log("Mutation result:", result);
 
 			// Add the new mention to currentPlayerMentions for UI display
 			if (currentPlayerMentions && selectedPlayerForMention) {
@@ -1817,7 +1799,6 @@ const confirmPendingChangesPlaceholder = () => true;
 			}
 
 			// Intentionally does not mark data dirty; mention additions persist immediately
-			console.log("Mention added successfully!");
 		} catch (error) {
 			console.error("Failed to add mention:", error);
 			console.error("Error details:", error);
@@ -1868,30 +1849,195 @@ const confirmPendingChangesPlaceholder = () => true;
 		}
 	};
 
-	// Warn on page unload if there are unsaved changes
-	useEffect(() => {
-		const handler = (e: BeforeUnloadEvent) => {
-			if (isDataChanged) {
-				e.preventDefault();
-				e.returnValue = "You have unsaved changes.";
-			}
-		};
-		window.addEventListener("beforeunload", handler);
-		return () => window.removeEventListener("beforeunload", handler);
-	}, [isDataChanged]);
+	// Process all bye weeks for the selected season and week
+	const processAllByeWeeks = async () => {
+		if (!seasonCode || !selectedWeek) {
+			alert("Please select a season and week first.");
+			return;
+		}
 
-	// UI skeleton for loading state
-	const FolderTabSkeleton = () => (
-		<div className="w-full space-y-4">
-			<Skeleton className="h-8 w-2/3" />
-			<Skeleton className="h-6 w-1/2 mb-4" />
-			<Skeleton className="h-8 w-full" />
-			<Skeleton className="h-10 w-full" />
-			<Skeleton className="h-10 w-full" />
-			<Skeleton className="h-10 w-full" />
-			<Skeleton className="h-10 w-full" />
-		</div>
-	);
+		if (!window.confirm("Process all bye weeks for this week? This will save 0 points for all teams on bye weeks and mark those matchups as completed.")) {
+			return;
+		}
+
+		setIsProcessingByeWeeks(true);
+		let processedCount = 0;
+		let errorCount = 0;
+
+		try {
+			// Fetch matchups for the selected week
+			const res = await fetchWithSession(
+				`/api/activities/scoresheets/weeklyScoresheetsV2/matchups?seasonCode=${encodeURIComponent(
+					seasonCode
+				)}&weekNum=${encodeURIComponent(selectedWeek)}`,
+				{ method: "GET" }
+			);
+			if (res.status === 204) {
+				alert("No matchups found for this week.");
+				return;
+			}
+			const matchupsResponse = await res.json();
+			let raw: Record<string, any>;
+			try {
+				raw = typeof matchupsResponse.matchupData === "string" ? JSON.parse(matchupsResponse.matchupData) : matchupsResponse.matchupData;
+			} catch {
+				alert("Failed to parse matchup data.");
+				return;
+			}
+
+			// Process each division, subdivision, and matchup
+			for (const divisionName of Object.keys(raw)) {
+				for (const subdivisionName of Object.keys(raw[divisionName])) {
+					const mapping = raw[divisionName][subdivisionName] as Record<string, string>;
+					
+					for (const homeLetter of Object.keys(mapping)) {
+						const awayLetter = mapping[homeLetter];
+						
+						try {
+							// Fetch team info to get team IDs
+							const teamInfoRes = await fetchWithSession(
+								`/api/activities/scoresheets/weeklyScoresheetsV2/teamInfo?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(selectedWeek)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&teamLetter=${encodeURIComponent(homeLetter)}`,
+								{ method: 'GET' }
+							);
+							
+							if (teamInfoRes.status !== 200) continue;
+							
+							const rows = await teamInfoRes.json();
+							const homeRow = rows[0];
+							const awayRow = rows[1];
+							
+							if (!homeRow || !awayRow) continue;
+							
+							const homeTeamId = String(homeRow.teamId);
+							const awayTeamId = String(awayRow.teamId);
+							
+							// Check if this is a bye matchup
+							if (homeTeamId !== "0" && awayTeamId !== "0") continue;
+							
+							// This is a bye matchup - process it
+							const activeTeamId = homeTeamId === "0" ? awayTeamId : homeTeamId;
+							const activeTeamLetter = homeTeamId === "0" ? awayLetter : homeLetter;
+							
+							// Fetch roster for the active team
+							const playersRes = await fetchWithSession(
+								`${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(selectedWeek)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&teamId=${encodeURIComponent(activeTeamId)}`,
+								{ method: 'GET' }
+							);
+							
+							if (playersRes.status !== 200) {
+								errorCount++;
+								continue;
+							}
+							
+							const players = await playersRes.json();
+							
+							// Create empty game stats
+							const emptyGameStats: Record<string, boolean> = {};
+							for (let i = 0; i < 11; i++) {
+								emptyGameStats[`Game ${i + 1}`] = false;
+							}
+							
+							// Save 0 points for all players on the active team
+							for (const player of players) {
+								const playerId = String(player.ledaId);
+								
+								await savePlayerPointsMutation.mutateAsync({
+									seasonCode,
+									weekNum: parseInt(selectedWeek),
+									division: divisionName,
+									subdivision: subdivisionName,
+									ledaId: playerId,
+									teamId: activeTeamId,
+									gameStats: emptyGameStats,
+								});
+								
+								await saveWeeklyPlayerPointsMutation.mutateAsync({
+									seasonCode,
+									weekNum: parseInt(selectedWeek),
+									division: divisionName,
+									subdivision: subdivisionName,
+									ledaId: playerId,
+									teamLedaId: activeTeamId,
+									totalPoints: 0,
+								});
+							}
+							
+							// Save team points
+							await saveWeeklyTeamPointsMutation.mutateAsync({
+								seasonCode,
+								weekNum: parseInt(selectedWeek),
+								division: divisionName,
+								subdivision: subdivisionName,
+								ledaId: activeTeamId,
+								totalPoints: 0,
+							});
+							
+							// Save game info
+							const emptyGameInfo: Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> = {};
+							for (let i = 0; i < 11; i++) {
+								const gameKey = `Game ${i + 1}`;
+								emptyGameInfo[gameKey] = {
+									homeWin: false,
+									homePoints: "0",
+									awayPoints: "0",
+								};
+							}
+							
+							await saveGameInfoMutation.mutateAsync({
+								seasonCode,
+								weekNum: parseInt(selectedWeek),
+								division: divisionName,
+								subdivision: subdivisionName,
+								homeTeamId,
+								awayTeamId,
+								homePoints: 0,
+								awayPoints: 0,
+								completed: true,
+								gameInfo: emptyGameInfo,
+							});
+							
+							processedCount++;
+					} catch (error) {
+						console.error(`Failed to process bye matchup ${divisionName}-${subdivisionName}-${homeLetter}:`, error);
+						errorCount++;
+					}
+				}
+			}
+		}
+
+alert(`Bye week processing complete.\nProcessed: ${processedCount} matchups\nErrors: ${errorCount}`);
+} catch (error) {
+console.error("Failed to process bye weeks:", error);
+alert("Failed to process bye weeks. Please try again.");
+} finally {
+setIsProcessingByeWeeks(false);
+}
+};
+
+// Warn on page unload if there are unsaved changes
+useEffect(() => {
+const handler = (e: BeforeUnloadEvent) => {
+if (isDataChanged) {
+e.preventDefault();
+e.returnValue = "You have unsaved changes.";
+}
+};
+window.addEventListener("beforeunload", handler);
+return () => window.removeEventListener("beforeunload", handler);
+}, [isDataChanged]);
+
+// UI skeleton for loading state
+const FolderTabSkeleton = () => (
+<div className="w-full space-y-4">
+<Skeleton className="h-8 w-2/3" />
+<Skeleton className="h-6 w-1/2 mb-4" />
+<Skeleton className="h-8 w-full" />
+<Skeleton className="h-10 w-full" />
+<Skeleton className="h-10 w-full" />
+<Skeleton className="h-10 w-full" />
+<Skeleton className="h-10 w-full" />
+</div>
+);
 
 	return (
 		<div className="flex flex-col h-full">
@@ -1912,12 +2058,19 @@ const confirmPendingChangesPlaceholder = () => true;
 							}
 						/>
 					</div>
-					<div className="flex gap-4">
+					<div className="flex gap-4 items-center">
 						<WeekSelector
 							seasonCode={seasonCode}
 							disabled={seasonSelected}
 							handleSelect={handleDateToDisplay}
 						/>
+						<Button
+							onClick={processAllByeWeeks}
+							disabled={!seasonCode || !selectedWeek || isProcessingByeWeeks}
+							variant="outline"
+						>
+							{isProcessingByeWeeks ? "Processing..." : "Process All Bye Weeks"}
+						</Button>
 					</div>
 				</div>
 			</FolderTabMed>
@@ -1975,7 +2128,7 @@ const confirmPendingChangesPlaceholder = () => true;
 										<>
 											<div className="text-lg font-bold text-foreground">
 												Team Name:{" "}
-												{homeTeamInformation?.teamName}
+												{homeTeamName}
 											</div>
 											<div className="text-lg font-semibold text-foreground">
 												Team ID: {selectedHomeTeamId}
@@ -2008,7 +2161,7 @@ const confirmPendingChangesPlaceholder = () => true;
 															onClick={() =>
 																handlePenaltyClick(
 																	selectedHomeTeamId,
-																	homeTeamInformation?.teamName,
+																	homeTeamName,
 																	true
 																)
 															}
@@ -2240,7 +2393,7 @@ const confirmPendingChangesPlaceholder = () => true;
 										<>
 											<div className="text-lg font-bold text-foreground">
 												Team Name:{" "}
-												{awayTeamInformation?.teamName}
+												{awayTeamName}
 											</div>
 											<div className="text-lg font-semibold text-foreground">
 												Team ID: {selectedAwayTeamId}
@@ -2273,7 +2426,7 @@ const confirmPendingChangesPlaceholder = () => true;
 														onClick={() =>
 															handlePenaltyClick(
 																selectedAwayTeamId,
-																awayTeamInformation?.teamName,
+																awayTeamName,
 																false
 															)
 														}
@@ -2746,77 +2899,6 @@ const confirmPendingChangesPlaceholder = () => true;
 									>
 										Delete Scoresheet
 									</Button>
-									<Button
-										onClick={async () => {
-											if (window.confirm("Mark this week as a bye week? No points will be awarded, but the scoresheet will be marked as completed.")) {
-												try {
-													// Save game info with all zeros and mark as completed
-													const emptyGameInfo: Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> = {};
-													for (let i = 0; i < 11; i++) {
-														const gameKey = `Game ${i + 1}`;
-														emptyGameInfo[gameKey] = {
-															homeWin: false,
-															homePoints: "0",
-															awayPoints: "0",
-														};
-													}
-
-													await saveGameInfoMutation.mutateAsync({
-														seasonCode,
-														weekNum: parseInt(selectedWeek),
-														division: selectedDivision,
-														subdivision: selectedSubdivision,
-														homeTeamId: selectedHomeTeamId,
-														awayTeamId: selectedAwayTeamId,
-														homePoints: 0,
-														awayPoints: 0,
-														completed: true,
-														gameInfo: emptyGameInfo,
-													});
-
-													// Also save zero points to legacy team points tables
-													await saveWeeklyTeamPointsMutation.mutateAsync({
-														seasonCode,
-														weekNum: parseInt(selectedWeek),
-														division: selectedDivision,
-														subdivision: selectedSubdivision,
-														ledaId: selectedHomeTeamId,
-														totalPoints: 0,
-													});
-													await saveWeeklyTeamPointsMutation.mutateAsync({
-														seasonCode,
-														weekNum: parseInt(selectedWeek),
-														division: selectedDivision,
-														subdivision: selectedSubdivision,
-														ledaId: selectedAwayTeamId,
-														totalPoints: 0,
-													});
-
-													// Update local UI state to reflect bye week
-													setHomeWins(Array(11).fill(false));
-													setHomePoints(Array(11).fill("0"));
-													setAwayPoints(Array(11).fill("0"));
-													setIsMatchupCompleted(true);
-													setIsDataChanged(false);
-
-													const newSnap = {
-														Home: { teamGameData: JSON.parse(JSON.stringify(homeTeamGameData)), wins: Array(11).fill(false), points: Array(11).fill("0"), penalties: JSON.parse(JSON.stringify(homePenalties)) },
-														Away: { teamGameData: JSON.parse(JSON.stringify(awayTeamGameData)), points: Array(11).fill("0"), penalties: JSON.parse(JSON.stringify(awayPenalties)) },
-														completed: true,
-													};
-													setLastSavedSnapshot(newSnap);
-													if (!originalMatchupSnapshot) setOriginalMatchupSnapshot(newSnap);
-												} catch (e) {
-													console.error("Failed to mark bye week", e);
-													alert("Failed to mark bye week. Please try again.");
-												}
-											}
-										}}
-										
-										disabled={isSaving}
-									>
-										Bye Week
-									</Button>
 								</div>
 								{isMatchupCompleted && (
 									<div className="mt-2 text-center text-green-700 dark:text-green-400 font-semibold">Matchup marked complete.</div>
@@ -2864,7 +2946,6 @@ const confirmPendingChangesPlaceholder = () => true;
 							{/* Create a simple wrapper for MentionSelector */}
 							<MentionSelectorWrapper 
 								onMentionChange={(value) => {
-									console.log("MentionSelector change:", value);
 									setSelectedMentionData(value);
 									// Auto-populate points from selector
 									const pointsValue = parseInt(value.points);
@@ -2931,18 +3012,10 @@ const confirmPendingChangesPlaceholder = () => true;
 							<Button
 								type="button"
 								onClick={() => {
-									console.log("Add/Update button clicked!");
 									
 									const mentionCode = selectedMentionData?.mentionCode || "";
 									const mentionDesc = selectedMentionData?.desc || "";
 									
-									console.log("Form values:", {
-										mentionCode,
-										mentionDesc,
-										mentionPoints,
-										mentionCount,
-										mentionNotes
-									});
 									
 									if (!mentionCode || !mentionDesc) {
 										alert("Please fill in Mention Code and Description");
