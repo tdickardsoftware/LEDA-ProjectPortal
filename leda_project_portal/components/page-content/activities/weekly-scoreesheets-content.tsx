@@ -1889,58 +1889,67 @@ const confirmPendingChangesPlaceholder = () => true;
 			for (const divisionName of Object.keys(raw)) {
 				for (const subdivisionName of Object.keys(raw[divisionName])) {
 					const mapping = raw[divisionName][subdivisionName] as Record<string, string>;
-					
+
+					// Fetch schedule subdivision data to resolve team letters → teamIds
+					let subdivisionSchedule: Record<string, { teamId: string }> = {};
+					try {
+						const schedRes = await fetchWithSession(
+							`/api/activities/schedule/subdivision?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}`,
+							{ method: 'GET' }
+						);
+						if (schedRes.ok) {
+							const schedData = await schedRes.json();
+							const subdivData = schedData?.scheduleData?.[divisionName]?.[subdivisionName];
+							if (subdivData) subdivisionSchedule = subdivData;
+						}
+					} catch { /* ignore */ }
+
 					for (const homeLetter of Object.keys(mapping)) {
 						const awayLetter = mapping[homeLetter];
-						
+
 						try {
-							// Fetch team info to get team IDs
-							const teamInfoRes = await fetchWithSession(
-								`/api/activities/scoresheets/weeklyScoresheetsV2/teamInfo?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(selectedWeek)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&teamLetter=${encodeURIComponent(homeLetter)}`,
-								{ method: 'GET' }
-							);
-							
-							if (teamInfoRes.status !== 200) continue;
-							
-							const rows = await teamInfoRes.json();
-							const homeRow = rows[0];
-							const awayRow = rows[1];
-							
-							if (!homeRow || !awayRow) continue;
-							
-							const homeTeamId = String(homeRow.teamId);
-							const awayTeamId = String(awayRow.teamId);
-							
-							// Check if this is a bye matchup
-							if (homeTeamId !== "0" && awayTeamId !== "0") continue;
-							
-							// This is a bye matchup - process it
-							const activeTeamId = homeTeamId === "0" ? awayTeamId : homeTeamId;
-							const activeTeamLetter = homeTeamId === "0" ? awayLetter : homeLetter;
-							
+							// Detect bye directly from letter ("X" = BYE) or teamId ("0")
+							const homeTeamId = subdivisionSchedule[homeLetter]?.teamId ?? "";
+							const awayTeamId = subdivisionSchedule[awayLetter]?.teamId ?? "";
+
+							const homeIsBye = homeLetter.toUpperCase() === "X" || homeTeamId === "0";
+							const awayIsBye = awayLetter.toUpperCase() === "X" || awayTeamId === "0";
+
+							if (!homeIsBye && !awayIsBye) continue;
+
+							// Determine the active (non-BYE) team
+							const activeTeamLetter = homeIsBye ? awayLetter : homeLetter;
+							const activeTeamId = homeIsBye ? awayTeamId : homeTeamId;
+
+							if (!activeTeamId) {
+								console.error(`Could not resolve teamId for ${divisionName}-${subdivisionName}-${activeTeamLetter}`);
+								errorCount++;
+								continue;
+							}
+
 							// Fetch roster for the active team
 							const playersRes = await fetchWithSession(
 								`${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(selectedWeek)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&teamId=${encodeURIComponent(activeTeamId)}`,
 								{ method: 'GET' }
 							);
-							
+
 							if (playersRes.status !== 200) {
 								errorCount++;
 								continue;
 							}
-							
+
 							const players = await playersRes.json();
-							
+
 							// Create empty game stats
 							const emptyGameStats: Record<string, boolean> = {};
 							for (let i = 0; i < 11; i++) {
 								emptyGameStats[`Game ${i + 1}`] = false;
 							}
-							
+
 							// Save 0 points for all players on the active team
 							for (const player of players) {
 								const playerId = String(player.ledaId);
-								
+
 								await savePlayerPointsMutation.mutateAsync({
 									seasonCode,
 									weekNum: parseInt(selectedWeek),
@@ -1950,7 +1959,7 @@ const confirmPendingChangesPlaceholder = () => true;
 									teamId: activeTeamId,
 									gameStats: emptyGameStats,
 								});
-								
+
 								await saveWeeklyPlayerPointsMutation.mutateAsync({
 									seasonCode,
 									weekNum: parseInt(selectedWeek),
@@ -1961,7 +1970,7 @@ const confirmPendingChangesPlaceholder = () => true;
 									totalPoints: 0,
 								});
 							}
-							
+
 							// Save team points
 							await saveWeeklyTeamPointsMutation.mutateAsync({
 								seasonCode,
@@ -1971,7 +1980,7 @@ const confirmPendingChangesPlaceholder = () => true;
 								ledaId: activeTeamId,
 								totalPoints: 0,
 							});
-							
+
 							// Save game info
 							const emptyGameInfo: Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> = {};
 							for (let i = 0; i < 11; i++) {
@@ -1982,28 +1991,28 @@ const confirmPendingChangesPlaceholder = () => true;
 									awayPoints: "0",
 								};
 							}
-							
+
 							await saveGameInfoMutation.mutateAsync({
 								seasonCode,
 								weekNum: parseInt(selectedWeek),
 								division: divisionName,
 								subdivision: subdivisionName,
-								homeTeamId,
-								awayTeamId,
+								homeTeamId: homeIsBye ? "0" : homeTeamId,
+								awayTeamId: awayIsBye ? "0" : awayTeamId,
 								homePoints: 0,
 								awayPoints: 0,
 								completed: true,
 								gameInfo: emptyGameInfo,
 							});
-							
+
 							processedCount++;
-					} catch (error) {
-						console.error(`Failed to process bye matchup ${divisionName}-${subdivisionName}-${homeLetter}:`, error);
-						errorCount++;
+						} catch (error) {
+							console.error(`Failed to process bye matchup ${divisionName}-${subdivisionName}-${homeLetter}:`, error);
+							errorCount++;
+						}
 					}
 				}
 			}
-		}
 
 alert(`Bye week processing complete.\nProcessed: ${processedCount} matchups\nErrors: ${errorCount}`);
 } catch (error) {

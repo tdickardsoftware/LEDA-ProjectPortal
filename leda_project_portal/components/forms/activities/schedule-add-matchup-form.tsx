@@ -79,7 +79,7 @@ export default function SchedulingAddMatchupForm({
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
 		resolver: zodResolver(divisionFormSchema),
 		defaultValues: {
-			matchTime: "",
+			matchTime: "19:30",
 			home: true,
 			isByeWeek: false,
 			opposingTeamId: "",
@@ -92,7 +92,7 @@ export default function SchedulingAddMatchupForm({
 	// Reset form when component mounts to ensure clean state when dialog reopens
 	React.useEffect(() => {
 		form.reset({
-			matchTime: "",
+			matchTime: "19:30",
 			home: true,
 			isByeWeek: false,
 			opposingTeamId: "",
@@ -109,7 +109,7 @@ export default function SchedulingAddMatchupForm({
 				teamId,
 				gameTitle,
 				date,
-				"", // no match time for BYE
+				"19:30", // default time for BYE
 				values.home,
 				"0", // opposing team ID is 0 for BYE
 				"X", // opposing team letter is X for BYE week

@@ -46,9 +46,11 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 		const homeId = game.homeTeamId ? String(game.homeTeamId) : "";
 		const awayId = game.awayTeamId ? String(game.awayTeamId) : "";
 		if (homeId === "0" || awayId === "0") return true;
-		// Fallback for any upstream data that uses a BYE marker in the letters
-		if (String(game.homeTeamLetter).toUpperCase() === "BYE") return true;
-		if (String(game.awayTeamLetter).toUpperCase() === "BYE") return true;
+		// "X" is the BYE team letter used by the schedule system
+		const homeLetter = String(game.homeTeamLetter).toUpperCase();
+		const awayLetter = String(game.awayTeamLetter).toUpperCase();
+		if (homeLetter === "BYE" || homeLetter === "X") return true;
+		if (awayLetter === "BYE" || awayLetter === "X") return true;
 		return false;
 	};
 
@@ -263,13 +265,11 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 													if (isBye) {
 														const homeId = game.homeTeamId ? String(game.homeTeamId) : "";
 														const awayId = game.awayTeamId ? String(game.awayTeamId) : "";
-														if (homeId === "0") {
+														const homeLetter = String(game.homeTeamLetter).toUpperCase();
+														const awayLetter = String(game.awayTeamLetter).toUpperCase();
+														if (homeId === "0" || homeLetter === "BYE" || homeLetter === "X") {
 															displayText = `${game.awayTeamLetter} - Bye`;
-														} else if (awayId === "0") {
-															displayText = `${game.homeTeamLetter} - Bye`;
-														} else if (String(game.homeTeamLetter).toUpperCase() === "BYE") {
-															displayText = `${game.awayTeamLetter} - Bye`;
-														} else if (String(game.awayTeamLetter).toUpperCase() === "BYE") {
+														} else if (awayId === "0" || awayLetter === "BYE" || awayLetter === "X") {
 															displayText = `${game.homeTeamLetter} - Bye`;
 														}
 													}

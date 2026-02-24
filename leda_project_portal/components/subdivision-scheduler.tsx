@@ -209,6 +209,64 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 
 MatchupDisplay.displayName = "MatchupDisplay";
 
+interface AddMatchupDialogProps {
+	teamEntries: [string, TeamData][];
+	handleAddMatchup: (
+		selectedTeamLetter: string,
+		teamId: string,
+		gameTitle: string,
+		date: string,
+		matchTime?: string,
+		home?: boolean,
+		opposingTeamId?: string,
+		opposingTeamLetter?: string,
+		isByeWeek?: boolean
+	) => void;
+	teamData: TeamData;
+	teamLetter: string;
+	gameTitle: string;
+	gameDateEntries: [string, string][];
+	getTeamsWithMatchups: (gameTitle: string) => string[];
+}
+
+const AddMatchupDialog = memo<AddMatchupDialogProps>(
+	({ teamEntries, handleAddMatchup, teamData, teamLetter, gameTitle, gameDateEntries, getTeamsWithMatchups }) => {
+		const [open, setOpen] = useState(false);
+		return (
+			<Dialog open={open} onOpenChange={setOpen}>
+				<DialogTrigger asChild>
+					<Button
+						variant="ghost"
+						size="sm"
+						className="border border-dashed border-border rounded-md h-9 w-9 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
+						title={`Add matchup for ${teamData.teamName}`}
+					>
+						<Plus className="h-4 w-4" />
+					</Button>
+				</DialogTrigger>
+				<DialogContent className="bg-background">
+					<DialogHeader>
+						<DialogTitle>Add Matchup</DialogTitle>
+					</DialogHeader>
+					<SchedulingAddMatchupForm
+						teamEntries={teamEntries}
+						handleAddMatchup={handleAddMatchup}
+						setOpen={setOpen}
+						teamId={teamData.teamId}
+						selectedTeam={teamData.teamId}
+						gameTitle={gameTitle}
+						date={gameDateEntries.find(([title]) => title === gameTitle)?.[1] || ""}
+						selectedTeamLetter={teamLetter}
+						teamsWithMatchups={getTeamsWithMatchups(gameTitle)}
+					/>
+				</DialogContent>
+			</Dialog>
+		);
+	}
+);
+
+AddMatchupDialog.displayName = "AddMatchupDialog";
+
 export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 	({
 		division,
@@ -275,17 +333,32 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 
 					if (res.ok && !cancelled) {
 						const data = await res.json();
-					console.log('RAW response:', JSON.stringify(data, null, 2));
-					console.log('scheduleData exists?', 'scheduleData' in data);
-					console.log('scheduleData value:', data.scheduleData);
-					console.log('scheduleData type:', typeof data.scheduleData);
-					
-					if (data.scheduleData) {
-						setLocalMatchData(data.scheduleData);
-						setInitialMatchData(data.scheduleData);
-						} else {
-							console.warn('No scheduleData in response');
+
+						// Build a full structure containing all teams from the teams prop,
+						// then overlay any matchups returned by the API.
+						const fullStructure: ScheduleData = {
+							[division]: {
+								[subdivision]: Object.fromEntries(
+									Object.entries(teams).map(([letter, team]) => [
+										letter,
+										{ teamName: team.teamName, teamId: team.teamId, matchesData: {} },
+									])
+								),
+							},
+						};
+
+						// Overlay fetched matchesData for teams that have matchups
+						const fetchedSubdiv = data.scheduleData?.[division]?.[subdivision];
+						if (fetchedSubdiv) {
+							for (const [letter, teamData] of Object.entries(fetchedSubdiv as ScheduleData[string][string])) {
+								if (fullStructure[division][subdivision][letter]) {
+									fullStructure[division][subdivision][letter].matchesData = teamData.matchesData;
+								}
+							}
 						}
+
+						setLocalMatchData(fullStructure);
+						setInitialMatchData(fullStructure);
 					} else if (!cancelled) {
 						console.error('Failed to fetch subdivision matchups:', res.status, await res.text());
 					}
@@ -303,7 +376,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 			return () => {
 				cancelled = true;
 			};
-		}, [seasonCode, division, subdivision]);
+		}, [seasonCode, division, subdivision, teams]);
 
 		// Batch fetch points status for all teams and all weeks in a single call
 		useEffect(() => {
@@ -476,65 +549,89 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 
 				const updatedMatchData = structuredClone(localMatchData);
 
-				if (updatedMatchData[division]?.[subdivision]) {
-					const selectedTeam = updatedMatchData[division][subdivision][selectedTeamLetter];
+				// Ensure division/subdivision structure exists (may be missing if fetch returned empty)
+				if (!updatedMatchData[division]) updatedMatchData[division] = {};
+				if (!updatedMatchData[division][subdivision]) {
+					updatedMatchData[division][subdivision] = Object.fromEntries(
+						Object.entries(teams).map(([letter, team]) => [
+							letter,
+							{ teamName: team.teamName, teamId: team.teamId, matchesData: {} },
+						])
+					);
+				}
 
-					if (!selectedTeam) {
-						console.error("Selected team not found in the subdivision");
+				// Ensure selected team entry exists (may be absent if it had no prior matchups)
+				if (!updatedMatchData[division][subdivision][selectedTeamLetter] && teams[selectedTeamLetter]) {
+					updatedMatchData[division][subdivision][selectedTeamLetter] = {
+						teamName: teams[selectedTeamLetter].teamName,
+						teamId: teams[selectedTeamLetter].teamId,
+						matchesData: {},
+					};
+				}
+
+				const selectedTeam = updatedMatchData[division][subdivision][selectedTeamLetter];
+				if (!selectedTeam) {
+					console.error("Selected team not found in the subdivision");
+					return;
+				}
+
+				// Initialize matchesData if needed
+				if (!selectedTeam.matchesData) selectedTeam.matchesData = {};
+
+				const subdivisionId = `${division}-${subdivision}`;
+
+				if (isByeWeek) {
+					// BYE week: only update the selected team with BYE matchup
+					selectedTeam.matchesData[gameTitle] = {
+						matchDate: date,
+						matchTime: "19:30",
+						home: !!home,
+						opposingTeamId: "0",
+						opposingTeamLetter: "X",
+						subdivisionId,
+					};
+				} else {
+					// Ensure opposing team entry exists
+					if (!updatedMatchData[division][subdivision][opposingTeamLetter] && teams[opposingTeamLetter]) {
+						updatedMatchData[division][subdivision][opposingTeamLetter] = {
+							teamName: teams[opposingTeamLetter].teamName,
+							teamId: teams[opposingTeamLetter].teamId,
+							matchesData: {},
+						};
+					}
+
+					const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
+					if (!opposingTeam) {
+						console.error("Opposing team not found in the same subdivision");
 						return;
 					}
 
-					// Initialize matchesData if needed
-					if (!selectedTeam.matchesData) selectedTeam.matchesData = {};
+					if (!opposingTeam.matchesData) opposingTeam.matchesData = {};
 
-					const subdivisionId = `${division}-${subdivision}`;
+					selectedTeam.matchesData[gameTitle] = {
+						matchDate: date,
+						matchTime: matchTime || "",
+						home: !!home,
+						opposingTeamId,
+						opposingTeamLetter,
+						subdivisionId,
+					};
 
-					if (isByeWeek) {
-						// BYE week: only update the selected team with BYE matchup
-						selectedTeam.matchesData[gameTitle] = {
-							matchDate: date,
-							matchTime: "",
-							home: !!home,
-							opposingTeamId: "0",
-							opposingTeamLetter: "X",
-							subdivisionId,
-						};
-					} else {
-						// Regular matchup: update both teams
-						const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
-
-						if (!opposingTeam) {
-							console.error("Opposing team not found in the same subdivision");
-							return;
-						}
-
-						if (!opposingTeam.matchesData) opposingTeam.matchesData = {};
-
-						selectedTeam.matchesData[gameTitle] = {
-							matchDate: date,
-							matchTime: matchTime || "",
-							home: !!home,
-							opposingTeamId,
-							opposingTeamLetter,
-							subdivisionId,
-						};
-
-						opposingTeam.matchesData[gameTitle] = {
-							matchDate: date,
-							matchTime: matchTime || "",
-							home: !home,
-							opposingTeamId: teamId,
-							opposingTeamLetter: selectedTeamLetter,
-							subdivisionId,
-						};
-					}
-
-					setLocalMatchData(updatedMatchData);
-					handleSaveData(updatedMatchData);
-					setEnabledSaveButton(true);
+					opposingTeam.matchesData[gameTitle] = {
+						matchDate: date,
+						matchTime: matchTime || "",
+						home: !home,
+						opposingTeamId: teamId,
+						opposingTeamLetter: selectedTeamLetter,
+						subdivisionId,
+					};
 				}
+
+				setLocalMatchData(updatedMatchData);
+				handleSaveData(updatedMatchData);
+				setEnabledSaveButton(true);
 			},
-			[localMatchData, division, subdivision, handleSaveData, setEnabledSaveButton]
+			[localMatchData, division, subdivision, teams, handleSaveData, setEnabledSaveButton]
 		);
 
 		const handleDeleteMatchup = useCallback(
@@ -651,7 +748,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 					
 					selectedTeam.matchesData[gameTitle] = {
 						matchDate: date,
-						matchTime: "",
+						matchTime: "19:30",
 						home,
 						opposingTeamId: "0",
 						opposingTeamLetter: byeTeamLetter,
@@ -835,38 +932,15 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 															BYE
 														</div>
 													) : (
-														<Dialog>
-															<DialogTrigger asChild>
-																<Button
-																	variant="ghost"
-																	size="sm"
-																	className="border border-dashed border-border rounded-md h-9 w-9 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
-																	title={`Add matchup for ${teamData.teamName}`}
-																>
-																	<Plus className="h-4 w-4" />
-																</Button>
-															</DialogTrigger>
-															<DialogContent className="bg-background">
-																<DialogHeader>
-																	<DialogTitle>Add Matchup</DialogTitle>
-																</DialogHeader>
-																<SchedulingAddMatchupForm
-																	teamEntries={teamEntries}
-																	handleAddMatchup={handleAddMatchup}
-																	setOpen={() => {}}
-																	teamId={teamData.teamId}
-																	selectedTeam={teamData.teamId}
-																	gameTitle={gameTitle}
-																	date={
-																		gameDateEntries.find(
-																			([title]) => title === gameTitle
-																		)?.[1] || ""
-																	}
-																	selectedTeamLetter={key}
-																	teamsWithMatchups={getTeamsWithMatchups(gameTitle)}
-																/>
-															</DialogContent>
-														</Dialog>
+														<AddMatchupDialog
+															teamEntries={teamEntries}
+															handleAddMatchup={handleAddMatchup}
+															teamData={teamData}
+															teamLetter={key}
+															gameTitle={gameTitle}
+															gameDateEntries={gameDateEntries}
+															getTeamsWithMatchups={getTeamsWithMatchups}
+														/>
 													)}
 												</div>
 											</TableCell>
