@@ -35,6 +35,7 @@ export function DatePickerFormField({
 	label,
 	initialMonth,
 	disabledDates,
+	enableMonthYearPicker = false,
 }: {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	control: Control<any>;
@@ -42,6 +43,7 @@ export function DatePickerFormField({
 	label: string;
 	initialMonth?: Date;
 	disabledDates?: Date[];
+	enableMonthYearPicker?: boolean;
 }) {
 	return (
 		<FormField
@@ -58,6 +60,7 @@ export function DatePickerFormField({
 								dateSelected={selected}
 								initialMonth={selected ?? initialMonth}
 								disabledDates={disabledDates ?? []}
+								enableMonthYearPicker={enableMonthYearPicker}
 								onDateChange={(date) => {
 									field.onChange(date ? formatIsoDateString(date) : "");
 								}}

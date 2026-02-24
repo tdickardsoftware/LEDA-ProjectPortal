@@ -18,12 +18,14 @@ export function DatePickerCustom({
 	dateSelected,
 	showInput = false,
 	disabledDates = [],
+	enableMonthYearPicker = false,
 }: {
 	onDateChange: (date: Date | undefined) => void;
 	initialMonth?: Date;
 	dateSelected?: Date;
 	showInput?: boolean;
 	disabledDates?: Date[];
+	enableMonthYearPicker?: boolean;
 }) {
 	// State to manage the selected date
 	const [date, setDate] = React.useState<Date | undefined>(
@@ -96,6 +98,11 @@ export function DatePickerCustom({
 					onSelect={handleDateChange}
 					initialFocus
 					defaultMonth={initialMonth}
+					{...(enableMonthYearPicker && {
+						captionLayout: "dropdown" as const,
+						fromYear: 1900,
+						toYear: new Date().getFullYear(),
+					})}
 					disabled={disabledDates.map(d => {
 						const normalized = new Date(d);
 						normalized.setHours(0, 0, 0, 0);

@@ -259,7 +259,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-background">
+															<TooltipContent className="bg-background text-foreground">
 															<p>View Team</p>
 														</TooltipContent>
 													</Tooltip>
@@ -282,7 +282,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-background">
+															<TooltipContent className="bg-background text-foreground">
 															<p>
 																View Roster for{" "}
 																{
@@ -310,7 +310,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-background">
+															<TooltipContent className="bg-background text-foreground">
 															<p>
 																View Weekly
 																Scoresheet Data

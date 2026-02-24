@@ -260,7 +260,7 @@ export default function PlayerTDPHistoryContent({
 		// Sum all mention points for this week
 		const mentionPointsTotal = mentionData.mentions.reduce(
 			(sum, mention) => {
-				return sum + mention.mentionPoints * (mention.count || 1);
+				return sum + Number(mention.mentionPoints);
 			},
 			0
 		);
@@ -332,9 +332,7 @@ export default function PlayerTDPHistoryContent({
 													? mentionData.mentions.reduce(
 															(sum, mention) =>
 																sum +
-																mention.mentionPoints *
-																	(mention.count ||
-																		1),
+															Number(mention.mentionPoints),
 															0
 													  )
 													: 0)}{" "}
@@ -346,9 +344,7 @@ export default function PlayerTDPHistoryContent({
 												? mentionData.mentions.reduce(
 														(sum, mention) =>
 															sum +
-															mention.mentionPoints *
-																(mention.count ||
-																	1),
+														Number(mention.mentionPoints),
 														0
 												  )
 												: 0}{" "}
@@ -450,9 +446,7 @@ export default function PlayerTDPHistoryContent({
 															0
 																? "+"
 																: ""}
-															{mention.mentionPoints *
-																(mention.count ||
-																	1)}{" "}
+																{mention.mentionPoints}{" "}
 															pts
 														</span>
 													</div>
@@ -493,9 +487,7 @@ export default function PlayerTDPHistoryContent({
 												? mentionData.mentions.reduce(
 														(sum, mention) =>
 															sum +
-															mention.mentionPoints *
-																(mention.count ||
-																	1),
+														Number(mention.mentionPoints),
 														0
 												  )
 												: 0}{" "}
@@ -588,9 +580,7 @@ export default function PlayerTDPHistoryContent({
 															0
 																? "+"
 																: ""}
-															{mention.mentionPoints *
-																(mention.count ||
-																	1)}{" "}
+																{mention.mentionPoints}{" "}
 															pts
 														</span>
 													</div>

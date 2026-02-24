@@ -55,11 +55,11 @@ export default function PlayerMentionsHistoryContent({
 					</p>
 				) : error ? (
 					<p className="text-red-500">
-						{(error as Error).message || "Failed to load trails history data"}
+						{(error as Error).message || "Failed to load mentions history data"}
 					</p>
 				) : mentionsData.length === 0 ? (
 					<p className="text-muted-foreground">
-						No trails history found for this player.
+						No mentions history found for this player.
 					</p>
 				) : (
 					<div className="overflow-x-auto">

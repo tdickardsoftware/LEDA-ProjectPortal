@@ -265,6 +265,9 @@ export default function PlayerPageContent({
 				onOpenChange={setIsMentionsHistoryDialogOpen}
 			>
 				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Mentions History</DialogTitle>
+					</DialogHeader>
 					<PlayerMentionsHistoryContent playerData={playerData} />
 				</DialogContent>
 			</Dialog>

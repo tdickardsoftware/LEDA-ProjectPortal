@@ -75,7 +75,7 @@ export default async function handler(
 				results.currentSponsor,
 				results.issues,
 				results.lastBarFeePayment,
-				results.lastSanctioningDate,
+				results.lastSanctioningDate || null,
 				results.contactId,
 				results.placeType,
 			];
@@ -153,7 +153,7 @@ export default async function handler(
 				data.regularSponsor,
 				data.currentSponsor,
 				data.issues,
-				data.lastSanctioningDate,
+				data.lastSanctioningDate || null,
 				data.contactId,
 				data.placeType,
 			];

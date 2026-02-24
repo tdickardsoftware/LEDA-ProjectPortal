@@ -406,7 +406,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						<TooltipTrigger asChild>
 							<span>{icon}</span>
 						</TooltipTrigger>
-						<TooltipContent className="bg-background rounded-lg">
+						<TooltipContent className="bg-background text-foreground rounded-lg">
 							{tooltipText}
 						</TooltipContent>
 					</Tooltip>

@@ -473,6 +473,7 @@ export default function PlaceAddForm({
 							control={form.control}
 							name="establishDate"
 							label="Established Date *"
+							enableMonthYearPicker
 						/>
 					</div>
 				)}
@@ -485,7 +486,8 @@ export default function PlaceAddForm({
 						<DatePickerFormField
 							control={form.control}
 							name="lastSanctioningDate"
-							label="Last Sanctioning Date *"
+							label="Last Sanctioning Date"
+							enableMonthYearPicker
 						/>
 						<CheckboxDefault
 							control={form.control}

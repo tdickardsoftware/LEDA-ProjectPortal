@@ -272,8 +272,11 @@ export function buildSQLWhereClause(
 
 		group.fieldSearches.forEach(({ field, values, matchMode }) => {
 			// Use the mapped column expression if available, otherwise fall back to field with prefix
-			const columnName = columnMapping.has(field) 
-				? columnMapping.get(field)! 
+			const rawColName = columnMapping.has(field) ? columnMapping.get(field)! : null;
+			// If the mapped value is already a full SQL expression (contains " or .), use as-is.
+			// Otherwise quote it so PostgreSQL preserves the identifier's case (e.g. "fullName" vs fullname).
+			const columnName = rawColName !== null
+				? (rawColName.includes('"') || rawColName.includes('.') ? rawColName : `${prefix}"${rawColName}"`)
 				: `${prefix}"${field}"`;
 
 			switch (matchMode) {

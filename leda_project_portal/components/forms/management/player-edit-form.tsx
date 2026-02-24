@@ -401,6 +401,7 @@ export default function PlayerEditInformationForm({
 									control={form.control}
 									name="dateOfBirth"
 									label="Date of Birth"
+									enableMonthYearPicker
 								/>
 							</div>
 						</Tab.Panel>
@@ -497,6 +498,7 @@ export default function PlayerEditInformationForm({
 									control={form.control}
 									name="establishedDate"
 									label="Established Date *"
+									enableMonthYearPicker
 								/>
 								{/* Bad Standing Checkbox */}
 								<FormField
@@ -651,11 +653,13 @@ export default function PlayerEditInformationForm({
 									control={form.control}
 									name="inactiveDate"
 									label="Inactive Date"
+									enableMonthYearPicker
 								/>
 								<DatePickerFormField
 									control={form.control}
 									name="lastTrailsDate"
 									label="Last Trails Date"
+									enableMonthYearPicker
 								/>
 							</div>
 						</Tab.Panel>

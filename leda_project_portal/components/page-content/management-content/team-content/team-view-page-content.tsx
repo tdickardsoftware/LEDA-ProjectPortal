@@ -190,7 +190,7 @@ export default function TeamPageContent({
 					<TooltipTrigger asChild>
 						<span>{icon}</span>
 					</TooltipTrigger>
-					<TooltipContent className="bg-background rounded-lg">
+					<TooltipContent className="bg-background text-foreground rounded-lg">
 						{tooltipText}
 					</TooltipContent>
 				</Tooltip>

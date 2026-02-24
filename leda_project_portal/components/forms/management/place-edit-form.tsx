@@ -489,6 +489,7 @@ export default function PlaceEditForm({
 									control={form.control}
 									name="establishDate"
 									label="Established Date *"
+									enableMonthYearPicker
 								/>
 							</div>
 						</Tab.Panel>
@@ -501,7 +502,8 @@ export default function PlaceEditForm({
 								<DatePickerFormField
 									control={form.control}
 									name="lastSanctioningDate"
-									label="Last Sanctioning Date *"
+									label="Last Sanctioning Date"
+									enableMonthYearPicker
 								/>
 								<CheckboxDefault
 									control={form.control}

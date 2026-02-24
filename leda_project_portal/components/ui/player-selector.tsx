@@ -410,7 +410,7 @@ export default function PlayerSelector({
 											</Button>
 										</TooltipTrigger>
 									)}
-									<TooltipContent className="bg-background p-2 rounded shadow-lg">
+									<TooltipContent className="bg-background text-foreground p-2 rounded shadow-lg">
 										<p>
 											{player.cannotBeCaptain
 												? "Cannot be Captain"
