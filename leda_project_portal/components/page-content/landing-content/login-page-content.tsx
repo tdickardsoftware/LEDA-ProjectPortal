@@ -7,10 +7,11 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import PasswordInput from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
-import React from "react";
+import React, { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
+import { Spinner } from "@/components/ui/skeleton";
 
 // Accepts either a valid email or a username (alphanumeric, 3-32 chars)
 const loginSchema = z.object({
@@ -27,6 +28,7 @@ const loginSchema = z.object({
 export default function LoginPageContent() {
 
   const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -61,6 +63,7 @@ export default function LoginPageContent() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     const { emailOrUsername, password } = values;
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailOrUsername);
+    setIsLoading(true);
 
     const setInvalidPassword = () =>
       form.setError("password", { message: "Invalid password" });
@@ -89,6 +92,7 @@ export default function LoginPageContent() {
               window.location.href = mustReset ? "/login/change-required" : "/Portal";
             },
             onError: (error: unknown) => {
+              setIsLoading(false);
               const { message, status } = getErrorInfo(error);
               const msg = message.toLowerCase();
               if (msg.includes("too many") || status === 429) {
@@ -127,6 +131,7 @@ export default function LoginPageContent() {
               window.location.href = mustReset ? "/login/change-required" : "/Portal";
             },
             onError: (error: unknown) => {
+              setIsLoading(false);
               const { message, status } = getErrorInfo(error);
               const msg = message.toLowerCase();
               if (msg.includes("too many") || status === 429) {
@@ -145,6 +150,7 @@ export default function LoginPageContent() {
         );
       }
     } catch (error) {
+      setIsLoading(false);
       const { message, status } = getErrorInfo(error);
       const msg = message.toLowerCase();
       if (msg.includes("too many") || status === 429) {
@@ -172,7 +178,7 @@ export default function LoginPageContent() {
                 <FormItem>
                   <FormLabel>Email or Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your email or username" {...field} />
+                    <Input placeholder="Enter your email or username" disabled={isLoading} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -185,7 +191,7 @@ export default function LoginPageContent() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder="Enter your password" {...field} />
+                    <PasswordInput placeholder="Enter your password" disabled={isLoading} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -201,7 +207,16 @@ export default function LoginPageContent() {
               Forgot Password?
               </Link>
             </div>
-            <Button type="submit" className="w-full">Login</Button>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Spinner className="h-4 w-4" />
+                  Logging in...
+                </span>
+              ) : (
+                "Login"
+              )}
+            </Button>
           </form>
         </Form>
       </div>
