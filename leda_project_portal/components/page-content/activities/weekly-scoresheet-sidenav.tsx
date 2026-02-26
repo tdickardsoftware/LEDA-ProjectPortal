@@ -39,9 +39,10 @@ interface SideNavProps {
 		subdivisionName: string
 	) => void;
 	collapseOnSelection?: boolean;
+	refreshToken?: number;
 }
 
-const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelection = true }: SideNavProps) => {
+const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelection = true, refreshToken }: SideNavProps) => {
 	const isByeMatchup = (game: { homeTeamId?: string; awayTeamId?: string; homeTeamLetter: string; awayTeamLetter: string }) => {
 		const homeId = game.homeTeamId ? String(game.homeTeamId) : "";
 		const awayId = game.awayTeamId ? String(game.awayTeamId) : "";
@@ -133,6 +134,30 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 	// Completion status
 	const [completionMap, setCompletionMap] = useState<Record<string, boolean>>({});
 	const requestedStatusRef = useRef<Set<string>>(new Set());
+	// Ref so effects can read current selectedMatchup without stale closure
+	const selectedMatchupRef = useRef(selectedMatchup);
+	useEffect(() => { selectedMatchupRef.current = selectedMatchup; }, [selectedMatchup]);
+
+	// When the parent bumps refreshToken (after save/delete), reset completion status
+	// and re-trigger the fetch by re-opening the selected matchup's subdivision (even if
+	// the sidenav was collapsed via collapseOnSelection) plus any other open subdivisions.
+	useEffect(() => {
+		if (!refreshToken) return;
+		setCompletionMap({});
+		requestedStatusRef.current.clear();
+		setOpenSubdivisions(prev => {
+			const next = { ...prev };
+			// Always ensure the currently-selected matchup's subdivision is open so status re-fetches
+			const sm = selectedMatchupRef.current;
+			if (sm) {
+				const key = `${sm.divisionName}-${sm.subdivisionName}`;
+				next[key] = true;
+				setOpenDivisions(d => ({ ...d, [sm.divisionName]: true }));
+			}
+			return next;
+		});
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [refreshToken]);
 
 	const toggleDivision = (division: string) => setOpenDivisions(prev => ({ ...prev, [division]: !prev[division] }));
 	const toggleSubdivision = (division: string, subdivision: string) =>
@@ -246,25 +271,6 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 		return <div className="w-64 border-r h-full flex items-center justify-center p-4"><p className="text-muted-foreground text-center">Select a week to display weekly scoresheets...</p></div>;
 	}
 
-	const subdivisionLoaded = (divisionName: string, subdivisionName: string) => {
-		const games = data[divisionName][subdivisionName];
-		return Object.keys(games).every(gn => {
-			const g = games[gn];
-			const letterKey = `${divisionName}-${subdivisionName}-${g.homeTeamLetter}-${g.awayTeamLetter}`;
-			if (isByeMatchup({
-				homeTeamId: g.homeTeamId,
-				awayTeamId: g.awayTeamId,
-				homeTeamLetter: g.homeTeamLetter,
-				awayTeamLetter: g.awayTeamLetter,
-			})) {
-				// Bye matchups are loaded once their letter-key status has been fetched
-				return completionMap[letterKey] !== undefined;
-			}
-			const idKey = g.homeTeamId && g.awayTeamId ? `${divisionName}-${subdivisionName}-${g.homeTeamId}-${g.awayTeamId}` : null;
-			return (idKey !== null && completionMap[idKey] !== undefined) || completionMap[letterKey] !== undefined;
-		});
-	};
-
 	return (
 		<div className="w-64">
 			<ScrollArea className="h-full">
@@ -280,7 +286,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 							<CollapsibleContent className="ml-4 mt-1 space-y-1">
 								{Object.keys(data[divisionName]).map(subdivisionName => {
 									const subdivKey = `${divisionName}-${subdivisionName}`;
-									const loaded = subdivisionLoaded(divisionName, subdivisionName);
+
 									const gamesObj = data[divisionName][subdivisionName];
 									return (
 										<Collapsible key={subdivKey} open={openSubdivisions[subdivKey]} onOpenChange={() => toggleSubdivision(divisionName, subdivisionName)} className="pb-1">
@@ -342,7 +348,18 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 															selectedMatchup.awayTeamLetter === game.awayTeamLetter
 														);
 													})();
-													return (
+													// Determine the completion status lookup key for this game
+												const gameStatusKey = (() => {
+													if (isBye) return `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`;
+													const idKey = game.homeTeamId && game.awayTeamId
+														? `${divisionName}-${subdivisionName}-${game.homeTeamId}-${game.awayTeamId}`
+														: null;
+													return idKey ?? `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`;
+												})();
+												const gameStatusKnown = completionMap[gameStatusKey] !== undefined;
+												const gameCompleted = completionMap[gameStatusKey] === true;
+
+												return (
 														<Button
 															key={`${subdivKey}-${gameNumber}`}
 															variant="ghost"
@@ -369,20 +386,11 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 														>
 															<div className="flex items-center gap-2">
 																<span>{displayText}</span>
-																{loaded && (() => {
-																	let lookupKey: string;
-																	if (isBye) {
-																		// Bye matchups are keyed by letters (one teamId is "0")
-																		lookupKey = `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`;
-																	} else {
-																		const idKey = game.homeTeamId && game.awayTeamId ? `${divisionName}-${subdivisionName}-${game.homeTeamId}-${game.awayTeamId}` : null;
-																		lookupKey = idKey ?? `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`;
-																	}
-																	const completed = completionMap[lookupKey] === true;
-																	return completed
+																{gameStatusKnown && (
+																	gameCompleted
 																		? <CheckCircle className="h-4 w-4 text-green-500" />
-																		: <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-																})()}
+																		: <AlertTriangle className="h-4 w-4 text-yellow-500" />
+																)}
 															</div>
 														</Button>
 													);

@@ -135,27 +135,46 @@ export default async function handler(
 			});
 		}
 	} else if (req.method === "DELETE") {
-		try {
-			const data = req.body as MentionPlayerHistory;
-			const query = `DELETE FROM public.leda_player_mention_history WHERE "mentionId" = $1 and "seasonCode" = $2 and "weekNum" = $3 and "ledaId" = $4 and "teamId" = $5;`;
-			const values = [
-				data.mentionId,
-				data.seasonCode,
-				data.weekNum,
-				data.ledaId,
-				data.teamId,
-			];
+		// Bulk delete by matchup (seasonCode + weekNum + homeTeamId + awayTeamId)
+		if (req.query.seasonCode && req.query.weekNum && req.query.homeTeamId && req.query.awayTeamId) {
+			try {
+				const result = await query(
+					`DELETE FROM public.leda_player_mention_history WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "teamId" IN ($3, $4)`,
+					[
+						req.query.seasonCode as string,
+						req.query.weekNum as string,
+						req.query.homeTeamId as string,
+						req.query.awayTeamId as string,
+					]
+				);
+				res.status(200).json({ message: "Mention history deleted successfully", result });
+			} catch (error) {
+				res.status(500).json({ message: "Failed to delete mention history", error });
+			}
+		} else {
+			// Single mention delete by ID (existing behaviour)
+			try {
+				const data = req.body as MentionPlayerHistory;
+				const q = `DELETE FROM public.leda_player_mention_history WHERE "mentionId" = $1 and "seasonCode" = $2 and "weekNum" = $3 and "ledaId" = $4 and "teamId" = $5;`;
+				const values = [
+					data.mentionId,
+					data.seasonCode,
+					data.weekNum,
+					data.ledaId,
+					data.teamId,
+				];
 
-			const result = await queryPost(query, values);
-			res.status(200).json({
-				message: "Mention history deleted successfully",
-				result,
-			});
-		} catch (error) {
-			res.status(500).json({
-				message: "Failed to delete mention history",
-				error,
-			});
+				const result = await queryPost(q, values);
+				res.status(200).json({
+					message: "Mention history deleted successfully",
+					result,
+				});
+			} catch (error) {
+				res.status(500).json({
+					message: "Failed to delete mention history",
+					error,
+				});
+			}
 		}
 	} else {
 		res.status(405).json({

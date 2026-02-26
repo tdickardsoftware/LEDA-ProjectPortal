@@ -754,6 +754,7 @@ export type WeeklyScoresheetsTeamInfo = {
 	teamId: number;
 	teamName: string;
 	teamLetter: string;
+	teamLabel: string;
 	opposingTeamId: number;
 	penalties: JSON;
 }

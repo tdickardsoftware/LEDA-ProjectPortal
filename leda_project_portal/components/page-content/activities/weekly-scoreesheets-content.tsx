@@ -23,7 +23,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import WeekSelector from "@/components/ui/week-selector";
-import { teamRoute, playerRoute, playerBatchRoute, mentionPlayerHistoryRoute, rosterTeamViewRoute, memberInfoRoute } from "@/lib/apiRoutes";
 import FolderTab, { FolderTabMed } from "@/components/ui/folder-tab";
 import { Player } from "@/lib/definitions";
 import {
@@ -37,450 +36,45 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import SideNav from "./weekly-scoresheet-sidenav";
 import PenaltyAddForm from "@/components/forms/activities/weekly-scoresheet-add-penalty-form";
-import { Team, TeamGameData } from "@/lib/weekly-scoresheet-definitions";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
-import MentionSelector from "@/components/ui/mentions-selector";
+import { TeamGameData } from "@/lib/weekly-scoresheet-definitions";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 // Import React Query hooks
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
-import { useForm, FormProvider } from "react-hook-form";
+import {
+	fetchRosterTeamId,
+	fetchTeamMembers,
+	fetchTeamInfoV2,
+	fetchGameInfoV2,
+	fetchPlayersBatch,
+	savePlayerPoints,
+	saveGameInfo,
+	saveWeeklyTeamPoints,
+	saveWeeklyPlayerPoints,
+	saveTeamInfo,
+	deleteGameInfo,
+	deleteTeamInfo,
+	deletePlayerInfoForTeam,
+	createMentionHistory,
+	updateMentionHistory,
+	deleteMentionHistory,
+	deleteMentionsByMatchup,
+	recalculateAfterDelete,
+	weeklyScoresheetsV2PlayersRoute,
+	weeklyScoresheetsV2GameInfoRoute,
+} from "@/lib/weeklyScoresheetsApi";
+import MentionSelectorWrapper from "@/components/ui/mention-selector-wrapper";
+import PenaltyAccordion from "@/components/ui/penalty-accordion";
+import TeamPlayerTable from "@/components/ui/team-player-table";
 
-// Removed legacy deep merge and schedule conversion utilities (normalized model)
 
-// Utility function to check if all matchups are filled out and valid
-// Deprecated: automatic validation replaced by manual completion control
-// (Removed old misplaced fetch code that caused syntax errors.)
 
-// Removed legacy generateEmptyMatchupData; now relying solely on V2 baselines
 
-const createMentionHistory = async (data: {
-	ledaId: string;
-	mentionId: string;
-	mentionCode: string;
-	mentionDesc: string;
-	mentionPoints: number;
-	seasonCode: string;
-	weekNum: number;
-	notes: string;
-	count?: number;
-	teamId?: string;
-}) => {
-	const response = await fetchWithSession(mentionPlayerHistoryRoute, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			...data,
-			count: data.count ?? 0,
-		}),
-	});
-	return response.json();
-};
 
-	// V2 API routes (local constants)
-	const weeklyScoresheetsV2PlayersRoute =
-		"/api/activities/scoresheets/weeklyScoresheetsV2/players";
-	const weeklyScoresheetsV2GameInfoRoute =
-		"/api/activities/scoresheets/weeklyScoresheetsV2/gameInfo";
-	const weeklyScoresheetsV2TeamInfoRoute =
-		"/api/activities/scoresheets/weeklyScoresheetsV2/teamInfo";
 
-	// Legacy aggregate points endpoints (must remain in use for leaderboards/history)
-	const weeklyPlayerPointsRoute = "/api/activities/scoresheets/playerPoints"; // expects PlayerPoints shape
-	const weeklyTeamPointsRoute = "/api/activities/scoresheets/teamPoints"; // expects TeamPoints shape
 
-	// Data fetchers
-	// Removed legacy schedule fetch (SideNav handles V2 matchups)
 
-	// Removed legacy fetchScoresheet
-
-	const fetchTeam = async (teamId: string) => {
-		const url = `${teamRoute}?ledaId=${encodeURIComponent(teamId)}`;
-		const response = await fetchWithSession(url, { method: "GET" });
-		if (response.status === 204 || response.status === 404) return null;
-		if (!response.ok) return null;
-		return response.json();
-	};
-
-	const fetchPlayer = async (playerId: string | number) => {
-		const url = `${playerRoute}?ledaId=${encodeURIComponent(
-			String(playerId)
-		)}`;
-		const response = await fetchWithSession(url, { method: "GET" });
-		if (response.status === 204 || response.status === 404) return null;
-		if (!response.ok) return null;
-		return response.json();
-	};
-
-	const fetchPlayersBatch = async (playerIds: Array<string | number>) => {
-		const normalized = playerIds.map((id) => String(id)).filter(Boolean);
-		const response = await fetchWithSession(playerBatchRoute, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ playerIds: normalized }),
-		});
-		if (!response.ok) return {} as Record<string, Player | null>;
-		return response.json() as Promise<Record<string, Player | null>>;
-	};
-
-	const fetchRosterTeamId = async ({
-		seasonCode,
-		division,
-		subdivision,
-		teamLetter,
-	}: {
-		seasonCode: string;
-		division: string;
-		subdivision: string;
-		teamLetter: string;
-	}) => {
-		const url = `${rosterTeamViewRoute}?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}&teamLetter=${encodeURIComponent(teamLetter)}`;
-		const res = await fetchWithSession(url, { method: "GET" });
-		if (res.status === 204 || res.status === 404) return null;
-		if (!res.ok) return null;
-		const data = await res.json();
-		return data[0]?.teamId || data[0]?.ledaid || data[0]?.ledaId || null;
-	};
-
-	const fetchTeamMembers = async (teamId: string) => {
-		const url = `${memberInfoRoute}?ledaId=${encodeURIComponent(teamId)}`;
-		const res = await fetchWithSession(url, { method: "GET" });
-		if (res.status === 204 || res.status === 404) return [];
-		if (!res.ok) return [];
-		return res.json();
-	};
-
-	const fetchTeamInfoV2 = async ({
-		seasonCode,
-		weekNum,
-		division,
-		subdivision,
-		teamLetter,
-	}: { seasonCode: string; weekNum: string; division: string; subdivision: string; teamLetter: string; }) => {
-		const url = `${weeklyScoresheetsV2TeamInfoRoute}?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}&teamLetter=${encodeURIComponent(teamLetter)}`;
-		const res = await fetchWithSession(url, { method: "GET" });
-		if (res.status === 204 || res.status === 404) return null;
-		if (!res.ok) return null;
-		return res.json();
-	};
-
-	const fetchGameInfoV2 = async ({
-		seasonCode,
-		weekNum,
-		division,
-		subdivision,
-		homeTeamId,
-		awayTeamId,
-	}: {
-		seasonCode: string;
-		weekNum: string;
-		division: string;
-		subdivision: string;
-		homeTeamId: string;
-		awayTeamId: string;
-	}) => {
-		const url = `${weeklyScoresheetsV2GameInfoRoute}?seasonCode=${encodeURIComponent(
-			seasonCode
-		)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(
-			division
-		)}&subdivision=${encodeURIComponent(
-			subdivision
-		)}&homeTeamId=${encodeURIComponent(
-			homeTeamId
-		)}&awayTeamId=${encodeURIComponent(awayTeamId)}`;
-		const res = await fetchWithSession(url, { method: "GET" });
-		if (res.status === 204 || res.status === 404) return null;
-		if (!res.ok) return null;
-		return res.json();
-	};
-
-	// Mutations helpers for V2 tables
-	const savePlayerPoints = async ({
-		seasonCode,
-		weekNum,
-		division,
-		subdivision,
-		ledaId,
-		teamId,
-		gameStats,
-	}: {
-		seasonCode: string;
-		weekNum: number;
-		division: string;
-		subdivision: string;
-		ledaId: string;
-		teamId: string;
-		gameStats: Record<string, boolean>;
-	}) => {
-		const response = await fetchWithSession(
-			weeklyScoresheetsV2PlayersRoute,
-			{
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					seasonCode,
-					weekNum,
-					division,
-					subdivision,
-					ledaId,
-					teamId,
-					gameStats,
-				}),
-			}
-		);
-		return response.json();
-	};
-
-	const saveGameInfo = async ({
-		seasonCode,
-		weekNum,
-		division,
-		subdivision,
-		homeTeamId,
-		awayTeamId,
-		homePoints,
-		awayPoints,
-		completed,
-		gameInfo,
-	}: {
-		seasonCode: string;
-		weekNum: number;
-		division: string;
-		subdivision: string;
-		homeTeamId: string;
-		awayTeamId: string;
-		homePoints: number;
-		awayPoints: number;
-		completed: boolean;
-		gameInfo: Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }>;
-	}) => {
-		const response = await fetchWithSession(
-			weeklyScoresheetsV2GameInfoRoute,
-			{
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					seasonCode,
-					weekNum,
-					division,
-					subdivision,
-					homeTeamId,
-					awayTeamId,
-					homePoints,
-					awayPoints,
-					completed,
-					gameInfo,
-				}),
-			}
-		);
-		return response.json();
-	};
-
-	// Legacy weekly cumulative team points upsert (stores rolling totals)
-	const saveWeeklyTeamPoints = async ({
-		seasonCode,
-		weekNum,
-		division,
-		subdivision,
-		ledaId,
-		totalPoints,
-	}: {
-		seasonCode: string;
-		weekNum: number;
-		division: string;
-		subdivision: string;
-		ledaId: string; // team ID
-		totalPoints: number; // this week's points before cumulative calc (server derives prev + new)
-	}) => {
-		const res = await fetchWithSession(weeklyTeamPointsRoute, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ seasonCode, weekNum, division, subdivision, ledaId, totalPoints }),
-		});
-		return res.json();
-	};
-
-	// Legacy weekly cumulative player points upsert
-	// ASSUMPTION: A player's weekly points = number of games participated (boolean true in gameStats)
-	// If a different formula (e.g., includes mentions), adjust here.
-	const saveWeeklyPlayerPoints = async ({
-		seasonCode,
-		weekNum,
-		division,
-		subdivision,
-		ledaId,
-		teamLedaId,
-		totalPoints,
-	}: {
-		seasonCode: string;
-		weekNum: number;
-		division: string;
-		subdivision: string;
-		ledaId: string; // player ID
-		teamLedaId: string; // team ID
-		totalPoints: number; // this week's points
-	}) => {
-		const res = await fetchWithSession(weeklyPlayerPointsRoute, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ seasonCode, weekNum, division, subdivision,ledaId, teamLedaId, totalPoints }),
-		});
-		return res.json();
-	};
-
-const updateMentionHistory = async (data: {
-	ledaId: string;
-	mentionId: string;
-	mentionCode: string;
-	mentionDesc: string;
-	mentionPoints: number;
-	seasonCode: string;
-	weekNum: number;
-	notes: string;
-	count?: number;
-	teamId?: string;
-}) => {
-	const response = await fetchWithSession(mentionPlayerHistoryRoute, {
-		method: "PUT",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			...data,
-			count: data.count ?? 0,
-		}),
-	});
-	return response.json();
-};
-
-const deleteGameInfo = async ({
-	seasonCode,
-	weekNum,
-	division,
-	subdivision,
-	homeTeamId,
-	awayTeamId,
-}: {
-	seasonCode: string;
-	weekNum: string | number;
-	division: string;
-	subdivision: string | number;
-	homeTeamId: string;
-	awayTeamId: string;
-}) => {
-	const url = `${weeklyScoresheetsV2GameInfoRoute}?seasonCode=${encodeURIComponent(String(seasonCode))}&weekNum=${encodeURIComponent(String(weekNum))}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(String(subdivision))}&homeTeamId=${encodeURIComponent(homeTeamId)}&awayTeamId=${encodeURIComponent(awayTeamId)}`;
-	const res = await fetchWithSession(url, { method: "DELETE" });
-	return res.json();
-};
-
-const saveTeamInfo = async ({
-	seasonCode,
-	weekNum,
-	division,
-	subdivision,
-	home,
-	teamId,
-	teamName,
-	teamLetter,
-	opposingTeamId,
-	penalties,
-}: {
-	seasonCode: string;
-	weekNum: number;
-	division: string;
-	subdivision: string;
-	home: boolean;
-	teamId: string;
-	teamName: string;
-	teamLetter: string;
-	opposingTeamId: string;
-	penalties: Record<string, { penaltyCode: string; points: number; notes?: string }>;
-}) => {
-	const response = await fetchWithSession(weeklyScoresheetsV2TeamInfoRoute, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-			seasonCode,
-			weekNum,
-			division,
-			subdivision,
-			home,
-			teamId,
-			teamName,
-			teamLetter,
-			opposingTeamId,
-			penalties,
-		}),
-	});
-	return response.json();
-};
-
-const deleteMentionHistory = async (data: {
-	ledaId: string;
-	mentionId: string;
-	mentionCode: string;
-	mentionDesc: string;
-	mentionPoints: number;
-	seasonCode: string;
-	weekNum: number;
-	notes: string;
-	teamId?: string;
-}) => {
-	const response = await fetchWithSession(mentionPlayerHistoryRoute, {
-		method: "DELETE",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(data),
-	});
-	return response.json();
-};
-
-// Simple wrapper component for MentionSelector that doesn't require React Hook Form
-function MentionSelectorWrapper({ 
-	onMentionChange, 
-	initialValue 
-}: { 
-	onMentionChange: (value: {
-		mentionCode: string;
-		desc: string;
-		points: string;
-		mentionBasis: string;
-	}) => void;
-	initialValue?: {
-		mentionCode: string;
-		desc: string;
-		points: string;
-		mentionBasis: string;
-	} | null;
-}) {
-	// Use the imported useForm hook
-	const form = useForm({
-		defaultValues: {
-			mentionData: initialValue || {}
-		}
-	});
-
-	return (
-		<FormProvider {...form}>
-			<MentionSelector
-				control={form.control}
-				name="mentionData"
-				label=""
-				disabled={false}
-				handleMentionChange={onMentionChange}
-			/>
-		</FormProvider>
-	);
-}
 
 export default function WeeklyScoresheetsContent({
 	renderSeasonCode,
@@ -507,6 +101,8 @@ export default function WeeklyScoresheetsContent({
 	const [selectedAwayTeamId, setSelectedAwayTeamId] = useState<string>("");
 	// Token to force refetch of player game-stats even if React Query cache considers data fresh
 	const [matchupLoadToken, setMatchupLoadToken] = useState<number>(0);
+	// Token to force the sidenav to re-fetch completion statuses after save/delete
+	const [sidenavRefreshToken, setSidenavRefreshToken] = useState<number>(0);
 
 	// Game data state
 	const [homeTeamGameData, setHomeTeamGameData] = useState<TeamGameData>({});
@@ -846,9 +442,21 @@ export default function WeeklyScoresheetsContent({
 		mutationFn: deleteMentionHistory,
 	});
 
+	const deleteMentionsByMatchupMutation = useMutation({
+		mutationFn: deleteMentionsByMatchup,
+	});
+
+	const recalculateAfterDeleteMutation = useMutation({
+		mutationFn: recalculateAfterDelete,
+	});
+
 	// Delete mutations for normalized clear
 	const deleteGameInfoMutation = useMutation({
 		mutationFn: deleteGameInfo,
+	});
+
+	const deleteTeamInfoMutation = useMutation({
+		mutationFn: deleteTeamInfo,
 	});
 
 	const deletePlayerInfoForTeam = async ({
@@ -1011,6 +619,7 @@ const confirmPendingChangesPlaceholder = () => true;
 						teamId: selectedHomeTeamId,
 						teamName: homeTeamName || "",
 						teamLetter: selectedHomeLetter,
+						teamLabel: `${selectedDivision.charAt(0)}${selectedSubdivision}${selectedHomeLetter}`,
 						opposingTeamId: selectedAwayTeamId,
 						penalties: homePenalties,
 					})
@@ -1027,6 +636,7 @@ const confirmPendingChangesPlaceholder = () => true;
 						teamId: selectedAwayTeamId,
 						teamName: awayTeamName || "",
 						teamLetter: selectedAwayLetter,
+						teamLabel: `${selectedDivision.charAt(0)}${selectedSubdivision}${selectedAwayLetter}`,
 						opposingTeamId: selectedHomeTeamId,
 						penalties: awayPenalties,
 					})
@@ -1156,10 +766,15 @@ const confirmPendingChangesPlaceholder = () => true;
 			};
 			setLastSavedSnapshot(newSnap);
 			if (!originalMatchupSnapshot) setOriginalMatchupSnapshot(newSnap);
+			// Refresh sidenav and completion indicators
+			queryClient.invalidateQueries({ queryKey: ["v2-matchups", seasonCode, selectedWeek] });
+			queryClient.invalidateQueries({ queryKey: ["weekCompleted", seasonCode] });
+			queryClient.invalidateQueries({ queryKey: ["byeWeeksCompleted", seasonCode, selectedWeek] });
+			setSidenavRefreshToken(prev => prev + 1);
 		} catch (err) {
 			console.error("Error saving matchup", err);
 		}
-	}, [seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, selectedAwayTeamId, homeTeamName, awayTeamName, selectedHomeLetter, selectedAwayLetter, homePenalties, awayPenalties, homeWins, homePoints, awayPoints, calculatePoints, saveTeamInfoMutation, saveGameInfoMutation, homeTeamGameData, awayTeamGameData, savePlayerPointsMutation, saveWeeklyTeamPointsMutation, saveWeeklyPlayerPointsMutation, originalMatchupSnapshot, lastSavedSnapshot]);
+	}, [seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, selectedAwayTeamId, homeTeamName, awayTeamName, selectedHomeLetter, selectedAwayLetter, homePenalties, awayPenalties, homeWins, homePoints, awayPoints, calculatePoints, saveTeamInfoMutation, saveGameInfoMutation, homeTeamGameData, awayTeamGameData, savePlayerPointsMutation, saveWeeklyTeamPointsMutation, saveWeeklyPlayerPointsMutation, originalMatchupSnapshot, lastSavedSnapshot, queryClient]);
 		
 	// removed stray fragment from prior handler
 
@@ -2172,6 +1787,7 @@ const FolderTabSkeleton = () => (
 					seasonCode={seasonCode}
 					weekNum={selectedWeek}
 					handleMatchupSelection={handleMatchupSelection}
+					refreshToken={sidenavRefreshToken}
 				/>
 				<div className="flex-1 p-4 overflow-auto">
 					{!matchSelected ? (
@@ -2292,183 +1908,21 @@ const FolderTabSkeleton = () => (
 														/>
 													</DialogContent>
 												</Dialog>
-												{/* Penalties Accordion for Home Team - Only render if penalties exist */}
-												{Object.keys(homePenalties).length > 0 && (
-														<Accordion
-															type="single"
-															collapsible
-															className="w-full mt-2"
-														>
-															<AccordionItem value="penalties">
-																<AccordionTrigger className="text-sm font-medium text-red-600 dark:text-red-400">
-																	View Team
-																	Penalties
-																</AccordionTrigger>
-																<AccordionContent>
-																	<div className="space-y-2 p-2 border rounded-md">
-																		{Object.entries(homePenalties).map(
-																			([
-																				id,
-																				penalty,
-																			]) => (
-																				<div
-																					key={
-																						id
-																					}
-																					className="flex justify-between items-start border-b pb-2 group relative"
-																				>
-																					<div>
-																						<span className="font-semibold">
-																							Code:{" "}
-																							{
-																								penalty.penaltyCode
-																							}
-																						</span>
-																						<p className="text-sm text-muted-foreground">
-																							{
-																								penalty.notes
-																							}
-																						</p>
-																					</div>
-																					<div className="flex items-center">
-																						<span className="text-red-600 dark:text-red-400 font-bold">
-																							{
-																								penalty.points
-																							}{" "}
-																							pts
-																						</span>
-																						<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-																							<Pencil
-																								className="h-4 w-4 text-blue-500 dark:text-blue-400 cursor-pointer hover:text-blue-700 dark:hover:text-blue-300"
-																								onClick={() =>
-																									handlePenaltyEditing(
-																										selectedHomeTeamId,
-																										id
-																									)
-																								}
-																							/>
-																							<X
-																								className="h-4 w-4 text-red-500 dark:text-red-400 cursor-pointer hover:text-red-700 dark:hover:text-red-300"
-																								onClick={() =>
-																									handlePenaltyRemoval(
-																										selectedHomeTeamId,
-																										id
-																									)
-																								}
-																							/>
-																						</div>
-																					</div>
-																				</div>
-																			)
-																		)}
-																	</div>
-																</AccordionContent>
-															</AccordionItem>
-														</Accordion>
-													)}
+												<PenaltyAccordion
+													teamId={selectedHomeTeamId}
+													penalties={homePenalties}
+													onEdit={handlePenaltyEditing}
+													onRemove={handlePenaltyRemoval}
+												/>
 											</div>
-											<div className="overflow-x-auto">
-												<Table>
-													<TableHeader>
-														<TableRow>
-															<TableHead>
-																Player Name
-															</TableHead>
-															<TableHead />
-															{Array.from({
-																length: 11,
-															}).map((_, i) => (
-																<TableHead
-																	key={i}
-																	className="text-center"
-																>
-																	Game {i + 1}
-																</TableHead>
-															))}
-														</TableRow>
-													</TableHeader>
-													<TableBody>
-														{homeTeamPlayerInformation?.map(
-															(player) => (
-																<TableRow
-																	key={
-																		player.ledaId
-																	}
-																>
-																	<TableCell className="w-fit flex items-center gap-2">
-																		<span>
-																			{
-																				player.fullName
-																			}
-																		</span>
-																	</TableCell>
-																	<TableCell>
-																		<Button
-																			variant="outline"
-																			className="text-xs px-2 py-1 rounded-md border-border hover:bg-muted"
-																			onClick={() =>
-																				handleMentionClick(
-																					String(
-																						player.ledaId
-																					),
-																					selectedHomeTeamId
-																				)
-																			}
-																		>
-																			<span>
-																				Mentions
-																			</span>
-																		</Button>
-																	</TableCell>
-																	{Array.from(
-																		{
-																			length: 11,
-																		}
-																	).map(
-																		(
-																			_,
-																			i
-																		) => {
-																			const gameKey = `Game ${
-																				i +
-																				1
-																			}`;
-																			return (
-																				<TableCell
-																					key={
-																						i
-																					}
-																					className="text-center cursor-pointer"
-																					onClick={() =>
-																						handleGameToggle(
-																							"home",
-																							String(
-																								player.ledaId
-																							),
-																							i
-																						)
-																					}
-																				>
-																					<div className="border-2 border-dashed border-border w-8 h-8 mx-auto flex items-center justify-center">
-																						{homeTeamGameData[
-																							player
-																								.ledaId
-																						]?.[
-																							gameKey
-																						] && (
-																							<X className="h-5 w-5 text-foreground" />
-																						)}
-																					</div>
-																				</TableCell>
-																			);
-																		}
-																	)}
-																</TableRow>
-															)
-														)}
-													</TableBody>
-												</Table>
-											</div>
+											<TeamPlayerTable
+												players={homeTeamPlayerInformation ?? []}
+												teamType="home"
+												teamId={selectedHomeTeamId}
+												gameData={homeTeamGameData}
+												onGameToggle={handleGameToggle}
+												onMentionClick={handleMentionClick}
+											/>
 										</>
 									)}
 								</FolderTab>
@@ -2555,173 +2009,20 @@ const FolderTabSkeleton = () => (
 												</DialogContent>
 											</Dialog>
 
-											{/* Penalties Accordion for Away Team - Only render if penalties exist */}
-											{Object.keys(awayPenalties).length > 0 && (
-													<Accordion
-														type="single"
-														collapsible
-														className="w-full mt-2"
-													>
-														<AccordionItem value="penalties">
-															<AccordionTrigger className="text-sm font-medium text-red-600 dark:text-red-400">
-																View Team
-																Penalties
-															</AccordionTrigger>
-															<AccordionContent>
-																<div className="space-y-2 p-2 border rounded-md">
-																	{Object.entries(awayPenalties).map(
-																		([
-																			id,
-																			penalty,
-																		]) => (
-																			<div
-																				key={
-																					id
-																				}
-																				className="flex justify-between items-start border-b pb-2 group relative"
-																			>
-																				<div>
-																					<span className="font-semibold">
-																						Code:{" "}
-																						{
-																							penalty.penaltyCode
-																						}
-																					</span>
-																					<p className="text-sm text-muted-foreground">
-																						{
-																							penalty.notes
-																						}
-																					</p>
-																				</div>
-																				<div className="flex items-center">
-																					<span className="text-red-600 dark:text-red-400 font-bold">
-																						{
-																							penalty.points
-																						}{" "}
-																						pts
-																					</span>
-																					<div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-																						<Pencil
-																							className="h-4 w-4 text-blue-500 dark:text-blue-400 cursor-pointer hover:text-blue-700 dark:hover:text-blue-300"
-																							onClick={() => handlePenaltyEditing(selectedAwayTeamId, id)}
-																						/>
-																						<X
-																							className="h-4 w-4 text-red-500 dark:text-red-400 cursor-pointer hover:text-red-700 dark:hover:text-red-300"
-																							onClick={() => handlePenaltyRemoval(selectedAwayTeamId, id)}
-																						/>
-																					</div>
-																				</div>
-																			</div>
-																		)
-																	)}
-																</div>
-															</AccordionContent>
-														</AccordionItem>
-													</Accordion>
-												)}
-											<div className="overflow-x-auto">
-												<Table>
-													<TableHeader>
-														<TableRow>
-															<TableHead>
-																Player Name
-															</TableHead>
-															<TableHead />
-															{Array.from({
-																length: 11,
-															}).map((_, i) => (
-																<TableHead
-																	key={i}
-																	className="text-center"
-																>
-																	Game {i + 1}
-																</TableHead>
-															))}
-														</TableRow>
-													</TableHeader>
-													<TableBody>
-														{awayTeamPlayerInformation?.map(
-															(player) => (
-																<TableRow
-																	key={
-																		player.ledaId
-																	}
-																>
-																	{/* TODO Implement a mentions button next to the name */}
-																	<TableCell className="w-fit flex items-center gap-2">
-																		<span>
-																			{
-																				player.fullName
-																			}
-																		</span>
-																	</TableCell>
-																	<TableCell>
-																		<Button
-																			variant="outline"
-																			className="text-xs px-2 py-1 rounded-md border-border hover:bg-muted"
-																			onClick={() =>
-																				handleMentionClick(
-																					String(
-																						player.ledaId
-																					),
-																					selectedAwayTeamId
-																				)
-																			}
-																		>
-																			<span>
-																				Mentions
-																			</span>
-																		</Button>
-																	</TableCell>
-																	{Array.from(
-																		{
-																			length: 11,
-																		}
-																	).map(
-																		(
-																			_,
-																			i
-																		) => {
-																			const gameKey = `Game ${
-																				i +
-																				1
-																			}`;
-																			return (
-																				<TableCell
-																					key={
-																						i
-																					}
-																					className="text-center cursor-pointer"
-																					onClick={() =>
-																						handleGameToggle(
-																							"away",
-																							String(
-																								player.ledaId
-																							),
-																							i
-																						)
-																					}
-																				>
-																					<div className="border-2 border-dashed border-border w-8 h-8 mx-auto flex items-center justify-center">
-																						{awayTeamGameData[
-																							player
-																								.ledaId
-																						]?.[
-																							gameKey
-																						] && (
-																							<X className="h-5 w-5 text-foreground" />
-																						)}
-																					</div>
-																				</TableCell>
-																			);
-																		}
-																	)}
-																</TableRow>
-															)
-														)}
-													</TableBody>
-												</Table>
-											</div>
+											<PenaltyAccordion
+												teamId={selectedAwayTeamId}
+												penalties={awayPenalties}
+												onEdit={handlePenaltyEditing}
+												onRemove={handlePenaltyRemoval}
+											/>
+											<TeamPlayerTable
+												players={awayTeamPlayerInformation ?? []}
+												teamType="away"
+												teamId={selectedAwayTeamId}
+												gameData={awayTeamGameData}
+												onGameToggle={handleGameToggle}
+												onMentionClick={handleMentionClick}
+											/>
 										</>
 									)}
 								</FolderTab>
@@ -2962,22 +2263,55 @@ const FolderTabSkeleton = () => (
 															homeTeamId: selectedHomeTeamId,
 															awayTeamId: selectedAwayTeamId,
 														});
+														await deleteTeamInfoMutation.mutateAsync({
+															seasonCode,
+															weekNum: selectedWeek,
+															division: selectedDivision,
+															subdivision: selectedSubdivision,
+															homeTeamId: selectedHomeTeamId,
+															awayTeamId: selectedAwayTeamId,
+														});
 														await deletePlayerInfoMutation.mutateAsync({ seasonCode, weekNum: selectedWeek, teamId: selectedHomeTeamId });
 														await deletePlayerInfoMutation.mutateAsync({ seasonCode, weekNum: selectedWeek, teamId: selectedAwayTeamId });
+														await deleteMentionsByMatchupMutation.mutateAsync({
+															seasonCode,
+															weekNum: selectedWeek,
+															homeTeamId: selectedHomeTeamId,
+															awayTeamId: selectedAwayTeamId,
+														});
+														// Recalculate cumulative points for all following weeks
+														await recalculateAfterDeleteMutation.mutateAsync({
+															seasonCode,
+															weekNum: selectedWeek,
+															division: selectedDivision,
+															subdivision: selectedSubdivision,
+															homeTeamId: selectedHomeTeamId,
+															awayTeamId: selectedAwayTeamId,
+														});
+														// Reset local UI state
+														setHomeTeamGameData({});
+														setAwayTeamGameData({});
+														setHomeWins(Array(11).fill(false));
+														setHomePoints(Array(11).fill(""));
+														setAwayPoints(Array(11).fill(""));
+														setHomePenalties({});
+														setAwayPenalties({});
+														setHomePenaltyTotal(0);
+														setAwayPenaltyTotal(0);
+														setIsMatchupCompleted(false);
+														setIsDataChanged(false);
+														setOriginalMatchupSnapshot(null);
+														setLastSavedSnapshot(null);
+														setMatchupLoadToken(prev => prev + 1);
+														// Refresh sidenav and completion indicators
+														queryClient.invalidateQueries({ queryKey: ["v2-matchups", seasonCode, selectedWeek] });
+														queryClient.invalidateQueries({ queryKey: ["weekCompleted", seasonCode] });
+														queryClient.invalidateQueries({ queryKey: ["byeWeeksCompleted", seasonCode, selectedWeek] });
+														setSidenavRefreshToken(prev => prev + 1);
 													} catch (e) {
 														console.error("Failed deleting matchup rows", e);
 													}
 												})();
-												// Reset local UI state
-												setHomeTeamGameData({});
-												setAwayTeamGameData({});
-												setHomeWins(Array(11).fill(false));
-												setHomePoints(Array(11).fill(""));
-												setAwayPoints(Array(11).fill(""));
-												setHomePenaltyTotal(0);
-												setAwayPenaltyTotal(0);
-												setIsMatchupCompleted(false);
-												setIsDataChanged(false);
 											}
 										}}
 										variant="destructive"
