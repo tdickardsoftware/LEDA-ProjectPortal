@@ -154,7 +154,44 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 					homeTeamLetter: g.homeTeamLetter,
 					awayTeamLetter: g.awayTeamLetter,
 				})) {
-					// Don't probe completion status for BYE matchups
+					// Probe completion status for bye matchups using the gameInfo endpoint
+					if (requestedStatusRef.current.has(letterStatusKey) || completionMap[letterStatusKey] !== undefined) return;
+					const homeIsBye = String(g.homeTeamLetter).toUpperCase() === "X" || String(g.homeTeamLetter).toUpperCase() === "BYE" || String(g.homeTeamId) === "0";
+					const activeTeamLetter = homeIsBye ? g.awayTeamLetter : g.homeTeamLetter;
+					let activeTeamId = homeIsBye ? (g.awayTeamId || "") : (g.homeTeamId || "");
+					if (!activeTeamId) {
+						try {
+							const schedRes = await fetchWithSession(
+								`/api/activities/schedule/subdivision?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}`,
+								{ method: 'GET' }
+							);
+							if (schedRes.ok) {
+								const schedData = await schedRes.json();
+								const subdivData = schedData?.scheduleData?.[divisionName]?.[subdivisionName];
+								if (subdivData?.[activeTeamLetter]) activeTeamId = subdivData[activeTeamLetter].teamId || "";
+							}
+						} catch { /* ignore */ }
+					}
+					if (!activeTeamId) {
+						setCompletionMap(prev => ({ ...prev, [letterStatusKey]: false }));
+						return;
+					}
+					requestedStatusRef.current.add(letterStatusKey);
+					const finalHomeTeamId = homeIsBye ? "0" : activeTeamId;
+					const finalAwayTeamId = homeIsBye ? activeTeamId : "0";
+					try {
+						const res = await fetchWithSession(
+							`/api/activities/scoresheets/weeklyScoresheetsV2/gameInfo?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&homeTeamId=${encodeURIComponent(finalHomeTeamId)}&awayTeamId=${encodeURIComponent(finalAwayTeamId)}&getStatus=true`,
+							{ method: 'GET' }
+						);
+						if (res.status === 200) {
+							const body = await res.json();
+							const completed = typeof body === 'boolean' ? body : (Array.isArray(body) ? !!body[0]?.completed : false);
+							setCompletionMap(prev => ({ ...prev, [letterStatusKey]: completed }));
+						} else if (res.status === 204) {
+							setCompletionMap(prev => ({ ...prev, [letterStatusKey]: false }));
+						}
+					} catch { /* ignore */ }
 					return;
 				}
 				if (!g.homeTeamId || !g.awayTeamId) {
@@ -213,14 +250,17 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 		const games = data[divisionName][subdivisionName];
 		return Object.keys(games).every(gn => {
 			const g = games[gn];
+			const letterKey = `${divisionName}-${subdivisionName}-${g.homeTeamLetter}-${g.awayTeamLetter}`;
 			if (isByeMatchup({
 				homeTeamId: g.homeTeamId,
 				awayTeamId: g.awayTeamId,
 				homeTeamLetter: g.homeTeamLetter,
 				awayTeamLetter: g.awayTeamLetter,
-			})) return true;
+			})) {
+				// Bye matchups are loaded once their letter-key status has been fetched
+				return completionMap[letterKey] !== undefined;
+			}
 			const idKey = g.homeTeamId && g.awayTeamId ? `${divisionName}-${subdivisionName}-${g.homeTeamId}-${g.awayTeamId}` : null;
-			const letterKey = `${divisionName}-${subdivisionName}-${g.homeTeamLetter}-${g.awayTeamLetter}`;
 			return (idKey !== null && completionMap[idKey] !== undefined) || completionMap[letterKey] !== undefined;
 		});
 	};
@@ -329,7 +369,20 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 														>
 															<div className="flex items-center gap-2">
 																<span>{displayText}</span>
-																{!isBye && loaded && (() => { const idKey = game.homeTeamId && game.awayTeamId ? `${divisionName}-${subdivisionName}-${game.homeTeamId}-${game.awayTeamId}` : null; const letterKey = `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`; const completed = idKey !== null ? completionMap[idKey] === true : completionMap[letterKey] === true; return completed ? <CheckCircle className="h-4 w-4 text-green-500" /> : <AlertTriangle className="h-4 w-4 text-yellow-500" />; })()}
+																{loaded && (() => {
+																	let lookupKey: string;
+																	if (isBye) {
+																		// Bye matchups are keyed by letters (one teamId is "0")
+																		lookupKey = `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`;
+																	} else {
+																		const idKey = game.homeTeamId && game.awayTeamId ? `${divisionName}-${subdivisionName}-${game.homeTeamId}-${game.awayTeamId}` : null;
+																		lookupKey = idKey ?? `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`;
+																	}
+																	const completed = completionMap[lookupKey] === true;
+																	return completed
+																		? <CheckCircle className="h-4 w-4 text-green-500" />
+																		: <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+																})()}
 															</div>
 														</Button>
 													);

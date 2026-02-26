@@ -36,7 +36,7 @@ export default async function handler(
 			const query = `
                 INSERT INTO public.leda_weekly_team_scores ("seasonCode", "weekNum", "division", "subdivision", "teamLedaId", "prevTotalPoints", "totalPoints")
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ON CONFLICT ("seasonCode", "weekNum", "teamLedaId")
+                ON CONFLICT ("seasonCode", "weekNum", "teamLedaId", "division", "subdivision")
                 DO UPDATE SET "totalPoints" = $7;
             `;
 			const values = [

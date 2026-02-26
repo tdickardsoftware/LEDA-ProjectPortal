@@ -1919,26 +1919,51 @@ const confirmPendingChangesPlaceholder = () => true;
 
 							// Determine the active (non-BYE) team
 							const activeTeamLetter = homeIsBye ? awayLetter : homeLetter;
-							const activeTeamId = homeIsBye ? awayTeamId : homeTeamId;
+							let resolvedActiveTeamId = homeIsBye ? awayTeamId : homeTeamId;
 
-							if (!activeTeamId) {
+							// Failover: if teamId not in schedule data, resolve from roster
+							// (mirrors the 204-fallback in handleMatchupSelection)
+							if (!resolvedActiveTeamId) {
+								const subdivisionNum = subdivisionName.replace('Subdivision ', '');
+								const resolved = await fetchRosterTeamId({
+									seasonCode,
+									division: divisionName,
+									subdivision: subdivisionNum,
+									teamLetter: activeTeamLetter,
+								});
+								resolvedActiveTeamId = resolved ?? "";
+							}
+
+							if (!resolvedActiveTeamId) {
 								console.error(`Could not resolve teamId for ${divisionName}-${subdivisionName}-${activeTeamLetter}`);
 								errorCount++;
 								continue;
 							}
 
-							// Fetch roster for the active team
+							const activeTeamId = resolvedActiveTeamId;
+							// Determine the final IDs to use when saving game info (BYE side = "0")
+							const finalHomeTeamId = homeIsBye ? "0" : activeTeamId;
+							const finalAwayTeamId = awayIsBye ? "0" : activeTeamId;
+
+							// Fetch existing V2 player records for the active team.
+							// If none are saved yet (204/404), fall back to the current roster
+							// members — the same failover used in handleMatchupSelection.
+							let players: Array<{ ledaId: string | number }> = [];
 							const playersRes = await fetchWithSession(
 								`${weeklyScoresheetsV2PlayersRoute}?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(selectedWeek)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&teamId=${encodeURIComponent(activeTeamId)}`,
 								{ method: 'GET' }
 							);
 
-							if (playersRes.status !== 200) {
+							if (playersRes.status === 200) {
+								players = await playersRes.json();
+							} else if (playersRes.status === 204 || playersRes.status === 404) {
+								// No V2 records yet — fall back to roster members
+								players = await fetchTeamMembers(activeTeamId);
+							} else {
+								console.error(`Unexpected status ${playersRes.status} fetching players for ${divisionName}-${subdivisionName}-${activeTeamLetter}`);
 								errorCount++;
 								continue;
 							}
-
-							const players = await playersRes.json();
 
 							// Create empty game stats
 							const emptyGameStats: Record<string, boolean> = {};
