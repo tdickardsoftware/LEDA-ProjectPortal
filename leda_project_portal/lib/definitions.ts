@@ -810,6 +810,14 @@ export type WeeklyScoresheetsByeWeeksProcessed = {
 	allByeWeeksProcessed: boolean;
 };
 //
+// Define type to identify the shape of our data from postgres for weekly scoresheets completed week
+//
+export type WeeklyScoresheetsCompletedWeek = {
+	seasonCode: string;
+	weekNum: number;
+	scoresheetsProcessed: boolean;
+};
+//
 // Define type to identify the shape of our data from postgres for weekly scoresheets scoresheet team info 
 //
 export type WeeklyScoresheetsScoresheetTeamInfo = {
