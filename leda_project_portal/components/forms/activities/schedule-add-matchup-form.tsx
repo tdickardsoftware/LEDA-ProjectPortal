@@ -176,12 +176,14 @@ export default function SchedulingAddMatchupForm({
 								disabled={true}
 								defaultId={selectedTeam}
 							/>
+						{!isByeWeek && (
 							<CheckboxDefault
 								control={form.control}
 								name="home"
 								label="Home Team?"
 								className="h-5 w-5"
 							/>
+						)}
 						</div>
 						<CheckboxDefault
 							control={form.control}

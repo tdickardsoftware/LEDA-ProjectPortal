@@ -187,12 +187,14 @@ export default function SchedulingEditMatchupForm({
 								disabled={true}
 								defaultId={teamId}
 							/>
-							<CheckboxDefault
-								control={form.control}
-								name="home"
-								label="Home Team?"
-								className="h-5 w-5"
-							/>
+							{!isByeWeek && (
+								<CheckboxDefault
+									control={form.control}
+									name="home"
+									label="Home Team?"
+									className="h-5 w-5"
+								/>
+							)}
 						</div>
 						{isCheckingPoints ? (
 							<div className="flex items-center gap-2">
