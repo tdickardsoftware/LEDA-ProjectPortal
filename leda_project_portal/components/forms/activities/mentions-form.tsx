@@ -213,9 +213,9 @@ export default function MentionForm({
 		points: string;
 		mentionBasis: string;
 	}) => {
-		// Parse points as integer and handle NaN case
+		// Parse points as integer; leave blank if 0 or invalid so the user can type their own value
 		const pointsValue = parseInt(value.points);
-		form.setValue("points", isNaN(pointsValue) ? undefined : pointsValue);
+		form.setValue("points", (isNaN(pointsValue) || pointsValue === 0) ? undefined : pointsValue);
 		form.setValue("mentionCode", value.mentionCode);
 		form.setValue("mentionDesc", value.desc);
 
@@ -250,24 +250,15 @@ export default function MentionForm({
 									<FormControl>
 										<Input
 											placeholder="Points"
-											type="number"
+											type="text"
+											inputMode="numeric"
+											pattern="[0-9]*"
 											{...field}
-											value={
-												field.value === undefined
-													? ""
-													: field.value
-											}
+											value={field.value === undefined ? "" : field.value}
 											onChange={(e) => {
 												const value = e.target.value;
 												if (/^\d*$/.test(value)) {
-													field.onChange(
-														value === ""
-															? undefined
-															: parseInt(
-																	value,
-																	10
-															  )
-													);
+													field.onChange(value === "" ? undefined : parseInt(value, 10));
 												}
 											}}
 										/>
@@ -286,24 +277,15 @@ export default function MentionForm({
 									<FormControl>
 										<Input
 											placeholder="Number of Darts"
-											type="number"
+											type="text"
+											inputMode="numeric"
+											pattern="[0-9]*"
 											{...field}
-											value={
-												field.value === undefined
-													? ""
-													: field.value
-											}
+											value={field.value === undefined ? "" : field.value}
 											onChange={(e) => {
 												const value = e.target.value;
 												if (/^\d*$/.test(value)) {
-													field.onChange(
-														value === ""
-															? undefined
-															: parseInt(
-																	value,
-																	10
-															  )
-													);
+													field.onChange(value === "" ? undefined : parseInt(value, 10));
 												}
 											}}
 										/>

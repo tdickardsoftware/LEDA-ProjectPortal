@@ -164,15 +164,16 @@ export default function PenaltyAddForm({
 									<FormControl>
 										<Input
 											placeholder="Points"
-											type="number"
+											type="text"
+											inputMode="numeric"
+											pattern="[0-9]*"
 											{...field}
 											value={field.value ?? ""}
 											onChange={(e) => {
-												field.onChange(
-													e.target.value === ""
-														? ""
-														: parseFloat(e.target.value)
-												);
+												const v = e.target.value;
+												if (/^\d*$/.test(v)) {
+													field.onChange(v === "" ? "" : parseInt(v, 10));
+												}
 											}}
 										/>
 									</FormControl>
