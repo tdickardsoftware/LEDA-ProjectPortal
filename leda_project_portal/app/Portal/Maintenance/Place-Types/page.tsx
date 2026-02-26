@@ -1,3 +1,7 @@
+/**
+ * Place Types maintenance page — server-rendered data table for managing
+ * venue/location category types. Supports add, edit, and delete operations.
+ */
 import { DataTable } from "@/components/datatable";
 import { placeTypeRoute } from "@/lib/apiRoutes";
 import { fetchPlaceTypes } from "@/lib/getData";

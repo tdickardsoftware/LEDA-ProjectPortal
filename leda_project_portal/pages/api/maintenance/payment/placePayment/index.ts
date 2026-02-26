@@ -1,3 +1,13 @@
+/**
+ * API route for managing place (bar/venue) payment history.
+ *
+ * GET  - Returns all place payment records; optionally filtered by ledaId.
+ *        Joins leda_place_info and leda_maint_seasons for display fields.
+ * POST - Inserts or updates a payment record. Handles Part/Bar payment logic:
+ *        marks paidOff status, updates leda_place_info.lastBarFeePayment, and
+ *        cascades to audit views via leda_place_paid_status.
+ * DELETE - Removes a payment record by paymentNbr and re-evaluates lastBarFeePayment.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PaymentHistory } from "@/lib/definitions";
@@ -6,6 +16,7 @@ import { requireApiSession } from "@/lib/require-session";
 
 // --- Helper Functions ---
 
+/** Returns the fiscal year string for a given season code. */
 async function getFiscalYear(seasonCode: string) {
 	const result = await query(
 		`SELECT "fiscalYear" FROM maint.leda_maint_seasons WHERE "seasonCode" = $1;`,
@@ -14,6 +25,7 @@ async function getFiscalYear(seasonCode: string) {
 	return result.rows[0]?.fiscalYear;
 }
 
+/** Updates leda_place_info.lastBarFeePayment to "PAID - <seasonCode> - <fiscalYear>" for the given place. */
 async function updateLastBarFeePayment(ledaId: string, seasonCode: string) {
 	const fiscalYear = await getFiscalYear(seasonCode);
 	if (fiscalYear) {
@@ -24,6 +36,7 @@ async function updateLastBarFeePayment(ledaId: string, seasonCode: string) {
 	}
 }
 
+/** Resets leda_place_info.lastBarFeePayment to 'UNPAID' when no paid season remains. */
 async function setBarFeeUnpaid(ledaId: string) {
 	await queryPost(
 		`UPDATE public.leda_place_info SET "lastBarFeePayment" = 'UNPAID' WHERE "ledaId" = $1;`,
@@ -31,6 +44,10 @@ async function setBarFeeUnpaid(ledaId: string) {
 	);
 }
 
+/**
+ * Returns the most recently paid season record for a place.
+ * Optionally excludes a specific season code (used when reverting a payment).
+ */
 async function getLastPaidBarSeasonInfo(
 	ledaId: string,
 	excludeSeasonCode?: string
@@ -48,6 +65,10 @@ async function getLastPaidBarSeasonInfo(
 	return result.rows[0];
 }
 
+/**
+ * Bulk-marks all unpaid Part payments for a place/season as paidOff = true.
+ * Returns the array of updated paymentNbr values.
+ */
 async function markAllUnpaidPartsPaid(
 	type: string,
 	seasonCode: string,

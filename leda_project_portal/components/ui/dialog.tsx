@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Dialog primitive wrapper with styled overlay, content, header, footer, title, and description sub-components. */
 "use client"
 
 import * as React from "react"

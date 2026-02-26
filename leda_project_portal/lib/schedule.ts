@@ -1,3 +1,13 @@
+/**
+ * Schedule-related TypeScript interfaces for the LEDA portal.
+ *
+ * Defines the nested UI-facing schedule data structures and the API
+ * response shapes consumed by schedule components and hooks.
+ *
+ * Note: The database stores schedule rows in a normalised format.
+ * The API transforms that data into the nested structure defined here
+ * for backward compatibility with existing UI components.
+ */
 // Note: These types represent the nested structure used by the UI.
 // The database now stores schedule data in normalized rows, but the API
 // transforms between normalized and nested formats for backward compatibility.

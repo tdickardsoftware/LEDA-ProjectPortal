@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * PlacePageContent
+ *
+ * Detail view for a single place (bar/venue) record. Displays place contact
+ * information and membership metadata in read-only cards.
+ *
+ * Toolbar actions (via `FolderTabMed`):
+ *   - Edit Place — opens `PlaceEditForm` in a dialog.
+ *   - Add Place Payment — opens `PaymentHistoryFormDialog`.
+ *   - Payment History — opens `PlacePaymentHistoryContent` in a dialog.
+ *   - Team History — opens `PlaceTeamHistoryContent` in a dialog.
+ */
+
 import { Place } from "@/lib/definitions";
 import {
 	Card,

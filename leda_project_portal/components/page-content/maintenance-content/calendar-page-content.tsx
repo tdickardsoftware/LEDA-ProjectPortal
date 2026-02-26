@@ -1,5 +1,19 @@
 "use client";
 
+/**
+ * CalendarPageContent
+ *
+ * Displays a react-big-calendar view of blocked dates (non-game dates such as
+ * holidays). Users can:
+ *   - Navigate by month/week/day to any year — the query key changes with
+ *     `currentYear` so only the viewed year's data is fetched.
+ *   - Add a new blocked date (date + description) via an add-date dialog.
+ *   - Delete a blocked date via a per-event delete button with a
+ *     confirmation dialog.
+ *
+ * Data mutations invalidate the `["calendar", currentYear]` query cache.
+ */
+
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useCalendarData } from "@/hooks/useCalendarData";
@@ -152,6 +166,7 @@ export default function CalendarPageContent() {
 		};
 	});
 
+	/** Navigate the calendar to a new date and update the year used as the query key. */
 	const handleNavigate = (newDate: Date) => {
 		setDate(newDate);
 	};
@@ -166,6 +181,7 @@ export default function CalendarPageContent() {
 		};
 	};
 
+	/** Add a new blocked date after validating that both date and description are provided. */
 	const handleAddDate = () => {
 		if (!newDate || !newDesc.trim()) {
 			toast.error("Please select a date and enter a description.");
@@ -177,6 +193,7 @@ export default function CalendarPageContent() {
 		});
 	};
 
+	/** Open the delete-confirmation dialog for a specific blocked date. */
 	const handleDeleteClick = (blockedDate: BlockedDate) => {
 		setDateToDelete(blockedDate);
 		setShowDeleteConfirmDialog(true);

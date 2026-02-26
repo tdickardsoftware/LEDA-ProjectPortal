@@ -1,3 +1,4 @@
+/** Shadcn Input component — styled HTML input element forwarded with className merging. */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"

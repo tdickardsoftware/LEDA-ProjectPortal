@@ -1,29 +1,14 @@
+/**
+ * Paginated server-side datatable endpoint for place payment history.
+ *
+ * GET - Returns a paginated, optionally filtered and searched slice of
+ *       leda_maint_place_payment_history joined with place and season info.
+ *       Supports field-specific and general text searches via search-parser.
+ *       Query params: page, pageSize, search, ledaId
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PaymentHistory } from "@/lib/definitions";
-import { requireApiSession } from "@/lib/require-session";
-import { parseFieldSearch, buildSQLWhereClause, createColumnMapping } from "@/lib/search-parser";
-
-export default async function handler(
-	req: NextApiRequest,
-	res: NextApiResponse
-) {
-	const session = await requireApiSession(req, res);
-	if (!session) return;
-
-	if (req.method === "GET") {
-		try {
-			const page = parseInt((req.query.page as string) || "1");
-			const pageSize = parseInt((req.query.pageSize as string) || "10");
-			const search = (req.query.search as string) || "";
-			const ledaId = req.query.ledaId as string | undefined;
-			const offset = (page - 1) * pageSize;
-
-			// Column mapping for search - using createColumnMapping for search parsing
-			const paymentColumnMappings = createColumnMapping([
-				{ displayName: "Payment #", dataKey: "paymentNbr", variations: ["paymentNbr", "paymentnbr", "payment", "Payment #", "payment #", "#"] },
-				{ displayName: "LEDA ID", dataKey: "ledaId", variations: ["ledaid", "ledaid", "id"] },
-				{ displayName: "Name", dataKey: "fullName", variations: ["fullName", "fullname", "name", "placeName", "placename"] },
 				{ displayName: "Amount", dataKey: "amount", variations: ["amount"] },
 				{ displayName: "Date", dataKey: "date", variations: ["date"] },
 				{ displayName: "Type", dataKey: "type", variations: ["type"] },

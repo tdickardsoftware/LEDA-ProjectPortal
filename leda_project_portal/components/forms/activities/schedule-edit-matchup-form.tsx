@@ -1,3 +1,12 @@
+/**
+ * SchedulingEditMatchupForm Component
+ *
+ * Form for editing an existing weekly schedule matchup.
+ * Mirrors SchedulingAddMatchupForm but pre-populates fields from `initialValues`.
+ * Detects BYE weeks by checking if the opposing team ID is "0" or the opposing
+ * team letter is "BYE" / "X". Shows a loading indicator while checking whether
+ * points have already been logged for the matchup.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -41,7 +50,21 @@ const divisionFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the SchedulingEditMatchupForm component
+/**
+ * SchedulingEditMatchupForm renders the edit-matchup form.
+ *
+ * @param teamEntries - All available teams for the opposing team selector
+ * @param handleEditMatchup - Callback invoked with the updated matchup values
+ * @param teamId - ID of the team that owns this matchup slot
+ * @param gameTitle - Title label for the game week
+ * @param date - ISO date string for the match week
+ * @param setOpen - Function to close the containing dialog
+ * @param selectedTeamLetter - Letter identifier for the selected team
+ * @param initialValues - Pre-populated values from the existing matchup record
+ * @param hasPointsLogged - Whether points have already been entered for this matchup
+ * @param isCheckingPoints - Whether the parent is still verifying logged points
+ * @param teamsWithMatchups - Team IDs that already have matchups (excluded from selector)
+ */
 export default function SchedulingEditMatchupForm({
 	teamEntries,
 	handleEditMatchup,

@@ -1,7 +1,9 @@
+/**
+ * Places management page — client-side server-paginated data table for managing
+ * venue/location records. Supports add, edit, delete, and detail view navigation.
+ * Table state (pagination, sorting, search) is persisted across navigation.
+ */
 "use client";
-
-import { ServerSideDataTable } from "@/components/server-side-datatable";
-import { placeRoute } from "@/lib/apiRoutes";
 import { columns } from "@/schemas/managment/places";
 import { usePlacesData } from "@/hooks/usePlacesData";
 import { Spinner } from "@/components/ui/skeleton";

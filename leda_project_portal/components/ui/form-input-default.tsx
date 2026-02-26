@@ -1,3 +1,11 @@
+/**
+ * InputDefault component
+ *
+ * Reusable React Hook Form text/date/number input field that wraps the shadcn
+ * Input with FormField / FormLabel / FormMessage scaffolding.  Normalises
+ * date values to strip the time portion so the native date input renders
+ * correctly.
+ */
 //
 // use client
 //

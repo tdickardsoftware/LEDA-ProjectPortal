@@ -1,3 +1,11 @@
+/**
+ * ListsReportCaptainsReport
+ *
+ * React-PDF document listing all team captains grouped by division.
+ * Each row includes team name, place (bar) name, and captain contact info.
+ * `ROWS_PER_PAGE` controls pagination.
+ */
+
 import React, { JSX } from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { ListsCaptains } from "@/lib/definitions";

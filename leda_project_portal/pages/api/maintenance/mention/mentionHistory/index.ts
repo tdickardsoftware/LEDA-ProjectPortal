@@ -1,3 +1,15 @@
+/**
+ * API route for managing individual player mention history records.
+ *
+ * POST   - Inserts a new mention history entry with an Eastern-time timestamp.
+ * GET    - Retrieves mention history; supports three filter combinations:
+ *            ledaId + seasonCode + weekNum + teamId  → single week records
+ *            ledaId + seasonCode + teamId           → full season records
+ *            ledaId only                            → all records for a player
+ * PUT    - Updates an existing mention history record by mentionId.
+ * DELETE - Bulk deletes by matchup (seasonCode+weekNum+homeTeamId+awayTeamId)
+ *          or individual delete by mentionId.
+ */
 import { MentionPlayerHistory } from "@/lib/definitions";
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
@@ -10,6 +22,7 @@ export default async function handler(
 ) {
 	const session = await requireApiSession(req, res);
 	if (!session) return;
+	// Handle POST requests
 	if (req.method === "POST") {
 		try {
 			const data = req.body as MentionPlayerHistory;
@@ -44,6 +57,7 @@ export default async function handler(
 			});
 		}
 	} else if (req.method === "GET") {
+		// GET: fetch mention history, filtered by ledaId + optional seasonCode/weekNum/teamId
 		if (
 			req.query.ledaId &&
 			req.query.seasonCode &&
@@ -102,6 +116,7 @@ export default async function handler(
 			}
 		}
 	} else if (req.method === "PUT") {
+		// PUT: update an existing mention record fields by mentionId
 		try {
 			const data = req.body as MentionPlayerHistory;
 			const query = `UPDATE public.leda_player_mention_history SET "mentionCode" = $1, "mentionDesc" = $2, "mentionPoints" = $3, notes = $4, "creationDate" = $5, "count" = $6 WHERE "mentionId" = $7 and "seasonCode" = $8 and "weekNum" = $9 and "ledaId" = $10 and "teamId" = $11;`;

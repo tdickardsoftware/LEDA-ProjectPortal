@@ -1,3 +1,13 @@
+/**
+ * ServerSideDataTable component
+ *
+ * A server-side data table built on TanStack Table.  Pagination, sorting, and
+ * search are handled externally (passed as controlled props) so the parent page
+ * can drive API queries.  Supports optional Add / Edit dialogs
+ * (DialogWithButton), Delete confirmation (AlertDialogDelete), view-navigation
+ * links (CustomLink), and a loading spinner overlay.  Column header clicks
+ * emit sorting change events back to the parent via `onSortingChange`.
+ */
 "use client";
 
 import * as React from "react";

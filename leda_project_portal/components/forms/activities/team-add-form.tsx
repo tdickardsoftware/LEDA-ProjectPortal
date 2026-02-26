@@ -1,3 +1,10 @@
+/**
+ * TeamAddForm Component (Activities)
+ *
+ * Form for adding a team to a specific division and subdivision within the
+ * current season's schedule. Requires a team LEDA ID, home place, and team name.
+ * Prevents selecting teams that are already in the division.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -21,7 +28,15 @@ const divisionFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the DivisionAddForm component
+/**
+ * TeamAddForm renders the team selection form for a division/subdivision.
+ *
+ * @param selectedTeams - Team LEDA IDs already in the division (excluded from selector)
+ * @param handleSelectTeam - Callback invoked with the chosen team's details
+ * @param setOpen - Function to close the containing dialog
+ * @param division - Division name that the team is being added to
+ * @param subdivision - Subdivision name that the team is being added to
+ */
 export default function TeamAddForm({
 	selectedTeams,
 	handleSelectTeam,

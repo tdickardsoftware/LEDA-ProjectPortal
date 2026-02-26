@@ -1,3 +1,13 @@
+/**
+ * ReportDisplay component
+ *
+ * Generic tabular report viewer backed by TanStack Query.  Fetches data from
+ * the provided `apiRoute`, supports client-side column sorting, client-side
+ * pagination, and optional row deletion (with confirmation).  An
+ * `onDataFetch` callback allows parent components to receive the raw data for
+ * secondary operations such as mailing-label generation.  The `dataOverride`
+ * prop bypasses the API fetch and renders a static dataset directly.
+ */
 "use client";
 
 import React, { useState, useEffect } from "react";

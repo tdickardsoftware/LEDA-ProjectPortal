@@ -1,3 +1,15 @@
+/**
+ * SubdivisionScheduler component
+ *
+ * Renders the weekly schedule grid for a single subdivision during schedule
+ * creation/editing.  Each row represents a team; each cell shows the team's
+ * matchup for the week with home/away indicator and venue.  Supports:
+ * - Adding, editing, and deleting matchups via inline dialogs
+ * - Lock icon for matchups that already have points logged (prevents deletion)
+ * - Read-only `viewMode` for schedule-display pages
+ * - Memoised MatchupDisplay sub-component to avoid unnecessary re-renders
+ * - 12-hour time formatting via the `convertTo12HourFormat` utility
+ */
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import {
 	Table,

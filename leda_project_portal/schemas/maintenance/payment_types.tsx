@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Payment Types data table (Maintenance section).
+ * Defines a bulk-selectable checkbox column and columns for payment type
+ * code and description.
+ */
 //
 // Use the client
 //

@@ -1,3 +1,11 @@
+/**
+ * RosterCopyForm Component
+ *
+ * Allows copying a league roster from one season to another.
+ * Requires both a source and target season code selection.
+ * Prompts for user confirmation before overwriting existing season data.
+ * On success, reloads the page to reflect the updated roster.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -26,7 +34,11 @@ const divisionFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the RosterCopyForm component
+/**
+ * RosterCopyForm renders the season roster copy form.
+ *
+ * @param setOpen - Function to close the containing dialog
+ */
 export default function RosterCopyForm({
 	setOpen,
 }: {

@@ -1,3 +1,11 @@
+/**
+ * SeasonEditForm Component
+ *
+ * Form for editing an existing league season's details and scheduled match
+ * dates. Fetches season data from the API using React Query, then renders
+ * editable date pickers for each existing date key. Blocked/holiday dates
+ * sourced from the calendar are disabled in the date pickers.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -42,7 +50,14 @@ const formContainerStyle =
 const checkboxWidth = "h-5 w-5";
 const inputWidth = "w-24";
 
-// Define the SeasonEditForm component
+/**
+ * SeasonEditForm fetches a season record and provides an edit interface.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the seasonCode used to fetch full details
+ * @param handleRefresh - Optional additional refresh callback
+ */
 export default function SeasonEditForm({
 	onClose,
 	onRefresh,

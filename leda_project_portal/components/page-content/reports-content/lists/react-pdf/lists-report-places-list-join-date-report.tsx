@@ -1,3 +1,11 @@
+/**
+ * ListsReportPlacesListJoinDateReport
+ *
+ * React-PDF document listing all registered places sorted by their join
+ * date. Paginated at `ROWS_PER_PAGE = 20`. Columns: place name, address,
+ * phone, owner/contact name, and LEDA join date.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { ListsPlaces } from "@/lib/definitions";

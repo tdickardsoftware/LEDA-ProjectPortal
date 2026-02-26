@@ -1,3 +1,13 @@
+/**
+ * PlaceAddForm Component
+ *
+ * Multi-step form for registering a new venue (place) in the LEDA system.
+ * Steps: Basic Info → Contact Info → Membership Info → Additional Info.
+ * Validates each step before advancing. Optionally auto-generates a LEDA ID
+ * (sent as 0 so the server assigns one). Returns a 422 conflict when the
+ * provided LEDA ID is already taken. Uses `libphonenumber-js` for US phone
+ * validation and `validator` for email/URL validation.
+ */
 "use client";
 
 import { z } from "zod";
@@ -32,6 +42,7 @@ import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 
+// Validation schema with cross-field rules for phone, email, and URL formats
 const placeFormSchema = z.object({
 	ledaId: z
 		.number()
@@ -87,11 +98,18 @@ const placeFormSchema = z.object({
 	contactId: z.string().min(1, { message: "Place Owner is Required" }),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlaceAddForm renders a stepped place creation form.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function PlaceAddForm({
 	onClose,
 	onRefresh,
@@ -99,6 +117,7 @@ export default function PlaceAddForm({
 	onClose: () => void;
 	onRefresh: () => void;
 }) {
+	// When true, ledaId is set to 0 so the server auto-assigns an ID
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [ledaIdExists, setLedaIdExists] = useState(false);
 	const [currentStep, setCurrentStep] = useState(0);

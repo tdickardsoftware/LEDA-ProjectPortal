@@ -1,3 +1,11 @@
+/**
+ * PasswordInput component
+ *
+ * Styled text input with a show/hide password toggle button overlaid on the
+ * right.  Extends the base Input component and omits the `type` prop since
+ * visibility is managed internally.  Accessible via aria-label and
+ * aria-pressed attributes on the toggle button.
+ */
 "use client";
 
 import * as React from "react";

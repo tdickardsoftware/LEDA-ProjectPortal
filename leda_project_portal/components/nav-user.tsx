@@ -1,3 +1,14 @@
+/**
+ * NavUser component
+ *
+ * Sidebar footer widget that displays the currently authenticated user's name
+ * and avatar.  Exposes a dropdown menu with:
+ * - Theme switcher (Light / Dark / System) via next-themes
+ * - Role emulation for developers / admins
+ * - Bug/issue reporting dialog that submits to the internal issue API
+ * - Sign-out (current session) and sign-out-all (all sessions) actions
+ * - Account deletion
+ */
 "use client";
 
 import {

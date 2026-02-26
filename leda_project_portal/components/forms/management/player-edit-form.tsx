@@ -1,3 +1,11 @@
+/**
+ * PlayerEditInformationForm Component
+ *
+ * Multi-step form for editing an existing LEDA member record. Fetches full
+ * player data by LEDA ID on mount and pre-populates all fields. The
+ * `hasChanges` flag reflects whether any field has been dirtied. Reloads
+ * the page on successful save to reflect the updated player data.
+ */
 "use client";
 
 import { z } from "zod";
@@ -32,6 +40,7 @@ import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for all player fields — mirrors PlayerAddInformationForm
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
 	middleInitial: z.string().nullable().optional(),
@@ -85,11 +94,20 @@ const playerInfoSchema = z.object({
 	lifetimeMemberReason: z.string().nullable().optional(),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlayerEditInformationForm fetches a player record and provides a multi-step edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - The player record used to look up full data by ledaId
+ * @param handleEdit - Optional alternative close handler
+ */
 export default function PlayerEditInformationForm({
 	onClose,
 	onRefresh,
@@ -101,11 +119,15 @@ export default function PlayerEditInformationForm({
 	rowData: PlayerMemberInfo;
 	handleEdit?: () => void;
 }) {
+	// Conditional flag to show/hide the bad standing reason textarea
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
+	// Conditional flag to show/hide the lifetime member reason textarea
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
+	// Local state to store the full player record fetched from the API
 	const [formData, setFormData] = useState<PlayerMemberInfo>(
 		{} as PlayerMemberInfo
 	);
+	// Track which wizard step is currently active
 	const [currentStep, setCurrentStep] = useState(0);
 
 	// Define the steps
@@ -202,6 +224,7 @@ export default function PlayerEditInformationForm({
 		},
 	});
 
+	// True when any form field has been modified from its original value
 	const hasChanges = form.formState.isDirty;
 
 	const mutation = useMutation({

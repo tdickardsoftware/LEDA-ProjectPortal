@@ -1,3 +1,14 @@
+/**
+ * Shared TypeScript type definitions for the LEDA portal.
+ *
+ * Every type in this file mirrors the shape of a PostgreSQL row (or a
+ * projection of one) returned by the API layer. Types are organised by
+ * domain area: players, teams, places, maintenance lookups, activities,
+ * scoring, payments, reports, and users.
+ *
+ * Import individual types as needed rather than using a wildcard import
+ * so unused definitions are tree-shaken by the bundler.
+ */
 //
 //Define type to identify the shape of our data coming from postgres for players
 //

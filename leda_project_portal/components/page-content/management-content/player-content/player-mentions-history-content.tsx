@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * PlayerMentionsHistoryContent
+ *
+ * Displays a read-only table of all mention records associated with a player
+ * across all seasons. Data is fetched from `mentionPlayerHistoryRoute` via
+ * TanStack Query, keyed by `playerData.ledaId`.
+ *
+ * Each row includes season, week number, mention code/description,
+ * top-darter points, count, notes, and creation date.
+ */
+
 import { MentionPlayerHistory, PlayerMemberInfo } from "@/lib/definitions";
 import { mentionPlayerHistoryRoute } from "@/lib/apiRoutes";
 import { useQuery } from "@tanstack/react-query";

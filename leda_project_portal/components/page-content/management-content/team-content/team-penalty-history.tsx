@@ -1,8 +1,15 @@
 "use client";
 
+/**
+ * TeamPenaltyHistory
+ *
+ * Renders a read-only table of all penalty records applied to a team.
+ * Data is fetched from `/api/management/team/penaltyHistory` via TanStack
+ * Query, keyed by `teamData.teamId`. Columns: season, reason, points
+ * deducted, and date applied.
+ */
+
 import { useQuery } from "@tanstack/react-query";
-import {
-	Table,
 	TableBody,
 	TableCell,
 	TableHead,

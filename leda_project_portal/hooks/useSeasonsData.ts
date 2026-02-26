@@ -1,3 +1,8 @@
+/**
+ * Hook for fetching paginated, searchable, and sortable season records
+ * for the maintenance data table. Falls back to empty results on network error
+ * rather than throwing, keeping the UI functional.
+ */
 import { useQuery } from "@tanstack/react-query";
 import { seasonDataTableRoute } from "@/lib/apiRoutes";
 import { SeasonDataTable } from "@/lib/definitions";
@@ -14,6 +19,10 @@ export interface PaginatedSeasonsResponse {
 
 type SortingStateLike = { id: string; desc: boolean }[];
 
+/**
+ * Fetches a paginated list of seasons.
+ * Only the first sorting entry is forwarded to the API.
+ */
 export function useSeasonsData(
 	page: number,
 	pageSize: number,

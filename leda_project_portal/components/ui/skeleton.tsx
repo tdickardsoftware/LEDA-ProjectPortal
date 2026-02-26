@@ -1,4 +1,8 @@
-import { cn } from "@/lib/utils"
+/**
+ * Skeleton and Spinner loading-state components.
+ * Skeleton renders an animated placeholder block; Spinner centers a spinning
+ * SVG indicator used during async data fetching.
+ */import { cn } from "@/lib/utils"
 
 function Skeleton({
   className,

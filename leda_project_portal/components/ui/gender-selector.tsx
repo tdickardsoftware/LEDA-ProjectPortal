@@ -1,3 +1,10 @@
+/**
+ * GenderSelector component
+ *
+ * Searchable combobox for selecting a gender (Male / Female / Other) within a
+ * React Hook Form context.  Uses a Command popover and writes the selected
+ * value back into the form field via the field's `onChange` handler.
+ */
 "use client";
 
 import React, { useState } from "react";

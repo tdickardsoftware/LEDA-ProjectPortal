@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Place Types data table (Maintenance section).
+ * Defines a bulk-selectable checkbox column and columns for place type code
+ * and description.
+ */
 //
 // Use the client
 //

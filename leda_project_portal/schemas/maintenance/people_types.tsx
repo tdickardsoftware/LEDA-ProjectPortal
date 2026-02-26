@@ -1,3 +1,8 @@
+/**
+ * Column schema for the People Types data table (Maintenance section).
+ * Defines a bulk-selectable checkbox column and columns for people type code
+ * and description.
+ */
 //
 // Use the client
 //

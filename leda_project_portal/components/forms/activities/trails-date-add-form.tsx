@@ -1,3 +1,12 @@
+/**
+ * TrailsDateAddForm Component
+ *
+ * Form for adding or editing a player's Trails tournament entry for a specific date.
+ * Collects trails points, singles place, doubles place, and optional notes.
+ * Operates in both "add" mode (requires player selection) and "edit" mode
+ * (player is pre-determined by `editData`). Uses `z.preprocess` to coerce empty
+ * numeric inputs to 0 rather than undefined.
+ */
 "use client";
 
 import { z } from "zod";
@@ -19,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { TrailsDateData } from "@/lib/definitions";
 import PlayerSelect from "@/components/ui/single-player-select";
 
+// Validation schema — uses z.preprocess to coerce empty inputs to 0
 const TrailsDateDataFormSchema = z.object({
 	singlesPlace: z.preprocess(
 		(val) => (val === "" || val === undefined || val === null ? 0 : val),
@@ -38,9 +48,20 @@ const TrailsDateDataFormSchema = z.object({
 	fullName: z.string().optional(),
 });
 
+// Shared style for the form card container
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * TrailsDateAddForm renders the Trails entry add/edit form.
+ *
+ * @param goBack - Callback to return to the parent view without submitting
+ * @param handleFormSubmit - Callback invoked with the validated Trails entry
+ * @param trailsDate - The trails event date string to associate with the entry
+ * @param trailsDateData - Existing entries for the date (used to exclude already-added players)
+ * @param editData - Optional existing entry data for edit mode
+ * @param index - Optional row index used when updating an existing entry in-place
+ */
 export default function TrailsDateAddForm({
 	goBack,
 	handleFormSubmit,

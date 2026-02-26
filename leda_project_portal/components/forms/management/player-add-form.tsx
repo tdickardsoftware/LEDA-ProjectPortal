@@ -1,3 +1,13 @@
+/**
+ * PlayerAddInformationForm Component
+ *
+ * Multi-step form for registering a new LEDA member (player).
+ * Steps: Personal Info → Contact Info → Membership Info → Additional Info.
+ * Validates each step before advancing. Optionally auto-generates a LEDA ID.
+ * Accepts "UNKNOWN" as a valid email value for players without known email.
+ * Returns a 422 conflict when the provided LEDA ID is already in use.
+ * Reloads the page on successful submission to reflect the new player.
+ */
 "use client";
 
 import { z } from "zod";
@@ -30,6 +40,7 @@ import CheckboxDefault from "@/components/ui/checkbox-default";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for all player fields across all form steps
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
 	middleInitial: z.string().nullable().optional(),
@@ -86,11 +97,18 @@ const playerInfoSchema = z.object({
 	lifetimeMemberReason: z.string().nullable().optional(),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlayerAddInformationForm renders a stepped player registration form.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function PlayerAddInformationForm({
 	onClose,
 	onRefresh,
@@ -98,6 +116,7 @@ export default function PlayerAddInformationForm({
 	onClose: () => void;
 	onRefresh: () => void;
 }) {
+	// When true, ledaId is set to 0 so the server auto-assigns an ID
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);

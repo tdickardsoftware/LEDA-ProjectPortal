@@ -1,3 +1,13 @@
+/**
+ * ReportSelector component
+ *
+ * Searchable combobox for choosing a report to generate.  Reports are
+ * organised into static type groups (Trails, Captains Meeting, League Play,
+ * etc.) and each entry carries metadata flags that control which additional
+ * selectors (week, fiscal year, season code, division, minimum points) are
+ * shown by the parent.  The selected report config is surfaced via the
+ * `onReportSelect` callback.
+ */
 "use client";
 import React, { useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";

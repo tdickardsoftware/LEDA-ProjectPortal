@@ -1,3 +1,12 @@
+/**
+ * SeasonAddForm Component
+ *
+ * Form for creating a new league season. Supports both automatic weekly date
+ * generation (starting from a chosen initial date, skipping blocked/holiday
+ * dates from the calendar) and manual date entry. Date generation is debounced
+ * when the weeks count input changes. Returns a 422 conflict error when the
+ * season code already exists.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -42,7 +51,12 @@ const formContainerStyle =
 const checkboxWidth = "h-5 w-5";
 const inputWidth = "w-24";
 
-// Define the SeasonAddForm component
+/**
+ * SeasonAddForm creates a new season record with a code, fiscal year, dates, and settings.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function SeasonAddForm({
 	onClose,
 	onRefresh,

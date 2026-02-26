@@ -1,3 +1,4 @@
+/** Shadcn Command palette component (cmdk) with search input, grouped item lists, and a dialog variant. */
 "use client";
 
 import * as React from "react";

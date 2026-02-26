@@ -1,3 +1,7 @@
+/**
+ * Column schema for the Divisions data table (Maintenance section).
+ * Defines a bulk-selectable checkbox column and the Division Name column.
+ */
 //
 // Use the client
 //

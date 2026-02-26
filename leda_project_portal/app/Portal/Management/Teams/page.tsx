@@ -1,3 +1,8 @@
+/**
+ * Teams management page — client-side server-paginated data table for managing
+ * league team records. Supports add, edit, delete, and detail view navigation.
+ * Table state (pagination, sorting, search) is persisted across navigation.
+ */
 "use client";
 
 import { ServerSideDataTable } from "@/components/server-side-datatable";

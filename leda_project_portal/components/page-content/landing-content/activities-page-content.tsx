@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * ActivitiesPageContent
+ *
+ * Landing page for the Activities section of the portal.
+ * Renders a grid of navigation cards that link to each activity sub-section:
+ * Payouts, Rosters, Scheduling, Trails, and Weekly Scoresheets.
+ */
+
 import Link from "next/link";
 import React from "react";
 import {

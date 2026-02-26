@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * PlayerTDPHistorySidenav
+ *
+ * Renders a collapsible side-navigation tree for browsing a player's TDP
+ * records. The hierarchy is: Calendar Year → Season → Team → Game Week.
+ *
+ * `calculateTeamTotalPoints` sums points by reading the last (highest-week)
+ * entry for the team within a season to avoid double-counting.
+ *
+ * Emits `onTeamSelect` and `onGameSelect` callbacks upward so the parent
+ * (`PlayerTDPHistoryContent`) can trigger the appropriate data fetches.
+ */
+
 import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";

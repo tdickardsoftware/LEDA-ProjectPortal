@@ -1,3 +1,11 @@
+/**
+ * CustomLink component
+ *
+ * Renders a Next.js Link wrapped in a shadcn outline Button.  The `href` may
+ * contain the token `**REPLACE**` which is substituted with `parentPage` at
+ * render time, allowing context-aware navigation (e.g. back-links from detail
+ * pages to their parent list).
+ */
 //
 // use client
 //

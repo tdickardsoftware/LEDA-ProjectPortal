@@ -1,3 +1,16 @@
+/**
+ * DataTable component
+ *
+ * A client-side, fully-featured data table built on TanStack Table.  Supports:
+ * - Client-side sorting, pagination, and fuzzy/field-specific search (via Fuse.js)
+ * - Optional Add / Edit dialogs (DialogWithButton)
+ * - Optional row-level Delete confirmation (AlertDialogDelete)
+ * - Optional View navigation links and custom action links
+ * - Row selection with checkbox column
+ * - Payment-status indicators (PAID / PART / UNPAID) fetched per row
+ * - Roster season-code sub-filter popover for team/player roster views
+ * - Persisted page / page-size state via usePersistedDataTableState
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

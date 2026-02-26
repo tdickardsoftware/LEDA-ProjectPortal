@@ -1,3 +1,4 @@
+/** Shadcn Table component with Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, and TableCaption sub-components. */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"

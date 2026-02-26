@@ -1,3 +1,7 @@
+/**
+ * Season Calendar page — view and manage the calendar for blocking out days
+ * that affect season scheduling.
+ */
 import CalendarPageContent from "@/components/page-content/maintenance-content/calendar-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

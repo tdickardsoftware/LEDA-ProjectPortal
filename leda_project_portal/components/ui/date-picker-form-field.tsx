@@ -1,3 +1,11 @@
+/**
+ * DatePickerFormField component
+ *
+ * React Hook Form field wrapper for DatePickerCustom.  Handles the conversion
+ * between the ISO date string stored in the form (YYYY-MM-DD) and the Date
+ * objects expected by DatePickerCustom.  Supports optional month/year picker
+ * mode and a list of disabled dates.
+ */
 "use client";
 
 import * as React from "react";

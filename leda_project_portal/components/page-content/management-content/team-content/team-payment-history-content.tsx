@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * TeamPaymentHistoryContent
+ *
+ * Displays a team's full payment history with date and payment-type filters.
+ * Filtering is client-side over the TanStack Query result from
+ * `teamPaymentHistoryRoute`.
+ *
+ * - Date filter: dropdown of unique UTC-formatted payment dates.
+ * - Type filter: popover using `PaymentTypeSelectorNF` with Apply / Clear.
+ *
+ * All dates are derived in UTC to prevent day-shift rendering artefacts.
+ */
+
 import { PaymentHistory } from "@/lib/definitions";
 import { teamPaymentHistoryRoute } from "@/lib/apiRoutes";
 import { useState } from "react";

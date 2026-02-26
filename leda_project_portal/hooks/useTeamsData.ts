@@ -1,3 +1,8 @@
+/**
+ * Hook for fetching paginated, searchable, and sortable team records
+ * for the management data table. Falls back to empty results on network error
+ * rather than throwing, keeping the UI functional.
+ */
 import { useQuery } from "@tanstack/react-query";
 import { teamsDataTableRoute } from "@/lib/apiRoutes";
 import { TeamDataTable } from "@/lib/definitions";
@@ -14,6 +19,10 @@ export interface PaginatedTeamsResponse {
 
 type SortingStateLike = { id: string; desc: boolean }[];
 
+/**
+ * Fetches a paginated list of teams.
+ * Only the first sorting entry is forwarded to the API.
+ */
 export function useTeamsData(
 	page: number,
 	pageSize: number,

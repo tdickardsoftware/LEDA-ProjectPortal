@@ -1,3 +1,8 @@
+/**
+ * Seasons maintenance page — client-side server-paginated data table for managing
+ * league season records. Supports add, edit, delete, view, and calendar navigation.
+ * Table state (pagination, sorting, search) is persisted across navigation.
+ */
 "use client";
 
 import { ServerSideDataTable } from "@/components/server-side-datatable";

@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * ManagementPageContent
+ *
+ * Landing page for the Management section of the portal.
+ * Renders navigation cards linking to Places, Players, and Teams sub-sections.
+ */
+
 import Link from "next/link";
 import React from "react";
 import {

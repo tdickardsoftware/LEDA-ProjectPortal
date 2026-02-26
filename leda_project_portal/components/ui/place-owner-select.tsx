@@ -1,3 +1,10 @@
+/**
+ * PlaceOwnerSelect component
+ *
+ * Searchable combobox for selecting a place-owner (contact) from the API
+ * within a React Hook Form context.  Fetches the owner list via TanStack
+ * Query and writes the selected `contactId` into the bound form field.
+ */
 "use client";
 
 import React, { useState } from "react";

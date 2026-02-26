@@ -1,3 +1,13 @@
+/**
+ * PaymentHistoryFormDialog component
+ *
+ * Dialog form for adding or editing a payment history record for a player,
+ * team, or place.  Accepts a `type` prop to control which entity selector
+ * (PlayerSelect / TeamSelector / PlaceSelector) is rendered and which API
+ * route receives the submission.  Uses React Hook Form + Zod validation.
+ * When `isEditing` is true the form is pre-populated from `paymentData` and
+ * issues a PUT request; otherwise issues a POST.
+ */
 "use client";
 
 import { useState, useEffect, ReactNode } from "react"; // Add ReactNode for buttonIcon

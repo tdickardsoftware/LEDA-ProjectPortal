@@ -1,3 +1,11 @@
+/**
+ * PlayerSelect (single) component
+ *
+ * Searchable single-player combobox within a React Hook Form context.
+ * Fetches the player list from the single-player selector API endpoint.
+ * Highlights players with existing trails date data (shown with a star icon)
+ * and writes the selected `ledaId` and `fullName` into the bound form fields.
+ */
 "use client";
 
 import React, { useState } from "react";

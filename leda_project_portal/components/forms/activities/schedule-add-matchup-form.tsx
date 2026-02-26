@@ -1,3 +1,12 @@
+/**
+ * SchedulingAddMatchupForm Component
+ *
+ * Form for adding a new matchup to the weekly schedule.
+ * Supports regular matchups (with match time, home/away flag, and opposing team)
+ * and BYE weeks. BYE weeks use placeholder values: opposing team ID "0" and
+ * letter "X". Cross-field validation ensures match time and opposing team are
+ * provided for non-BYE matchups.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -40,7 +49,19 @@ const divisionFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the DivisionAddForm component
+/**
+ * SchedulingAddMatchupForm renders the add-matchup form.
+ *
+ * @param teamEntries - All available teams for the opposing team selector
+ * @param handleAddMatchup - Callback invoked with the validated matchup values
+ * @param teamId - ID of the team that owns this matchup slot
+ * @param gameTitle - Title label for the game week
+ * @param date - ISO date string for the match week
+ * @param setOpen - Function to close the containing dialog
+ * @param selectedTeam - Team ID of the team being scheduled
+ * @param selectedTeamLetter - Letter identifier for the selected team
+ * @param teamsWithMatchups - Team IDs that already have matchups (excluded from selector)
+ */
 export default function SchedulingAddMatchupForm({
 	teamEntries,
 	handleAddMatchup,

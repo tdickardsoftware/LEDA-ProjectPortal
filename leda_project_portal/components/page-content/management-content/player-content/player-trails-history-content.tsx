@@ -1,7 +1,17 @@
 "use client";
 
+/**
+ * PlayerTrailsHistoryContent
+ *
+ * Displays the audit trail of trails-tournament point changes for a player.
+ * Each row shows the trails date, singles/doubles placement, previous total
+ * points, new total, net change (colour-coded green/red), and modification date.
+ *
+ * Data is fetched from `trailsPlayerHistoryRoute` via TanStack Query,
+ * keyed by `playerData.ledaId`.
+ */
+
 import { PlayerMemberInfo } from "@/lib/definitions";
-import { trailsPlayerHistoryRoute } from "@/lib/apiRoutes";
 import { useQuery } from "@tanstack/react-query";
 import {
 	Table,

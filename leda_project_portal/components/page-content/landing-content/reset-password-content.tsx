@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * ResetPasswordContent
+ *
+ * Password-reset form reached via a one-time token link sent by email.
+ * Steps on submit:
+ *   1. Clears the `mustResetPassword` flag on the user record (while the
+ *      existing session is still valid).
+ *   2. Calls `authClient.resetPassword` to change the password and revoke
+ *      existing sessions.
+ *   3. Clears the `mustResetPassword` cookie client-side.
+ *   4. Signs out to prevent middleware from looping and redirects to /login.
+ *
+ * Live requirement indicators are shown as the password is typed.
+ */
+
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";

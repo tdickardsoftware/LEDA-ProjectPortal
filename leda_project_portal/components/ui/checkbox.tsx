@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Checkbox primitive wrapper with styled checked indicator. */
 "use client";
 
 import * as React from "react";

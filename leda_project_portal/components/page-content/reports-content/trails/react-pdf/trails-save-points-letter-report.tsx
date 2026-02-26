@@ -1,6 +1,14 @@
+/**
+ * TrailsSavePointsLetterReport
+ *
+ * React-PDF document that generates a formal letter sent to each trails
+ * member summarising their saved/rolled-over points. Layout: organisation
+ * header with LEDA logo, recipient address block, reminder paragraph, and
+ * a member info section showing current and saved point totals.
+ */
+
 import React from "react";
 import {
-	Document,
 	Page,
 	Text,
 	View,

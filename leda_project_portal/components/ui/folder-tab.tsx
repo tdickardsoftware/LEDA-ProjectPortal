@@ -1,3 +1,11 @@
+/**
+ * FolderTab components
+ *
+ * Decorative card containers that visually resemble folder tabs.  The title
+ * floats above the top-left corner.  Two variants are exported:
+ * - `FolderTab` (default) — standard padding
+ * - `FolderTabMed` — larger padding, accepts an optional extra className
+ */
 import React from "react";
 
 interface FolderTabProps {

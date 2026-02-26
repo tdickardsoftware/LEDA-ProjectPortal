@@ -1,5 +1,21 @@
 "use client";
 
+/**
+ * ListsReportLandingContent
+ *
+ * The most complex report landing page. Manages selection of season and
+ * subdivision range, plus a toggle between filter-by-season and
+ * filter-by-join-date modes.
+ *
+ * Special features:
+ *   - Mailing labels workflow: add individual entries via `MailingLabelsAddDialog`
+ *     or bulk-import via `MailingLabelsImportDialog`.
+ *   - PDF generation uses async `pdf()` + blob URL rather than `PDFDownloadLink`
+ *     for reports that need pre-processing before render.
+ *   - `renderPDFDownload` dispatches to 9+ react-pdf report components based on
+ *     the selected report type.
+ */
+
 import { useState, useCallback, useEffect, useRef, JSX } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";

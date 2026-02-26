@@ -1,3 +1,11 @@
+/**
+ * TeamSelectorScheduling component
+ *
+ * Searchable combobox for selecting a team within the schedule-builder forms.
+ * Renders the available team entries (filtered to exclude already-selected
+ * teams) via a Command popover and writes the chosen teamId / teamName back
+ * into the parent React Hook Form context.  Pre-selects `defaultId` on mount.
+ */
 "use client";
 
 import React, { useEffect, useState } from "react";

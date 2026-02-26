@@ -163,7 +163,8 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 	const toggleSubdivision = (division: string, subdivision: string) =>
 		setOpenSubdivisions(prev => ({ ...prev, [`${division}-${subdivision}`]: !prev[`${division}-${subdivision}`] }));
 
-	// When a subdivision opens, probe
+	// When a subdivision opens, probe each matchup's completion status from the
+	// gameInfo API and update completionMap so the correct icon (✓ / ⚠) is shown
 	useEffect(() => {
 		const openKeys = Object.entries(openSubdivisions).filter(([, o]) => o).map(([k]) => k);
 		if (!seasonCode || !weekNum || openKeys.length === 0) return;
@@ -271,6 +272,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 		return <div className="w-64 border-r h-full flex items-center justify-center p-4"><p className="text-muted-foreground text-center">Select a week to display weekly scoresheets...</p></div>;
 	}
 
+	// Render — collapsible division/subdivision tree with per-matchup completion indicators
 	return (
 		<div className="w-64">
 			<ScrollArea className="h-full">

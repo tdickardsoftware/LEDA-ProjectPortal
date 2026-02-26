@@ -1,3 +1,11 @@
+/**
+ * API Route: /api/activities/schedule/subdivision
+ *
+ * GET — Returns the match schedule for a single subdivision within a season.
+ *        Requires seasonCode, division, and subdivision query params.
+ *        Transforms normalised rows into the nested ScheduleData structure.
+ * Requires an authenticated session.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { ScheduleData } from "@/lib/schedule";

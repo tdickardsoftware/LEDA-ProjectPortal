@@ -1,3 +1,11 @@
+/**
+ * PlaceTypeSelector component
+ *
+ * Searchable combobox for selecting a place type within a React Hook Form
+ * context.  Tracks the last input type (keyboard vs mouse) to apply correct
+ * focus styling.  Fetches place types from the API via TanStack Query and
+ * writes the selected value into the bound form field.
+ */
 "use client";
 
 import React, { useState } from "react";

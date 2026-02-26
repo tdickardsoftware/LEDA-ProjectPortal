@@ -1,3 +1,11 @@
+/**
+ * TrailsDateEditForm Component
+ *
+ * Inline edit form for updating an existing Trails tournament entry.
+ * Pre-populates all numeric fields from `rowData`. Submits a PUT request
+ * via React Query mutation and calls `handleRefresh` with the row index on
+ * success to refresh only the affected table row.
+ */
 "use client";
 
 import { z } from "zod";
@@ -21,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema — all numeric fields are optional on edit; empty strings coerce to 0
 const TrailsDateDataFormSchema = z.object({
 	singlesPlace: z.preprocess(
 		(val) => (val === "" || val === undefined || val === null ? 0 : val),
@@ -39,9 +48,17 @@ const TrailsDateDataFormSchema = z.object({
 	trailsDate: z.string().optional(),
 });
 
+// Shared style for the form card container
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * TrailsDateEditForm renders the inline Trails entry edit form.
+ *
+ * @param rowData - Existing Trails entry data to pre-populate the form
+ * @param handleRefresh - Callback invoked with the row index to refresh on success
+ * @param index - Row identifier passed back to `handleRefresh` after a successful save
+ */
 export default function TrailsDateEditForm({
 	rowData,
 	handleRefresh,

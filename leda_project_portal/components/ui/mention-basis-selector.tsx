@@ -1,3 +1,10 @@
+/**
+ * MentionBasisSelector component
+ *
+ * Searchable combobox for choosing a mention basis value (NONE / LOW / HIGH)
+ * within a React Hook Form context.  Reads and writes the `mentionBasis`
+ * field directly via `useFormContext`.
+ */
 "use client";
 
 import React from "react";

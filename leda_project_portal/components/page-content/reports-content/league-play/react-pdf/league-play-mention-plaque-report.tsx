@@ -1,3 +1,11 @@
+/**
+ * LeaguePlayMentionPlaqueReport
+ *
+ * React-PDF document for end-of-season plaque award mentions. Similar nested
+ * layout to the league-play mentions report: outer rows per player with a
+ * sub-table enumerating each plaque-qualifying mention.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { MentionPlaque } from "@/lib/definitions";

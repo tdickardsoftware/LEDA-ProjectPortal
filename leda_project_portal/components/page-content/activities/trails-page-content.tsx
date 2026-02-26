@@ -1,5 +1,20 @@
 // Use Client
 "use client";
+
+/**
+ * TrailsPageContent
+ *
+ * Manages the trails tournament calendar and per-event player entries.
+ *
+ * - `addTrailsDateMutation`   — creates a new trails tournament date.
+ * - `addPlayerMutation`       — registers a player for a selected trails event.
+ * - `deletePlayerMutation`    — removes a player from a trails event.
+ *
+ * The left panel lists all trails dates (via `DataTable`); selecting a date
+ * populates the right panel with the roster for that event. Player search is
+ * driven by a debounced query against the players API.
+ */
+
 // Imports
 import { DataTable } from "@/components/datatable";
 import { columns } from "@/schemas/activities/trails_dates";

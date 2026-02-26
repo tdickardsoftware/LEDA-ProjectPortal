@@ -1,3 +1,8 @@
+/**
+ * Team detail page — fetches team data and member details by LEDA ID, then
+ * renders the team profile view. Member details are fetched separately via
+ * the team memberInfo endpoint. Triggers a 404 if the team is not found.
+ */
 import TeamPageContent from "@/components/page-content/management-content/team-content/team-view-page-content";
 import { teamRoute } from "@/lib/apiRoutes";
 import { fetchTeam, fetchWithSession } from "@/lib/getData";

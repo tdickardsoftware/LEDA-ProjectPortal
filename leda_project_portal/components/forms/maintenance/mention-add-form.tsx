@@ -1,3 +1,11 @@
+/**
+ * MentionAddForm Component
+ *
+ * Form for creating a new mention type in the maintenance section.
+ * A mention is a named achievement (e.g., "High Score") with an associated
+ * point value, a basis code (e.g., per-player or per-team), and an optional
+ * description. Returns a 422 conflict error when the mention code already exists.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -39,7 +47,12 @@ const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
-// Define the MentionAddForm component
+/**
+ * MentionAddForm creates a new mention type record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function MentionAddForm({
 	onClose,
 	onRefresh,

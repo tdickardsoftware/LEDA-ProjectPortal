@@ -1,3 +1,10 @@
+/**
+ * ListsReportPlacesListSeasonReport
+ *
+ * React-PDF document listing all active places for the selected season,
+ * sorted by place name. Same layout as the join-date variant.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { ListsPlaces } from "@/lib/definitions";

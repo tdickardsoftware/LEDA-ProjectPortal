@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * PlayerPaymentHistoryContent
+ *
+ * Displays the full payment history for a player with date and payment-type
+ * filters. Filtering is purely client-side over the TanStack Query result.
+ *
+ * - Date filter: dropdown derived from unique UTC-formatted dates in the data.
+ * - Type filter: popover using `PaymentTypeSelectorNF` with Apply / Clear.
+ *
+ * Dates are always derived in UTC to avoid day-shift artefacts.
+ */
+
 import { PlayerMemberInfo, PaymentHistory } from "@/lib/definitions";
 import { playerPaymentHistoryRoute } from "@/lib/apiRoutes";
 import { useState } from "react";

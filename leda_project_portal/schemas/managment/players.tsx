@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Players data table (Management section).
+ * Includes sortable columns for LEDA ID, full name, phone number, and email.
+ * Sorting is triggered via the column header buttons.
+ */
 //
 // Use the client
 //

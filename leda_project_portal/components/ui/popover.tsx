@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Popover primitive wrapper (Popover, PopoverTrigger, PopoverAnchor, PopoverContent). */
 "use client"
 
 import * as React from "react"

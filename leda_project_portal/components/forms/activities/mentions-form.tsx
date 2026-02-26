@@ -1,3 +1,13 @@
+/**
+ * MentionForm Component
+ *
+ * Dual-mode form for adding or editing a mentions entry on a weekly scoresheet.
+ * In add mode, resets after submission so multiple mentions can be entered in
+ * sequence. In edit mode, pre-populates from `initialMention` and delegates
+ * the update to the `updateMention` callback.
+ * Validates the nested `mentionData` object and optional override fields for
+ * points, count, and notes.
+ */
 "use client";
 
 import { z } from "zod";

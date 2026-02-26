@@ -1,3 +1,12 @@
+/**
+ * DivisionSelector component
+ *
+ * Searchable combobox for selecting a division within a React Hook Form
+ * context.  Fetches the full division list from the API via TanStack Query,
+ * filters out already-selected divisions, and writes the chosen division name
+ * back into the form field.  The inner content component handles popover
+ * open/close state and keyboard navigation.
+ */
 "use client";
 
 import React, { useState } from "react";

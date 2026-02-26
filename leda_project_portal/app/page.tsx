@@ -1,3 +1,7 @@
+/**
+ * Application root page — serves as the public home/landing page.
+ * Provides a direct link to the authenticated Portal section.
+ */
 import { Metadata } from "next";
 import Link from "next/link";
 

@@ -1,3 +1,10 @@
+/**
+ * NavUserManagement component
+ *
+ * Sidebar section that groups the three administrative user-management dialogs
+ * (ForcePasswordReset, BatchAccountCreation, RoleManagement) into a single
+ * sidebar menu entry rendered inside NavMain.
+ */
 "use client";
 
 import React from "react";

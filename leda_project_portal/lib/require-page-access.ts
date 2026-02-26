@@ -1,3 +1,13 @@
+/**
+ * Page-level access guard for App Router pages and layouts.
+ *
+ * Call `requirePageAccess(subject)` at the top of any server component that
+ * should be restricted by role. Redirects to /login when unauthenticated and
+ * to /Portal when the user lacks the required ability.
+ *
+ * Also supports role emulation: privileged users can downgrade their effective
+ * role via the `emulatedRole` cookie.
+ */
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { defineAbilitesFor, type Subjects } from "@/lib/abilities";

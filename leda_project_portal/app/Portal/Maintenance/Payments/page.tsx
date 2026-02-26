@@ -1,3 +1,7 @@
+/**
+ * Payments maintenance page — view and manage payments for teams, players,
+ * and places across the league.
+ */
 import PaymentsPageContent from "@/components/page-content/maintenance-content/payments-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

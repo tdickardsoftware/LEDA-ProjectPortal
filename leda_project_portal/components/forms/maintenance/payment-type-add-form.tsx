@@ -1,6 +1,14 @@
 // Import necessary modules and components
 "use client";
 
+/**
+ * PaymentTypeAddForm Component
+ *
+ * Form for creating a new payment type (e.g., CASH, CHECK) in the maintenance
+ * section. Includes an optional description field. Returns a 422 conflict when
+ * the payment type already exists, surfacing an inline error to the user.
+ */
+
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -31,6 +39,12 @@ const paymentTypeFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * PaymentTypeAddForm creates a new payment type record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 // PaymentTypeAddForm component definition
 export default function PaymentTypeAddForm({
 	onClose,

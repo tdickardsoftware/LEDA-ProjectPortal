@@ -84,6 +84,7 @@ export default async function handler(
 				error,
 			});
 		}
+		// Handle POST requests — create a new player and membership record
 	} else if (req.method === "POST") {
 		try {
 			const results = req.body as PlayerMemberInfo;
@@ -164,6 +165,7 @@ export default async function handler(
 				});
 			}
 		}
+		// Handle DELETE requests — remove a player and their membership record
 	} else if (req.method === "DELETE") {
 		try {
 			const data = req.body as Player;
@@ -179,6 +181,7 @@ export default async function handler(
 				message: (error as Error).message || "Server error",
 			});
 		}
+		// Handle PUT requests — update player info and membership record
 	} else if (req.method === "PUT") {
 		try {
 			const data = req.body as PlayerMemberInfo;

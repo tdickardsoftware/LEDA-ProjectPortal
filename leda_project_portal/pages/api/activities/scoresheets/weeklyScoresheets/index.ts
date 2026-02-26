@@ -1,8 +1,12 @@
+/**
+ * API Route: /api/activities/scoresheets/weeklyScoresheets
+ *
+ * GET — Returns league play weekly scoresheet report rows for a given season
+ *        and week number, ordered by team letter. Used when generating weekly
+ *        scoresheet reports. Both `seasonCode` and `weekNum` are required.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
-import { query } from "@/lib/dbTypeGet";
-import { LeaguePlayWeeklyScoresheets } from "@/lib/definitions";
-import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(

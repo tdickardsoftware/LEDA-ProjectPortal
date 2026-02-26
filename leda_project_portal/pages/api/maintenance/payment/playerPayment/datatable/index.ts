@@ -1,3 +1,11 @@
+/**
+ * Paginated server-side datatable endpoint for player payment history.
+ *
+ * GET - Returns a paginated, optionally filtered and searched slice of
+ *       leda_maint_player_payment_history joined with player and season info.
+ *       Supports field-specific and general text searches via search-parser.
+ *       Query params: page, pageSize, search, ledaId
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PaymentHistory } from "@/lib/definitions";

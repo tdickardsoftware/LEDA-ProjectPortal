@@ -1,3 +1,11 @@
+/**
+ * LeaguePlayMentionBestOfDivisionReport
+ *
+ * React-PDF document listing "Best of Division" award mentions for the
+ * selected season. Rows are grouped by division using the `groupByDivision`
+ * helper and display player name, team, and mention details.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { MentionBestOfDivision } from "@/lib/definitions";

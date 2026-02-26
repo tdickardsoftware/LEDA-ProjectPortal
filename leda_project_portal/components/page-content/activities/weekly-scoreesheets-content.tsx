@@ -416,7 +416,7 @@ export default function WeeklyScoresheetsContent({
 // Removed automatic mention fetching - mentions are now only fetched when user clicks mention button
 	// Removed legacy scoresheet save; normalization only
 
-
+	// Mutations — scoresheet save, player points, team points, mention history, and delete operations
 
 	const savePlayerPointsMutation = useMutation({
 		mutationFn: savePlayerPoints,
@@ -480,7 +480,7 @@ export default function WeeklyScoresheetsContent({
 
 	// Removed legacy saveScoresheet; saveMatchup now persists directly to V2 tables
 
-	// Derived state
+	// Derived loading/saving flags — combined from all active query and mutation states
 	const isLoading = 
 		isHomePlayersLoading || 
 		isAwayPlayersLoading ||
@@ -526,12 +526,12 @@ export default function WeeklyScoresheetsContent({
 
 	// Removed legacy formatted score data syncing
 
-	// Event handlers
+	// Event handlers — mark data as changed; used to prompt save-on-navigate
 	const handleDataChange = () => {
 		setIsDataChanged(true);
 	};
 
-	// Week selector handler: incoming value may be like 'Date3'; normalize to just numeric '3'
+	// Week selector: normalises the incoming 'DateN' key to a plain integer string
 	const handleDateToDisplay = (value: string) => {
 		if (!confirmPendingChanges()) return;
 		const numeric = value.match(/\d+/)?.[0] || value; // fallback if pattern changes
@@ -599,6 +599,8 @@ const confirmPendingChangesPlaceholder = () => true;
 
 	// Handle matchup selection from SideNav is defined later after confirmPendingChanges
 
+	// Save logic — persists only changed fields to the V2 scoresheet tables using
+	// shallow snapshot diffing (deepEqual) to avoid redundant writes
 	const deepEqual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 	const saveMatchup = useCallback(async (markComplete: boolean = false) => {
 		if (!seasonCode || !selectedWeek || !selectedDivision || !selectedSubdivision) return;
@@ -778,6 +780,7 @@ const confirmPendingChangesPlaceholder = () => true;
 		
 	// removed stray fragment from prior handler
 
+	// Event handlers — game participation toggling and per-game win/points entry
 	const handleGameToggle = (
 		teamType: "home" | "away",
 		playerId: string,
@@ -1113,6 +1116,7 @@ const confirmPendingChangesPlaceholder = () => true;
 
 	// ensureBaselineForMatchup removed (baselines now implicit via save + probing)
 
+	// Event handlers — penalty add / edit / remove for both home and away teams
 	const handlePenaltyClick = (
 		teamId: string,
 		teamName: string | undefined,
@@ -1201,6 +1205,7 @@ const confirmPendingChangesPlaceholder = () => true;
 		handleDataChange();
 	};
 
+	// Event handlers — mention (award/infraction) add / edit / remove per player
 	const handleMentionClick = async (playerId: string, teamId: string) => {
 		// Find the player name based on the ID
 		let playerName = "";
@@ -1730,6 +1735,7 @@ const FolderTabSkeleton = () => (
 </div>
 );
 
+	// Render — season/week selectors, sidenav, and the per-matchup scoresheet editor
 	return (
 		<div className="flex flex-col h-full">
 			{prevWeekIncomplete && (

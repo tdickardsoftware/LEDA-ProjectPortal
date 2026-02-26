@@ -1,5 +1,22 @@
 "use client";
 
+/**
+ * TeamPageContent
+ *
+ * Detail view for a single team record. Displays team metadata and its
+ * associated place in read-only cards.
+ *
+ * Toolbar actions (via `FolderTabMed`):
+ *   - Edit Team — opens `TeamEditForm` in a dialog.
+ *   - Payment History / Add Team Payment — opens payment dialogs.
+ *   - League History — opens `TeamLeagueHistory`.
+ *   - Penalty History — opens `TeamPenaltyHistory`.
+ *
+ * `renderPaymentStatusIcon` fetches each roster member's payment status
+ * and renders a colour-coded icon (PAID / PART-PAID / UNPAID) with a
+ * tooltip inside a popover.
+ */
+
 import { Team } from "@/lib/definitions";
 import {
 	Card,

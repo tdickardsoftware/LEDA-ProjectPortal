@@ -1,3 +1,20 @@
+/**
+ * Advanced search query parser for LEDA datatable filtering.
+ *
+ * Parses a free-text search string into a structured `ParsedSearch` object
+ * that supports:
+ * - General (full-text) search – passed through to Fuse.js or similar.
+ * - Field-specific search using `Field = value`, `Field IN (v1, v2)`, and
+ *   reverse `value IN Field` (partial match) syntax.
+ * - Compound queries with AND within a group and OR between groups.
+ *
+ * Exported utilities:
+ * - `createColumnMapping`  – builds a lookup from display names / aliases to data keys.
+ * - `resolveFieldName`     – normalises a user-typed field name using the mapping.
+ * - `parseFieldSearch`     – converts a raw query string to a `ParsedSearch`.
+ * - `buildSQLWhereClause`  – generates a parameterised SQL WHERE clause.
+ * - `filterDataBySearch`   – applies parsed search to an in-memory array.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export interface FieldSearch {

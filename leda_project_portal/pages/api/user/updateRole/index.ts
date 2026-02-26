@@ -1,3 +1,10 @@
+/**
+ * API Route: /api/user/updateRole
+ *
+ * GET   — Returns username/role pairs. Scoped to a single user when
+ *          the `username` query param is provided; returns all users otherwise.
+ * PATCH — Updates the role for the specified username. Requires an active session.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";

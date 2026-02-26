@@ -1,3 +1,11 @@
+/**
+ * Batch endpoint for fetching multiple player records in a single request.
+ *
+ * POST - Accepts a JSON body with a playerIds array (max 200 IDs).
+ *        Returns a list of full PlayerMemberInfo objects by joining
+ *        leda_membership_info with leda_player_info for all requested IDs.
+ *        Duplicate IDs are deduplicated before querying.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PlayerMemberInfo } from "@/lib/definitions";

@@ -1,3 +1,7 @@
+/**
+ * Portal root layout — wraps all authenticated portal pages with the
+ * collapsible sidebar, dynamic breadcrumb navigation, and main content area.
+ */
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";

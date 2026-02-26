@@ -1,3 +1,12 @@
+/**
+ * PaymentTypeSelectorNF component
+ *
+ * Standalone (non-form) searchable combobox for selecting a payment type.
+ * Operates in either controlled mode (via `value` + `onChange`) or
+ * uncontrolled via internal state.  Fires the optional
+ * `handlePaymentTypeChange` callback on selection.  Fetches payment types
+ * from the API via TanStack Query.
+ */
 "use client";
 
 import React, { useState } from "react";

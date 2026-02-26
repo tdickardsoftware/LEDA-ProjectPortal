@@ -1,3 +1,11 @@
+/**
+ * MentionEditForm Component
+ *
+ * Edit form for an existing mention type. Fetches the full mention record by
+ * `mentionCode` from the API on mount, then pre-populates all fields. Submits
+ * a PUT request to update the record. The mention code field is disabled to
+ * prevent changing the primary key after creation.
+ */
 "use client";
 
 import { z } from "zod";
@@ -24,6 +32,7 @@ import { Mention } from "@/lib/definitions";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema — points must be a non-negative number
 const mentionFormSchema = z.object({
 	mentionCode: z.string().min(1, { message: "Mention Code is required." }),
 	desc: z.string().optional(),
@@ -35,6 +44,13 @@ const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
+/**
+ * MentionEditForm fetches mention data by code and provides an edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the mentionCode used to fetch full details
+ */
 export default function MentionEditForm({
 	onClose,
 	onRefresh,
@@ -44,6 +60,7 @@ export default function MentionEditForm({
 	onRefresh: () => void;
 	rowData: Mention;
 }) {
+	// Local state to store the full mention record fetched from the API
 	const [formData, setFormData] = useState<Mention>({} as Mention);
 
 	const formRef = React.useRef<HTMLFormElement>(null);

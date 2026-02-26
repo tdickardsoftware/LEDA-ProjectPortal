@@ -1,3 +1,10 @@
+/**
+ * Core scheduling hook for the LEDA schedule management page.
+ * Orchestrates fetching roster and game-date data, building the empty match
+ * data structure, and saving updated schedule data back to the API.
+ * Each subdivision fetches its own match data independently (lazy loading)
+ * rather than loading the entire schedule upfront.
+ */
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -40,6 +47,11 @@ const fetchSchedule = async (seasonCode: string) => {
 	return res.json() as Promise<ScheduleApiResponse>;
 };
 
+/**
+ * Manages all state and server interactions for the schedule builder.
+ * Returns roster divisions, game dates, match data, a save handler,
+ * and loading/save-button state.
+ */
 export function useScheduleData() {
 	const [seasonCode, setSeasonCode] = useState<string | null>(null);
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
@@ -48,6 +60,8 @@ export function useScheduleData() {
 
 	const queryClient = useQueryClient();
 
+	// Stamps every match with its parent subdivisionId so cross-subdivision
+	// mutations cannot accidentally overwrite unrelated records.
 	const ensureSubdivisionIsolation = useCallback((matchData: ScheduleData): ScheduleData => {
 		const clonedData = structuredClone(matchData);
 		Object.entries(clonedData).forEach(([division, subdivisions]) => {
@@ -63,6 +77,8 @@ export function useScheduleData() {
 		return clonedData;
 	}, []);
 
+	// Builds a ScheduleData skeleton from the roster so each team has an
+	// empty matchesData object ready for per-subdivision data to be merged in.
 	const initializeEmptyMatchData = useCallback((divisionsData: DivisionsData): ScheduleData => {
 		const newMatchData: ScheduleData = {};
 		Object.entries(divisionsData).forEach(([division, divisionData]) => {

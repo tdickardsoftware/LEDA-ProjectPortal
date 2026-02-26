@@ -1,3 +1,10 @@
+/**
+ * API Route: /api/activities/scoresheets/byeWeeksCompleted
+ *
+ * GET — Returns the bye-weeks processing status record for a specific
+ *        season and week number. Both `seasonCode` and `weekNum` query
+ *        params are required.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";

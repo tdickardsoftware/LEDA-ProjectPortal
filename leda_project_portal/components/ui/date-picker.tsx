@@ -1,3 +1,13 @@
+/**
+ * DatePickerCustom component
+ *
+ * A calendar popover date picker built on shadcn Calendar and Popover.
+ * Adjusts the selected date for the local timezone offset so the displayed
+ * date matches the calendar selection without UTC drift.  Supports:
+ * - Optional input display next to the trigger button (`showInput`)
+ * - A list of disabled dates
+ * - Month/year navigation picker mode (`enableMonthYearPicker`)
+ */
 // Import necessary modules and components
 "use client";
 import * as React from "react";

@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI ContextMenu primitive wrapper with styled items, checkboxes, radio groups, and submenus. */
 "use client"
 
 import * as React from "react"

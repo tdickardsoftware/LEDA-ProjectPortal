@@ -1,8 +1,12 @@
+/**
+ * API Route: /api/activities/scoresheets/topDarter
+ *
+ * GET — Returns top darter report records for a season filtered by a minimum
+ *        points threshold. Results are ordered by divisionInfo ascending.
+ *        Both `seasonCode` and `minimumPoints` query params are required.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
-import { query } from "@/lib/dbTypeGet";
-import { TopDarter } from "@/lib/definitions";
-import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(

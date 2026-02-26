@@ -1,3 +1,7 @@
+/**
+ * Mentions maintenance page — server-rendered data table for managing
+ * mention records. Supports add, edit, and delete operations.
+ */
 import { DataTable } from "@/components/datatable";
 import { mentionRoute } from "@/lib/apiRoutes";
 import { fetchMentions } from "@/lib/getData";

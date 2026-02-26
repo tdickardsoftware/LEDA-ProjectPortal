@@ -1,3 +1,11 @@
+/**
+ * PayoutTierEditForm Component
+ *
+ * Edit form for an existing payout tier. Fetches the full record by place number
+ * from the API on mount and pre-populates the place (disabled) and amount fields.
+ * Submits a PUT request to update the payout amount. Place is read-only because
+ * it serves as the primary key.
+ */
 "use client";
 
 import { z } from "zod";
@@ -21,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema — both place and amount must be non-negative numbers
 const payoutTierFormSchema = z.object({
 	place: z
 		.number()
@@ -32,6 +41,13 @@ const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
+/**
+ * PayoutTierEditForm fetches a payout tier record and provides an edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the place number used to fetch details
+ */
 export default function PayoutTierEditForm({
 	onClose,
 	onRefresh,
@@ -41,6 +57,7 @@ export default function PayoutTierEditForm({
 	onRefresh: () => void;
 	rowData: PayoutTier;
 }) {
+	// Local state to store the full payout tier record fetched from the API
 	const [formData, setFormData] = useState<PayoutTier>({} as PayoutTier);
 
 	const formRef = React.useRef<HTMLFormElement>(null);

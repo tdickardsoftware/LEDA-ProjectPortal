@@ -1,3 +1,8 @@
+/**
+ * Player detail page — fetches the specified player member by LEDA ID and renders
+ * their detailed profile view. Triggers a 404 if the player is not found.
+ * Uses Suspense to show a spinner while data is loading server-side.
+ */
 import PlayerPageContent from "@/components/page-content/management-content/player-content/player-view-page-content";
 import { fetchPlayerMember } from "@/lib/getData";
 import { notFound } from "next/navigation";

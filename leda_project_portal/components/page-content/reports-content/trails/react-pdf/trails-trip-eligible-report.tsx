@@ -1,3 +1,11 @@
+/**
+ * TrailsTripEligibleReport
+ *
+ * React-PDF document listing all members eligible for the annual trails
+ * trip based on their accumulated points. Includes a custom header row and
+ * columns for member name, total points, and eligibility status.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { TrailsTripEligible } from "@/lib/definitions";

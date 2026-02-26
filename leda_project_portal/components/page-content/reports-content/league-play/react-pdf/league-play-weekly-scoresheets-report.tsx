@@ -1,3 +1,12 @@
+/**
+ * LeaguePlayWeeklyScoresheets
+ *
+ * React-PDF document rendering all weekly scoresheet summaries for the
+ * selected week and season. Data is grouped by division → subdivision.
+ * Each row includes match pairings, game scores, and running TDP points
+ * columns.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { LeaguePlayWeeklyScoresheets } from "@/lib/definitions";

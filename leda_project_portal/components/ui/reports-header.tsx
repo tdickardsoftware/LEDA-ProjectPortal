@@ -1,3 +1,11 @@
+/**
+ * ReportsHeader component
+ *
+ * React-PDF page header rendered on every page of a generated report.
+ * Displays the LEDA organisation logo alongside the organisation name,
+ * address, the report title, and the run date.  All layout is defined using
+ * React-PDF StyleSheet.
+ */
 import React from "react";
 import { View, Text, StyleSheet, Image as PDFImage } from "@react-pdf/renderer";
 

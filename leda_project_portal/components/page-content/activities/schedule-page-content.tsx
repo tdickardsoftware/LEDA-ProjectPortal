@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * SchedulePageContent
+ *
+ * Displays and saves the weekly match schedule for the selected season.
+ * All data-fetching and mutation logic is delegated to the `useScheduleData`
+ * custom hook. The UI is built from a memoized `DivisionAccordion` component
+ * that renders per-subdivision schedule grids.
+ *
+ * Season is selected via `SeasonCodeSelector`; the save action calls
+ * `scheduleData.handleSave()` from the hook.
+ */
+
 import { useCallback, memo } from "react";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import {

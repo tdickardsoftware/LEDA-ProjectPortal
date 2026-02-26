@@ -1,3 +1,11 @@
+/**
+ * PenaltyEditForm Component
+ *
+ * Edit form for an existing penalty code. Fetches the full record by
+ * `penaltyCode` from the API on mount and pre-populates the fields. The
+ * penalty code field is disabled to prevent changing the primary key after
+ * creation. Submits a PUT request to update the description.
+ */
 "use client";
 
 import { z } from "zod";
@@ -22,6 +30,7 @@ import { Penalty } from "@/lib/definitions";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for penalty fields
 const penaltyFormSchema = z.object({
 	penaltyCode: z.string().min(1, { message: "Penalty Code is required." }),
 	desc: z.string().optional(),
@@ -30,6 +39,13 @@ const penaltyFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * PenaltyEditForm fetches a penalty record and provides an edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the penaltyCode used to fetch details
+ */
 export default function PenaltyEditForm({
 	onClose,
 	onRefresh,
@@ -39,6 +55,7 @@ export default function PenaltyEditForm({
 	onRefresh: () => void;
 	rowData: Penalty;
 }) {
+	// Local state to store the full penalty record fetched from the API
 	const [formData, setFormData] = useState<Penalty>({} as Penalty);
 
 	const formRef = React.useRef<HTMLFormElement>(null);

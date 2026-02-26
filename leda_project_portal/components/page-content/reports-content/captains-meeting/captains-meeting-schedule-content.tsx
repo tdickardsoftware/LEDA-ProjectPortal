@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * CaptainsMeetingScheduleContent
+ *
+ * Renders the interactive schedule view used within the Captains Meeting
+ * report workflow. Four TanStack Query hooks load: roster, current season,
+ * full schedule data, and season-place-captain info.
+ *
+ * Once all four datasets are available the component fires `onDataReady`,
+ * passing combined data up to the parent landing page so a PDF download
+ * can be offered.
+ *
+ * A memoized `DivisionAccordion` renders the schedule grid in view-only mode
+ * (no editing controls shown).
+ */
+
 import { useCallback, memo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {

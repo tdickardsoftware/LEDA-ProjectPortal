@@ -1,3 +1,11 @@
+/**
+ * LeaguePlayMentionLeaguePlayReport
+ *
+ * React-PDF document listing all league-play award mentions. The outer
+ * table groups by player; a nested sub-table lists each individual mention
+ * record (week, code, description, points) for that player.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { MentionLeaguePlay } from "@/lib/definitions";

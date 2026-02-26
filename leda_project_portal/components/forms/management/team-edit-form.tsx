@@ -1,3 +1,13 @@
+/**
+ * TeamEditForm Component
+ *
+ * Multi-step form for editing an existing team record.
+ * Steps: Basic Info → Team Details → Team Members.
+ * Fetches full team data by LEDA ID on mount. Tracks member list changes
+ * independently of RHF dirty state via `initialMemberIdListRef`. The
+ * `hasChanges` flag is true when either form fields or the member list differ
+ * from the originally-loaded values.
+ */
 "use client";
 
 import { z } from "zod";
@@ -25,6 +35,7 @@ import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for team edit fields (no memberIdList — managed via state)
 const teamInfoSchema = z.object({
 	ledaId: z
 		.number()
@@ -35,10 +46,19 @@ const teamInfoSchema = z.object({
 	memo: z.string().nullable().optional(),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
+/**
+ * TeamEditForm fetches a team record and provides a multi-step edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - The team record used to look up full data by ledaId
+ * @param handleRefresh - Optional alternative refresh/close handler
+ */
 export default function TeamEditForm({
 	onClose,
 	onRefresh,
@@ -50,9 +70,13 @@ export default function TeamEditForm({
 	rowData: Team;
 	handleRefresh?: () => void;
 }) {
+	// Local state to store the full team record fetched from the API
 	const [formData, setFormData] = useState<Team>({} as Team);
+	// Comma-separated list of member LEDA IDs; managed separately from RHF
 	const [memberIdList, setMemberIdList] = useState<string>("");
+	// Ref to compare current memberIdList against its initial loaded value
 	const initialMemberIdListRef = React.useRef<string>("");
+	// Track which wizard step is currently active
 	const [currentStep, setCurrentStep] = useState(0);
 
 	// Define the steps
@@ -79,6 +103,7 @@ export default function TeamEditForm({
 		},
 	});
 
+	// True when either form fields or the member list differ from initial loaded values
 	const hasChanges =
 		form.formState.isDirty || memberIdList !== initialMemberIdListRef.current;
 
@@ -118,6 +143,7 @@ export default function TeamEditForm({
 		},
 	});
 
+	// Propagates the serialized member ID list from the PlayerSelector child component
 	function handleSetMemberIdList(memberIdList: string) {
 		setMemberIdList(memberIdList);
 	}

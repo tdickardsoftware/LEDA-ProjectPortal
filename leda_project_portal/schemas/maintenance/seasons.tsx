@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Seasons data table (Maintenance section).
+ * Defines a bulk-selectable checkbox column and columns for season code,
+ * description, fiscal year, and current-season flag.
+ */
 //
 // Use the client
 //

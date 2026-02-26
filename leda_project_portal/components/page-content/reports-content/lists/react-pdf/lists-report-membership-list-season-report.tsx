@@ -1,3 +1,11 @@
+/**
+ * ListsReportMembershipListSeasonReport
+ *
+ * React-PDF document listing all members for the selected season, sorted
+ * by division/team. Same layout as the join-date variant but adds a
+ * `divisionInfo` column showing the member’s current team and division.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { ListsMembership } from "@/lib/definitions";

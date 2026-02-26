@@ -1,3 +1,4 @@
+/** Shadcn Calendar component built on react-day-picker with navigation chevron icons. */
 "use client";
 
 import * as React from "react";

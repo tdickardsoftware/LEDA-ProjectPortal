@@ -1,3 +1,14 @@
+/**
+ * API Route: /api/activities/scoresheets/playerPoints
+ *
+ * POST — Upserts weekly player point totals (cumulative). Automatically
+ *          fetches the previous week's running total and propagates any
+ *          point delta forward through all subsequent weeks.
+ * GET  — Retrieves player point data filtered by various combinations of
+ *          seasonCode, weekNum, ledaId, teamLedaId, division, and subdivision.
+ *          Supports report views for top-darter totals and per-week breakdowns.
+ * Requires an authenticated session.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { queryPost } from "@/lib/query";
 import {
@@ -251,6 +262,11 @@ export default async function handler(
 }
 
 // Function to update all subsequent weeks when a week's points are updated
+/**
+ * Cascades a point delta forward through all recorded weeks after the
+ * edited week, keeping prevTotalPoints and totalPoints consistent for
+ * the given player within a season/division/subdivision.
+ */
 async function updateSubsequentWeeks(
 	seasonCode: string,
 	weekNum: number,

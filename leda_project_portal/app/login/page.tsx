@@ -1,3 +1,6 @@
+/**
+ * Login page — renders the authentication form for portal access.
+ */
 // Import necessary components and types
 import LoginPageContent from "@/components/page-content/landing-content/login-page-content";
 import { Metadata } from "next";

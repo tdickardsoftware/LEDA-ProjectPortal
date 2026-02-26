@@ -1,8 +1,15 @@
+/**
+ * API Route: /api/activities/schedule
+ *
+ * POST — Saves a full season schedule by deleting the existing records and
+ *          batch-inserting the new normalized matchup rows derived from the
+ *          nested ScheduleData structure.
+ * GET  — Returns the schedule for a given season code, transforming normalised
+ *          rows back into the nested division > subdivision > team > week shape
+ *          expected by the UI.
+ * Requires an authenticated session.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
-import { queryPost } from "@/lib/query";
-import { query } from "@/lib/dbTypeGet";
-import { ScheduleData } from "@/lib/schedule";
-import { requireApiSession } from "@/lib/require-session";
 
 interface NormalizedScheduleRow {
 	seasonCode: string;

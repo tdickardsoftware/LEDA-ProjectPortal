@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Mentions data table (Maintenance section).
+ * Defines a bulk-selectable checkbox column and columns for mention code,
+ * description, point value, and mention basis.
+ */
 //
 // Use the client
 //

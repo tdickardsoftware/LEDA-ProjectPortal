@@ -1,3 +1,10 @@
+/**
+ * Server-side session fetcher for App Router React Server Components.
+ *
+ * Wraps `auth.api.getSession` in React's `cache()` so the session is only
+ * fetched once per server request regardless of how many RSCs call it.
+ * Must only be imported from server-only code (pages, layouts, actions).
+ */
 import { cache } from "react";
 import { headers } from "next/headers";
 import { auth } from "@/auth";

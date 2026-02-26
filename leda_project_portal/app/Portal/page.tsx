@@ -1,3 +1,7 @@
+/**
+ * Portal index page — landing page for authenticated users inside the portal.
+ * Displays a welcome/overview area with links to each major portal section.
+ */
 // Import necessary components and types
 import PortalPageContent from "@/components/page-content/landing-content/portal-page-content";
 import { Separator } from "@/components/ui/separator";

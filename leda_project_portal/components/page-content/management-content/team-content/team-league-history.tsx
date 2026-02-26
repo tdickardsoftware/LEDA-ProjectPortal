@@ -1,8 +1,15 @@
 "use client";
 
+/**
+ * TeamLeagueHistory
+ *
+ * Renders a read-only table of every league season a team has participated in.
+ * Data is fetched from `/api/management/team/leagueHistory` via TanStack Query,
+ * keyed by `teamData.teamId`. Columns: season, division, subdivision, final
+ * standings, and record.
+ */
+
 import { useQuery } from "@tanstack/react-query";
-import {
-	Table,
 	TableBody,
 	TableCell,
 	TableHead,

@@ -1,3 +1,7 @@
+/**
+ * Penalties maintenance page — server-rendered data table for managing
+ * league penalty records. Supports add, edit, and delete operations.
+ */
 import { DataTable } from "@/components/datatable";
 import { penaltyRoute } from "@/lib/apiRoutes";
 import { fetchPenalties } from "@/lib/getData";

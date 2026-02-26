@@ -1,3 +1,9 @@
+/**
+ * ReportsFooter component
+ *
+ * React-PDF fixed footer that renders the page-number string
+ * ("Page X of Y") at the bottom of every page in a generated report.
+ */
 import React from "react";
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 

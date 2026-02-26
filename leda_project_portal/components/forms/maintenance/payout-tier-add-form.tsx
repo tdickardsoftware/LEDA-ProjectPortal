@@ -1,5 +1,13 @@
 // Import necessary modules and components
 "use client";
+
+/**
+ * PayoutTierAddForm Component
+ *
+ * Form for creating a new payout tier that maps a finishing place (1st, 2nd, etc.)
+ * to a dollar/point amount. Returns a 422 conflict when the place already has
+ * an existing tier, surfacing an inline error next to the place field.
+ */
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -32,6 +40,12 @@ const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
+/**
+ * PayoutTierAddForm creates a new payout tier record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 // PayoutTierAddForm component definition
 export default function PayoutTierAddForm({
 	onClose,

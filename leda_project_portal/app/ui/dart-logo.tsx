@@ -1,3 +1,7 @@
+/**
+ * DartLogo component — renders the Lake Erie Dart Association branding header
+ * with a globe icon and the association name in the Lusitana font.
+ */
 import {GlobeAmericasIcon} from "@heroicons/react/24/outline";
 import { lusitana } from "./fonts";
 

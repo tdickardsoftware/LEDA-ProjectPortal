@@ -1,3 +1,11 @@
+/**
+ * ListsReportTeamsListJoinDateReport
+ *
+ * React-PDF document listing all teams sorted by their join date.
+ * Paginated at `ROWS_PER_PAGE = 20`. Columns: team name, place, captain
+ * name, division/subdivision, and join date.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { ListsTeams } from "@/lib/definitions";

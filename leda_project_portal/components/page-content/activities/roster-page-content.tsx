@@ -1,5 +1,19 @@
 "use client";
 
+/**
+ * RosterPageContent
+ *
+ * Full CRUD interface for the LEDA league roster (divisions, subdivisions,
+ * teams, and members). Changes are buffered in local state and persisted
+ * with `saveRosterMutation` / `updateRosterMutation` / `deleteRosterMutation`.
+ *
+ * Saving the roster also cascades a schedule regeneration via
+ * `updateScheduleMutation` so match slots stay in sync with team counts.
+ *
+ * The season is selected via `SeasonCodeSelector`. Drag-and-drop handles
+ * re-ordering teams within a subdivision using `@dnd-kit/sortable`.
+ */
+
 import { useState, useCallback, useEffect } from "react";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Button } from "@/components/ui/button";

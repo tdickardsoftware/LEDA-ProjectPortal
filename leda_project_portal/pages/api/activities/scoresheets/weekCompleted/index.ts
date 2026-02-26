@@ -1,3 +1,10 @@
+/**
+ * API Route: /api/activities/scoresheets/weekCompleted
+ *
+ * GET — Returns the completion record for a specific season week, indicating
+ *        whether all scoresheets for that week have been processed.
+ *        Both `seasonCode` and `weekNum` query params are required.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";

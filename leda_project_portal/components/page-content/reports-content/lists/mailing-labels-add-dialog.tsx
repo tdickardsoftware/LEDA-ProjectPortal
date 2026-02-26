@@ -1,3 +1,12 @@
+/**
+ * MailingLabelsAddDialog
+ *
+ * Dialog for adding individual players or places to the mailing labels list.
+ * Uses `PopoverMultiSelect` for searchable multi-selection, fetching
+ * available-only entries (those not already on the list). Emits `onSuccess`
+ * after the mutation resolves so the parent can refresh its data.
+ */
+
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";

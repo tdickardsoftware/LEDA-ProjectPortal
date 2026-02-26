@@ -1,3 +1,13 @@
+/**
+ * AppSidebar component
+ *
+ * The primary application sidebar for the LEDA portal.  Renders the
+ * collapsible navigation tree (Management, Maintenance, Reports, Activities)
+ * via NavMain, a user-actions footer via NavUser, and conditionally shows
+ * an admin user-management section when the current user has the required
+ * abilities.  Navigation items and their sub-routes are defined in the local
+ * `data` constant.
+ */
 //
 // Use Client
 //

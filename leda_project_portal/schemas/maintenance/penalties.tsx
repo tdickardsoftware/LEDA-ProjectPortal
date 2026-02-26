@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Penalties data table (Maintenance section).
+ * Defines a bulk-selectable checkbox column and columns for penalty code
+ * and description.
+ */
 //
 // Use the client
 //

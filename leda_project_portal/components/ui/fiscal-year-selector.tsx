@@ -1,3 +1,12 @@
+/**
+ * FiscalYearSelector component
+ *
+ * Uncontrolled searchable combobox for selecting a fiscal year.
+ * Fetches available fiscal years from the seasons API, auto-selects the
+ * first item when no value is provided, and notifies the parent via
+ * `handleSelect`.  An optional `setDisabled` callback is called once data
+ * loads so the parent can unlock dependent controls.
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";

@@ -1,5 +1,22 @@
 "use client";
 
+/**
+ * PayoutsContent
+ *
+ * Manages end-of-season payout calculations for all divisions.
+ *
+ * Data flow:
+ *   - `rosterQuery`         — loads current season roster (divisions/subdivisions/teams).
+ *   - `payoutsQuery`        — loads saved payout overrides for the selected season.
+ *   - `scoresheetCountQuery`— fetches the number of completed scoresheets per team.
+ *   - `calculatePayoutsMutation` — POSTs team/scoresheet data to derive suggested amounts.
+ *   - `savePayoutsMutation`      — PUTs final corrected amounts to the database.
+ *
+ * State includes per-division / per-subdivision accordion open/close flags and
+ * per-team adjustment dialogs for manual overrides. Season is selected via
+ * `SeasonCodeSelector`; payouts are locked once saved.
+ */
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";

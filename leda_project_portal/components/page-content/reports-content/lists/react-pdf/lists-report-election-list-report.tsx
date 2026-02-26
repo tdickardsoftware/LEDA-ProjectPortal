@@ -1,3 +1,11 @@
+/**
+ * ListsReportElectionListReport
+ *
+ * React-PDF document for the annual election ballot. Rows are paginated at
+ * `ROWS_PER_PAGE = 35`. Each row contains a candidate name and a blank
+ * ballot-tracking column.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { ListsElectionList } from "@/lib/definitions";

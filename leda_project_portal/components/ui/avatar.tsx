@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Avatar primitive wrapper (Avatar, AvatarImage, AvatarFallback). */
 "use client";
 
 import * as React from "react";

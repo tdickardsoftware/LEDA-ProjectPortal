@@ -1,3 +1,13 @@
+/**
+ * API Route: /api/activities/scoresheets/teamPoints/batch
+ *
+ * POST — Accepts a list of team IDs and week numbers and returns a boolean
+ *         status map indicating which team+week combinations already have
+ *         recorded points. Used to efficiently pre-check scoresheet entry
+ *         status without issuing individual per-team requests.
+ *         Body: { seasonCode, weekNums[], division, subdivision, teamIds[] }.
+ * Requires an authenticated session.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { requireApiSession } from "@/lib/require-session";

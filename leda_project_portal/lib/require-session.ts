@@ -1,3 +1,14 @@
+/**
+ * API-route session and CSRF guard for Next.js Pages Router API handlers.
+ *
+ * Call `requireApiSession(req, res)` at the start of every `/pages/api`
+ * handler. It validates the Better Auth session, enforces CSRF via the
+ * double-submit cookie pattern, maps the request path to a CASL subject,
+ * and checks that the user has the necessary ability for the HTTP method.
+ *
+ * Returns the session on success or sends the appropriate error response
+ * and returns `null` so the handler can short-circuit.
+ */
 import type { NextApiRequest, NextApiResponse } from "next";
 import { auth } from "@/auth";
 import { defineAbilitesFor, type Actions, type Subjects } from "@/lib/abilities";

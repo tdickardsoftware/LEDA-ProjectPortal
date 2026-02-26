@@ -1,8 +1,20 @@
+/**
+ * Client-side hook for accessing the current user and their CASL abilities.
+ *
+ * Fetches the Better Auth session via React Query, constructs a typed User
+ * object, and derives a CASL ability instance. Also manages role emulation:
+ * privileged users (Developer / Office Admin) can downgrade their effective
+ * role for testing purposes; the emulated role is persisted in sessionStorage
+ * and a cookie so server-side guards can honour it.
+ *
+ * Returns { user, ability, loading, emulateRole }.
+ */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { authClient } from "@/lib/auth-client";
 import { defineAbilitesFor } from "@/lib/abilities";
 import { useQuery } from "@tanstack/react-query";
 
+/** Typed representation of a portal user with optional emulated role. */
 interface User {
     name: string;
     email: string;
@@ -12,6 +24,10 @@ interface User {
     originalRole?: "Developer" | "Office Admin";
 }
 
+/**
+ * React hook that returns the current user, their CASL ability instance,
+ * a loading flag, and an `emulateRole` callback for role switching.
+ */
 export function useUserAbilities() {
     const [emulatedRole, setEmulatedRole] = useState<User["emulatedRole"] | undefined>(undefined);
 

@@ -1,3 +1,9 @@
+/**
+ * Hook that persists data-table UI state (page, pageSize, search, sorting)
+ * in sessionStorage so navigating away and back restores the previous view.
+ * State is reset to page 1 on unmount unless the next route marks itself as
+ * a "preserve" navigation (e.g. opening a detail/view page).
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -15,6 +21,11 @@ type PersistedDataTableStateOptions = {
 	defaultSearch?: string;
 };
 
+/**
+ * Safely parses a JSON string from sessionStorage into a partial
+ * `PersistedDataTableState`, validating each field before accepting it.
+ * Returns `null` if the raw value is absent or malformed.
+ */
 function safeParseState(raw: string | null): Partial<PersistedDataTableState> | null {
 	if (!raw) return null;
 	try {

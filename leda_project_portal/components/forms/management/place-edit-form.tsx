@@ -1,3 +1,12 @@
+/**
+ * PlaceEditForm Component
+ *
+ * Multi-step form for editing an existing venue record. Fetches full place data
+ * by LEDA ID on mount and pre-populates all fields. Steps mirror PlaceAddForm:
+ * Basic Info → Contact Info → Membership Info → Additional Info. The `hasChanges`
+ * flag (from `form.formState.isDirty`) can be used by the parent to warn before
+ * discarding edits.
+ */
 "use client";
 
 import { z } from "zod";
@@ -32,6 +41,7 @@ import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 
+// Validation schema — mirrors PlaceAddForm but does not include lastBarFeePayment
 const placeFormSchema = z.object({
 	ledaId: z
 		.number()
@@ -89,11 +99,20 @@ const placeFormSchema = z.object({
 	contactId: z.string().min(1, { message: "Place Owner is Required" }),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlaceEditForm fetches a place record and provides a multi-step edit interface.
+ *
+ * @param onClose - Optional callback to close the edit panel
+ * @param onRefresh - Optional callback to reload the parent data table
+ * @param rowData - The place record used to look up full data by ledaId
+ * @param handleEdit - Alternative close handler used in some parent contexts
+ */
 export default function PlaceEditForm({
 	onClose,
 	onRefresh,
@@ -105,7 +124,9 @@ export default function PlaceEditForm({
 	rowData: Place;
 	handleEdit?: () => void;
 }) {
+	// Local state to store the full place record fetched from the API
 	const [formData, setFormData] = useState<Place>({} as Place);
+	// Track which wizard step is currently active
 	const [currentStep, setCurrentStep] = useState(0);
 
 	// Define the steps
@@ -176,6 +197,7 @@ export default function PlaceEditForm({
 		},
 	});
 
+	// True when any form field has been modified from its original value
 	const hasChanges = form.formState.isDirty;
 
 	const mutation = useMutation({

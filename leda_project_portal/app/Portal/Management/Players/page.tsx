@@ -1,7 +1,9 @@
+/**
+ * Players management page — client-side server-paginated data table for managing
+ * player/member records. Supports add, edit, delete, and detail view navigation.
+ * Table state (pagination, sorting, search) is persisted across navigation.
+ */
 "use client";
-
-import { ServerSideDataTable } from "@/components/server-side-datatable";
-import { playerRoute } from "@/lib/apiRoutes";
 import { columns } from "@/schemas/managment/players";
 import { usePlayersData } from "@/hooks/usePlayersData";
 import { Spinner } from "@/components/ui/skeleton";

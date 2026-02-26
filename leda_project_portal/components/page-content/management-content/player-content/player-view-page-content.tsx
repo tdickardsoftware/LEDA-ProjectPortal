@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * PlayerPageContent
+ *
+ * Detail view for a single player record. Displays personal information and
+ * membership metadata in read-only cards.
+ *
+ * Toolbar actions (via `FolderTabMed`):
+ *   - Edit Player — opens `PlayerEditForm` in a dialog.
+ *   - Trails History — opens `PlayerTrailsHistoryContent`.
+ *   - Mentions History — opens `PlayerMentionsHistoryContent`.
+ *   - Payment History / Add Player Payment — opens payment dialog.
+ *   - Top Darter Points History — opens `PlayerTDPHistoryContent`.
+ *   - Roster History — opens `PlayerRosterHistoryContent`.
+ */
+
 import { PlayerMemberInfo } from "@/lib/definitions";
 import {
 	Card,

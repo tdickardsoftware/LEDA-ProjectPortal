@@ -1,3 +1,13 @@
+/**
+ * PaymentVisualisor component
+ *
+ * Displays a paginated, searchable payment-history table for a player, team,
+ * or place using the ServerSideDataTable.  Supports inline Add / Edit
+ * (PaymentHistoryFormDialog) and Delete actions per row.  A detail dialog
+ * offers a read-only summary view of a selected payment record.  The
+ * appropriate data hook (usePlayerPaymentsData / useTeamPaymentsData /
+ * usePlacePaymentsData) is selected based on the `type` prop.
+ */
 "use client";
 
 import React, { useState, useMemo } from "react";

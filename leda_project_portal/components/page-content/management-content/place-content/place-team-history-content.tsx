@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * PlaceTeamHistoryContent
+ *
+ * Displays all teams that have been associated with a place across seasons.
+ * Data is fetched from the `/api/management/place/teamHistory` endpoint
+ * using TanStack Query keyed by the place's LEDA ID.
+ */
+
 import { useQuery } from "@tanstack/react-query";
 import { Place } from "@/lib/definitions";
 import {

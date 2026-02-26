@@ -1,3 +1,11 @@
+/**
+ * DivisionAddForm Component (Maintenance)
+ *
+ * Form for creating a new division in the maintenance section.
+ * Submits a POST request to the division API and shows a duplicate-name
+ * error when the server returns a 422 status. Resets the form and refreshes
+ * the parent list on successful creation.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -22,7 +30,12 @@ const divisionFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the DivisionAddForm component
+/**
+ * DivisionAddForm creates a new division record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function DivisionAddForm({
 	onClose,
 	onRefresh,

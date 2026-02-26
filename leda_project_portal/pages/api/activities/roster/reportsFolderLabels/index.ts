@@ -1,8 +1,12 @@
+/**
+ * API Route: /api/activities/roster/reportsFolderLabels
+ *
+ * GET — Returns captains meeting folder label data (team name, place,
+ *        captain, division, subdivision, team letter) for a given season.
+ *        The `seasonCode` query param is required.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
-import { query } from "@/lib/dbTypeGet";
-import { CaptainsMtgFolderLabels } from "@/lib/definitions";
-import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(

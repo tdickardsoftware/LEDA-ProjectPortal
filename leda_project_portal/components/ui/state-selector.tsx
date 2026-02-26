@@ -1,3 +1,11 @@
+/**
+ * StateSelector component
+ *
+ * Searchable combobox for selecting a US state within a React Hook Form
+ * context.  The full 50-state list is defined locally; no API call required.
+ * Writes the selected two-letter state abbreviation into the bound form
+ * field.
+ */
 // Import necessary modules and components
 "use client";
 import * as React from "react";

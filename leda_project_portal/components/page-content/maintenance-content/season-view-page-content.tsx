@@ -1,5 +1,14 @@
 "use client";
 
+/**
+ * SeasonPageContent
+ *
+ * Detail view for a single season record. Displays season metadata (code,
+ * description, fiscal year, current-season flag, and associated game dates)
+ * in read-only cards. A toolbar button toggles into an inline edit mode
+ * via `SeasonEditForm`; a "Go Back" link returns to the Seasons list.
+ */
+
 import { Season } from "@/lib/definitions";
 import {
 	Card,

@@ -1,3 +1,8 @@
+/**
+ * Season-specific weekly scoresheet page — validates the season exists via the
+ * roster API route, then renders scoresheet content for the provided seasonCode.
+ * Triggers a 404 if the season is not found.
+ */
 import WeeklyScoresheetsContent from "@/components/page-content/activities/weekly-scoreesheets-content";
 import { rosterRouteServer } from "@/lib/apiRoutes";
 import { fetchWithSession } from "@/lib/getData";

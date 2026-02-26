@@ -1,3 +1,11 @@
+/**
+ * PhoneNumberInput component
+ *
+ * React Hook Form field for US phone numbers.  Formats input in real-time
+ * using `libphonenumber-js` AsYouType formatter and stores the E.164
+ * representation.  Displays a validation indicator icon based on whether the
+ * entered number parses as a valid US number.
+ */
 import React from "react";
 import {
 	Control,

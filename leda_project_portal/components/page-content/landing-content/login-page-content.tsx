@@ -1,5 +1,22 @@
 "use client";
 
+/**
+ * LoginPageContent
+ *
+ * Authentication form that accepts either an email address or a username.
+ * Branching logic calls `authClient.signIn.email` or `authClient.signIn.username`
+ * depending on the format of the identifier supplied.
+ *
+ * After a successful sign-in the component:
+ *   - Invalidates any cached session in React Query.
+ *   - Sets or clears the `mustResetPassword` cookie based on the user record.
+ *   - Redirects to `/login/change-required` when a password reset is required,
+ *     otherwise to `/Portal`.
+ *
+ * Generic error messages (defaulting to a password error) are used to avoid
+ * revealing whether a given account exists.
+ */
+
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -42,6 +59,9 @@ export default function LoginPageContent() {
     process.env.NEXT_PUBLIC_DISABLE_SIGN_UP === 'true' ||
     process.env.DISABLE_SIGN_UP === 'true';
 
+  // --- Helpers ---
+
+  /** Normalises error objects from authClient responses into a message + optional HTTP status. */
   function getErrorInfo(err: unknown): { message: string; status?: number } {
     if (err instanceof Error) {
       const e1 = err as unknown as Record<string, unknown>;

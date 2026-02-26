@@ -1,3 +1,7 @@
+/**
+ * People Types maintenance page — server-rendered data table for managing
+ * person category types. Supports add, edit, and delete operations.
+ */
 import { DataTable } from "@/components/datatable";
 import { peopleTypeRoute } from "@/lib/apiRoutes";
 import { fetchPeopleTypes } from "@/lib/getData";

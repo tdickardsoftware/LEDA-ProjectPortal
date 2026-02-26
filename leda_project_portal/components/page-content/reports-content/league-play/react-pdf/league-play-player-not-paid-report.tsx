@@ -1,3 +1,10 @@
+/**
+ * LeaguePlayPlayerNotPaidReport
+ *
+ * React-PDF document listing players whose league dues are unpaid for the
+ * selected season. Renders a simple table: player name, team, division.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { PlayerNotPaid } from "@/lib/definitions";

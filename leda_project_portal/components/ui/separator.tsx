@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Separator primitive wrapper — horizontal or vertical visual divider. */
 "use client"
 
 import * as React from "react"

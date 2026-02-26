@@ -1,5 +1,13 @@
 // Import necessary modules and components
 "use client";
+
+/**
+ * PeopleTypeAddForm Component
+ *
+ * Form for creating a new people type code (e.g., PLAYER, SPONSOR) in the
+ * maintenance section. Includes an optional description. Returns a 422 conflict
+ * when the code already exists, surfacing an inline error to the user.
+ */
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -32,6 +40,12 @@ const peopleTypeFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * PeopleTypeAddForm creates a new people type code record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 // PeopleTypeAddForm component definition
 export default function PeopleTypeAddForm({
 	onClose,

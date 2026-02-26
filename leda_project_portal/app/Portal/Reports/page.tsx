@@ -1,3 +1,7 @@
+/**
+ * Reports index page — landing page listing all available report categories
+ * (Captains Meeting, League Play, Lists, Trails).
+ */
 import ReportsPageContent from "@/components/page-content/landing-content/reports-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

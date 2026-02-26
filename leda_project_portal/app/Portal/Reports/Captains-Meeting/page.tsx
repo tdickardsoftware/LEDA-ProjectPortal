@@ -1,3 +1,7 @@
+/**
+ * Captains Meeting reports page — view and export reports related to captains
+ * meeting data, including statistics and pre-season information.
+ */
 import CaptainsMeetingReportLandingContent from "@/components/page-content/reports-content/captains-meeting/captains-meeting-report-landing-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

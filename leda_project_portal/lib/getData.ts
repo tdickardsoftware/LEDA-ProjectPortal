@@ -1,3 +1,17 @@
+/**
+ * Client and server data-fetching helpers for the LEDA portal.
+ *
+ * Provides:
+ * - `fetchWithSession` – unified fetch wrapper that handles absolute URL
+ *   construction, session cookies, and CSRF tokens on both server (RSC) and
+ *   client. Redirects to /Portal on 403 responses.
+ * - Individual `fetch*` functions for every entity (players, teams, places,
+ *   seasons, etc.) that call Next.js API routes and return typed data.
+ * - React Query `use*` hooks that wrap the fetch functions for components.
+ *
+ * Server-only callers should be aware that relative paths are automatically
+ * resolved to absolute URLs using the incoming request’s host header.
+ */
 //
 // Imports
 //
@@ -58,6 +72,15 @@ function rethrowNextRedirect(error: unknown) {
 // async function to get all player data from the database
 //
 // Shared helper to call our Next.js API with session cookies
+/**
+ * Unified fetch helper that works in both RSC (server) and client contexts.
+ *
+ * - Server: resolves relative paths to absolute URLs using the incoming
+ *   request host header, forwards session cookies, and injects the CSRF token.
+ * - Client: uses `credentials: "include"` and reads the CSRF token from
+ *   document.cookie for unsafe methods.
+ * - Redirects to /Portal (server) or reloads (client) on 403 responses.
+ */
 export async function fetchWithSession(input: string, init: RequestInit = {}) {
 	const baseInit: RequestInit = {
 		method: init.method ?? "GET",
