@@ -802,6 +802,14 @@ export type WeeklyScoresheetsScoresheetCount = {
 	totalWeeks: number;
 };
 //
+// Define type to identify the shape of our data from postgres for weekly scoresheets bye weeks processed
+//
+export type WeeklyScoresheetsByeWeeksProcessed = {
+	seasonCode: string;
+	weekNum: number;
+	allByeWeeksProcessed: boolean;
+};
+//
 // Define type to identify the shape of our data from postgres for weekly scoresheets scoresheet team info 
 //
 export type WeeklyScoresheetsScoresheetTeamInfo = {

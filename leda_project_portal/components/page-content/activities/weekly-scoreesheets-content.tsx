@@ -48,7 +48,7 @@ import MentionSelector from "@/components/ui/mentions-selector";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 // Import React Query hooks
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 import { useForm, FormProvider } from "react-hook-form";
 
@@ -619,11 +619,31 @@ export default function WeeklyScoresheetsContent({
 	// Bye week processing state
 	const [isProcessingByeWeeks, setIsProcessingByeWeeks] = useState<boolean>(false);
 
+	// Query client for cache invalidation
+	const queryClient = useQueryClient();
+
 	// React Query hooks
 	// Schedule data query
 // Removed legacy schedule query
 
 	// Removed legacy scoresheet query; V2 per-matchup flow only
+
+	// Bye weeks completion status query
+	const { data: byeWeeksCompletedData } = useQuery({
+		queryKey: ["byeWeeksCompleted", seasonCode, selectedWeek],
+		queryFn: async () => {
+			if (!seasonCode || !selectedWeek) return null;
+			const res = await fetchWithSession(
+				`/api/activities/scoresheets/byeWeeksCompleted?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(selectedWeek)}`,
+				{ method: "GET" }
+			);
+			if (!res.ok) return null;
+			return res.json();
+		},
+		enabled: !!seasonCode && !!selectedWeek,
+		staleTime: 1000 * 60 * 5,
+	});
+	const allByeWeeksProcessed = byeWeeksCompletedData?.allByeWeeksProcessed === true;
 
 	// Player data queries — keyed on member IDs set imperatively in handleMatchupSelection
 	const { data: homeTeamPlayerData, isLoading: isHomePlayersLoading } = useQuery({
@@ -2040,6 +2060,10 @@ const confirmPendingChangesPlaceholder = () => true;
 			}
 
 alert(`Bye week processing complete.\nProcessed: ${processedCount} matchups\nErrors: ${errorCount}`);
+		// Refresh the bye-weeks-completed status so the button hides if all were processed
+		if (errorCount === 0) {
+			queryClient.invalidateQueries({ queryKey: ["byeWeeksCompleted", seasonCode, selectedWeek] });
+		}
 } catch (error) {
 console.error("Failed to process bye weeks:", error);
 alert("Failed to process bye weeks. Please try again.");
@@ -2098,13 +2122,15 @@ const FolderTabSkeleton = () => (
 							disabled={seasonSelected}
 							handleSelect={handleDateToDisplay}
 						/>
-						<Button
-							onClick={processAllByeWeeks}
-							disabled={!seasonCode || !selectedWeek || isProcessingByeWeeks}
-							variant="outline"
-						>
-							{isProcessingByeWeeks ? "Processing..." : "Process All Bye Weeks"}
-						</Button>
+						{!!selectedWeek && byeWeeksCompletedData?.allByeWeeksProcessed === false && (
+							<Button
+								onClick={processAllByeWeeks}
+								disabled={!seasonCode || !selectedWeek || isProcessingByeWeeks}
+								variant="outline"
+							>
+								{isProcessingByeWeeks ? "Processing..." : "Process All Bye Weeks"}
+							</Button>
+						)}
 					</div>
 				</div>
 			</FolderTabMed>
