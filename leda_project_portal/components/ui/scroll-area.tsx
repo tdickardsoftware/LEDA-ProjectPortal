@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI ScrollArea primitive wrapper with vertical and horizontal scroll bar sub-components. */
 "use client"
 
 import * as React from "react"

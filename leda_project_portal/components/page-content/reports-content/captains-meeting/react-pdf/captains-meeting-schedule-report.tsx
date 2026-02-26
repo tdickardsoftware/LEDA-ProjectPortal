@@ -1,5 +1,16 @@
+/**
+ * CaptainsMeetingScheduleReport
+ *
+ * React-PDF document that produces the printed schedule handout for the
+ * captains meeting. Renders a header with the LEDA logo and season info,
+ * followed by per-subdivision tables showing each week’s match pairings.
+ *
+ * Accepts full `DivisionsData`, `ScheduleData`, and `TeamData` from the
+ * schedule module plus `CaptainsMtgSchedulePlaceCaptainSeasonInfo` for
+ * place/captain context in the column headers.
+ */
+
 import React from "react";
-import { Document, Page, Text, View, StyleSheet, Image as PDFImage } from "@react-pdf/renderer";
 import { DivisionsData, ScheduleData, TeamData, MatchData } from "@/lib/schedule";
 import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
 

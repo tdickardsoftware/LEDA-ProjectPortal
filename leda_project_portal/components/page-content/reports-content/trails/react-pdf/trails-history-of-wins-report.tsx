@@ -1,3 +1,12 @@
+/**
+ * TrailsHistoryOfWinsReport
+ *
+ * React-PDF document showing the trails tournament win history for all
+ * members. Rows are paginated at `ROWS_PER_PAGE = 30`. Columns include
+ * player name, number of singles wins, doubles wins, and the place
+ * (venue) associated with each win.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { TrailsHistoryOfWins } from "@/lib/definitions";

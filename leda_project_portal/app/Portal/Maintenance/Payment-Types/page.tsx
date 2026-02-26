@@ -1,3 +1,7 @@
+/**
+ * Payment Types maintenance page — server-rendered data table for managing
+ * all payment type categories. Supports add, edit, and delete operations.
+ */
 import { DataTable } from "@/components/datatable";
 import { paymentTypeRoute } from "@/lib/apiRoutes";
 import { fetchPaymentTypes } from "@/lib/getData";

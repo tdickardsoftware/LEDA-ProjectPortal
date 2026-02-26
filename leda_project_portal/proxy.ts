@@ -33,8 +33,8 @@ export async function proxy(request: NextRequest) {
 
     if (sessionCookie) {
         const mustResetCookie = request.cookies.get('mustResetPassword')?.value === '1';
-        // If authenticated and visiting auth pages, redirect appropriately
-        if (pathname === '/login' || pathname === '/sign-up') {
+        // If authenticated and visiting auth pages or root, redirect appropriately
+        if (pathname === '/login' || pathname === '/sign-up' || pathname === '/') {
             return NextResponse.redirect(new URL(mustResetCookie ? '/login/change-required' : '/Portal', request.url));
         }
         // If user must reset, force them onto the required page unless already there or on reset/forgot
@@ -60,6 +60,9 @@ export async function proxy(request: NextRequest) {
         }
         response = NextResponse.next();
     } else if (publicPaths.includes(pathname)) {
+        if (pathname === '/') {
+            return NextResponse.redirect(new URL('/login', request.url));
+        }
         response = NextResponse.next();
     } else {
         const loginUrl = new URL('/login', request.url);

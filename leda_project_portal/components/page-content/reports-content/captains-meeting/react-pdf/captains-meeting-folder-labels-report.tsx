@@ -1,8 +1,14 @@
+/**
+ * CaptainsMeetingFolderLabelsReport
+ *
+ * React-PDF document that generates printable folder labels for the
+ * captains meeting. Teams are sorted by place → division → subdivision
+ * → team name before being laid out in a 3-column grid.
+ *
+ * Each label cell contains the team name, captain name, and place name.
+ */
+
 import React from "react";
-import {
-	Document,
-	Page,
-	Text,
 	View,
 	StyleSheet,
 } from "@react-pdf/renderer";

@@ -1,3 +1,6 @@
+/**
+ * Payouts page — displays and manages payout information for league activities.
+ */
 import PayoutsContent from "@/components/page-content/activities/payouts-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

@@ -1,3 +1,6 @@
+/**
+ * Forgot password page — allows users to request a password reset email.
+ */
 // Import necessary components and types
 import ForgotPasswordPageContent from "@/components/page-content/landing-content/forgot-password-page-content";
 import { Metadata } from "next";

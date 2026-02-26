@@ -1,3 +1,12 @@
+/**
+ * API Route: /api/user
+ *
+ * GET  — Returns a distinct list of usernames and emails from the user table.
+ *         Requires the caller to have the "manage Users" ability.
+ * PATCH — Sets the mustResetPassword flag for one or more users by email.
+ *          Admins may update any set of emails; non-admins may only clear
+ *          the flag for their own account.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";

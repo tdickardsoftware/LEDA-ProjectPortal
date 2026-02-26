@@ -1,3 +1,13 @@
+/**
+ * UserSelector component
+ *
+ * Multi-select searchable combobox for selecting portal users by
+ * username/email.  Fetches the user list from the user API via TanStack
+ * Query.  Supports both controlled mode (via `selectedEmails` +
+ * `onSelectedEmailsChange`) and an `onUsersChange` callback that delivers
+ * the full MinimalUser objects.  Emits only when the selection actually
+ * changes to prevent unnecessary parent re-renders.
+ */
 "use client";
 
 import { useState, useEffect, useRef } from "react";

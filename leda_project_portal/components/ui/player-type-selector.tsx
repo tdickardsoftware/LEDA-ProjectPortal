@@ -1,3 +1,10 @@
+/**
+ * PlayerTypeSelector component
+ *
+ * Searchable combobox for selecting a player/member type (people type) within
+ * a React Hook Form context.  Fetches available people types from the API via
+ * TanStack Query and writes the chosen value into the bound form field.
+ */
 "use client";
 
 import React, { useState } from "react";

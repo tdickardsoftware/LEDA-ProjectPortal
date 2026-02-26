@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * PortalPageContent
+ *
+ * Main portal dashboard. Conditionally renders navigation cards for
+ * Management, Maintenance, Reports, and Activities based on the current
+ * user's CASL ability rules loaded from `useUserAbilities`.
+ *
+ * Shows a denial notice when the user has the synthetic `Denial` subject
+ * ability (i.e. limited permissions).
+ */
+
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";

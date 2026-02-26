@@ -17,10 +17,10 @@ export default async function handler(
         const body = req.body;
         const rows: WeeklyScoresheetsTeamInfo[] = Array.isArray(body) ? body : [body];
 
-    const queryStr = `INSERT INTO public.leda_weekly_scoresheets_team_info ("seasonCode", "weekNum", "division", "subdivision", "home", "teamId", "teamName", "teamLetter", "opposingTeamId", "penalties") 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+    const queryStr = `INSERT INTO public.leda_weekly_scoresheets_team_info ("seasonCode", "weekNum", "division", "subdivision", "home", "teamId", "teamName", "teamLetter", "teamLabel", "opposingTeamId", "penalties") 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
             ON CONFLICT ("seasonCode", "weekNum", "division", "subdivision", "teamId")
-            DO UPDATE SET "teamName" = EXCLUDED."teamName", "teamLetter" = EXCLUDED."teamLetter", "opposingTeamId" = EXCLUDED."opposingTeamId", "penalties" = EXCLUDED."penalties"`;
+            DO UPDATE SET "teamName" = EXCLUDED."teamName", "teamLetter" = EXCLUDED."teamLetter", "teamLabel" = EXCLUDED."teamLabel", "opposingTeamId" = EXCLUDED."opposingTeamId", "penalties" = EXCLUDED."penalties"`;  
 
         try {
             await Promise.all(
@@ -34,6 +34,7 @@ export default async function handler(
                         data.teamId,
                         data.teamName,
                         data.teamLetter,
+                        data.teamLabel,
                         data.opposingTeamId,
                         data.penalties
                     ];
@@ -79,6 +80,27 @@ export default async function handler(
             }
         }
 
+    } else if (req.method === "DELETE") {
+        if (req.query.seasonCode && req.query.weekNum && req.query.division && req.query.subdivision && req.query.homeTeamId && req.query.awayTeamId) {
+            try {
+                await query(
+                    `DELETE FROM public.leda_weekly_scoresheets_team_info WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "division" = $3 AND "subdivision" = $4 AND "teamId" IN ($5, $6)`,
+                    [
+                        req.query.seasonCode as string,
+                        req.query.weekNum as string,
+                        req.query.division as string,
+                        req.query.subdivision as string,
+                        req.query.homeTeamId as string,
+                        req.query.awayTeamId as string,
+                    ]
+                );
+                res.status(200).json({ message: "Team info deleted successfully" });
+            } catch (error) {
+                res.status(500).json({ message: "Failed to delete team info", error });
+            }
+        } else {
+            res.status(400).json({ error: "Missing required query parameters" });
+        }
     } else {
         res.status(405).json({ error: "Method not allowed" });
     }

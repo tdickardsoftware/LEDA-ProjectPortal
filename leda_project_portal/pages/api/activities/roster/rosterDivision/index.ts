@@ -1,8 +1,11 @@
+/**
+ * API Route: /api/activities/roster/rosterDivision
+ *
+ * GET — Returns division entries from leda_roster_divisions for the
+ *        specified season. The `seasonCode` query param is required.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
-import { query } from "@/lib/dbTypeGet";
-import { RosterDivision } from "@/lib/definitions";
-import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(

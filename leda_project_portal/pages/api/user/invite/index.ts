@@ -1,7 +1,19 @@
+/**
+ * API Route: /api/user/invite
+ *
+ * POST — Sends an account-creation invitation email to the specified address.
+ *         The body must include `email` and `token`. The token is embedded in
+ *         a sign-up link that the recipient uses to complete registration.
+ *         Requires an active admin session.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { requireApiSession } from "@/lib/require-session";
 import { client } from "@/lib/email";
 
+/**
+ * Derives the public base URL from the incoming request headers or
+ * environment variables, falling back to localhost for local development.
+ */
 function getBaseUrl(req: NextApiRequest) {
   const proto = (req.headers["x-forwarded-proto"] as string) || "";
   const host = (req.headers["x-forwarded-host"] as string) || req.headers.host || "";
@@ -14,6 +26,7 @@ function getBaseUrl(req: NextApiRequest) {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await requireApiSession(req, res);
+  // Only POST is supported
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -24,6 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Missing email or token" });
     }
     const base = getBaseUrl(req);
+    // Build the sign-up deep link that the invitee will follow
   const link = `${base}/sign-up/?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
 
     try {

@@ -1,3 +1,12 @@
+/**
+ * ForcePasswordResetDialog component
+ *
+ * Admin dialog accessible from the sidebar that marks one or more selected
+ * users as requiring a password reset on their next login.  Uses UserSelector
+ * for multi-user selection and issues a PATCH to the user API with the
+ * `mustResetPassword: true` flag.  Memoises the selected-email list to
+ * prevent unnecessary re-renders.
+ */
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";

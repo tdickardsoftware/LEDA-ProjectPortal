@@ -1,3 +1,9 @@
+/**
+ * PlaceTypeAddForm Component
+ *
+ * Form for creating a new place type code (e.g., BAR, VENUE) in the maintenance
+ * section. Returns a 422 conflict error when the code already exists.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -33,7 +39,12 @@ const placeTypeFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the PlaceTypeAddForm component
+/**
+ * PlaceTypeAddForm creates a new place type code record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function PlaceTypeAddForm({
 	onClose,
 	onRefresh,
@@ -88,6 +99,14 @@ export default function PlaceTypeAddForm({
 			);
 		},
 	});
+
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPlaceTypeExists(false);
+		form.reset({
+			placeTypeCode: "",
+		});
+	}, [form]);
 
 	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
 		setPlaceTypeExists(false);

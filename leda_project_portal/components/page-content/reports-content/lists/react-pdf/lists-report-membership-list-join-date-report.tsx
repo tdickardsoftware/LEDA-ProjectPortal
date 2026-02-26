@@ -1,3 +1,11 @@
+/**
+ * ListsReportMembershipListJoinDateReport
+ *
+ * React-PDF document listing all members sorted by their join date.
+ * Paginated at `ROWS_PER_PAGE = 21`. Columns include full member contact
+ * information (name, address, phone, email, LEDA ID).
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { ListsMembership } from "@/lib/definitions";

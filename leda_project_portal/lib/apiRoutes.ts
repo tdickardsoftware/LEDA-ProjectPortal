@@ -1,3 +1,14 @@
+/**
+ * Centralised API route constants for the LEDA portal.
+ *
+ * Exports two groups of constants:
+ * - Local routes  – relative paths used by client-side fetch calls and hooks.
+ * - Server routes – absolute URLs constructed from VERCEL_URL, used in
+ *   server-side data-fetching functions that must call internal API handlers.
+ *
+ * All route strings are intentionally kept as plain constants so IDEs can
+ * easily find references when an endpoint is renamed or removed.
+ */
 //
 // Local Routes
 //
@@ -8,6 +19,8 @@ require("dotenv").config();
 export const placeOwnerRoute = "/api/management/player/placeOwner";
 // Define route for players not on the serverside
 export const playerRoute = "/api/management/player";
+// Define route for batch player fetch (reduces N+1 requests)
+export const playerBatchRoute = "/api/management/player/batch";
 // Define route for players for selector not on the serverside
 export const playerSelectorRoute = "/api/management/player/playerSelector";
 // Define route for single player selector not on the serverside

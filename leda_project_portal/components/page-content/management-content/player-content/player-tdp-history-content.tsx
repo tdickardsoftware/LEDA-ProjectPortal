@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * PlayerTDPHistoryContent
+ *
+ * Displays a player's Top Darter Points (TDP) history across seasons.
+ * Three TanStack Query fetches drive the view:
+ *   1. Season codes (sidebar navigation source).
+ *   2. Weekly scoresheet totals for the selected season (table rows).
+ *   3. Mention details for the selected team+game combination (bottom panel).
+ *
+ * `handleTeamSelect` and `handleGameSelect` update `mentionParams` which
+ * triggers the mention-detail query to refetch with new context.
+ * A `PlayerTDPHistorySidenav` component provides the hierarchical
+ * year → season → team → game navigation pane.
+ */
+
 import { weeklyScoresheetsRoute } from "@/lib/apiRoutes";
 import {
 	MentionPlayerHistory,
@@ -260,7 +275,7 @@ export default function PlayerTDPHistoryContent({
 		// Sum all mention points for this week
 		const mentionPointsTotal = mentionData.mentions.reduce(
 			(sum, mention) => {
-				return sum + mention.mentionPoints * (mention.count || 1);
+				return sum + Number(mention.mentionPoints);
 			},
 			0
 		);
@@ -332,9 +347,7 @@ export default function PlayerTDPHistoryContent({
 													? mentionData.mentions.reduce(
 															(sum, mention) =>
 																sum +
-																mention.mentionPoints *
-																	(mention.count ||
-																		1),
+															Number(mention.mentionPoints),
 															0
 													  )
 													: 0)}{" "}
@@ -346,9 +359,7 @@ export default function PlayerTDPHistoryContent({
 												? mentionData.mentions.reduce(
 														(sum, mention) =>
 															sum +
-															mention.mentionPoints *
-																(mention.count ||
-																	1),
+														Number(mention.mentionPoints),
 														0
 												  )
 												: 0}{" "}
@@ -450,9 +461,7 @@ export default function PlayerTDPHistoryContent({
 															0
 																? "+"
 																: ""}
-															{mention.mentionPoints *
-																(mention.count ||
-																	1)}{" "}
+																{mention.mentionPoints}{" "}
 															pts
 														</span>
 													</div>
@@ -493,9 +502,7 @@ export default function PlayerTDPHistoryContent({
 												? mentionData.mentions.reduce(
 														(sum, mention) =>
 															sum +
-															mention.mentionPoints *
-																(mention.count ||
-																	1),
+														Number(mention.mentionPoints),
 														0
 												  )
 												: 0}{" "}
@@ -588,9 +595,7 @@ export default function PlayerTDPHistoryContent({
 															0
 																? "+"
 																: ""}
-															{mention.mentionPoints *
-																(mention.count ||
-																	1)}{" "}
+																{mention.mentionPoints}{" "}
 															pts
 														</span>
 													</div>

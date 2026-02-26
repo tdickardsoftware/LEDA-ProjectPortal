@@ -1,3 +1,7 @@
+/**
+ * Season not-found boundary — displayed when a requested season code does not
+ * exist. Provides a go-back button so users can return without a hard navigation.
+ */
 "use client";
 import { FaceFrownIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";

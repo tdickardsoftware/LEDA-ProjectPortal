@@ -1,3 +1,13 @@
+/**
+ * PlayerAddInformationForm Component
+ *
+ * Multi-step form for registering a new LEDA member (player).
+ * Steps: Personal Info → Contact Info → Membership Info → Additional Info.
+ * Validates each step before advancing. Optionally auto-generates a LEDA ID.
+ * Accepts "UNKNOWN" as a valid email value for players without known email.
+ * Returns a 422 conflict when the provided LEDA ID is already in use.
+ * Reloads the page on successful submission to reflect the new player.
+ */
 "use client";
 
 import { z } from "zod";
@@ -24,11 +34,13 @@ import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
+import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for all player fields across all form steps
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
 	middleInitial: z.string().nullable().optional(),
@@ -85,11 +97,18 @@ const playerInfoSchema = z.object({
 	lifetimeMemberReason: z.string().nullable().optional(),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlayerAddInformationForm renders a stepped player registration form.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function PlayerAddInformationForm({
 	onClose,
 	onRefresh,
@@ -97,6 +116,7 @@ export default function PlayerAddInformationForm({
 	onClose: () => void;
 	onRefresh: () => void;
 }) {
+	// When true, ledaId is set to 0 so the server auto-assigns an ID
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
@@ -135,6 +155,41 @@ export default function PlayerAddInformationForm({
 			memberType: "",
 		},
 	});
+
+	// Reset form and all state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setGenerateIDStatus(true);
+		setBadStandingStatus(false);
+		setLifetimeMemberStatus(false);
+		setLedaIdExists(false);
+		setCurrentStep(0);
+		form.reset({
+			lifetimeMember: false,
+			cannotBeCaptain: false,
+			needsMemberCard: true,
+			formOnFile: false,
+			mailStandings: false,
+			takeOffMailing: false,
+			badStanding: false,
+			lifetimeMemberReason: "",
+			otherNumber: "",
+			middleInitial: "",
+			addressTwo: "",
+			badStandingReason: "",
+			addressOne: "",
+			firstName: "",
+			lastName: "",
+			city: "",
+			state: "OH",
+			zip: "",
+			email: "",
+			phoneNumber: "",
+			gender: "",
+			ledaId: undefined,
+			lastMembershipFeePayment: "UNPAID - New Player",
+			memberType: "",
+		});
+	}, [form]);
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
@@ -321,11 +376,11 @@ export default function PlayerAddInformationForm({
 							control={form.control}
 							name="gender"
 						/>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="dateOfBirth"
 							label="Date of Birth"
-							type="date"
+							enableMonthYearPicker
 						/>
 					</div>
 				)}
@@ -441,11 +496,11 @@ export default function PlayerAddInformationForm({
 							name="memberType"
 							label="Member Type"
 						/>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="establishedDate"
 							label="Established Date *"
-							type="date"
+							enableMonthYearPicker
 						/>
 						{/* Bad Standing Checkbox */}
 						<FormField
@@ -596,17 +651,17 @@ export default function PlayerAddInformationForm({
 							label="Cannot be Captain"
 							className={checkboxWidth}
 						/>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="inactiveDate"
 							label="Inactive Date"
-							type="date"
+							enableMonthYearPicker
 						/>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="lastTrailsDate"
 							label="Last Trails Date"
-							type="date"
+							enableMonthYearPicker
 						/>
 					</div>
 				)}

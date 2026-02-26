@@ -1,3 +1,8 @@
+/**
+ * Season detail page — fetches the specified season by seasonCode and renders
+ * its detailed view. Triggers a 404 if the season is not found.
+ * Uses Suspense to show a spinner while data is loading server-side.
+ */
 import { SeasonPageContent } from "@/components/page-content/maintenance-content/season-view-page-content";
 import { fetchSeason } from "@/lib/getData";
 import { notFound } from "next/navigation";

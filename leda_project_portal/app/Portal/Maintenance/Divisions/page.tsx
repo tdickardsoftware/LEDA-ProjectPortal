@@ -1,3 +1,7 @@
+/**
+ * Divisions maintenance page — server-rendered data table for managing
+ * league division records. Supports add and delete operations.
+ */
 import { DataTable } from "@/components/datatable";
 import { divisionRoute } from "@/lib/apiRoutes";
 import { fetchDivisions } from "@/lib/getData";

@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * SignupPageContent
+ *
+ * User registration form. Supports two modes:
+ *   - **Invite mode**: a `token` and `email` query param are present; the
+ *     invite is validated against the one-time-email API before the form is
+ *     enabled, and the token row is deleted after successful sign-up.
+ *   - **Open mode**: no token required (used only when sign-up is not
+ *     disabled via `NEXT_PUBLIC_DISABLE_SIGN_UP`).
+ *
+ * Live password-strength indicators are displayed while typing.
+ */
+
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";

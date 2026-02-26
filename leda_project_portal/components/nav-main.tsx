@@ -1,3 +1,13 @@
+/**
+ * NavMain component
+ *
+ * Renders the main sidebar navigation tree for the LEDA portal.  Each top-level
+ * item is a collapsible group (using Radix Collapsible) whose children are
+ * rendered recursively via `renderMenuItems`.  Active-route highlighting is
+ * applied by comparing the current pathname against each item's URL.  Items
+ * are gated by CASL abilities so users only see sections they can access.
+ * A user-management section is appended after the main items for admins.
+ */
 //
 // Use Client
 //

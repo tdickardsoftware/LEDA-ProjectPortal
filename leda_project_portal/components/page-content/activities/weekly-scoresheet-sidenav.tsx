@@ -39,9 +39,22 @@ interface SideNavProps {
 		subdivisionName: string
 	) => void;
 	collapseOnSelection?: boolean;
+	refreshToken?: number;
 }
 
-const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelection = true }: SideNavProps) => {
+const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelection = true, refreshToken }: SideNavProps) => {
+	const isByeMatchup = (game: { homeTeamId?: string; awayTeamId?: string; homeTeamLetter: string; awayTeamLetter: string }) => {
+		const homeId = game.homeTeamId ? String(game.homeTeamId) : "";
+		const awayId = game.awayTeamId ? String(game.awayTeamId) : "";
+		if (homeId === "0" || awayId === "0") return true;
+		// "X" is the BYE team letter used by the schedule system
+		const homeLetter = String(game.homeTeamLetter).toUpperCase();
+		const awayLetter = String(game.awayTeamLetter).toUpperCase();
+		if (homeLetter === "BYE" || homeLetter === "X") return true;
+		if (awayLetter === "BYE" || awayLetter === "X") return true;
+		return false;
+	};
+
 	const { data: matchupsResponse } = useQuery({
 		queryKey: ["v2-matchups", seasonCode, weekNum],
 		queryFn: async () => {
@@ -100,7 +113,14 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 	// State to track expanded divisions and subdivisions
 	const [openDivisions, setOpenDivisions] = useState<Record<string, boolean>>({});
 	const [openSubdivisions, setOpenSubdivisions] = useState<Record<string, boolean>>({});
-	const [selectedMatchup, setSelectedMatchup] = useState<{ home: string; away: string } | null>(null);
+	const [selectedMatchup, setSelectedMatchup] = useState<{
+		divisionName: string;
+		subdivisionName: string;
+		homeTeamLetter: string;
+		awayTeamLetter: string;
+		homeTeamId?: string;
+		awayTeamId?: string;
+	} | null>(null);
 
 	// Collapse / reset navigation whenever season or week changes
 	useEffect(() => {
@@ -114,11 +134,37 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 	// Completion status
 	const [completionMap, setCompletionMap] = useState<Record<string, boolean>>({});
 	const requestedStatusRef = useRef<Set<string>>(new Set());
+	// Ref so effects can read current selectedMatchup without stale closure
+	const selectedMatchupRef = useRef(selectedMatchup);
+	useEffect(() => { selectedMatchupRef.current = selectedMatchup; }, [selectedMatchup]);
+
+	// When the parent bumps refreshToken (after save/delete), reset completion status
+	// and re-trigger the fetch by re-opening the selected matchup's subdivision (even if
+	// the sidenav was collapsed via collapseOnSelection) plus any other open subdivisions.
+	useEffect(() => {
+		if (!refreshToken) return;
+		setCompletionMap({});
+		requestedStatusRef.current.clear();
+		setOpenSubdivisions(prev => {
+			const next = { ...prev };
+			// Always ensure the currently-selected matchup's subdivision is open so status re-fetches
+			const sm = selectedMatchupRef.current;
+			if (sm) {
+				const key = `${sm.divisionName}-${sm.subdivisionName}`;
+				next[key] = true;
+				setOpenDivisions(d => ({ ...d, [sm.divisionName]: true }));
+			}
+			return next;
+		});
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [refreshToken]);
 
 	const toggleDivision = (division: string) => setOpenDivisions(prev => ({ ...prev, [division]: !prev[division] }));
-	const toggleSubdivision = (division: string, subdivision: string) => setOpenSubdivisions(prev => ({ ...prev, [`${division}-${subdivision}`]: !prev[`${division}-${subdivision}`] }));
+	const toggleSubdivision = (division: string, subdivision: string) =>
+		setOpenSubdivisions(prev => ({ ...prev, [`${division}-${subdivision}`]: !prev[`${division}-${subdivision}`] }));
 
-	// When a subdivision opens, probe
+	// When a subdivision opens, probe each matchup's completion status from the
+	// gameInfo API and update completionMap so the correct icon (✓ / ⚠) is shown
 	useEffect(() => {
 		const openKeys = Object.entries(openSubdivisions).filter(([, o]) => o).map(([k]) => k);
 		if (!seasonCode || !weekNum || openKeys.length === 0) return;
@@ -128,6 +174,52 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 			Object.keys(games).forEach(async gameNumber => {
 				const g = games[gameNumber];
 				const letterStatusKey = `${divisionName}-${subdivisionName}-${g.homeTeamLetter}-${g.awayTeamLetter}`;
+				if (isByeMatchup({
+					homeTeamId: g.homeTeamId,
+					awayTeamId: g.awayTeamId,
+					homeTeamLetter: g.homeTeamLetter,
+					awayTeamLetter: g.awayTeamLetter,
+				})) {
+					// Probe completion status for bye matchups using the gameInfo endpoint
+					if (requestedStatusRef.current.has(letterStatusKey) || completionMap[letterStatusKey] !== undefined) return;
+					const homeIsBye = String(g.homeTeamLetter).toUpperCase() === "X" || String(g.homeTeamLetter).toUpperCase() === "BYE" || String(g.homeTeamId) === "0";
+					const activeTeamLetter = homeIsBye ? g.awayTeamLetter : g.homeTeamLetter;
+					let activeTeamId = homeIsBye ? (g.awayTeamId || "") : (g.homeTeamId || "");
+					if (!activeTeamId) {
+						try {
+							const schedRes = await fetchWithSession(
+								`/api/activities/schedule/subdivision?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}`,
+								{ method: 'GET' }
+							);
+							if (schedRes.ok) {
+								const schedData = await schedRes.json();
+								const subdivData = schedData?.scheduleData?.[divisionName]?.[subdivisionName];
+								if (subdivData?.[activeTeamLetter]) activeTeamId = subdivData[activeTeamLetter].teamId || "";
+							}
+						} catch { /* ignore */ }
+					}
+					if (!activeTeamId) {
+						setCompletionMap(prev => ({ ...prev, [letterStatusKey]: false }));
+						return;
+					}
+					requestedStatusRef.current.add(letterStatusKey);
+					const finalHomeTeamId = homeIsBye ? "0" : activeTeamId;
+					const finalAwayTeamId = homeIsBye ? activeTeamId : "0";
+					try {
+						const res = await fetchWithSession(
+							`/api/activities/scoresheets/weeklyScoresheetsV2/gameInfo?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&homeTeamId=${encodeURIComponent(finalHomeTeamId)}&awayTeamId=${encodeURIComponent(finalAwayTeamId)}&getStatus=true`,
+							{ method: 'GET' }
+						);
+						if (res.status === 200) {
+							const body = await res.json();
+							const completed = typeof body === 'boolean' ? body : (Array.isArray(body) ? !!body[0]?.completed : false);
+							setCompletionMap(prev => ({ ...prev, [letterStatusKey]: completed }));
+						} else if (res.status === 204) {
+							setCompletionMap(prev => ({ ...prev, [letterStatusKey]: false }));
+						}
+					} catch { /* ignore */ }
+					return;
+				}
 				if (!g.homeTeamId || !g.awayTeamId) {
 					try {
 						const teamInfoRes = await fetchWithSession(`/api/activities/scoresheets/weeklyScoresheetsV2/teamInfo?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&teamLetter=${encodeURIComponent(g.homeTeamLetter)}`, { method: 'GET' });
@@ -136,14 +228,17 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 							const homeRow = rows[0];
 							const awayRow = rows[1];
 							if (homeRow && awayRow) {
+								const homeId = String(homeRow.teamId);
+								const awayId = String(awayRow.teamId);
+								// Store team IDs (including BYE matchups with teamId "0")
 								setData(prev => {
 									const clone: DivisionData = JSON.parse(JSON.stringify(prev));
 									const game = clone[divisionName][subdivisionName][gameNumber];
-									game.homeTeamId = String(homeRow.teamId);
-									game.awayTeamId = String(awayRow.teamId);
+									game.homeTeamId = homeId;
+									game.awayTeamId = awayId;
 									return clone;
 								});
-								g.homeTeamId = homeRow.teamId; g.awayTeamId = awayRow.teamId;
+								g.homeTeamId = homeId; g.awayTeamId = awayId;
 							}
 						} else {
 							setCompletionMap(prev => ({ ...prev, [letterStatusKey]: false }));
@@ -153,6 +248,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 					}
 				}
 				if (g.homeTeamId && g.awayTeamId) {
+					if (String(g.homeTeamId) === "0" || String(g.awayTeamId) === "0") return;
 					const statusKey = `${divisionName}-${subdivisionName}-${g.homeTeamId}-${g.awayTeamId}`;
 					if (requestedStatusRef.current.has(statusKey) || completionMap[statusKey] !== undefined) return;
 					requestedStatusRef.current.add(statusKey);
@@ -176,16 +272,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 		return <div className="w-64 border-r h-full flex items-center justify-center p-4"><p className="text-muted-foreground text-center">Select a week to display weekly scoresheets...</p></div>;
 	}
 
-	const subdivisionLoaded = (divisionName: string, subdivisionName: string) => {
-		const games = data[divisionName][subdivisionName];
-		return Object.keys(games).every(gn => {
-			const g = games[gn];
-			const idKey = g.homeTeamId && g.awayTeamId ? `${divisionName}-${subdivisionName}-${g.homeTeamId}-${g.awayTeamId}` : null;
-			const letterKey = `${divisionName}-${subdivisionName}-${g.homeTeamLetter}-${g.awayTeamLetter}`;
-			return (idKey !== null && completionMap[idKey] !== undefined) || completionMap[letterKey] !== undefined;
-		});
-	};
-
+	// Render — collapsible division/subdivision tree with per-matchup completion indicators
 	return (
 		<div className="w-64">
 			<ScrollArea className="h-full">
@@ -201,7 +288,7 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 							<CollapsibleContent className="ml-4 mt-1 space-y-1">
 								{Object.keys(data[divisionName]).map(subdivisionName => {
 									const subdivKey = `${divisionName}-${subdivisionName}`;
-									const loaded = subdivisionLoaded(divisionName, subdivisionName);
+
 									const gamesObj = data[divisionName][subdivisionName];
 									return (
 										<Collapsible key={subdivKey} open={openSubdivisions[subdivKey]} onOpenChange={() => toggleSubdivision(divisionName, subdivisionName)} className="pb-1">
@@ -214,17 +301,83 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 											<CollapsibleContent className="ml-4 mt-1 space-y-1">
 												{Object.keys(gamesObj).map(gameNumber => {
 													const game = gamesObj[gameNumber];
-													const isSelected = selectedMatchup?.home === game.homeTeamLetter && selectedMatchup?.away === game.awayTeamLetter;
-													return (
+													const isBye = isByeMatchup({
+														homeTeamId: game.homeTeamId,
+														awayTeamId: game.awayTeamId,
+														homeTeamLetter: game.homeTeamLetter,
+														awayTeamLetter: game.awayTeamLetter,
+													});
+													
+													// Format display text for BYE matchups
+													let displayText = `${game.homeTeamLetter} - ${game.awayTeamLetter}`;
+													if (isBye) {
+														const homeId = game.homeTeamId ? String(game.homeTeamId) : "";
+														const awayId = game.awayTeamId ? String(game.awayTeamId) : "";
+														const homeLetter = String(game.homeTeamLetter).toUpperCase();
+														const awayLetter = String(game.awayTeamLetter).toUpperCase();
+														if (homeId === "0" || homeLetter === "BYE" || homeLetter === "X") {
+															displayText = `${game.awayTeamLetter} - Bye`;
+														} else if (awayId === "0" || awayLetter === "BYE" || awayLetter === "X") {
+															displayText = `${game.homeTeamLetter} - Bye`;
+														}
+													}
+													
+													const isSelected = (() => {
+														if (!selectedMatchup) return false;
+														if (
+															selectedMatchup.divisionName !== divisionName ||
+															selectedMatchup.subdivisionName !== subdivisionName
+														) {
+															return false;
+														}
+
+														// Prefer stable identity: team IDs (when known)
+														if (
+															selectedMatchup.homeTeamId &&
+															selectedMatchup.awayTeamId &&
+															game.homeTeamId &&
+															game.awayTeamId
+														) {
+															return (
+																selectedMatchup.homeTeamId === game.homeTeamId &&
+																selectedMatchup.awayTeamId === game.awayTeamId
+															);
+														}
+
+														// Fallback: letters + division/subdivision (prevents cross-subdivision collisions)
+														return (
+															selectedMatchup.homeTeamLetter === game.homeTeamLetter &&
+															selectedMatchup.awayTeamLetter === game.awayTeamLetter
+														);
+													})();
+													// Determine the completion status lookup key for this game
+												const gameStatusKey = (() => {
+													if (isBye) return `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`;
+													const idKey = game.homeTeamId && game.awayTeamId
+														? `${divisionName}-${subdivisionName}-${game.homeTeamId}-${game.awayTeamId}`
+														: null;
+													return idKey ?? `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`;
+												})();
+												const gameStatusKnown = completionMap[gameStatusKey] !== undefined;
+												const gameCompleted = completionMap[gameStatusKey] === true;
+
+												return (
 														<Button
 															key={`${subdivKey}-${gameNumber}`}
 															variant="ghost"
 															className={`w-full justify-start text-sm p-1 h-auto ${isSelected ? 'bg-secondary cursor-not-allowed opacity-75' : 'hover:bg-muted'}`}
-															disabled={isSelected}
-															aria-disabled={isSelected}
+															disabled={isSelected || isBye}
+															aria-disabled={isSelected || isBye}
 															onClick={() => {
-																if (isSelected) return; // safety
-																setSelectedMatchup({ home: game.homeTeamLetter, away: game.awayTeamLetter });
+																if (isSelected || isBye) return; // safety
+																setSelectedMatchup({
+																	divisionName,
+																	subdivisionName,
+																	homeTeamLetter: game.homeTeamLetter,
+																	awayTeamLetter: game.awayTeamLetter,
+																	homeTeamId: game.homeTeamId || undefined,
+																	awayTeamId: game.awayTeamId || undefined,
+																});
 																handleMatchupSelection(game.homeTeamLetter, game.awayTeamLetter, divisionName, subdivisionName);
 																// Collapse sidenav after selection if enabled
 																if (collapseOnSelection) {
@@ -234,8 +387,12 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 															}}
 														>
 															<div className="flex items-center gap-2">
-																<span>{game.homeTeamLetter} - {game.awayTeamLetter}</span>
-																{loaded && (() => { const idKey = game.homeTeamId && game.awayTeamId ? `${divisionName}-${subdivisionName}-${game.homeTeamId}-${game.awayTeamId}` : null; const letterKey = `${divisionName}-${subdivisionName}-${game.homeTeamLetter}-${game.awayTeamLetter}`; const completed = idKey !== null ? completionMap[idKey] === true : completionMap[letterKey] === true; return completed ? <CheckCircle className="h-4 w-4 text-green-500" /> : <AlertTriangle className="h-4 w-4 text-yellow-500" />; })()}
+																<span>{displayText}</span>
+																{gameStatusKnown && (
+																	gameCompleted
+																		? <CheckCircle className="h-4 w-4 text-green-500" />
+																		: <AlertTriangle className="h-4 w-4 text-yellow-500" />
+																)}
 															</div>
 														</Button>
 													);

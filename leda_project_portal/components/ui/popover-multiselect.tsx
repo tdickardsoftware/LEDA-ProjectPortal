@@ -1,3 +1,13 @@
+/**
+ * PopoverMultiSelect component
+ *
+ * Searchable multi-select combobox backed by a TanStack Query data source.
+ * Selected items are shown in a summary table below the trigger button.
+ * Uses Fuse.js for client-side fuzzy search on the fetched list.  Items are
+ * toggled on/off by clicking; the `setSelected` callback receives the updated
+ * MailingList array.  Supports both GET and POST fetch strategies depending
+ * on whether the API route includes query parameters.
+ */
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";

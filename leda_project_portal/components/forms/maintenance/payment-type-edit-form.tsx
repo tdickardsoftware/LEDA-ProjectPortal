@@ -1,3 +1,11 @@
+/**
+ * PaymentTypeEditForm Component
+ *
+ * Edit form for an existing payment type. Fetches the full record by
+ * `paymentType` key from the API on mount, then pre-populates all fields.
+ * Submits a PUT request to persist changes. The payment type key field is
+ * disabled to prevent changing the primary key after creation.
+ */
 "use client";
 
 import { z } from "zod";
@@ -22,6 +30,7 @@ import { PaymentType } from "@/lib/definitions";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for payment type fields
 const paymentTypeFormSchema = z.object({
 	paymentType: z.string().min(1, { message: "Payment Type is required." }),
 	desc: z.string().optional(),
@@ -30,6 +39,13 @@ const paymentTypeFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * PaymentTypeEditForm fetches a payment type record and provides an edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the paymentType key used to fetch details
+ */
 export default function PaymentTypeEditForm({
 	onClose,
 	onRefresh,
@@ -39,6 +55,7 @@ export default function PaymentTypeEditForm({
 	onRefresh: () => void;
 	rowData: PaymentType;
 }) {
+	// Local state to store the full record fetched from the API
 	const [formData, setFormData] = useState<PaymentType>({} as PaymentType);
 
 	const formRef = React.useRef<HTMLFormElement>(null);

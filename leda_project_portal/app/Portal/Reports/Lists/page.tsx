@@ -1,3 +1,7 @@
+/**
+ * Lists reports page — view and export list-style reports such as player
+ * rosters, team listings, and related league membership data.
+ */
 import ListsReportLandingContent from "@/components/page-content/reports-content/lists/lists-report-landing-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

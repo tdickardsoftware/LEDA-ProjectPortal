@@ -1,3 +1,11 @@
+/**
+ * PlaceTypeEditForm Component
+ *
+ * Edit form for an existing place type code. Fetches the full record by
+ * `placeTypeCode` from the API on mount and pre-populates the fields. The
+ * code field is disabled to prevent changing the primary key after creation.
+ * Submits a PUT request to update the description.
+ */
 "use client";
 
 import { z } from "zod";
@@ -32,6 +40,13 @@ const placeTypeFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * PlaceTypeEditForm fetches a place type record and provides an edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the placeTypeCode used to fetch details
+ */
 export default function PlaceTypeEditForm({
 	onClose,
 	onRefresh,
@@ -41,6 +56,7 @@ export default function PlaceTypeEditForm({
 	onRefresh: () => void;
 	rowData: PlaceType;
 }) {
+	// Local state to store the full place type record fetched from the API
 	const [formData, setFormData] = useState<PlaceType>({} as PlaceType);
 
 	const formRef = React.useRef<HTMLFormElement>(null);

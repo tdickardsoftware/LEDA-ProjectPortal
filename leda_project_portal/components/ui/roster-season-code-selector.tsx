@@ -1,3 +1,12 @@
+/**
+ * RosterSeasonCodeSelector component
+ *
+ * Searchable combobox for selecting a season code that has roster data.
+ * Fetches only seasons with existing roster records from the roster API.
+ * When `useCurrentSeason` is true, automatically pre-selects the season
+ * flagged as current.  Fires `handleSelect` on selection and optionally
+ * calls `setDisabled` to unlock dependent controls after load.
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";

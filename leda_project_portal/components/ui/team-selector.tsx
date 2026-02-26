@@ -1,3 +1,11 @@
+/**
+ * TeamSelector component
+ *
+ * Searchable combobox for selecting a team within a React Hook Form context.
+ * Fetches the full team list from the team API via TanStack Query, filters
+ * out already-selected teams, and writes the chosen `teamLedaId` and
+ * `teamName` into the bound form fields.
+ */
 "use client";
 
 import React, { useState } from "react";

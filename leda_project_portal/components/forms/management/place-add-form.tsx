@@ -1,3 +1,13 @@
+/**
+ * PlaceAddForm Component
+ *
+ * Multi-step form for registering a new venue (place) in the LEDA system.
+ * Steps: Basic Info → Contact Info → Membership Info → Additional Info.
+ * Validates each step before advancing. Optionally auto-generates a LEDA ID
+ * (sent as 0 so the server assigns one). Returns a 422 conflict when the
+ * provided LEDA ID is already taken. Uses `libphonenumber-js` for US phone
+ * validation and `validator` for email/URL validation.
+ */
 "use client";
 
 import { z } from "zod";
@@ -30,7 +40,9 @@ import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
+import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 
+// Validation schema with cross-field rules for phone, email, and URL formats
 const placeFormSchema = z.object({
 	ledaId: z
 		.number()
@@ -70,9 +82,12 @@ const placeFormSchema = z.object({
 		}),
 	establishDate: z.string(),
 	memo: z.string().nullable().optional(),
-	numberOfBoards: z
-		.number()
-		.min(0, { message: "Number of Boards Must be a Postive Number." }),
+	numberOfBoards: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, {
+			message: "Number of Boards Must be a Postive Number.",
+		})
+	),
 	sendMailings: z.boolean(),
 	regularSponsor: z.boolean(),
 	currentSponsor: z.boolean(),
@@ -83,11 +98,18 @@ const placeFormSchema = z.object({
 	contactId: z.string().min(1, { message: "Place Owner is Required" }),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlaceAddForm renders a stepped place creation form.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function PlaceAddForm({
 	onClose,
 	onRefresh,
@@ -95,6 +117,7 @@ export default function PlaceAddForm({
 	onClose: () => void;
 	onRefresh: () => void;
 }) {
+	// When true, ledaId is set to 0 so the server auto-assigns an ID
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [ledaIdExists, setLedaIdExists] = useState(false);
 	const [currentStep, setCurrentStep] = useState(0);
@@ -149,7 +172,7 @@ export default function PlaceAddForm({
 			website: "",
 			establishDate: "",
 			memo: "",
-			numberOfBoards: undefined,
+			numberOfBoards: ("" as any),
 			sendMailings: false,
 			regularSponsor: false,
 			currentSponsor: false,
@@ -160,6 +183,37 @@ export default function PlaceAddForm({
 			contactId: "",
 		},
 	});
+
+	// Reset form and all state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setGenerateIDStatus(true);
+		setLedaIdExists(false);
+		setCurrentStep(0);
+		form.reset({
+			ledaId: undefined,
+			name: "",
+			addressOne: "",
+			addressTwo: "",
+			city: "",
+			state: "OH",
+			zip: "",
+			phoneNumber: "",
+			otherNumber: "",
+			email: "",
+			website: "",
+			establishDate: "",
+			memo: "",
+			numberOfBoards: ("" as any),
+			sendMailings: false,
+			regularSponsor: false,
+			currentSponsor: false,
+			issues: false,
+			lastBarFeePayment: "UNPAID - NEW PLACE ADDED",
+			lastSanctioningDate: "",
+			placeType: "",
+			contactId: "",
+		});
+	}, [form]);
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof placeFormSchema>) => {
@@ -293,13 +347,14 @@ export default function PlaceAddForm({
 										<Input
 											placeholder="Number of Boards..."
 											{...field}
+											value={field.value ?? ""}
 											className={inputWidth}
 											type="number"
 											onChange={(e) => {
 												field.onChange(
 													e.target.value ===
 														""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target
 																	.value
@@ -433,11 +488,11 @@ export default function PlaceAddForm({
 							name="placeType"
 							label="Place Type *"
 						/>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="establishDate"
 							label="Established Date *"
-							type="date"
+							enableMonthYearPicker
 						/>
 					</div>
 				)}
@@ -447,11 +502,11 @@ export default function PlaceAddForm({
 					<div className={formContainerStyle}>
 						<h1>Additional Information</h1>
 						<hr className="bg-muted mb-4"></hr>
-						<InputDefault
+						<DatePickerFormField
 							control={form.control}
 							name="lastSanctioningDate"
-							label="Last Sanctioning Date *"
-							type="date"
+							label="Last Sanctioning Date"
+							enableMonthYearPicker
 						/>
 						<CheckboxDefault
 							control={form.control}

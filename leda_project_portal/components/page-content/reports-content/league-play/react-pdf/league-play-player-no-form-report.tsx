@@ -1,3 +1,10 @@
+/**
+ * LeaguePlayPlayerNoFormReport
+ *
+ * React-PDF document listing players who have not submitted their
+ * registration form. Renders a simple table: player name, team, division.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { PlayerNoForm } from "@/lib/definitions";

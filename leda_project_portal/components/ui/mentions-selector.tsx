@@ -1,3 +1,13 @@
+/**
+ * MentionSelector component
+ *
+ * Searchable combobox for selecting a mention (award/infraction code) within a
+ * React Hook Form context.  Fetches mention options from the API via TanStack
+ * Query and exposes an optional `handleMentionChange` callback to notify
+ * parent components of the full mention record (code, description, points,
+ * basis).  The inner content component handles popover state and item
+ * rendering.
+ */
 "use client";
 
 import React, { useState } from "react";

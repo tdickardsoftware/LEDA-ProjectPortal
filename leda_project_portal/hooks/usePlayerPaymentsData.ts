@@ -1,5 +1,10 @@
+/**
+ * Hook for fetching paginated player payment history records.
+ * Supports search filtering and optional scoping by a specific player's LEDA ID.
+ */
 import { useQuery } from "@tanstack/react-query";
 
+// Row shape returned by the player-payment datatable API
 export interface PlayerPaymentHistoryDataTable {
 	paymentNbr: number;
 	ledaId: number;
@@ -26,6 +31,10 @@ interface PaginatedPlayerPaymentsResponse {
 	};
 }
 
+/**
+ * Fetches a paginated list of player payment records.
+ * Pass `ledaId` to scope results to a single player.
+ */
 export function usePlayerPaymentsData(page: number, pageSize: number, search: string, ledaId?: string) {
 	return useQuery<PaginatedPlayerPaymentsResponse>({
 		queryKey: ["player-payments-datatable", page, pageSize, search, ledaId],

@@ -1,3 +1,11 @@
+/**
+ * AdjustmentForm Component
+ *
+ * Provides a form for creating or editing point/dollar adjustments on a team.
+ * Supports both team-scoped and global adjustments via the `global` prop.
+ * Validates amount (required, positive), type (credit/debit), and optional notes.
+ * Defaults notes to "Adjustment made by user" if left blank on submission.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -13,7 +21,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import React from "react";
+import React, { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -35,7 +43,15 @@ const adjustmentFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the DivisionAddForm component
+/**
+ * AdjustmentForm renders an add/edit adjustment entry form.
+ *
+ * @param global - Whether the adjustment applies to all teams (global) or a single team
+ * @param teamId - ID of the team to adjust
+ * @param handleAdjustment - Callback invoked with the validated adjustment values
+ * @param setOpen - Function to close the containing dialog
+ * @param adjustmentData - Optional existing adjustment data for edit mode
+ */
 export default function AdjustmentForm({
 	global,
 	teamId,
@@ -64,6 +80,15 @@ export default function AdjustmentForm({
 			notes: adjustmentData?.notes || "",
 		},
 	});
+
+	// Reset form when component mounts or adjustmentData changes to ensure clean state
+	useEffect(() => {
+		form.reset({
+			amount: adjustmentData?.amount || undefined,
+			type: adjustmentData?.type ?? true,
+			notes: adjustmentData?.notes || "",
+		});
+	}, [form, adjustmentData]);
 
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof adjustmentFormSchema>) {

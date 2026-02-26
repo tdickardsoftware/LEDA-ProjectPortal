@@ -1,3 +1,15 @@
+/**
+ * SubdivisionScheduler component
+ *
+ * Renders the weekly schedule grid for a single subdivision during schedule
+ * creation/editing.  Each row represents a team; each cell shows the team's
+ * matchup for the week with home/away indicator and venue.  Supports:
+ * - Adding, editing, and deleting matchups via inline dialogs
+ * - Lock icon for matchups that already have points logged (prevents deletion)
+ * - Read-only `viewMode` for schedule-display pages
+ * - Memoised MatchupDisplay sub-component to avoid unnecessary re-renders
+ * - 12-hour time formatting via the `convertTo12HourFormat` utility
+ */
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import {
 	Table,
@@ -7,7 +19,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, X } from "lucide-react";
+import { Plus, Pencil, X, Lock } from "lucide-react";
+import { fetchWithSession } from "@/lib/getData";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -36,6 +49,7 @@ import {
 	EditMatchupState,
 } from "@/lib/schedule";
 import { usePlaceNames } from "@/hooks/usePlaceNames";
+import { Spinner } from "@/components/ui/skeleton";
 
 interface SubdivisionSchedulerProps {
 	division: string;
@@ -46,6 +60,7 @@ interface SubdivisionSchedulerProps {
 	setEnabledSaveButton: (value: boolean) => void;
 	handleSaveData: (updatedMatchData: ScheduleData) => void;
 	viewMode?: boolean;
+	seasonCode?: string | null;
 }
 
 // Utility function for time conversion - memoized
@@ -69,11 +84,14 @@ interface MatchupDisplayProps {
 	onEdit: () => void;
 	onDelete: () => void;
 	viewMode?: boolean;
+	hasPointsLogged?: boolean;
 }
 
 // Memoized matchup display component
 const MatchupDisplay = memo<MatchupDisplayProps>(
-	({ matchup, teamData, teams, getPlaceNameById, onEdit, onDelete, viewMode = false }) => {
+	({ matchup, teamData, teams, getPlaceNameById, onEdit, onDelete, viewMode = false, hasPointsLogged = false }) => {
+		const isByeWeek = matchup.opposingTeamId === "0" || matchup.opposingTeamLetter === "BYE" || matchup.opposingTeamLetter === "X";
+
 		const getTeamNameById = useCallback(
 			(teamId: string): string => {
 				const team = Object.values(teams).find((team) => team.teamId === teamId);
@@ -83,27 +101,71 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 		);
 
 		const locationPlaceId = useMemo(() => {
+			if (isByeWeek) return "";
 			return matchup.home
 				? teamData.placeId
 				: teams[matchup.opposingTeamLetter]?.placeId || "";
-		}, [matchup.home, teamData.placeId, teams, matchup.opposingTeamLetter]);
+		}, [matchup.home, teamData.placeId, teams, matchup.opposingTeamLetter, isByeWeek]);
 
 		const teamName = useMemo(() => {
+			if (isByeWeek) return "BYE";
 			return getTeamNameById(matchup.opposingTeamId);
-		}, [getTeamNameById, matchup.opposingTeamId]);
+		}, [getTeamNameById, matchup.opposingTeamId, isByeWeek]);
 
 		const formattedTime = useMemo(() => {
+			if (isByeWeek) return "";
 			return convertTo12HourFormat(matchup.matchTime);
-		}, [matchup.matchTime]);
+		}, [matchup.matchTime, isByeWeek]);
 
 		const placeName = useMemo(() => {
+			if (isByeWeek) return "";
 			return getPlaceNameById(locationPlaceId);
-		}, [getPlaceNameById, locationPlaceId]);
+		}, [getPlaceNameById, locationPlaceId, isByeWeek]);
+
+		// Render BYE week display
+		if (isByeWeek) {
+			return (
+				<div className="text-sm relative group">
+					<div className={viewMode ? "" : "transition-all duration-200 group-hover:blur-sm"}>
+						<div className="border border-border p-2 rounded-md text-center bg-muted/50">
+							<div className="font-semibold text-muted-foreground">BYE WEEK</div>
+						</div>
+					</div>
+					{!viewMode && (
+						<div className="absolute inset-0 hidden group-hover:flex items-center justify-center gap-4">
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-8 w-8 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
+								title="Edit matchup"
+								onClick={onEdit}
+							>
+								<Pencil className="h-4 w-4 text-blue-600" />
+							</Button>
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-8 w-8 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
+								title="Remove matchup"
+								onClick={onDelete}
+							>
+								<X className="h-4 w-4 text-red-600" />
+							</Button>
+						</div>
+					)}
+				</div>
+			);
+		}
 
 		return (
 			<div className="text-sm relative group">
 				<div className={viewMode ? "" : "transition-all duration-200 group-hover:blur-sm"}>
-					<div className="border border-border p-2 rounded-md text-center">
+					<div className={`border p-2 rounded-md text-center ${hasPointsLogged ? 'border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/20' : 'border-border'}`}>
+						{hasPointsLogged && (
+							<div className="absolute top-1 right-1" title="Points logged - only match time can be edited">
+								<Lock className="h-3 w-3 text-amber-600" />
+							</div>
+						)}
 						<div>{matchup.home ? "Home" : "Away"}</div>
 						<div>VS</div>
 						<div>{teamName}</div>
@@ -112,25 +174,44 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 					</div>
 				</div>
 				{!viewMode && (
-					<div className="absolute inset-0 hidden group-hover:flex items-center justify-center gap-4">
-						<Button
-							variant="ghost"
-							size="sm"
-							className="h-8 w-8 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
-							title="Edit matchup"
-							onClick={onEdit}
-						>
-							<Pencil className="h-4 w-4 text-blue-600" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							className="h-8 w-8 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
-							title="Remove matchup"
-							onClick={onDelete}
-						>
-							<X className="h-4 w-4 text-red-600" />
-						</Button>
+					<div className="absolute inset-0 hidden group-hover:flex flex-col items-center justify-center gap-1 p-1">
+						{hasPointsLogged ? (
+							<>
+								<div className="text-xs text-amber-600 bg-background/95 px-2 py-1 rounded shadow-sm text-center break-words whitespace-normal leading-tight">
+									Locked - only time changes allowed
+								</div>
+								<Button
+									variant="ghost"
+									size="sm"
+									className="h-8 w-8 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm flex-shrink-0"
+									title="Edit match time"
+									onClick={onEdit}
+								>
+									<Pencil className="h-4 w-4 text-blue-600" />
+								</Button>
+							</>
+						) : (
+							<>
+								<Button
+									variant="ghost"
+									size="sm"
+									className="h-8 w-8 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
+									title="Edit matchup"
+									onClick={onEdit}
+								>
+									<Pencil className="h-4 w-4 text-blue-600" />
+								</Button>
+								<Button
+									variant="ghost"
+									size="sm"
+									className="h-8 w-8 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
+									title="Remove matchup"
+									onClick={onDelete}
+								>
+									<X className="h-4 w-4 text-red-600" />
+								</Button>
+							</>
+						)}
 					</div>
 				)}
 			</div>
@@ -139,6 +220,64 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 );
 
 MatchupDisplay.displayName = "MatchupDisplay";
+
+interface AddMatchupDialogProps {
+	teamEntries: [string, TeamData][];
+	handleAddMatchup: (
+		selectedTeamLetter: string,
+		teamId: string,
+		gameTitle: string,
+		date: string,
+		matchTime?: string,
+		home?: boolean,
+		opposingTeamId?: string,
+		opposingTeamLetter?: string,
+		isByeWeek?: boolean
+	) => void;
+	teamData: TeamData;
+	teamLetter: string;
+	gameTitle: string;
+	gameDateEntries: [string, string][];
+	getTeamsWithMatchups: (gameTitle: string) => string[];
+}
+
+const AddMatchupDialog = memo<AddMatchupDialogProps>(
+	({ teamEntries, handleAddMatchup, teamData, teamLetter, gameTitle, gameDateEntries, getTeamsWithMatchups }) => {
+		const [open, setOpen] = useState(false);
+		return (
+			<Dialog open={open} onOpenChange={setOpen}>
+				<DialogTrigger asChild>
+					<Button
+						variant="ghost"
+						size="sm"
+						className="border border-dashed border-border rounded-md h-9 w-9 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
+						title={`Add matchup for ${teamData.teamName}`}
+					>
+						<Plus className="h-4 w-4" />
+					</Button>
+				</DialogTrigger>
+				<DialogContent className="bg-background">
+					<DialogHeader>
+						<DialogTitle>Add Matchup</DialogTitle>
+					</DialogHeader>
+					<SchedulingAddMatchupForm
+						teamEntries={teamEntries}
+						handleAddMatchup={handleAddMatchup}
+						setOpen={setOpen}
+						teamId={teamData.teamId}
+						selectedTeam={teamData.teamId}
+						gameTitle={gameTitle}
+						date={gameDateEntries.find(([title]) => title === gameTitle)?.[1] || ""}
+						selectedTeamLetter={teamLetter}
+						teamsWithMatchups={getTeamsWithMatchups(gameTitle)}
+					/>
+				</DialogContent>
+			</Dialog>
+		);
+	}
+);
+
+AddMatchupDialog.displayName = "AddMatchupDialog";
 
 export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 	({
@@ -150,21 +289,159 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 		setEnabledSaveButton,
 		handleSaveData,
 		viewMode = false,
+		seasonCode,
 	}) => {
 		const [localMatchData, setLocalMatchData] = useState<ScheduleData>(matchData);
-		const [initialMatchData] = useState<ScheduleData>(matchData);
+		const [initialMatchData, setInitialMatchData] = useState<ScheduleData>(matchData);
+		const [isLoadingMatchups, setIsLoadingMatchups] = useState(true);
 		const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 		const [deletingMatchup, setDeletingMatchup] = useState<DeleteMatchupState | null>(
 			null
 		);
 		const [editDialogOpen, setEditDialogOpen] = useState(false);
 		const [editingMatchup, setEditingMatchup] = useState<EditMatchupState | null>(null);
+		const [hasPointsLogged, setHasPointsLogged] = useState(false);
+		const [isCheckingPoints, setIsCheckingPoints] = useState(false);
+		// Map of "teamId-weekNum" -> boolean indicating if points are logged
+		const [pointsStatusMap, setPointsStatusMap] = useState<Record<string, boolean>>({});
+		const [isLoadingPointsStatus, setIsLoadingPointsStatus] = useState(false);
 
 		const { getPlaceNameById } = usePlaceNames(teams);
 
 		// Memoized values
 		const teamEntries = useMemo(() => Object.entries(teams), [teams]);
-		const gameDateEntries = useMemo(() => Object.entries(gameDates), [gameDates]);
+		const gameDateEntries = useMemo(() => {
+			// Convert gameDates to match "weekN" format used in matchesData
+			const entries = Object.entries(gameDates).map(([key, date]) => {
+				// Extract number from keys like "Date 1", "Date1", "Game 1", etc.
+				const match = key.match(/\d+/);
+				const weekNum = match ? match[0] : '1';
+				const weekKey = `week${weekNum}`;
+				return [weekKey, date] as [string, string];
+			});
+			console.log('Game date entries mapped:', entries);
+			return entries;
+		}, [gameDates]);
+
+		// Fetch matchup data for this subdivision when component mounts
+		useEffect(() => {
+			if (!seasonCode) {
+				setIsLoadingMatchups(false);
+				return;
+			}
+
+			let cancelled = false;
+
+			const fetchSubdivisionMatchups = async () => {
+				setIsLoadingMatchups(true);
+				try {
+					const res = await fetch(
+						`/api/activities/schedule/subdivision?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}`,
+						{
+							method: 'GET',
+							headers: { 'Content-Type': 'application/json' },
+						}
+					);
+
+					if (res.ok && !cancelled) {
+						const data = await res.json();
+
+						// Build a full structure containing all teams from the teams prop,
+						// then overlay any matchups returned by the API.
+						const fullStructure: ScheduleData = {
+							[division]: {
+								[subdivision]: Object.fromEntries(
+									Object.entries(teams).map(([letter, team]) => [
+										letter,
+										{ teamName: team.teamName, teamId: team.teamId, matchesData: {} },
+									])
+								),
+							},
+						};
+
+						// Overlay fetched matchesData for teams that have matchups
+						const fetchedSubdiv = data.scheduleData?.[division]?.[subdivision];
+						if (fetchedSubdiv) {
+							for (const [letter, teamData] of Object.entries(fetchedSubdiv as ScheduleData[string][string])) {
+								if (fullStructure[division][subdivision][letter]) {
+									fullStructure[division][subdivision][letter].matchesData = teamData.matchesData;
+								}
+							}
+						}
+
+						setLocalMatchData(fullStructure);
+						setInitialMatchData(fullStructure);
+					} else if (!cancelled) {
+						console.error('Failed to fetch subdivision matchups:', res.status, await res.text());
+					}
+				} catch (error) {
+					console.error('Error fetching subdivision matchups:', error);
+				} finally {
+					if (!cancelled) {
+						setIsLoadingMatchups(false);
+					}
+				}
+			};
+
+			fetchSubdivisionMatchups();
+
+			return () => {
+				cancelled = true;
+			};
+		}, [seasonCode, division, subdivision, teams]);
+
+		// Batch fetch points status for all teams and all weeks in a single call
+		useEffect(() => {
+			if (!seasonCode || viewMode) return;
+
+			let cancelled = false;
+
+			const fetchBatchPointsStatus = async () => {
+				const teamIds = Object.values(teams).map(t => t.teamId);
+				if (teamIds.length === 0) return;
+
+				// Extract all week numbers from game titles
+				const weekNums = gameDateEntries.map(([gameTitle]) => {
+					const weekMatch = gameTitle.match(/\d+/);
+					return weekMatch ? weekMatch[0] : "1";
+				});
+
+				if (weekNums.length === 0) return;
+
+				setIsLoadingPointsStatus(true);
+
+				try {
+					const res = await fetchWithSession('/api/activities/scoresheets/teamPoints/batch', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							seasonCode,
+							weekNums,
+							division,
+							subdivision,
+							teamIds,
+						}),
+					});
+
+					if (res.ok && !cancelled) {
+						const statusData = await res.json() as Record<string, boolean>;
+						setPointsStatusMap(statusData);
+					}
+				} catch {
+					// Ignore errors, default to no points
+				} finally {
+					if (!cancelled) {
+						setIsLoadingPointsStatus(false);
+					}
+				}
+			};
+
+			fetchBatchPointsStatus();
+
+			return () => {
+				cancelled = true;
+			};
+		}, [seasonCode, division, subdivision, teams, gameDateEntries, viewMode]);
 
 		// Monitor for changes in match data
 		useEffect(() => {
@@ -174,6 +451,66 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				setEnabledSaveButton(hasChanged);
 			}
 		}, [localMatchData, initialMatchData, setEnabledSaveButton, viewMode]);
+
+		// Check for points when edit dialog opens - use cached status map
+		useEffect(() => {
+			if (!editDialogOpen || !editingMatchup) {
+				return;
+			}
+
+			setIsCheckingPoints(true);
+			
+			const weekMatch = editingMatchup.gameTitle.match(/\d+/);
+			const weekNum = weekMatch ? weekMatch[0] : "1";
+			const teamId = teams[editingMatchup.teamLetter]?.teamId;
+			
+			if (teamId) {
+				const statusKey = `${teamId}-${weekNum}`;
+				const cachedStatus = pointsStatusMap[statusKey];
+				
+				if (cachedStatus !== undefined) {
+					// Use cached status
+					setHasPointsLogged(cachedStatus);
+					setIsCheckingPoints(false);
+				} else {
+					// Fallback: fetch individually if not in cache
+					let cancelled = false;
+					
+					const checkPoints = async () => {
+						if (!seasonCode) {
+							setIsCheckingPoints(false);
+							return;
+						}
+
+						try {
+							const res = await fetch(
+								`/api/activities/scoresheets/teamPoints?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(division)}&subdivision=${encodeURIComponent(subdivision)}&teamLedaId=${encodeURIComponent(teamId)}`
+							);
+							if (!cancelled) {
+								setHasPointsLogged(res.status === 200);
+							}
+						} catch {
+							if (!cancelled) {
+								setHasPointsLogged(false);
+							}
+						} finally {
+							if (!cancelled) {
+								setIsCheckingPoints(false);
+							}
+						}
+					};
+
+					checkPoints();
+					
+					return () => {
+						cancelled = true;
+					};
+				}
+			} else {
+				setHasPointsLogged(false);
+				setIsCheckingPoints(false);
+			}
+		}, [editDialogOpen, editingMatchup, seasonCode, division, subdivision, teams, pointsStatusMap]);
 
 		// Memoized helper functions
 		const getTeamMatchup = useCallback(
@@ -214,7 +551,8 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				matchTime?: string,
 				home?: boolean,
 				opposingTeamId?: string,
-				opposingTeamLetter?: string
+				opposingTeamLetter?: string,
+				isByeWeek?: boolean
 			) => {
 				if (!opposingTeamId || !opposingTeamLetter) {
 					console.error("Missing opposing team information");
@@ -223,22 +561,65 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 
 				const updatedMatchData = structuredClone(localMatchData);
 
-				if (updatedMatchData[division]?.[subdivision]) {
-					const selectedTeam = updatedMatchData[division][subdivision][selectedTeamLetter];
-					const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
+				// Ensure division/subdivision structure exists (may be missing if fetch returned empty)
+				if (!updatedMatchData[division]) updatedMatchData[division] = {};
+				if (!updatedMatchData[division][subdivision]) {
+					updatedMatchData[division][subdivision] = Object.fromEntries(
+						Object.entries(teams).map(([letter, team]) => [
+							letter,
+							{ teamName: team.teamName, teamId: team.teamId, matchesData: {} },
+						])
+					);
+				}
 
-					if (!selectedTeam || !opposingTeam) {
-						console.error("Teams not found in the same subdivision");
+				// Ensure selected team entry exists (may be absent if it had no prior matchups)
+				if (!updatedMatchData[division][subdivision][selectedTeamLetter] && teams[selectedTeamLetter]) {
+					updatedMatchData[division][subdivision][selectedTeamLetter] = {
+						teamName: teams[selectedTeamLetter].teamName,
+						teamId: teams[selectedTeamLetter].teamId,
+						matchesData: {},
+					};
+				}
+
+				const selectedTeam = updatedMatchData[division][subdivision][selectedTeamLetter];
+				if (!selectedTeam) {
+					console.error("Selected team not found in the subdivision");
+					return;
+				}
+
+				// Initialize matchesData if needed
+				if (!selectedTeam.matchesData) selectedTeam.matchesData = {};
+
+				const subdivisionId = `${division}-${subdivision}`;
+
+				if (isByeWeek) {
+					// BYE week: only update the selected team with BYE matchup
+					selectedTeam.matchesData[gameTitle] = {
+						matchDate: date,
+						matchTime: "19:30",
+						home: !!home,
+						opposingTeamId: "0",
+						opposingTeamLetter: "X",
+						subdivisionId,
+					};
+				} else {
+					// Ensure opposing team entry exists
+					if (!updatedMatchData[division][subdivision][opposingTeamLetter] && teams[opposingTeamLetter]) {
+						updatedMatchData[division][subdivision][opposingTeamLetter] = {
+							teamName: teams[opposingTeamLetter].teamName,
+							teamId: teams[opposingTeamLetter].teamId,
+							matchesData: {},
+						};
+					}
+
+					const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
+					if (!opposingTeam) {
+						console.error("Opposing team not found in the same subdivision");
 						return;
 					}
 
-					// Initialize matchesData if needed
-					if (!selectedTeam.matchesData) selectedTeam.matchesData = {};
 					if (!opposingTeam.matchesData) opposingTeam.matchesData = {};
 
-					const subdivisionId = `${division}-${subdivision}`;
-
-					// Update both teams' match data
 					selectedTeam.matchesData[gameTitle] = {
 						matchDate: date,
 						matchTime: matchTime || "",
@@ -256,13 +637,13 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 						opposingTeamLetter: selectedTeamLetter,
 						subdivisionId,
 					};
-
-					setLocalMatchData(updatedMatchData);
-					handleSaveData(updatedMatchData);
-					setEnabledSaveButton(true);
 				}
+
+				setLocalMatchData(updatedMatchData);
+				handleSaveData(updatedMatchData);
+				setEnabledSaveButton(true);
 			},
-			[localMatchData, division, subdivision, handleSaveData, setEnabledSaveButton]
+			[localMatchData, division, subdivision, teams, handleSaveData, setEnabledSaveButton]
 		);
 
 		const handleDeleteMatchup = useCallback(
@@ -327,7 +708,8 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				matchTime: string,
 				home: boolean,
 				opposingTeamId: string,
-				opposingTeamLetter: string
+				opposingTeamLetter: string,
+				isByeWeek?: boolean
 			) => {
 				const updatedMatchData = structuredClone(localMatchData);
 
@@ -343,9 +725,12 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 							.matchesData[gameTitle].opposingTeamLetter;
 				}
 
+				// Clean up previous opposing team matchup if it changed or we're switching to BYE
 				if (
 					previousOpposingTeamLetter &&
-					previousOpposingTeamLetter !== opposingTeamLetter
+					(previousOpposingTeamLetter !== opposingTeamLetter || isByeWeek) &&
+					previousOpposingTeamLetter !== "BYE" &&
+					previousOpposingTeamLetter !== "X"
 				) {
 					const previousOpposingTeam = updatedMatchData[division][subdivision][
 						previousOpposingTeamLetter
@@ -355,37 +740,61 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 					}
 				}
 
-				// Update both teams' match data
 				const selectedTeam = updatedMatchData[division][subdivision][selectedTeamLetter];
-				const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
 
-				if (!selectedTeam || !opposingTeam) {
-					console.error("Teams not found in the same subdivision");
+				if (!selectedTeam) {
+					console.error("Selected team not found in the subdivision");
 					return;
 				}
 
 				if (!selectedTeam.matchesData) selectedTeam.matchesData = {};
-				if (!opposingTeam.matchesData) opposingTeam.matchesData = {};
 
 				const subdivisionId = `${division}-${subdivision}`;
 
-				selectedTeam.matchesData[gameTitle] = {
-					matchDate: date,
-					matchTime,
-					home,
-					opposingTeamId,
-					opposingTeamLetter,
-					subdivisionId,
-				};
+				if (isByeWeek) {
+					// BYE week: only update the selected team with BYE matchup
+					// Preserve existing opposingTeamLetter if already a BYE week, otherwise use "X"
+					const existingMatchup = selectedTeam.matchesData?.[gameTitle];
+					const existingIsBye = existingMatchup?.opposingTeamId === "0";
+					const byeTeamLetter = existingIsBye ? existingMatchup.opposingTeamLetter : "X";
+					
+					selectedTeam.matchesData[gameTitle] = {
+						matchDate: date,
+						matchTime: "19:30",
+						home,
+						opposingTeamId: "0",
+						opposingTeamLetter: byeTeamLetter,
+						subdivisionId,
+					};
+				} else {
+					// Regular matchup: update both teams
+					const opposingTeam = updatedMatchData[division][subdivision][opposingTeamLetter];
 
-				opposingTeam.matchesData[gameTitle] = {
-					matchDate: date,
-					matchTime,
-					home: !home,
-					opposingTeamId: teamId,
-					opposingTeamLetter: selectedTeamLetter,
-					subdivisionId,
-				};
+					if (!opposingTeam) {
+						console.error("Opposing team not found in the same subdivision");
+						return;
+					}
+
+					if (!opposingTeam.matchesData) opposingTeam.matchesData = {};
+
+					selectedTeam.matchesData[gameTitle] = {
+						matchDate: date,
+						matchTime,
+						home,
+						opposingTeamId,
+						opposingTeamLetter,
+						subdivisionId,
+					};
+
+					opposingTeam.matchesData[gameTitle] = {
+						matchDate: date,
+						matchTime,
+						home: !home,
+						opposingTeamId: teamId,
+						opposingTeamLetter: selectedTeamLetter,
+						subdivisionId,
+					};
+				}
 
 				setLocalMatchData(updatedMatchData);
 				handleSaveData(updatedMatchData);
@@ -439,39 +848,56 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 								}
 								selectedTeamLetter={editingMatchup.teamLetter}
 								initialValues={editingMatchup.matchData}
+								hasPointsLogged={hasPointsLogged}
+								isCheckingPoints={isCheckingPoints}
+								teamsWithMatchups={getTeamsWithMatchups(editingMatchup.gameTitle).filter(
+									(id) => id !== editingMatchup.matchData.opposingTeamId
+								)}
 							/>
 						)}
 					</DialogContent>
 				</Dialog>
 
-				<div className="overflow-auto">
+				<div className="overflow-auto relative">
+					{(isLoadingPointsStatus || isLoadingMatchups) && (
+						<div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
+							<Spinner />
+						</div>
+					)}
 					<Table className="table-auto">
 						<TableHeader>
 							<TableRow className="bg-muted/50">
 								<TableHead className="font-semibold border-r border-border text-left py-4 px-6">
 									Team Name
 								</TableHead>
-								{gameDateEntries.map(([gameTitle, date], index) => (
-									<TableHead
-										key={gameTitle}
-										className={`whitespace-nowrap text-center py-4 px-6 ${
-											index < gameDateEntries.length - 1
-												? "border-r border-border"
-												: ""
-										}`}
-									>
-										<div className="font-medium text-sm">
-											{gameTitle.replace(/(\d+)/, " $1")}
-										</div>
-										<div className="text-xs text-muted-foreground mt-1">
-											{date}
-										</div>
-									</TableHead>
-								))}
+								{gameDateEntries.map(([gameTitle, date], index) => {
+									// Extract week number and display as "Date X"
+									const weekMatch = gameTitle.match(/\d+/);
+									const dateNum = weekMatch ? weekMatch[0] : '1';
+									return (
+										<TableHead
+											key={gameTitle}
+											className={`whitespace-nowrap text-center py-4 px-6 ${
+												index < gameDateEntries.length - 1
+													? "border-r border-border"
+													: ""
+											}`}
+										>
+											<div className="font-medium text-sm">
+												Date {dateNum}
+											</div>
+											<div className="text-xs text-muted-foreground mt-1">
+												{date}
+											</div>
+										</TableHead>
+									);
+								})}
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{teamEntries.map(([key, teamData], rowIndex) => (
+							{teamEntries
+								.filter(([, teamData]) => teamData.teamId !== "0")
+								.map(([key, teamData], rowIndex) => (
 								<TableRow
 									key={key}
 									className={
@@ -486,6 +912,10 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 									</TableCell>
 									{gameDateEntries.map(([gameTitle], index) => {
 										const matchup = getTeamMatchup(key, gameTitle);
+										const weekMatch = gameTitle.match(/\d+/);
+										const weekNum = weekMatch ? weekMatch[0] : "1";
+										const statusKey = `${teamData.teamId}-${weekNum}`;
+										const matchupHasPoints = pointsStatusMap[statusKey] ?? false;
 										return (
 											<TableCell
 												key={`${key}-${gameTitle}`}
@@ -507,44 +937,22 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 															}
 															onDelete={() => handleDeleteMatchup(key, gameTitle)}
 															viewMode={viewMode}
+															hasPointsLogged={matchupHasPoints}
 														/>
 													) : viewMode ? (
 														<div className="text-sm text-muted-foreground py-2">
 															BYE
 														</div>
 													) : (
-														<Dialog>
-															<DialogTrigger asChild>
-																<Button
-																	variant="ghost"
-																	size="sm"
-																	className="border border-dashed border-border rounded-md h-9 w-9 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
-																	title={`Add matchup for ${teamData.teamName}`}
-																>
-																	<Plus className="h-4 w-4" />
-																</Button>
-															</DialogTrigger>
-															<DialogContent className="bg-background">
-																<DialogHeader>
-																	<DialogTitle>Add Matchup</DialogTitle>
-																</DialogHeader>
-																<SchedulingAddMatchupForm
-																	teamEntries={teamEntries}
-																	handleAddMatchup={handleAddMatchup}
-																	setOpen={() => {}}
-																	teamId={teamData.teamId}
-																	selectedTeam={teamData.teamId}
-																	gameTitle={gameTitle}
-																	date={
-																		gameDateEntries.find(
-																			([title]) => title === gameTitle
-																		)?.[1] || ""
-																	}
-																	selectedTeamLetter={key}
-																	teamsWithMatchups={getTeamsWithMatchups(gameTitle)}
-																/>
-															</DialogContent>
-														</Dialog>
+														<AddMatchupDialog
+															teamEntries={teamEntries}
+															handleAddMatchup={handleAddMatchup}
+															teamData={teamData}
+															teamLetter={key}
+															gameTitle={gameTitle}
+															gameDateEntries={gameDateEntries}
+															getTeamsWithMatchups={getTeamsWithMatchups}
+														/>
 													)}
 												</div>
 											</TableCell>

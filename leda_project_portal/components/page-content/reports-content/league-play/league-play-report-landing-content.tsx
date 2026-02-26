@@ -1,5 +1,21 @@
 "use client";
 
+/**
+ * LeaguePlayReportLandingContent
+ *
+ * Landing page for all League Play report PDFs. Manages a season selector,
+ * an optional week-number selector, and a minimum-points threshold input
+ * (debounced 1200 ms) used by the Top Darter report.
+ *
+ * `renderPDFDownload` dispatches to 10+ react-pdf report components based on
+ * the currently selected report type. PDFs are generated via
+ * `@react-pdf/renderer`’s `PDFDownloadLink` (or `pdf()` + blob URL for
+ * the weekly scoresheets variant).
+ *
+ * Data is fetched via TanStack Query; the season selector drives which
+ * season’s data is loaded for each report.
+ */
+
 import { useState, useCallback, useEffect, JSX } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";

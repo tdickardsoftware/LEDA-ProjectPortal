@@ -1,3 +1,10 @@
+/**
+ * API Route: /api/github/create-issue
+ *
+ * POST — Creates a new GitHub issue in the configured repository.
+ * Requires an authenticated session. Prepends the reporter's name and
+ * email to the issue body before forwarding to the GitHub REST API.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { requireApiSession } from "@/lib/require-session";
 

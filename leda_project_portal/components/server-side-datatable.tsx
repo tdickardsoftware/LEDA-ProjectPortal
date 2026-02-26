@@ -1,3 +1,13 @@
+/**
+ * ServerSideDataTable component
+ *
+ * A server-side data table built on TanStack Table.  Pagination, sorting, and
+ * search are handled externally (passed as controlled props) so the parent page
+ * can drive API queries.  Supports optional Add / Edit dialogs
+ * (DialogWithButton), Delete confirmation (AlertDialogDelete), view-navigation
+ * links (CustomLink), and a loading spinner overlay.  Column header clicks
+ * emit sorting change events back to the parent via `onSortingChange`.
+ */
 "use client";
 
 import * as React from "react";
@@ -10,7 +20,6 @@ import {
 	flexRender,
 	getCoreRowModel,
 	useReactTable,
-	getSortedRowModel,
 } from "@tanstack/react-table";
 import {
 	Table,
@@ -23,9 +32,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
 import { Spinner } from "@/components/ui/skeleton";
-import { playerRoute } from "@/lib/apiRoutes";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { RotateCw } from "lucide-react";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -49,8 +65,23 @@ interface ServerSideDataTableProps<TData extends Record<string, unknown>, TValue
 	viewLinkConfig?: { linkName: string; parentPage: string };
 	customLink?: { buttonName: string; link: string };
 	defaultSort?: string;
+	/**
+	 * Session storage key used by usePersistedDataTableState on the parent page.
+	 * When set, the table can preserve state for view/detail navigation.
+	 */
+	stateKey?: string;
+	/**
+	 * React Query key prefix used to invalidate/refetch when data changes.
+	 * Example: ['players-datatable']
+	 */
+	queryKey?: unknown[];
+	// Optional controlled sorting (recommended for server-side sorting)
+	sorting?: SortingState;
+	onSortingChange?: (sorting: SortingState) => void;
 	// Server-side props
 	isLoading?: boolean;
+	pageSize: number;
+	onPageSizeChange: (pageSize: number) => void;
 	totalPages: number;
 	currentPage: number;
 	onPageChange: (page: number) => void;
@@ -68,14 +99,35 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	viewLinkConfig,
 	customLink,
 	defaultSort,
+	stateKey,
+	queryKey,
+	sorting: sortingProp,
+	onSortingChange,
 	isLoading = false,
+	pageSize,
+	onPageSizeChange,
 	totalPages,
 	currentPage,
 	onPageChange,
 	onSearchChange,
 	searchValue,
 }: ServerSideDataTableProps<TData, TValue>) {
-	const [sorting, setSorting] = React.useState<SortingState>([]);
+	const [internalSorting, setInternalSorting] = React.useState<SortingState>(() =>
+		defaultSort ? [{ id: defaultSort, desc: false }] : []
+	);
+	const sorting = sortingProp ?? internalSorting;
+
+	const handleSortingChange = React.useCallback(
+		(updater: SortingState | ((old: SortingState) => SortingState)) => {
+			const next = typeof updater === "function" ? updater(sorting) : updater;
+			if (onSortingChange) {
+				onSortingChange(next);
+			} else {
+				setInternalSorting(next);
+			}
+		},
+		[onSortingChange, sorting]
+	);
 	const [searchQuery, setSearchQuery] = React.useState(searchValue);
 	const [rowSelection, setRowSelection] = React.useState({});
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0);
@@ -84,6 +136,8 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 
 	// Debounced search
 	const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+	const isInitialSearchEffect = React.useRef(true);
+	const isInitialSortEffect = React.useRef(true);
 
 	// Add state for context menus
 	const [contextMenu, setContextMenu] = React.useState<{
@@ -132,14 +186,29 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	}, [searchQuery, onSearchChange, onPageChange, clearSearch]);
 
 	// Trigger search as user types (debounced)
+	// Important: skip initial mount so we don't reset to page 1 when returning to a table.
 	React.useEffect(() => {
+		if (isInitialSearchEffect.current) {
+			isInitialSearchEffect.current = false;
+			return;
+		}
+
 		executeSearch();
 		return () => {
 			if (searchTimeoutRef.current) {
 				clearTimeout(searchTimeoutRef.current);
 			}
 		};
-	}, [searchQuery]);
+	}, [searchQuery, executeSearch]);
+
+	// When sorting changes, reset to page 1 (skip initial mount).
+	React.useEffect(() => {
+		if (isInitialSortEffect.current) {
+			isInitialSortEffect.current = false;
+			return;
+		}
+		onPageChange(1);
+	}, [sorting, onPageChange]);
 
 	// Helper function to extract text from React elements
 	const extractTextFromReactElement = React.useCallback((element: unknown): string => {
@@ -236,7 +305,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 		cellValue: any
 	) => {
 		// Don't show context menu for select column
-		if (columnKey === "select") return;
+		if (columnKey === "select" || columnKey === "actions") return;
 		
 		e.preventDefault();
 		setRowContextMenu({
@@ -373,8 +442,8 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 		data,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
-		onSortingChange: setSorting,
-		getSortedRowModel: getSortedRowModel(),
+		onSortingChange: handleSortingChange,
+		manualSorting: true,
 		onRowSelectionChange: setRowSelection,
 		enableRowSelection: true,
 		manualPagination: true, // Important for server-side pagination
@@ -384,7 +453,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 			rowSelection,
 		},
 		initialState: {
-			sorting: [{ id: defaultSort || "", desc: false }],
+			sorting: defaultSort ? [{ id: defaultSort, desc: false }] : [],
 		},
 	});
 
@@ -404,11 +473,14 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	}, [rowSelection]);
 
 	// Refresh handler
-	const handleRefresh = () => {
-		// Invalidate queries to refetch fresh data
-		queryClient.invalidateQueries({ queryKey: ['seasons-datatable'] });
+	const handleRefresh = React.useCallback(() => {
+		if (queryKey && queryKey.length) {
+			// Invalidate and refetch to ensure fresh data immediately
+			queryClient.invalidateQueries({ queryKey, exact: false });
+			queryClient.refetchQueries({ queryKey, exact: false, type: "active" });
+		}
 		setRowSelection({});
-	};
+	}, [queryClient, queryKey]);
 
 	return (
 		<div className="w-full">
@@ -426,19 +498,61 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 								onRefresh={handleRefresh}
 							/>
 						)}
-						<div className="flex space-x-2">						{customLink && (
-							<Button
-								variant="outline"
-								onClick={() => router.push(`/Portal/${customLink.link}`)}
-								className="hover:bg-muted border-border text-foreground"
-							>
-								{customLink.buttonName}
-							</Button>
-						)}							{viewLinkConfig && (
+							<div className="flex space-x-2">
+								{queryKey && queryKey.length > 0 && (
+									<Button
+										variant="outline"
+										onClick={handleRefresh}
+										disabled={isLoading}
+										className="hover:bg-muted border-border text-foreground"
+										size="icon"
+										title="Refresh"
+									>
+										<RotateCw className="h-4 w-4" />
+									</Button>
+								)}
+									<Select
+										value={String(pageSize)}
+										onValueChange={(value) => {
+											const next = Number(value);
+											if (!Number.isFinite(next)) return;
+											onPageSizeChange(next);
+											onPageChange(1);
+										}}
+										disabled={isLoading}
+									>
+										<SelectTrigger className="w-[120px]">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="10">10 rows</SelectItem>
+											<SelectItem value="25">25 rows</SelectItem>
+											<SelectItem value="50">50 rows</SelectItem>
+											<SelectItem value="100">100 rows</SelectItem>
+										</SelectContent>
+									</Select>
+								{customLink && (
+									<Button
+										variant="outline"
+										onClick={() => router.push(`/Portal/${customLink.link}`)}
+										className="hover:bg-muted border-border text-foreground"
+									>
+										{customLink.buttonName}
+									</Button>
+								)}
+								{viewLinkConfig && (
 								<CustomLink
 									linkName={viewLinkConfig.linkName}
 									parentPage={viewLinkConfig.parentPage}
 									disabled={selectedRowCount !== 1}
+										onClick={() => {
+											if (typeof window === "undefined" || !stateKey) return;
+											try {
+												sessionStorage.setItem(`datatable:preserve:${stateKey}`, "1");
+											} catch {
+												// Ignore storage errors
+											}
+										}}
 									href={`/Portal/${selectedRowsData[0]?.ledaId ? "Management" : "Maintenance"}/**REPLACE**/${selectedRowsData[0]?.ledaId ?? selectedRowsData[0]?.seasonCode}`}
 								/>
 							)}
@@ -508,13 +622,16 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 										>
 											{headerGroup.headers.map((header) => {
 												const isSelectColumn = header.column.columnDef.id === "select";
+												const isActionsColumn = header.column.columnDef.id === "actions";
+												const isCurrentSeasonColumn = header.column.columnDef.id === "isCurrentSeason" || 
+													("accessorKey" in header.column.columnDef && header.column.columnDef.accessorKey === "isCurrentSeason");
 												const displayName = isSelectColumn ? "" : getColumnDisplayName(header.column.columnDef);
 												
 												return (
 													<TableHead
 														key={header.id}
 														className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
-														onContextMenu={isSelectColumn ? undefined : (e) => handleColumnRightClick(e, displayName)}
+													onContextMenu={isSelectColumn || isActionsColumn || isCurrentSeasonColumn ? undefined : (e) => handleColumnRightClick(e, displayName)}
 														style={{ userSelect: 'none' }}
 													>
 														{header.isPlaceholder
@@ -540,6 +657,9 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 												{row.getVisibleCells().map((cell) => {
 													const columnKey = cell.column.id;
 													const isSelectColumn = columnKey === "select";
+													const isActionsColumn = columnKey === "actions";
+													const isCurrentSeasonColumn = columnKey === "isCurrentSeason" ||
+														("accessorKey" in cell.column.columnDef && cell.column.columnDef.accessorKey === "isCurrentSeason");
 													const columnName = isSelectColumn ? "" : getColumnDisplayName(cell.column.columnDef);
 													const cellValue = cell.getValue();
 												
@@ -547,7 +667,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 														<TableCell
 															key={cell.id}
 															className="px-6 py-3 text-sm text-foreground"
-															onContextMenu={isSelectColumn ? undefined : (e) => 
+														onContextMenu={isSelectColumn || isActionsColumn || isCurrentSeasonColumn ? undefined : (e) => 
 																handleCellRightClick(e, columnKey, columnName, cellValue)
 															}
 														>

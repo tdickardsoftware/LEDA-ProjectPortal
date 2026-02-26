@@ -1,3 +1,4 @@
+/** Shadcn Sheet (slide-over panel) built on Radix Dialog primitives, with top/right/bottom/left side variants. */
 "use client"
 
 import * as React from "react"

@@ -75,11 +75,22 @@ def build_player_record(row: dict) -> dict:
 
     dob = parse_date(row.get("Date of Birth", ""), required=True)
 
+    first_name = clean_text(row.get("First Name"), True)
+    middle_initial = clean_text(row.get("Middle Initial"), False)[:1]
+    last_name = clean_text(row.get("Last Name"), True)
+    
+    # Build fullName: firstName + middleInitial (if provided) + lastName
+    if middle_initial:
+        full_name = f"{first_name} {middle_initial} {last_name}"
+    else:
+        full_name = f"{first_name} {last_name}"
+    
     record = {
         "ledaId": row.get("ID Number"),
-        "lastName": clean_text(row.get("Last Name"), True),
-        "firstName": clean_text(row.get("First Name"), True),
-        "middleInitial": clean_text(row.get("Middle Initial"), False)[:1],  # not required, blank if missing
+        "lastName": last_name,
+        "firstName": first_name,
+        "middleInitial": middle_initial,
+        "fullName": full_name,
         "addressOne": clean_text(row.get("Address 1"), True),
         "addressTwo": clean_text(row.get("Address 2"), False),
         "city": clean_text(row.get("City"), True),
@@ -126,7 +137,7 @@ def build_membership_record(row: dict) -> dict:
             record[k] = "UNKNOWN"
     return record
 
-PLAYER_COLS = ["ledaId","lastName","firstName","middleInitial","addressOne","addressTwo","city","state","zip","phoneNumber","otherNumber","email","gender","dateOfBirth"]
+PLAYER_COLS = ["ledaId","lastName","firstName","middleInitial","fullName","addressOne","addressTwo","city","state","zip","phoneNumber","otherNumber","email","gender","dateOfBirth"]
 MEMBERSHIP_COLS = ["ledaId","establishedDate","badStanding","badStandingReason","takeOffMailing","mailStandings","formOnFile","needsMemberCard","inactiveDate","lastMembershipFeePayment","lastTrailsDate","memberType","cannotBeCaptain","lifetimeMember","lifetimeMemberReason"]
 
 def render_player_values(rec: dict) -> str:

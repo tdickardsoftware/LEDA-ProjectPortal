@@ -1,7 +1,11 @@
+/**
+ * API Route: /api/activities/roster/rostersWithData
+ *
+ * GET — Returns season codes for all populated rosters.
+ *        When `getSeasonCodeInfo=true`, also joins season metadata
+ *        (description, isCurrentSeason) from the maintenance seasons table.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
-import { query } from "@/lib/dbTypeGet";
-import { Roster, SeasonCode } from "@/lib/definitions";
-import { requireApiSession } from "@/lib/require-session";
 
 export default async function handler(
 	req: NextApiRequest,

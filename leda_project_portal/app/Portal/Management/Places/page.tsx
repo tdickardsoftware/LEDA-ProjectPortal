@@ -1,28 +1,20 @@
+/**
+ * Places management page — client-side server-paginated data table for managing
+ * venue/location records. Supports add, edit, delete, and detail view navigation.
+ * Table state (pagination, sorting, search) is persisted across navigation.
+ */
 "use client";
-
-import { ServerSideDataTable } from "@/components/server-side-datatable";
-import { placeRoute } from "@/lib/apiRoutes";
 import { columns } from "@/schemas/managment/places";
 import { usePlacesData } from "@/hooks/usePlacesData";
-import { useState } from "react";
 import { Spinner } from "@/components/ui/skeleton";
+import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
 
 export default function Page() {
-	const [page, setPage] = useState(1);
-	const [search, setSearch] = useState("");
-	const pageSize = 10;
+	const { page, setPage, pageSize, setPageSize, search, setSearch, sorting, setSorting } = usePersistedDataTableState(
+		"datatable:/Portal/Management/Places"
+	);
 
-	const { data, isLoading, error } = usePlacesData(page, pageSize, search);
-
-	if (error) {
-		return (
-			<div className="container mx-auto py-10">
-				<div className="text-center text-red-500">
-					Error loading places: {(error as Error).message}
-				</div>
-			</div>
-		);
-	}
+	const { data, isLoading } = usePlacesData(page, pageSize, search, sorting);
 
 	// Show initial loading state
 	if (isLoading && !data) {
@@ -41,6 +33,10 @@ export default function Page() {
 				columns={columns}
 				data={data?.data || []}
 				pageName="Places Page"
+				stateKey="datatable:/Portal/Management/Places"
+				queryKey={["places-datatable"]}
+				pageSize={pageSize}
+				onPageSizeChange={setPageSize}
 				addDialogConfig={{
 					form: "PlaceAddForm",
 					title: "Add Place",
@@ -61,6 +57,8 @@ export default function Page() {
 					parentPage: "Places"
 				}}
 				defaultSort="ledaId"
+				sorting={sorting}
+				onSortingChange={setSorting}
 				isLoading={isLoading}
 				totalPages={data?.pagination.totalPages || 1}
 				currentPage={page}

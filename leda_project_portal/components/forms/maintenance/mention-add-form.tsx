@@ -1,3 +1,11 @@
+/**
+ * MentionAddForm Component
+ *
+ * Form for creating a new mention type in the maintenance section.
+ * A mention is a named achievement (e.g., "High Score") with an associated
+ * point value, a basis code (e.g., per-player or per-team), and an optional
+ * description. Returns a 422 conflict error when the mention code already exists.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -27,7 +35,10 @@ import { fetchWithSession } from "@/lib/getData";
 const mentionFormSchema = z.object({
 	mentionCode: z.string().min(1, { message: "Mention Code is required." }),
 	desc: z.string().optional(),
-	points: z.number().min(0, { message: "Points must be a positive number." }),
+	points: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Points must be a positive number." })
+	),
 	mentionBasis: z.string().min(1, { message: "Mention Basis is required." }),
 });
 
@@ -36,7 +47,12 @@ const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
-// Define the MentionAddForm component
+/**
+ * MentionAddForm creates a new mention type record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function MentionAddForm({
 	onClose,
 	onRefresh,
@@ -51,7 +67,7 @@ export default function MentionAddForm({
 			mentionCode: "",
 			desc: "",
 			mentionBasis: "",
-			points: undefined,
+			points: "" as any,
 		},
 	});
 
@@ -95,6 +111,17 @@ export default function MentionAddForm({
 		},
 	});
 
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setMentionCodeExists(false);
+		form.reset({
+			mentionCode: "",
+			desc: "",
+			mentionBasis: "",
+			points: "" as any,
+		});
+	}, [form]);
+
 	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
 		setMentionCodeExists(false);
 		mutation.mutate(values);
@@ -134,7 +161,7 @@ export default function MentionAddForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target.value
 														  )

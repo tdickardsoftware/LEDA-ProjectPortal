@@ -1,3 +1,11 @@
+/**
+ * Column definitions for LEDA report tables.
+ *
+ * Each exported constant is an array of column descriptor objects consumed
+ * by the generic report datatable component. Columns specify the data key,
+ * display header, a typed accessor function, and whether the column is
+ * sortable. Organised by report category: Trails, League Play, Lists.
+ */
 import {
 	TrailsHistoryOfWins,
 	TrailsTripEligible,

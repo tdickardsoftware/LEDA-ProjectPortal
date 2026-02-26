@@ -1,3 +1,11 @@
+/**
+ * PlayerEditInformationForm Component
+ *
+ * Multi-step form for editing an existing LEDA member record. Fetches full
+ * player data by LEDA ID on mount and pre-populates all fields. The
+ * `hasChanges` flag reflects whether any field has been dirtied. Reloads
+ * the page on successful save to reflect the updated player data.
+ */
 "use client";
 
 import { z } from "zod";
@@ -24,6 +32,7 @@ import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
+import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { PlayerMemberInfo } from "@/lib/definitions";
@@ -31,6 +40,7 @@ import { Tab } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for all player fields — mirrors PlayerAddInformationForm
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
 	middleInitial: z.string().nullable().optional(),
@@ -84,11 +94,20 @@ const playerInfoSchema = z.object({
 	lifetimeMemberReason: z.string().nullable().optional(),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlayerEditInformationForm fetches a player record and provides a multi-step edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - The player record used to look up full data by ledaId
+ * @param handleEdit - Optional alternative close handler
+ */
 export default function PlayerEditInformationForm({
 	onClose,
 	onRefresh,
@@ -100,11 +119,15 @@ export default function PlayerEditInformationForm({
 	rowData: PlayerMemberInfo;
 	handleEdit?: () => void;
 }) {
+	// Conditional flag to show/hide the bad standing reason textarea
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
+	// Conditional flag to show/hide the lifetime member reason textarea
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
+	// Local state to store the full player record fetched from the API
 	const [formData, setFormData] = useState<PlayerMemberInfo>(
 		{} as PlayerMemberInfo
 	);
+	// Track which wizard step is currently active
 	const [currentStep, setCurrentStep] = useState(0);
 
 	// Define the steps
@@ -178,7 +201,7 @@ export default function PlayerEditInformationForm({
 			dateOfBirth: formData.dateOfBirth
 				? new Date(formData.dateOfBirth).toISOString().split("T")[0]
 				: "",
-			ledaId: formData.ledaId ?? 0,
+			ledaId: formData.ledaId ?? undefined,
 			establishedDate: formData.establishedDate
 				? new Date(formData.establishedDate).toISOString().split("T")[0]
 				: "",
@@ -200,6 +223,9 @@ export default function PlayerEditInformationForm({
 			lifetimeMemberReason: formData.lifetimeMemberReason || "",
 		},
 	});
+
+	// True when any form field has been modified from its original value
+	const hasChanges = form.formState.isDirty;
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
@@ -394,11 +420,11 @@ export default function PlayerEditInformationForm({
 									control={form.control}
 									name="gender"
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="dateOfBirth"
 									label="Date of Birth"
-									type="date"
+									enableMonthYearPicker
 								/>
 							</div>
 						</Tab.Panel>
@@ -468,6 +494,7 @@ export default function PlayerEditInformationForm({
 													disabled
 													className={inputWidth}
 													type="number"
+													value={field.value ?? ""}
 													onChange={(e) => {
 														field.onChange(
 															e.target.value ===
@@ -490,11 +517,11 @@ export default function PlayerEditInformationForm({
 									name="memberType"
 									label="Member Type"
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="establishedDate"
 									label="Established Date *"
-									type="date"
+									enableMonthYearPicker
 								/>
 								{/* Bad Standing Checkbox */}
 								<FormField
@@ -645,17 +672,17 @@ export default function PlayerEditInformationForm({
 									label="Cannot be Captain"
 									className={checkboxWidth}
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="inactiveDate"
 									label="Inactive Date"
-									type="date"
+									enableMonthYearPicker
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="lastTrailsDate"
 									label="Last Trails Date"
-									type="date"
+									enableMonthYearPicker
 								/>
 							</div>
 						</Tab.Panel>
@@ -670,9 +697,21 @@ export default function PlayerEditInformationForm({
 								: "Back"
 							: "Back"}
 					</Button>
-					<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
-						{currentStep === steps.length - 1 ? "Update" : "Next"}
-					</Button>
+					<div className="flex gap-2">
+						{hasChanges && currentStep < steps.length - 1 && (
+							<Button
+								variant="outline"
+								type="button"
+								onClick={() => setCurrentStep(steps.length - 1)}
+								className="hover:bg-muted border-border text-foreground"
+							>
+								Skip to Update
+							</Button>
+						)}
+						<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
+							{currentStep === steps.length - 1 ? "Update" : "Next"}
+						</Button>
+					</div>
 				</div>
 			</form>
 		</Form>

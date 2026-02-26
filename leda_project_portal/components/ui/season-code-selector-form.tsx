@@ -1,3 +1,12 @@
+/**
+ * SeasonCodeSelector (form) component
+ *
+ * React Hook Form-bound searchable combobox for selecting a season code.
+ * Fetches season codes from both the roster and season-code APIs.  Supports
+ * an `exclusive` mode that limits choices to non-current seasons, and an
+ * `excludeCode` prop to omit a specific season from the list (useful in
+ * edit forms to exclude the current value).
+ */
 // Import necessary modules and components
 "use client";
 import React, { useState } from "react";

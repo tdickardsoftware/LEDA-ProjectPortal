@@ -1,3 +1,12 @@
+/**
+ * SchedulingAddMatchupForm Component
+ *
+ * Form for adding a new matchup to the weekly schedule.
+ * Supports regular matchups (with match time, home/away flag, and opposing team)
+ * and BYE weeks. BYE weeks use placeholder values: opposing team ID "0" and
+ * letter "X". Cross-field validation ensures match time and opposing team are
+ * provided for non-BYE matchups.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -20,19 +29,39 @@ import CheckboxDefault from "@/components/ui/checkbox-default";
 
 // Define the schema for form validation using zod
 const divisionFormSchema = z.object({
-	matchTime: z.string().min(1, { message: "Match Time is required." }),
+	matchTime: z.string(),
 	home: z.boolean(),
-	opposingTeamId: z
-		.string()
-		.min(1, { message: "Opposing Team is required." }),
+	isByeWeek: z.boolean(),
+	opposingTeamId: z.string(),
 	teamId: z.string().min(1, { message: "Team ID is required." }),
+}).refine((data) => {
+	// If not a BYE week, require matchTime and opposingTeamId
+	if (!data.isByeWeek) {
+		return data.matchTime.length > 0 && data.opposingTeamId.length > 0;
+	}
+	return true;
+}, {
+	message: "Match Time and Opposing Team are required for non-BYE weeks.",
+	path: ["opposingTeamId"],
 });
 
 // Define styles for the form container
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the DivisionAddForm component
+/**
+ * SchedulingAddMatchupForm renders the add-matchup form.
+ *
+ * @param teamEntries - All available teams for the opposing team selector
+ * @param handleAddMatchup - Callback invoked with the validated matchup values
+ * @param teamId - ID of the team that owns this matchup slot
+ * @param gameTitle - Title label for the game week
+ * @param date - ISO date string for the match week
+ * @param setOpen - Function to close the containing dialog
+ * @param selectedTeam - Team ID of the team being scheduled
+ * @param selectedTeamLetter - Letter identifier for the selected team
+ * @param teamsWithMatchups - Team IDs that already have matchups (excluded from selector)
+ */
 export default function SchedulingAddMatchupForm({
 	teamEntries,
 	handleAddMatchup,
@@ -56,7 +85,8 @@ export default function SchedulingAddMatchupForm({
 		matchTime: string,
 		home: boolean,
 		opposingTeamId: string,
-		opposingTeamLetter: string
+		opposingTeamLetter: string,
+		isByeWeek?: boolean
 	) => void;
 	setOpen: (value: boolean) => void;
 	teamId: string;
@@ -70,30 +100,60 @@ export default function SchedulingAddMatchupForm({
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
 		resolver: zodResolver(divisionFormSchema),
 		defaultValues: {
-			matchTime: "",
+			matchTime: "19:30",
 			home: true,
+			isByeWeek: false,
 			opposingTeamId: "",
 			teamId: selectedTeam,
 		},
 	});
 
+	const isByeWeek = form.watch("isByeWeek");
+
+	// Reset form when component mounts to ensure clean state when dialog reopens
+	React.useEffect(() => {
+		form.reset({
+			matchTime: "19:30",
+			home: true,
+			isByeWeek: false,
+			opposingTeamId: "",
+			teamId: selectedTeam,
+		});
+	}, [form, selectedTeam]);
+
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const opposingTeamKey =
-			teamEntries.find(
-				([, value]) => value.teamId === values.opposingTeamId
-			)?.[0] || "";
-		handleAddMatchup(
-			selectedTeamLetter,
-			teamId,
-			gameTitle,
-			date,
-			values.matchTime,
-			values.home,
-			values.opposingTeamId,
-			opposingTeamKey
-		);
+		if (values.isByeWeek) {
+			// For BYE week, use special values
+			handleAddMatchup(
+				selectedTeamLetter,
+				teamId,
+				gameTitle,
+				date,
+				"19:30", // default time for BYE
+				values.home,
+				"0", // opposing team ID is 0 for BYE
+				"X", // opposing team letter is X for BYE week
+				true // isByeWeek flag
+			);
+		} else {
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const opposingTeamKey =
+				teamEntries.find(
+					([, value]) => value.teamId === values.opposingTeamId
+				)?.[0] || "";
+			handleAddMatchup(
+				selectedTeamLetter,
+				teamId,
+				gameTitle,
+				date,
+				values.matchTime,
+				values.home,
+				values.opposingTeamId,
+				opposingTeamKey,
+				false // not a BYE week
+			);
+		}
 		setOpen(false);
 	}
 
@@ -106,25 +166,27 @@ export default function SchedulingAddMatchupForm({
 			>
 				<div className="flex space-x-4">
 					<div className={formContainerStyle}>
-						<FormField
-							control={form.control}
-							name="matchTime"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Match Start Time *</FormLabel>
-									<FormControl>
-										<Input
-											{...field}
-											type="time"
-											onChange={(e) => {
-												field.onChange(e.target.value);
-											}}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+						{!isByeWeek && (
+							<FormField
+								control={form.control}
+								name="matchTime"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Match Start Time *</FormLabel>
+										<FormControl>
+											<Input
+												{...field}
+												type="time"
+												onChange={(e) => {
+													field.onChange(e.target.value);
+												}}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						)}
 						<div className="flex gap-4">
 							<TeamSelector
 								control={form.control}
@@ -135,20 +197,30 @@ export default function SchedulingAddMatchupForm({
 								disabled={true}
 								defaultId={selectedTeam}
 							/>
+						{!isByeWeek && (
 							<CheckboxDefault
 								control={form.control}
 								name="home"
 								label="Home Team?"
 								className="h-5 w-5"
 							/>
+						)}
 						</div>
-						<TeamSelector
+						<CheckboxDefault
 							control={form.control}
-							name="opposingTeamId"
-							label="Opposing Team *"
-							selectedTeams={[selectedTeam, ...teamsWithMatchups]}
-							teamEntries={teamEntries}
+							name="isByeWeek"
+							label="BYE Week"
+							className="h-5 w-5"
 						/>
+						{!isByeWeek && (
+							<TeamSelector
+								control={form.control}
+								name="opposingTeamId"
+								label="Opposing Team *"
+								selectedTeams={[selectedTeam, ...teamsWithMatchups]}
+								teamEntries={teamEntries}
+							/>
+						)}
 					</div>
 				</div>
 				<div className="flex justify-center">

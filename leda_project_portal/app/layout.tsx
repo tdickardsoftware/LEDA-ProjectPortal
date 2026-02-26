@@ -1,3 +1,8 @@
+/**
+ * Root layout for the entire application.
+ * Wraps all pages with global CSS, theme support (light/dark via next-themes),
+ * and the React Query provider for client-side data fetching.
+ */
 import "@/app/ui/globals.css";
 import { Metadata } from "next";
 import QueryProvider from "@/providers/query-provider";

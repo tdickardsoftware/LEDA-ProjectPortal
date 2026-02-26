@@ -1,3 +1,10 @@
+/**
+ * DivisionAddForm Component (Activities)
+ *
+ * Provides a form for selecting and associating a division with the current
+ * season schedule. Delegates to a DivisionSelector UI component, filtering
+ * out divisions that have already been added.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -6,7 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import React from "react";
+import React, { useEffect } from "react";
 import DivisionSelector from "@/components/ui/division-selector";
 
 // Define the schema for form validation using zod
@@ -18,7 +25,13 @@ const divisionFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the DivisionAddForm component
+/**
+ * DivisionAddForm renders the division selection form for a season schedule.
+ *
+ * @param selectedDivisions - Divisions already added (excluded from the selector)
+ * @param handleSelectDivision - Callback invoked with the chosen division name
+ * @param setOpen - Function to close the containing dialog
+ */
 export default function DivisionAddForm({
 	selectedDivisions,
 	handleSelectDivision,
@@ -35,6 +48,13 @@ export default function DivisionAddForm({
 			divisionName: "",
 		},
 	});
+
+	// Reset form when component mounts to ensure clean state when dialog reopens
+	useEffect(() => {
+		form.reset({
+			divisionName: "",
+		});
+	}, [form]);
 
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {

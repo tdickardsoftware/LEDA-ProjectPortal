@@ -1,28 +1,23 @@
+/**
+ * Seasons maintenance page — client-side server-paginated data table for managing
+ * league season records. Supports add, edit, delete, view, and calendar navigation.
+ * Table state (pagination, sorting, search) is persisted across navigation.
+ */
 "use client";
 
 import { ServerSideDataTable } from "@/components/server-side-datatable";
 import { seasonRoute } from "@/lib/apiRoutes";
 import { columns } from "@/schemas/maintenance/seasons";
 import { useSeasonsData } from "@/hooks/useSeasonsData";
-import { useState } from "react";
 import { Spinner } from "@/components/ui/skeleton";
+import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
 
 export default function Page() {
-	const [page, setPage] = useState(1);
-	const [search, setSearch] = useState("");
-	const pageSize = 10;
+	const { page, setPage, pageSize, setPageSize, search, setSearch, sorting, setSorting } = usePersistedDataTableState(
+		"datatable:/Portal/Maintenance/Seasons"
+	);
 
-	const { data, isLoading, error } = useSeasonsData(page, pageSize, search);
-
-	if (error) {
-		return (
-			<div className="container mx-auto py-10">
-				<div className="text-center text-red-500">
-					Error loading seasons: {(error as Error).message}
-				</div>
-			</div>
-		);
-	}
+	const { data, isLoading } = useSeasonsData(page, pageSize, search, sorting);
 
 	// Show initial loading state
 	if (isLoading && !data) {
@@ -41,6 +36,10 @@ export default function Page() {
 				columns={columns}
 				data={data?.data || []}
 				pageName="Seasons Page"
+				stateKey="datatable:/Portal/Maintenance/Seasons"
+				queryKey={["seasons-datatable"]}
+				pageSize={pageSize}
+				onPageSizeChange={setPageSize}
 				addDialogConfig={{
 					form: "SeasonAddForm",
 					title: "Add Season",
@@ -65,6 +64,8 @@ export default function Page() {
 					link: "/Maintenance/Seasons/Calendar"
 				}}
 				isLoading={isLoading}
+				sorting={sorting}
+				onSortingChange={setSorting}
 				totalPages={data?.pagination.totalPages || 1}
 				currentPage={page}
 				onPageChange={setPage}

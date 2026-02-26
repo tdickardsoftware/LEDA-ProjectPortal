@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI DropdownMenu primitive wrapper with full styled sub-component set including submenus, checkboxes, and radio groups. */
 "use client";
 
 import * as React from "react";

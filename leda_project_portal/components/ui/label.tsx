@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Label primitive wrapper with CVA variant styles. */
 "use client"
 
 import * as React from "react"

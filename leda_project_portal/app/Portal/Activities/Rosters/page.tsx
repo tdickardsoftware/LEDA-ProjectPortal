@@ -1,3 +1,7 @@
+/**
+ * Rosters index page — entry point for viewing and managing team rosters.
+ * Selecting a season from the list navigates to the season-specific roster view.
+ */
 import RostersContent from "@/components/page-content/activities/roster-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

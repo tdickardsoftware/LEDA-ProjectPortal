@@ -1,3 +1,8 @@
+/**
+ * Place detail page — fetches the specified place by LEDA ID and renders
+ * its detailed view. Triggers a 404 if the place is not found.
+ * Uses Suspense to show a spinner while data is loading server-side.
+ */
 import PlacePageContent from "@/components/page-content/management-content/place-content/place-view-page-content";
 import { fetchPlace } from "@/lib/getData";
 import { notFound } from "next/navigation";

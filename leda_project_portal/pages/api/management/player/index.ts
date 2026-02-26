@@ -50,7 +50,7 @@ export default async function handler(
 						p.email,
 						p.gender,
 						p."dateOfBirth",
-						CONCAT(COALESCE(p."firstName", ''), ' ', COALESCE(p."middleInitial", ''), ' ', COALESCE(p."lastName", '')) as "fullName"
+						p."fullName"
 					FROM public.leda_membership_info m
 					JOIN public.leda_player_info p ON m."ledaId" = p."ledaId"
 					WHERE m."ledaId" = $1
@@ -67,7 +67,7 @@ export default async function handler(
 				const result = await query<Player>(`
 					SELECT 
 						"ledaId", 
-						CONCAT(COALESCE("firstName", ''), ' ', COALESCE("middleInitial", ''), ' ', COALESCE("lastName", '')) as "fullName", 
+						"fullName", 
 						"lastName", "firstName", "middleInitial", "addressOne", "addressTwo", "city", "state", "zip", 
 						"phoneNumber", "otherNumber", "email", "gender", 
 						TO_CHAR("dateOfBirth", 'mm/dd/yyyy') as "dateOfBirth", 
@@ -84,6 +84,7 @@ export default async function handler(
 				error,
 			});
 		}
+		// Handle POST requests — create a new player and membership record
 	} else if (req.method === "POST") {
 		try {
 			const results = req.body as PlayerMemberInfo;
@@ -97,9 +98,13 @@ export default async function handler(
 			const query1 = `
                 INSERT INTO public.leda_player_info(
                     "ledaId", "lastName", "firstName", "middleInitial", "addressOne", "addressTwo", "city", "state", "zip", 
-                    "phoneNumber", "otherNumber", "email", "gender", "dateOfBirth"
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                    "phoneNumber", "otherNumber", "email", "gender", "dateOfBirth", "fullName"
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             `;
+
+			const fullName = `${results.firstName} ${results.middleInitial ? results.middleInitial + " " : ""}${
+				results.lastName
+			}`.trim();
 			const values1 = [
 				results.ledaId,
 				results.lastName,
@@ -115,6 +120,7 @@ export default async function handler(
 				results.email,
 				results.gender,
 				results.dateOfBirth,
+				fullName
 			];
 
 			// Insert membership information into the database
@@ -159,6 +165,7 @@ export default async function handler(
 				});
 			}
 		}
+		// Handle DELETE requests — remove a player and their membership record
 	} else if (req.method === "DELETE") {
 		try {
 			const data = req.body as Player;
@@ -174,9 +181,13 @@ export default async function handler(
 				message: (error as Error).message || "Server error",
 			});
 		}
+		// Handle PUT requests — update player info and membership record
 	} else if (req.method === "PUT") {
 		try {
 			const data = req.body as PlayerMemberInfo;
+			const fullName = `${data.firstName} ${data.middleInitial ? data.middleInitial + " " : ""}${
+				data.lastName
+			}`.trim();
 			const query1 = `
 				UPDATE public.leda_player_info
 				SET 
@@ -192,7 +203,8 @@ export default async function handler(
 					"otherNumber" = $10,
 					email = $11,
 					gender = $12,
-					"dateOfBirth" = $13
+					"dateOfBirth" = $13,
+					"fullName" = $15
 				WHERE "ledaId" = $14
 			`;
 			const values1 = [
@@ -210,6 +222,7 @@ export default async function handler(
 				data.gender,
 				data.dateOfBirth,
 				data.ledaId,
+				fullName
 			];
 
 			const query2 = `

@@ -1,3 +1,20 @@
+/**
+ * Advanced search query parser for LEDA datatable filtering.
+ *
+ * Parses a free-text search string into a structured `ParsedSearch` object
+ * that supports:
+ * - General (full-text) search – passed through to Fuse.js or similar.
+ * - Field-specific search using `Field = value`, `Field IN (v1, v2)`, and
+ *   reverse `value IN Field` (partial match) syntax.
+ * - Compound queries with AND within a group and OR between groups.
+ *
+ * Exported utilities:
+ * - `createColumnMapping`  – builds a lookup from display names / aliases to data keys.
+ * - `resolveFieldName`     – normalises a user-typed field name using the mapping.
+ * - `parseFieldSearch`     – converts a raw query string to a `ParsedSearch`.
+ * - `buildSQLWhereClause`  – generates a parameterised SQL WHERE clause.
+ * - `filterDataBySearch`   – applies parsed search to an in-memory array.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export interface FieldSearch {
@@ -272,8 +289,11 @@ export function buildSQLWhereClause(
 
 		group.fieldSearches.forEach(({ field, values, matchMode }) => {
 			// Use the mapped column expression if available, otherwise fall back to field with prefix
-			const columnName = columnMapping.has(field) 
-				? columnMapping.get(field)! 
+			const rawColName = columnMapping.has(field) ? columnMapping.get(field)! : null;
+			// If the mapped value is already a full SQL expression (contains " or .), use as-is.
+			// Otherwise quote it so PostgreSQL preserves the identifier's case (e.g. "fullName" vs fullname).
+			const columnName = rawColName !== null
+				? (rawColName.includes('"') || rawColName.includes('.') ? rawColName : `${prefix}"${rawColName}"`)
 				: `${prefix}"${field}"`;
 
 			switch (matchMode) {

@@ -1,3 +1,4 @@
+/** Shadcn Sidebar — provides collapsible sidebar layout primitives (SidebarProvider, Sidebar, SidebarContent, SidebarMenu, etc.) used as the portal's main navigation shell. */
 "use client"
 
 import * as React from "react"

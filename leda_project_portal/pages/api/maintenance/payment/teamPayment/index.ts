@@ -1,3 +1,13 @@
+/**
+ * API route for managing team payment history.
+ *
+ * GET  - Returns all team payment records; optionally filtered by teamId (ledaId).
+ *        Joins leda_team_info and leda_maint_seasons for display fields.
+ * POST - Inserts or updates a payment record. Handles Part/Memb payment logic:
+ *        marks paidOff status, updates leda_team_info.lastTeamFeePayment,
+ *        and cascades to audit views via leda_team_paid_status.
+ * DELETE - Removes a payment record by paymentNbr and re-evaluates lastTeamFeePayment.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PaymentHistory } from "@/lib/definitions";
@@ -6,6 +16,7 @@ import { requireApiSession } from "@/lib/require-session";
 
 // --- Helper Functions ---
 
+/** Returns the fiscal year string for a given season code. */
 async function getFiscalYear(seasonCode: string) {
 	const result = await query(
 		`SELECT "fiscalYear" FROM maint.leda_maint_seasons WHERE "seasonCode" = $1;`,
@@ -14,6 +25,7 @@ async function getFiscalYear(seasonCode: string) {
 	return result.rows[0]?.fiscalYear;
 }
 
+/** Updates leda_team_info.lastTeamFeePayment to "PAID - <seasonCode> - <fiscalYear>" for the given team. */
 async function updateLastTeamFeePayment(ledaId: string, seasonCode: string) {
 	const fiscalYear = await getFiscalYear(seasonCode);
 	if (fiscalYear) {
@@ -24,6 +36,7 @@ async function updateLastTeamFeePayment(ledaId: string, seasonCode: string) {
 	}
 }
 
+/** Resets leda_team_info.lastTeamFeePayment to 'UNPAID' when no paid season remains. */
 async function setTeamFeeUnpaid(ledaId: string) {
 	await queryPost(
 		`UPDATE public.leda_team_info SET "lastTeamFeePayment" = 'UNPAID' WHERE "ledaId" = $1;`,
@@ -31,6 +44,10 @@ async function setTeamFeeUnpaid(ledaId: string) {
 	);
 }
 
+/**
+ * Returns the most recently paid season record for a team from leda_team_paid_status.
+ * Optionally excludes a specific season code (used when reverting a payment).
+ */
 async function getLastPaidTeamSeasonInfo(
 	ledaId: string,
 	excludeSeasonCode?: string
@@ -48,6 +65,10 @@ async function getLastPaidTeamSeasonInfo(
 	return result.rows[0];
 }
 
+/**
+ * Bulk-marks all unpaid Part payments for a team/season as paidOff = true.
+ * Returns the array of updated paymentNbr values.
+ */
 async function markAllUnpaidTeamPartsPaid(
 	type: string,
 	seasonCode: string,
@@ -76,8 +97,7 @@ export default async function handler(
 	const session = await requireApiSession(req, res);
 	if (!session) return;
 	if (req.method === "GET") {
-		// ...existing GET logic...
-		// (No changes needed)
+		// Handle GET: fetch payment history, optionally for a specific team (ledaId)
 		if (req.query.teamId && typeof req.query.teamId === "string") {
 			try {
 				const result = await query<
@@ -129,6 +149,10 @@ export default async function handler(
 	} else if (req.method === "POST") {
 		try {
 			const data = req.body as PaymentHistory;
+			// Defensive: if amount is blank, treat it as $0.00.
+			data.amount = String((data as unknown as { amount?: unknown }).amount ?? "")
+				.trim();
+			if (data.amount === "") data.amount = "0.00";
 			let queryAdd: string | undefined;
 			let values: (string | number | boolean | Date)[] | undefined;
 

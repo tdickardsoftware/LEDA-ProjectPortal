@@ -1,3 +1,13 @@
+/**
+ * DialogWithButton component
+ *
+ * Generic dialog wrapper that renders a trigger button and dynamically mounts
+ * one of the registered form components (add / edit forms for players, places,
+ * teams, divisions, mentions, payment types, payout tiers, penalties, people
+ * types, place types, and seasons) inside a shadcn Dialog.  The active form
+ * component is resolved at runtime from the `formComponents` map using the
+ * `form` prop key.
+ */
 //
 // use client
 //
@@ -125,7 +135,10 @@ export function DialogWithButton({
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>
-				{renderForm(rowData)}
+				{/* Key prop forces remount when dialog opens/closes, ensuring form is reset */}
+				<div key={open ? 'open' : 'closed'}>
+					{renderForm(rowData)}
+				</div>
 			</DialogContent>
 		</Dialog>
 	);

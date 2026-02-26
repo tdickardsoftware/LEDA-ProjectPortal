@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Payout Tiers data table (Maintenance section).
+ * Defines a bulk-selectable checkbox column and columns for finishing place
+ * and payout amount.
+ */
 //
 // Use the client
 //

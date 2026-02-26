@@ -1,3 +1,10 @@
+/**
+ * LeaguePlayTeamFeeNotPaidReport
+ *
+ * React-PDF document listing teams that have not paid their team entry fee
+ * for the selected season. Renders a simple table: team name, place, division.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { TeamFeeNotPaid } from "@/lib/definitions";

@@ -1,3 +1,13 @@
+/**
+ * ManageGlobalAdjustments Component
+ *
+ * Displays and manages all global (league-wide) adjustments that are applied
+ * uniformly across every team in the payouts data. Derives the global
+ * adjustment list from the nested `payoutsData` structure by scanning each
+ * team's adjustments object. Supports inline editing via `AdjustmentForm` in a
+ * dialog, deletion with a confirmation prompt, and row highlighting when
+ * `highlightedAdjustmentId` is supplied.
+ */
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -59,6 +69,13 @@ interface ManageGlobalAdjustmentsProps {
 	highlightedAdjustmentId?: string | null;
 }
 
+/**
+ * ManageGlobalAdjustments displays all global adjustments with edit/delete actions.
+ *
+ * @param payoutsData - Full nested payouts data used to extract global adjustments
+ * @param onRemoveGlobalAdjustment - Callback invoked with the adjustment ID to remove
+ * @param highlightedAdjustmentId - Optional ID of the adjustment to visually highlight
+ */
 export default function ManageGlobalAdjustments({
 	payoutsData,
 	onRemoveGlobalAdjustment,

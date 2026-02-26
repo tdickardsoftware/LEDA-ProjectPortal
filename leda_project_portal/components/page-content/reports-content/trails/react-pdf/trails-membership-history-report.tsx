@@ -1,3 +1,12 @@
+/**
+ * TrailsMembershipHistoryReport
+ *
+ * React-PDF document displaying the full membership history for all trails
+ * participants. Rendered in a multi-column layout using the `getTableChunks`
+ * helper (constants: `COLUMNS_PER_TABLE = 3`, `ROWS_PER_COLUMN = 30`,
+ * `TABLES_PER_PAGE = 1`). Columns: member name, trails points, and year.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { TrailsMembershipHistory } from "@/lib/definitions";

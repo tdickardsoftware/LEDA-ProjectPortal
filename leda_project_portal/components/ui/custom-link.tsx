@@ -1,3 +1,11 @@
+/**
+ * CustomLink component
+ *
+ * Renders a Next.js Link wrapped in a shadcn outline Button.  The `href` may
+ * contain the token `**REPLACE**` which is substituted with `parentPage` at
+ * render time, allowing context-aware navigation (e.g. back-links from detail
+ * pages to their parent list).
+ */
 //
 // use client
 //
@@ -15,6 +23,7 @@ interface CustomLinkProps {
     className?: string;
     disabled?: boolean;
     parentPage: string;
+	onClick?: () => void;
 }
 
 export default function CustomLink({
@@ -22,12 +31,13 @@ export default function CustomLink({
     linkName,
     className,
     disabled,
-    parentPage
+    parentPage,
+	onClick
 }: CustomLinkProps) {
     href = href.replace("**REPLACE**", parentPage);
     return (
         <Button disabled={disabled} variant={"outline"} className="hover:bg-muted border-border text-foreground">
-            <Link href={href} className={className} prefetch={true}>{linkName}</Link>
+			<Link href={href} className={className} prefetch={true} onClick={onClick}>{linkName}</Link>
         </Button>
     )
 }

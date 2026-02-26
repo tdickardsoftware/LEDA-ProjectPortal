@@ -1,3 +1,11 @@
+/**
+ * ListsReportPlacesListJoinDateReport
+ *
+ * React-PDF document listing all registered places sorted by their join
+ * date. Paginated at `ROWS_PER_PAGE = 20`. Columns: place name, address,
+ * phone, owner/contact name, and LEDA join date.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { ListsPlaces } from "@/lib/definitions";
@@ -20,7 +28,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		backgroundColor: "#d3d3d3",
 		border: "1 solid #888",
-		paddingVertical: 2,
+		paddingVertical: 3,
 		paddingHorizontal: 2,
 	},
 	tableRow: {
@@ -28,32 +36,33 @@ const styles = StyleSheet.create({
 		borderLeft: "1 solid #888",
 		borderRight: "1 solid #888",
 		borderBottom: "1 solid #ccc",
-		paddingVertical: 2,
+		paddingVertical: 3,
 		paddingHorizontal: 2,
 	},
 	cell: {
-		fontSize: 8,
+		fontSize: 7.5,
 		padding: 2,
 		borderRight: "1 solid #ccc",
-		minHeight: 12,
+		minHeight: 14,
 		flexDirection: "row",
 		alignItems: "center",
+		flexWrap: "wrap",
 	},
-	ledaId: { width: "10%" },
-	name: { width: "18%" },
-	phoneNumber: { width: "13%" },
-	contact: { width: "13%" },
-	email: { width: "13%" },
-	addressOne: { width: "13%" },
-	addressTwo: { width: "10%" },
-	city: { width: "7%" },
-	state: { width: "3%" },
-	zip: { width: "6%" },
+	ledaId: { width: "7%", justifyContent: "center" },
+	name: { width: "15%" },
+	phoneNumber: { width: "10%" },
+	contact: { width: "12%" },
+	email: { width: "16%" },
+	addressOne: { width: "14%" },
+	addressTwo: { width: "12%" },
+	city: { width: "8%" },
+	state: { width: "4%", justifyContent: "center" },
+	zip: { width: "6%", justifyContent: "center" },
 	lastCell: {
 		borderRight: 0,
 	},
 	tableHeaderText: {
-		fontSize: 9,
+		fontSize: 8,
 		fontWeight: "bold",
 	},
 });

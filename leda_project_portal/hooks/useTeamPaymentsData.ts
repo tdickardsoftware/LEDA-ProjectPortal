@@ -1,5 +1,10 @@
+/**
+ * Hook for fetching paginated team payment history records.
+ * Supports search filtering and optional scoping by a specific team's LEDA ID.
+ */
 import { useQuery } from "@tanstack/react-query";
 
+// Row shape returned by the team-payment datatable API
 export interface TeamPaymentHistoryDataTable {
 	paymentNbr: number;
 	ledaId: number;
@@ -26,6 +31,10 @@ interface PaginatedTeamPaymentsResponse {
 	};
 }
 
+/**
+ * Fetches a paginated list of team payment records.
+ * Pass `ledaId` to scope results to a single team.
+ */
 export function useTeamPaymentsData(page: number, pageSize: number, search: string, ledaId?: string) {
 	return useQuery<PaginatedTeamPaymentsResponse>({
 		queryKey: ["team-payments-datatable", page, pageSize, search, ledaId],

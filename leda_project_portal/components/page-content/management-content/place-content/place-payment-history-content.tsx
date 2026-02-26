@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * PlacePaymentHistoryContent
+ *
+ * Displays the full payment history for a specific place (bar/venue).
+ * Supports filtering by payment date (select dropdown) and payment type
+ * (popover filter using `PaymentTypeSelectorNF`).
+ *
+ * Payment data is fetched via TanStack Query using the place's LEDA ID.
+ * Dates are always formatted in UTC to avoid timezone-based day shifts.
+ */
+
 import { PaymentHistory, Place } from "@/lib/definitions";
 import { placePaymentHistoryRoute } from "@/lib/apiRoutes";
 import { useState } from "react";

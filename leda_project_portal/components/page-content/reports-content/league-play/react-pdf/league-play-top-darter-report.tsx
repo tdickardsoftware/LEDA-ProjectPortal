@@ -1,3 +1,12 @@
+/**
+ * LeaguePlayTopDarterReport
+ *
+ * React-PDF document for the Top Darter Points leaderboard. Entries are
+ * arranged in a multi-column layout using the `chunkColumns` helper
+ * (constants: `COLUMNS_PER_PAGE = 5`, `ROWS_PER_COLUMN = 30`).
+ * Only players meeting the caller-supplied minimum-points threshold are shown.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { TopDarter } from "@/lib/definitions";

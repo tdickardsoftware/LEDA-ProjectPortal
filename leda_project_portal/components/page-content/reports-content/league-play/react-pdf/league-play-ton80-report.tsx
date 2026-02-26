@@ -1,3 +1,11 @@
+/**
+ * LeaguePlayTon80Report
+ *
+ * React-PDF document listing all Ton80 (180) and Ton71 (171) achievements
+ * recorded during the selected season. Columns: player name, score
+ * value, team, week number, and date.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { Ton80 } from "@/lib/definitions";

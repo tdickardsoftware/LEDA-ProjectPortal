@@ -27,7 +27,19 @@ export default async function handler(
 			const page = parseInt(req.query.page as string) || 1;
 			const pageSize = parseInt(req.query.pageSize as string) || 10;
 			const search = (req.query.search as string) || "";
+			const sortBy = (req.query.sortBy as string) || "ledaId";
+			const sortDirRaw = ((req.query.sortDir as string) || "asc").toLowerCase();
+			const sortDir = sortDirRaw === "desc" ? "DESC" : "ASC";
 			const offset = (page - 1) * pageSize;
+
+			const orderByMap: Record<string, string> = {
+				ledaId: '"ledaId"',
+				teamName: '"teamName"',
+				memo: '"memo"',
+				establishedDate: '"establishedDate"',
+				lastTeamFeePayment: '"lastTeamFeePayment"',
+			};
+			const orderBySql = orderByMap[sortBy] ?? orderByMap.ledaId;
 
 			// Build search condition
 			let searchCondition = "";
@@ -74,7 +86,7 @@ export default async function handler(
 					"lastTeamFeePayment" 
 				FROM public.leda_team_info 
 				${searchCondition}
-				ORDER BY "ledaId" ASC
+				ORDER BY ${orderBySql} ${sortDir}
 				LIMIT $${searchParams.length + 1} OFFSET $${searchParams.length + 2}
 			`;
 			

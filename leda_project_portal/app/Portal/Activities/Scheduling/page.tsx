@@ -1,3 +1,7 @@
+/**
+ * Scheduling page — view and manage all schedule information for the current
+ * season, including team match assignments.
+ */
 import ScheduleContent from "@/components/page-content/activities/schedule-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

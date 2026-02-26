@@ -1,5 +1,14 @@
 "use client";
 
+/**
+ * MaintenancePageContent
+ *
+ * Landing page for the Maintenance section of the portal.
+ * Renders a grid of navigation cards linking to each maintenance sub-section:
+ * Divisions, Mentions, Payment Types, Payments, Payout Tiers, Penalties,
+ * Seasons, and other static-data management screens.
+ */
+
 import Link from "next/link";
 import React from "react";
 import {

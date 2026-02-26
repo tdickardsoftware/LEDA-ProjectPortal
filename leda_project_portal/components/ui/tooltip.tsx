@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Tooltip primitive wrapper (TooltipProvider, Tooltip, TooltipTrigger, TooltipContent). */
 "use client"
 
 import * as React from "react"

@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Tabs primitive wrapper (Tabs, TabsList, TabsTrigger, TabsContent). */
 "use client"
 
 import * as React from "react"

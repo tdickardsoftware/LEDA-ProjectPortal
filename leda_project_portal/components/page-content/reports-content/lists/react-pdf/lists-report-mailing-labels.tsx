@@ -1,3 +1,11 @@
+/**
+ * ListsReportMailingLabels
+ *
+ * React-PDF document that renders a 3-column mailing label sheet.
+ * Constant `LABELS_PER_PAGE = 30`. The `formatLabel` helper formats each
+ * recipient’s address block from the `MailingList` definition.
+ */
+
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { MailingList } from "@/lib/definitions";
 

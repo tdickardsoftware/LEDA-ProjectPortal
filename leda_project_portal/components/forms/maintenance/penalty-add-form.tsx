@@ -1,5 +1,13 @@
 // Import necessary modules and components
 "use client";
+
+/**
+ * PenaltyAddForm Component (Maintenance)
+ *
+ * Form for creating a new penalty code in the maintenance section.
+ * A penalty is a short code (e.g., "NS" for No Show) with an optional
+ * description. Returns a 422 conflict when the penalty code already exists.
+ */
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -30,6 +38,12 @@ const penaltyFormSchema = z.object({
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * PenaltyAddForm creates a new penalty code record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 // PenaltyAddForm component definition
 export default function PenaltyAddForm({
 	onClose,
@@ -85,6 +99,14 @@ export default function PenaltyAddForm({
 			);
 		},
 	});
+
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPenaltyExists(false);
+		form.reset({
+			penaltyCode: "",
+		});
+	}, [form]);
 
 	async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
 		setPenaltyExists(false);

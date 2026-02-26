@@ -1,3 +1,9 @@
+/**
+ * Column schema for the Teams data table (Management section).
+ * Includes sortable columns for LEDA ID, team name, description,
+ * date established, and last team fee payment date.
+ * Sorting is triggered via the column header buttons.
+ */
 //
 // Use the client
 //

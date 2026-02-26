@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Accordion primitive wrapper with styled item, trigger, and content sub-components. */
 "use client";
 
 import * as React from "react";

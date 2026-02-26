@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * ReportsPageContent
+ *
+ * Landing page for the Reports section of the portal.
+ * Renders navigation cards for each report category:
+ * Captains Meeting, League Play, Lists, and Trails.
+ */
+
 import Link from "next/link";
 import React from "react";
 import {

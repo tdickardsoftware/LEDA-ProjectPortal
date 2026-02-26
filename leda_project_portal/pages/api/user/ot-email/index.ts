@@ -1,8 +1,13 @@
+/**
+ * API Route: /api/user/ot-email
+ *
+ * GET    — Fetches one-time email signup token records for a given email address.
+ * POST   — Creates and stores a signed JWT one-time token (48-hour expiry) for
+ *           the specified email address. Requires an admin session.
+ * DELETE — Removes all one-time token records for the specified email address.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
-import { query } from "@/lib/dbTypeGet";
-import { EmailOneTimeToken } from "@/lib/definitions";
-import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(

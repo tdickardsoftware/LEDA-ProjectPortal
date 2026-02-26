@@ -1,3 +1,7 @@
+/**
+ * Trails reports page — view and export reports related to trail activity
+ * data, including statistics and performance insights.
+ */
 import TrailsReportLandingContent from "@/components/page-content/reports-content/trails/trails-report-landing-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

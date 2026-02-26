@@ -1,8 +1,14 @@
+/**
+ * CaptainsMeetingTeamReport
+ *
+ * React-PDF document listing every team and its roster for the captains
+ * meeting. Each team is rendered in a two-column box: left column contains
+ * team and bar (place) info, right column lists the member roster.
+ *
+ * Teams are grouped by division/subdivision before rendering.
+ */
+
 import React from "react";
-import {
-	Document,
-	Page,
-	Text,
 	View,
 	StyleSheet,
 } from "@react-pdf/renderer";

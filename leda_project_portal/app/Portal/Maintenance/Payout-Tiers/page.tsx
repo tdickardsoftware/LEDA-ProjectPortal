@@ -1,3 +1,7 @@
+/**
+ * Payout Tiers maintenance page — server-rendered data table for managing
+ * payout tier configurations. Supports add, edit, and delete operations.
+ */
 import { DataTable } from "@/components/datatable";
 import { payoutTierRoute } from "@/lib/apiRoutes";
 import { fetchPayoutTiers } from "@/lib/getData";

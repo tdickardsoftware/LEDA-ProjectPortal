@@ -1,5 +1,10 @@
+/**
+ * Hook for fetching paginated place (venue) payment history records.
+ * Supports search filtering and optional scoping by a specific place's LEDA ID.
+ */
 import { useQuery } from "@tanstack/react-query";
 
+// Row shape returned by the place-payment datatable API
 export interface PlacePaymentHistoryDataTable {
 	paymentNbr: number;
 	ledaId: number;
@@ -26,6 +31,10 @@ interface PaginatedPlacePaymentsResponse {
 	};
 }
 
+/**
+ * Fetches a paginated list of place payment records.
+ * Pass `ledaId` to scope results to a single place.
+ */
 export function usePlacePaymentsData(page: number, pageSize: number, search: string, ledaId?: string) {
 	return useQuery<PaginatedPlacePaymentsResponse>({
 		queryKey: ["place-payments-datatable", page, pageSize, search, ledaId],

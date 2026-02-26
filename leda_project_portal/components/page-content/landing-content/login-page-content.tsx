@@ -1,5 +1,22 @@
 "use client";
 
+/**
+ * LoginPageContent
+ *
+ * Authentication form that accepts either an email address or a username.
+ * Branching logic calls `authClient.signIn.email` or `authClient.signIn.username`
+ * depending on the format of the identifier supplied.
+ *
+ * After a successful sign-in the component:
+ *   - Invalidates any cached session in React Query.
+ *   - Sets or clears the `mustResetPassword` cookie based on the user record.
+ *   - Redirects to `/login/change-required` when a password reset is required,
+ *     otherwise to `/Portal`.
+ *
+ * Generic error messages (defaulting to a password error) are used to avoid
+ * revealing whether a given account exists.
+ */
+
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -7,9 +24,11 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import PasswordInput from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
-import React from "react";
+import React, { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
+import { Spinner } from "@/components/ui/skeleton";
 
 // Accepts either a valid email or a username (alphanumeric, 3-32 chars)
 const loginSchema = z.object({
@@ -25,6 +44,9 @@ const loginSchema = z.object({
 
 export default function LoginPageContent() {
 
+  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -37,6 +59,9 @@ export default function LoginPageContent() {
     process.env.NEXT_PUBLIC_DISABLE_SIGN_UP === 'true' ||
     process.env.DISABLE_SIGN_UP === 'true';
 
+  // --- Helpers ---
+
+  /** Normalises error objects from authClient responses into a message + optional HTTP status. */
   function getErrorInfo(err: unknown): { message: string; status?: number } {
     if (err instanceof Error) {
       const e1 = err as unknown as Record<string, unknown>;
@@ -58,6 +83,7 @@ export default function LoginPageContent() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     const { emailOrUsername, password } = values;
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailOrUsername);
+    setIsLoading(true);
 
     const setInvalidPassword = () =>
       form.setError("password", { message: "Invalid password" });
@@ -70,6 +96,8 @@ export default function LoginPageContent() {
           { email: emailOrUsername, password, callbackURL: `/Portal` },
           {
             onSuccess: async () => {
+              // Ensure any previously cached session is replaced.
+              queryClient.removeQueries({ queryKey: ["auth", "session"] });
               const session = await authClient.getSession();
               const u = (session?.data && typeof session.data === 'object' ? (session.data as Record<string, unknown>).user : undefined) as Record<string, unknown> | undefined;
               const mustReset = Boolean(u && typeof u === 'object' && 'mustResetPassword' in u ? u.mustResetPassword : false);
@@ -84,6 +112,7 @@ export default function LoginPageContent() {
               window.location.href = mustReset ? "/login/change-required" : "/Portal";
             },
             onError: (error: unknown) => {
+              setIsLoading(false);
               const { message, status } = getErrorInfo(error);
               const msg = message.toLowerCase();
               if (msg.includes("too many") || status === 429) {
@@ -106,6 +135,8 @@ export default function LoginPageContent() {
           { username: emailOrUsername, password, callbackURL: `/Portal` },
           {
             onSuccess: async () => {
+              // Ensure any previously cached session is replaced.
+              queryClient.removeQueries({ queryKey: ["auth", "session"] });
               const session = await authClient.getSession();
               const u = (session?.data && typeof session.data === 'object' ? (session.data as Record<string, unknown>).user : undefined) as Record<string, unknown> | undefined;
               const mustReset = Boolean(u && typeof u === 'object' && 'mustResetPassword' in u ? u.mustResetPassword : false);
@@ -120,6 +151,7 @@ export default function LoginPageContent() {
               window.location.href = mustReset ? "/login/change-required" : "/Portal";
             },
             onError: (error: unknown) => {
+              setIsLoading(false);
               const { message, status } = getErrorInfo(error);
               const msg = message.toLowerCase();
               if (msg.includes("too many") || status === 429) {
@@ -138,6 +170,7 @@ export default function LoginPageContent() {
         );
       }
     } catch (error) {
+      setIsLoading(false);
       const { message, status } = getErrorInfo(error);
       const msg = message.toLowerCase();
       if (msg.includes("too many") || status === 429) {
@@ -165,7 +198,7 @@ export default function LoginPageContent() {
                 <FormItem>
                   <FormLabel>Email or Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your email or username" {...field} />
+                    <Input placeholder="Enter your email or username" disabled={isLoading} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -178,7 +211,7 @@ export default function LoginPageContent() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder="Enter your password" {...field} />
+                    <PasswordInput placeholder="Enter your password" disabled={isLoading} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -194,7 +227,16 @@ export default function LoginPageContent() {
               Forgot Password?
               </Link>
             </div>
-            <Button type="submit" className="w-full">Login</Button>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Spinner className="h-4 w-4" />
+                  Logging in...
+                </span>
+              ) : (
+                "Login"
+              )}
+            </Button>
           </form>
         </Form>
       </div>

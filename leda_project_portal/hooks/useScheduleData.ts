@@ -1,3 +1,10 @@
+/**
+ * Core scheduling hook for the LEDA schedule management page.
+ * Orchestrates fetching roster and game-date data, building the empty match
+ * data structure, and saving updated schedule data back to the API.
+ * Each subdivision fetches its own match data independently (lazy loading)
+ * rather than loading the entire schedule upfront.
+ */
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -29,6 +36,8 @@ const fetchGameDates = async (seasonCode: string) => {
 	return res.json() as Promise<SeasonApiResponse>;
 };
 
+// NOTE: This function is no longer used - subdivisions fetch their own data
+// Keeping it for backward compatibility if needed
 const fetchSchedule = async (seasonCode: string) => {
 	const res = await fetch(`${scheduleRoute}?seasonCode=${seasonCode}`, {
 		method: 'GET',
@@ -38,6 +47,11 @@ const fetchSchedule = async (seasonCode: string) => {
 	return res.json() as Promise<ScheduleApiResponse>;
 };
 
+/**
+ * Manages all state and server interactions for the schedule builder.
+ * Returns roster divisions, game dates, match data, a save handler,
+ * and loading/save-button state.
+ */
 export function useScheduleData() {
 	const [seasonCode, setSeasonCode] = useState<string | null>(null);
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
@@ -46,6 +60,8 @@ export function useScheduleData() {
 
 	const queryClient = useQueryClient();
 
+	// Stamps every match with its parent subdivisionId so cross-subdivision
+	// mutations cannot accidentally overwrite unrelated records.
 	const ensureSubdivisionIsolation = useCallback((matchData: ScheduleData): ScheduleData => {
 		const clonedData = structuredClone(matchData);
 		Object.entries(clonedData).forEach(([division, subdivisions]) => {
@@ -61,6 +77,8 @@ export function useScheduleData() {
 		return clonedData;
 	}, []);
 
+	// Builds a ScheduleData skeleton from the roster so each team has an
+	// empty matchesData object ready for per-subdivision data to be merged in.
 	const initializeEmptyMatchData = useCallback((divisionsData: DivisionsData): ScheduleData => {
 		const newMatchData: ScheduleData = {};
 		Object.entries(divisionsData).forEach(([division, divisionData]) => {
@@ -98,27 +116,20 @@ export function useScheduleData() {
 		enabled: !!seasonCode,
 	});
 
-	const {
-		data: scheduleData,
-		isLoading: scheduleLoading,
-	} = useQuery({
-		queryKey: ['schedule', seasonCode],
-		queryFn: () => seasonCode ? fetchSchedule(seasonCode) : Promise.reject(),
-		enabled: !!seasonCode,
-	});
+	// NOTE: We no longer fetch all schedule data upfront
+	// Each subdivision will fetch its own matchup data when opened
+	// This improves performance with normalized data structure
 
 	// Derived data
 	const divisionsData: DivisionsData = rosterData?.teamInformation || {};
 	const gameDates: Record<string, string> = gameDatesData?.dates || {};
-	let matchData: ScheduleData = {};
+	
+	// Initialize empty match data structure
+	const matchData: ScheduleData = divisionsData && Object.keys(divisionsData).length > 0 
+		? initializeEmptyMatchData(divisionsData) 
+		: {};
 
-	if (scheduleData?.scheduleData) {
-		matchData = ensureSubdivisionIsolation(structuredClone(scheduleData.scheduleData));
-	} else if (divisionsData && Object.keys(divisionsData).length > 0) {
-		matchData = initializeEmptyMatchData(divisionsData);
-	}
-
-	const loading = rosterLoading || gameDatesLoading || scheduleLoading;
+	const loading = rosterLoading || gameDatesLoading;
 
 	// Save mutation
 	const saveMutation = useMutation({

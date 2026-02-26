@@ -1,3 +1,7 @@
+/**
+ * Site maintenance page — displayed when the application is temporarily unavailable.
+ * Shows an "under construction" notice rather than the normal portal UI.
+ */
 import { Separator } from "@/components/ui/separator";
 import UnderConstruction from "@/components/ui/under-construction";
 import { Metadata } from "next";

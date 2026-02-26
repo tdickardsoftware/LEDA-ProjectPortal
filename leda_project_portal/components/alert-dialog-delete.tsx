@@ -1,3 +1,11 @@
+/**
+ * AlertDialogDelete component
+ *
+ * Renders a button that, when clicked, opens a confirmation dialog before
+ * deleting one or more selected rows via a DELETE request to the given API
+ * endpoint.  Uses TanStack Mutation to iterate over each rowData entry and
+ * fires the optional onRefresh callback when the deletion succeeds.
+ */
 "use client";
 import {
 	AlertDialog,

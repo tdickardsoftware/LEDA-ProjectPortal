@@ -1,11 +1,20 @@
+/**
+ * DatePickerCustom component
+ *
+ * A calendar popover date picker built on shadcn Calendar and Popover.
+ * Adjusts the selected date for the local timezone offset so the displayed
+ * date matches the calendar selection without UTC drift.  Supports:
+ * - Optional input display next to the trigger button (`showInput`)
+ * - A list of disabled dates
+ * - Month/year navigation picker mode (`enableMonthYearPicker`)
+ */
 // Import necessary modules and components
 "use client";
 import * as React from "react";
-import { DayPicker } from "react-day-picker";
 import { CalendarIcon } from "lucide-react";
-import "react-day-picker/dist/style.css";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	Popover,
 	PopoverContent,
@@ -19,12 +28,14 @@ export function DatePickerCustom({
 	dateSelected,
 	showInput = false,
 	disabledDates = [],
+	enableMonthYearPicker = false,
 }: {
 	onDateChange: (date: Date | undefined) => void;
 	initialMonth?: Date;
 	dateSelected?: Date;
 	showInput?: boolean;
 	disabledDates?: Date[];
+	enableMonthYearPicker?: boolean;
 }) {
 	// State to manage the selected date
 	const [date, setDate] = React.useState<Date | undefined>(
@@ -39,16 +50,20 @@ export function DatePickerCustom({
 
 	// Handle date change
 	const handleDateChange = (selectedDate: Date | undefined) => {
-		if (selectedDate) {
-			// Convert selected date to local time
-			const localDate = new Date(
-				selectedDate.getTime() +
-					selectedDate.getTimezoneOffset() * 60000
-			);
-			setDate(localDate);
-			onDateChange(localDate);
+		if (!selectedDate) {
+			setDate(undefined);
+			onDateChange(undefined);
 			setIsOpen(false);
+			return;
 		}
+		// Convert selected date to local time
+		const localDate = new Date(
+			selectedDate.getTime() +
+				selectedDate.getTimezoneOffset() * 60000
+		);
+		setDate(localDate);
+		onDateChange(localDate);
+		setIsOpen(false);
 	};
 
 	// Format date to MM/DD/YYYY
@@ -87,12 +102,17 @@ export function DatePickerCustom({
 				)}
 			</PopoverTrigger>
 			<PopoverContent className="w-auto p-0 bg-background">
-				<DayPicker
+				<Calendar
 					mode="single"
 					selected={date}
 					onSelect={handleDateChange}
 					initialFocus
 					defaultMonth={initialMonth}
+					{...(enableMonthYearPicker && {
+						captionLayout: "dropdown" as const,
+						fromYear: 1900,
+						toYear: new Date().getFullYear(),
+					})}
 					disabled={disabledDates.map(d => {
 						const normalized = new Date(d);
 						normalized.setHours(0, 0, 0, 0);

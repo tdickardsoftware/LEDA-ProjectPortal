@@ -1,3 +1,11 @@
+/**
+ * TrailsPointsListReport
+ *
+ * React-PDF document listing all active trails members and their current
+ * point totals. Paginated at `ROWS_PER_PAGE = 30`. Columns: member name,
+ * total points, event dates attended, and annual dues status.
+ */
+
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { TrailsPointsList } from "@/lib/definitions";

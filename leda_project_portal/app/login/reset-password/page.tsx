@@ -1,3 +1,7 @@
+/**
+ * Reset password page — allows users to set a new password via a token-based link.
+ * Wrapped in Suspense because the content reads search params on the client.
+ */
 // Import necessary components and types
 import ResetPasswordContent from "@/components/page-content/landing-content/reset-password-content";
 import { Metadata } from "next";

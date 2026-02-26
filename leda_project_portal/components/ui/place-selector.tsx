@@ -1,3 +1,10 @@
+/**
+ * PlaceSelector component
+ *
+ * Searchable combobox for selecting a place within a React Hook Form context.
+ * Fetches the place list from the places selector API endpoint via TanStack
+ * Query and writes the chosen `placeId` into the bound form field.
+ */
 "use client";
 
 import React, { useState } from "react";

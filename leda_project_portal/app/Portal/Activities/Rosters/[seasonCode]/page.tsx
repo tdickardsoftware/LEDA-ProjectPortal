@@ -1,3 +1,7 @@
+/**
+ * Season-specific roster page — fetches roster data for the given seasonCode
+ * and renders the roster content. Triggers a 404 if the season is not found.
+ */
 import RosterPageContent from "@/components/page-content/activities/roster-page-content";
 import { rosterRouteServer } from "@/lib/apiRoutes";
 import { fetchWithSession } from "@/lib/getData";

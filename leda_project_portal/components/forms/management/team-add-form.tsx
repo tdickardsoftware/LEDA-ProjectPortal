@@ -1,3 +1,12 @@
+/**
+ * TeamAddForm Component (Management)
+ *
+ * Multi-step form for creating a new team record.
+ * Steps: Basic Info (LEDA ID, name) → Team Details (dates, memo) → Team Members.
+ * The Team Members step does not require validation before advancing. Optionally
+ * auto-generates a LEDA ID (sent as 0 for server assignment). Returns a 422
+ * conflict when the provided LEDA ID is already in use.
+ */
 "use client";
 
 import { z } from "zod";
@@ -25,6 +34,7 @@ import PlayerSelector from "@/components/ui/player-selector";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for team fields
 export const teamFormSchema = z.object({
 	ledaId: z
 		.number()
@@ -37,11 +47,18 @@ export const teamFormSchema = z.object({
 	memberIdList: z.string().nullable().optional(),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
 	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * TeamAddForm (exported as PlaceAddForm) renders a stepped team creation form.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function PlaceAddForm({
 	onClose,
 	onRefresh,
@@ -49,6 +66,7 @@ export default function PlaceAddForm({
 	onClose: () => void;
 	onRefresh: () => void;
 }) {
+	// When true, ledaId is set to 0 so the server auto-assigns an ID
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [ledaIdExists, setLedaIdExists] = useState(false);
 	const [memberIdList, setMemberIdList] = useState<string>("");
@@ -76,6 +94,22 @@ export default function PlaceAddForm({
 			memberIdList: "",
 		},
 	});
+
+	// Reset form and all state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setGenerateIDStatus(true);
+		setLedaIdExists(false);
+		setMemberIdList("");
+		setCurrentStep(0);
+		form.reset({
+			ledaId: undefined,
+			teamName: "",
+			establishedDate: "",
+			memo: "",
+			lastTeamFeePayment: "UNPAID - NEW TEAM ADDED",
+			memberIdList: "",
+		});
+	}, [form]);
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof teamFormSchema>) => {
@@ -127,6 +161,7 @@ export default function PlaceAddForm({
 		},
 	});
 
+	// Propagates the serialized member ID list from the PlayerSelector child component
 	function handleSetMemberIdList(memberIdList: string) {
 		setMemberIdList(memberIdList);
 	}

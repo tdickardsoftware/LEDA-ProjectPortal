@@ -1,3 +1,13 @@
+/**
+ * PaymentVisualisor component
+ *
+ * Displays a paginated, searchable payment-history table for a player, team,
+ * or place using the ServerSideDataTable.  Supports inline Add / Edit
+ * (PaymentHistoryFormDialog) and Delete actions per row.  A detail dialog
+ * offers a read-only summary view of a selected payment record.  The
+ * appropriate data hook (usePlayerPaymentsData / useTeamPaymentsData /
+ * usePlacePaymentsData) is selected based on the `type` prop.
+ */
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -24,6 +34,7 @@ import {
 import { usePlayerPaymentsData, PlayerPaymentHistoryDataTable } from "@/hooks/usePlayerPaymentsData";
 import { useTeamPaymentsData, TeamPaymentHistoryDataTable } from "@/hooks/useTeamPaymentsData";
 import { usePlacePaymentsData, PlacePaymentHistoryDataTable } from "@/hooks/usePlacePaymentsData";
+import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
 
 type PaymentDataType = PlayerPaymentHistoryDataTable | TeamPaymentHistoryDataTable | PlacePaymentHistoryDataTable;
 
@@ -35,9 +46,8 @@ interface PaymentVisualisorProps {
 export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 	const [selectedPayment, setSelectedPayment] = useState<PaymentDataType | null>(null);
 	const [detailsOpen, setDetailsOpen] = useState(false);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [search, setSearch] = useState("");
-	const pageSize = 10;
+	const { page: currentPage, setPage: setCurrentPage, pageSize, setPageSize, search, setSearch } =
+		usePersistedDataTableState(`datatable:/Payments/${type}/${ledaId ?? "all"}`);
 	const queryClient = useQueryClient();
 
 	// Get the appropriate route for the payment type - wrapped in useCallback
@@ -161,6 +171,8 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 		{
 			id: "actions",
 			header: "Actions",
+			enableColumnFilter: false,
+			enableGlobalFilter: false,
 			cell: ({ row }) => (
 				<div className="flex gap-2 justify-left">
 					<Button
@@ -227,8 +239,18 @@ export function PaymentVisualisor({ type, ledaId }: PaymentVisualisorProps) {
 						columns={columns}
 						data={payments}
 						pageName={`${capitalizedType} Payments`}
+						stateKey={`datatable:/Payments/${type}/${ledaId ?? "all"}`}
+						queryKey={[
+							type === "player"
+								? "player-payments-datatable"
+								: type === "team"
+									? "team-payments-datatable"
+									: "place-payments-datatable",
+						]}
 						defaultSort="paymentNbr"
 						isLoading={paymentsLoading}
+						pageSize={pageSize}
+						onPageSizeChange={setPageSize}
 						totalPages={totalPages}
 						currentPage={currentPage}
 						onPageChange={setCurrentPage}

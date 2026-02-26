@@ -1,3 +1,13 @@
+/**
+ * RoleManagementDialog component
+ *
+ * Admin dialog accessible from the sidebar for managing user roles
+ * (Developer / Office Admin / User).  Displays users grouped by role in an
+ * accordion; supports drag-and-drop between role columns, multi-select
+ * checkboxes, inline search filtering, and individual role updates via PATCH
+ * to the user API.  Data is loaded on dialog open and refreshed after each
+ * role change.
+ */
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";

@@ -1,3 +1,14 @@
+/**
+ * Shared TypeScript type definitions for the LEDA portal.
+ *
+ * Every type in this file mirrors the shape of a PostgreSQL row (or a
+ * projection of one) returned by the API layer. Types are organised by
+ * domain area: players, teams, places, maintenance lookups, activities,
+ * scoring, payments, reports, and users.
+ *
+ * Import individual types as needed rather than using a wildcard import
+ * so unused definitions are tree-shaken by the bundler.
+ */
 //
 //Define type to identify the shape of our data coming from postgres for players
 //
@@ -248,7 +259,8 @@ export type Roster = {
 	teamInformation: JSON;
 };
 //
-// Define type to identify the shape of our data from postgres for a Schedule
+// Define type to identify the shape of our data from postgres for a Schedule (DEPRECATED - now normalized)
+// Note: The API now stores schedule as normalized rows but returns it in nested format for backward compatibility
 //
 export type Schedule = {
 	seasonCode: string;
@@ -753,6 +765,7 @@ export type WeeklyScoresheetsTeamInfo = {
 	teamId: number;
 	teamName: string;
 	teamLetter: string;
+	teamLabel: string;
 	opposingTeamId: number;
 	penalties: JSON;
 }
@@ -799,6 +812,22 @@ export type WeeklyScoresheetsScoresheetCount = {
 	expectedScoresheets: number;
 	completedScoresheets: number;
 	totalWeeks: number;
+};
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets bye weeks processed
+//
+export type WeeklyScoresheetsByeWeeksProcessed = {
+	seasonCode: string;
+	weekNum: number;
+	allByeWeeksProcessed: boolean;
+};
+//
+// Define type to identify the shape of our data from postgres for weekly scoresheets completed week
+//
+export type WeeklyScoresheetsCompletedWeek = {
+	seasonCode: string;
+	weekNum: number;
+	scoresheetsProcessed: boolean;
 };
 //
 // Define type to identify the shape of our data from postgres for weekly scoresheets scoresheet team info 

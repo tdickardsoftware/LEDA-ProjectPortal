@@ -1,5 +1,13 @@
+/**
+ * MailingLabelsImportDialog
+ *
+ * Dialog for bulk-importing all players, all places, or both into the
+ * mailing labels list. Shows an animated progress bar during the import
+ * (which may take up to 60 seconds). `handleReset` restores all state to
+ * its initial values so the dialog can be re-used without remounting.
+ */
+
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

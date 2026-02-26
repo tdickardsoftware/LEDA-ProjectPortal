@@ -1,8 +1,13 @@
+/**
+ * API Route: /api/activities/schedule/placeCaptainSeasonInfo
+ *
+ * GET — Returns place and captain details for each team for the given season,
+ *        sourced from the captains-meeting schedule report view. Used when
+ *        generating captains meeting documents.
+ *        The `seasonCode` query param is required.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
-import { query } from "@/lib/dbTypeGet";
-import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
-import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(

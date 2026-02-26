@@ -1,28 +1,23 @@
+/**
+ * Teams management page — client-side server-paginated data table for managing
+ * league team records. Supports add, edit, delete, and detail view navigation.
+ * Table state (pagination, sorting, search) is persisted across navigation.
+ */
 "use client";
 
 import { ServerSideDataTable } from "@/components/server-side-datatable";
 import { teamRoute } from "@/lib/apiRoutes";
 import { columns } from "@/schemas/managment/teams";
 import { useTeamsData } from "@/hooks/useTeamsData";
-import { useState } from "react";
 import { Spinner } from "@/components/ui/skeleton";
+import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
 
 export default function Page() {
-	const [page, setPage] = useState(1);
-	const [search, setSearch] = useState("");
-	const pageSize = 10;
+	const { page, setPage, pageSize, setPageSize, search, setSearch, sorting, setSorting } = usePersistedDataTableState(
+		"datatable:/Portal/Management/Teams"
+	);
 
-	const { data, isLoading, error } = useTeamsData(page, pageSize, search);
-
-	if (error) {
-		return (
-			<div className="container mx-auto py-10">
-				<div className="text-center text-red-500">
-					Error loading teams: {(error as Error).message}
-				</div>
-			</div>
-		);
-	}
+	const { data, isLoading } = useTeamsData(page, pageSize, search, sorting);
 
 	// Show initial loading state
 	if (isLoading && !data) {
@@ -41,6 +36,10 @@ export default function Page() {
 				columns={columns}
 				data={data?.data || []}
 				pageName="Teams Page"
+				stateKey="datatable:/Portal/Management/Teams"
+				queryKey={["teams-datatable"]}
+				pageSize={pageSize}
+				onPageSizeChange={setPageSize}
 				addDialogConfig={{
 					form: "TeamAddForm",
 					title: "Add Team",
@@ -61,6 +60,8 @@ export default function Page() {
 					parentPage: "Teams"
 				}}
 				defaultSort="ledaId"
+				sorting={sorting}
+				onSortingChange={setSorting}
 				isLoading={isLoading}
 				totalPages={data?.pagination.totalPages || 1}
 				currentPage={page}

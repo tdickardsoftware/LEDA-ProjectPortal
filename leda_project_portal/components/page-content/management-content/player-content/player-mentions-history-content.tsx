@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * PlayerMentionsHistoryContent
+ *
+ * Displays a read-only table of all mention records associated with a player
+ * across all seasons. Data is fetched from `mentionPlayerHistoryRoute` via
+ * TanStack Query, keyed by `playerData.ledaId`.
+ *
+ * Each row includes season, week number, mention code/description,
+ * top-darter points, count, notes, and creation date.
+ */
+
 import { MentionPlayerHistory, PlayerMemberInfo } from "@/lib/definitions";
 import { mentionPlayerHistoryRoute } from "@/lib/apiRoutes";
 import { useQuery } from "@tanstack/react-query";
@@ -55,11 +66,11 @@ export default function PlayerMentionsHistoryContent({
 					</p>
 				) : error ? (
 					<p className="text-red-500">
-						{(error as Error).message || "Failed to load trails history data"}
+						{(error as Error).message || "Failed to load mentions history data"}
 					</p>
 				) : mentionsData.length === 0 ? (
 					<p className="text-muted-foreground">
-						No trails history found for this player.
+						No mentions history found for this player.
 					</p>
 				) : (
 					<div className="overflow-x-auto">

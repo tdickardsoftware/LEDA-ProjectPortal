@@ -1,8 +1,15 @@
+/**
+ * API Route: /api/activities/roster
+ *
+ * GET    — Fetches roster records from leda_roster_info.
+ *           Scoped to a single season when `seasonCode` is provided;
+ *           returns all seasons otherwise.
+ * POST   — Inserts a new roster record for a season.
+ * PUT    — Updates teamInformation for an existing season's roster.
+ * DELETE — Removes the roster record for the specified season.
+ * Requires an authenticated session.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
-import { query } from "@/lib/dbTypeGet";
-import { Roster } from "@/lib/definitions";
-import { queryPost } from "@/lib/query";
-import { requireApiSession } from "@/lib/require-session";
 
 export default async function handler(
 	req: NextApiRequest,
@@ -15,6 +22,7 @@ export default async function handler(
 			try {
 				const seasonCode = req.query.seasonCode;
 				console.log(seasonCode);
+				// Fetch a single season's roster record by season code
 				const result = await query<Roster>(
 					`SELECT "seasonCode", "teamInformation" FROM public.leda_roster_info WHERE "seasonCode" = $1`,
 					[seasonCode as string]
@@ -35,6 +43,7 @@ export default async function handler(
 			}
 		} else {
 			try {
+				// No season code provided — return all roster records
 				const result = await query<Roster>(
 					`SELECT "seasonCode", "teamInformation" FROM public.leda_roster_info`
 				);
@@ -48,6 +57,7 @@ export default async function handler(
 		}
 	} else if (req.method === "POST") {
 		try {
+			// Insert a new roster record for the given season
 			const data = req.body as Roster;
 			const query = `INSERT INTO public.leda_roster_info ("seasonCode", "teamInformation") VALUES ($1, $2);`;
 			const values = [data.seasonCode, data.teamInformation];
@@ -61,6 +71,7 @@ export default async function handler(
 		}
 	} else if (req.method === "PUT") {
 		try {
+			// Update teamInformation for an existing roster record
 			const data = req.body as Roster;
 			const query = `UPDATE public.leda_roster_info SET "teamInformation" = $2 WHERE "seasonCode" = $1;`;
 			const values = [data.seasonCode, data.teamInformation];
@@ -74,6 +85,7 @@ export default async function handler(
 		}
 	} else if (req.method === "DELETE") {
 		try {
+			// Delete roster record for the given season code
 			const seasonCode = req.query.seasonCode;
 			const query = `DELETE FROM public.leda_roster_info WHERE "seasonCode" = $1;`;
 			const values = [seasonCode as string];

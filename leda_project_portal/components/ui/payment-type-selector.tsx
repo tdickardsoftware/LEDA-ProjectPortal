@@ -1,3 +1,11 @@
+/**
+ * PaymentTypeSelector component
+ *
+ * Searchable combobox for selecting a payment type within a React Hook Form
+ * context.  Fetches payment types from the API via TanStack Query.  Exposes
+ * an optional `handlePaymentTypeChange` callback for parent notification.
+ * The inner content component handles popover state and item rendering.
+ */
 "use client";
 
 import React, { useState } from "react";

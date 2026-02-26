@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * PlayerRosterHistoryContent
+ *
+ * Shows every roster entry (season, team) a player has belonged to across
+ * their LEDA membership career. Results are paginated client-side at
+ * 10 rows per page using a Shadcn `Pagination` component.
+ *
+ * Quick-link icon buttons (tooltip-wrapped) let the user jump directly to
+ * the scoresheet or stats views for teams in prior seasons.
+ */
+
 import { rosterRoute } from "@/lib/apiRoutes";
 import { PlayerMemberInfo, PlayerRosterHistory } from "@/lib/definitions";
 import { useState, useEffect } from "react";
@@ -259,7 +270,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-background">
+															<TooltipContent className="bg-background text-foreground">
 															<p>View Team</p>
 														</TooltipContent>
 													</Tooltip>
@@ -282,7 +293,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-background">
+															<TooltipContent className="bg-background text-foreground">
 															<p>
 																View Roster for{" "}
 																{
@@ -310,7 +321,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-background">
+															<TooltipContent className="bg-background text-foreground">
 															<p>
 																View Weekly
 																Scoresheet Data

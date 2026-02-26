@@ -1,3 +1,7 @@
+/**
+ * Weekly scoresheet not-found boundary — shown when a requested season code
+ * does not exist. Provides a go-back button for easy navigation.
+ */
 "use client";
 
 import { FaceFrownIcon } from "@heroicons/react/24/outline";

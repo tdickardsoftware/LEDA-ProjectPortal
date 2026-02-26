@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * PaymentsPageContent
+ *
+ * Tabbed view for browsing league payment data across the three entity types:
+ * Player, Team, and Place. Each tab renders a `PaymentVisualisor` component
+ * configured for the appropriate type.
+ *
+ * The active tab is persisted to `localStorage` so the user returns to the
+ * same tab after navigation.
+ */
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useState, useEffect } from "react";
 import { PaymentVisualisor } from "@/components/payment-visualisor";

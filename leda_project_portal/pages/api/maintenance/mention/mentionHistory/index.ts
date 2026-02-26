@@ -1,3 +1,15 @@
+/**
+ * API route for managing individual player mention history records.
+ *
+ * POST   - Inserts a new mention history entry with an Eastern-time timestamp.
+ * GET    - Retrieves mention history; supports three filter combinations:
+ *            ledaId + seasonCode + weekNum + teamId  → single week records
+ *            ledaId + seasonCode + teamId           → full season records
+ *            ledaId only                            → all records for a player
+ * PUT    - Updates an existing mention history record by mentionId.
+ * DELETE - Bulk deletes by matchup (seasonCode+weekNum+homeTeamId+awayTeamId)
+ *          or individual delete by mentionId.
+ */
 import { MentionPlayerHistory } from "@/lib/definitions";
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
@@ -10,6 +22,7 @@ export default async function handler(
 ) {
 	const session = await requireApiSession(req, res);
 	if (!session) return;
+	// Handle POST requests
 	if (req.method === "POST") {
 		try {
 			const data = req.body as MentionPlayerHistory;
@@ -44,6 +57,7 @@ export default async function handler(
 			});
 		}
 	} else if (req.method === "GET") {
+		// GET: fetch mention history, filtered by ledaId + optional seasonCode/weekNum/teamId
 		if (
 			req.query.ledaId &&
 			req.query.seasonCode &&
@@ -102,6 +116,7 @@ export default async function handler(
 			}
 		}
 	} else if (req.method === "PUT") {
+		// PUT: update an existing mention record fields by mentionId
 		try {
 			const data = req.body as MentionPlayerHistory;
 			const query = `UPDATE public.leda_player_mention_history SET "mentionCode" = $1, "mentionDesc" = $2, "mentionPoints" = $3, notes = $4, "creationDate" = $5, "count" = $6 WHERE "mentionId" = $7 and "seasonCode" = $8 and "weekNum" = $9 and "ledaId" = $10 and "teamId" = $11;`;
@@ -135,27 +150,46 @@ export default async function handler(
 			});
 		}
 	} else if (req.method === "DELETE") {
-		try {
-			const data = req.body as MentionPlayerHistory;
-			const query = `DELETE FROM public.leda_player_mention_history WHERE "mentionId" = $1 and "seasonCode" = $2 and "weekNum" = $3 and "ledaId" = $4 and "teamId" = $5;`;
-			const values = [
-				data.mentionId,
-				data.seasonCode,
-				data.weekNum,
-				data.ledaId,
-				data.teamId,
-			];
+		// Bulk delete by matchup (seasonCode + weekNum + homeTeamId + awayTeamId)
+		if (req.query.seasonCode && req.query.weekNum && req.query.homeTeamId && req.query.awayTeamId) {
+			try {
+				const result = await query(
+					`DELETE FROM public.leda_player_mention_history WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "teamId" IN ($3, $4)`,
+					[
+						req.query.seasonCode as string,
+						req.query.weekNum as string,
+						req.query.homeTeamId as string,
+						req.query.awayTeamId as string,
+					]
+				);
+				res.status(200).json({ message: "Mention history deleted successfully", result });
+			} catch (error) {
+				res.status(500).json({ message: "Failed to delete mention history", error });
+			}
+		} else {
+			// Single mention delete by ID (existing behaviour)
+			try {
+				const data = req.body as MentionPlayerHistory;
+				const q = `DELETE FROM public.leda_player_mention_history WHERE "mentionId" = $1 and "seasonCode" = $2 and "weekNum" = $3 and "ledaId" = $4 and "teamId" = $5;`;
+				const values = [
+					data.mentionId,
+					data.seasonCode,
+					data.weekNum,
+					data.ledaId,
+					data.teamId,
+				];
 
-			const result = await queryPost(query, values);
-			res.status(200).json({
-				message: "Mention history deleted successfully",
-				result,
-			});
-		} catch (error) {
-			res.status(500).json({
-				message: "Failed to delete mention history",
-				error,
-			});
+				const result = await queryPost(q, values);
+				res.status(200).json({
+					message: "Mention history deleted successfully",
+					result,
+				});
+			} catch (error) {
+				res.status(500).json({
+					message: "Failed to delete mention history",
+					error,
+				});
+			}
 		}
 	} else {
 		res.status(405).json({

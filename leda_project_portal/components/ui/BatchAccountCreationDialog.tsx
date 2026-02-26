@@ -1,3 +1,13 @@
+/**
+ * BatchAccountCreationDialog component
+ *
+ * Admin dialog accessible from the sidebar for creating multiple portal
+ * accounts at once by email.  Emails can be typed, pasted (space / comma /
+ * semicolon delimited), or entered one-by-one.  Each unique, valid email is
+ * collected into a chip list, then submitted in parallel via POST to the
+ * one-time-email API endpoint.  Invalid emails are silently filtered out as
+ * they are added.
+ */
 "use client";
 
 import React, { useCallback, useState } from "react";

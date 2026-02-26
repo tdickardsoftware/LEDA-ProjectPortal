@@ -1,3 +1,11 @@
+/**
+ * ReportDivisionSelector component
+ *
+ * Multi-select combobox for filtering a report by division.  Fetches the
+ * roster divisions for the given `seasonCode` via TanStack Query and tracks
+ * per-division checkbox state.  Emits a comma-separated division string to
+ * `onDivisionsChange` whenever the selection changes.
+ */
 "use client";
 
 import { useState, useEffect } from "react";

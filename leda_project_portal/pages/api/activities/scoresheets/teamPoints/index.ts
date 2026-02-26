@@ -1,3 +1,13 @@
+/**
+ * API Route: /api/activities/scoresheets/teamPoints
+ *
+ * POST — Upserts weekly team score totals and propagates deltas to all
+ *          subsequent weeks via updateSubsequentWeeks.
+ * GET  — Retrieves team score data filtered by seasonCode + weekNum + teamLedaId,
+ *          or a ranked payout view when seasonCode + totalWeeks + teamLedaIds are
+ *          provided, or all scores for a season.
+ * Requires an authenticated session.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { queryPost } from "@/lib/query";
 import { TeamPoints } from "@/lib/definitions";
@@ -13,6 +23,7 @@ export default async function handler(
 	if (req.method === "POST") {
 		const data = req.body as TeamPoints;
 
+		// For weeks after week 1, look up the previous week's running total
 		if (data.weekNum != 1) {
 			try {
 				data.prevTotalPoints = await findPrevTotalPoints(
@@ -36,7 +47,7 @@ export default async function handler(
 			const query = `
                 INSERT INTO public.leda_weekly_team_scores ("seasonCode", "weekNum", "division", "subdivision", "teamLedaId", "prevTotalPoints", "totalPoints")
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ON CONFLICT ("seasonCode", "weekNum", "teamLedaId")
+                ON CONFLICT ("seasonCode", "weekNum", "teamLedaId", "division", "subdivision")
                 DO UPDATE SET "totalPoints" = $7;
             `;
 			const values = [
@@ -68,6 +79,7 @@ export default async function handler(
 			});
 		}
 	} else if (req.method === "GET") {
+		// Retrieve team scores based on the provided query parameters
 		if (req.query.seasonCode && req.query.weekNum && req.query.teamLedaId && req.query.division && req.query.subdivision) {
 			try {
 				const seasonCode = req.query.seasonCode;

@@ -1,15 +1,17 @@
 "use client";
 
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import React from "react";
-import { authClient } from "@/lib/auth-client";
+/**
+ * ForgotPasswordPageContent
+ *
+ * Renders a single-field form that accepts an email address and triggers
+ * a password-reset email via `authClient.requestPasswordReset`.
+ *
+ * On success, the form is replaced with a confirmation message so the user
+ * knows to check their inbox. Generic success messaging is used intentionally
+ * to avoid leaking whether the address is registered.
+ */
 
-// Accepts only a valid email address
+import { z } from "zod";
 const forgotSchema = z.object({
   email: z.string().email({ message: "Enter a valid email address" }),
 });

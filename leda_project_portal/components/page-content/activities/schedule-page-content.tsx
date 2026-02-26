@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * SchedulePageContent
+ *
+ * Displays and saves the weekly match schedule for the selected season.
+ * All data-fetching and mutation logic is delegated to the `useScheduleData`
+ * custom hook. The UI is built from a memoized `DivisionAccordion` component
+ * that renders per-subdivision schedule grids.
+ *
+ * Season is selected via `SeasonCodeSelector`; the save action calls
+ * `scheduleData.handleSave()` from the hook.
+ */
+
 import { useCallback, memo } from "react";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import {
@@ -25,6 +37,7 @@ interface DivisionAccordionProps {
 	matchData: ScheduleData;
 	handleSetEnableSaveButton: (value: boolean) => void;
 	handleFetchUpdatedData: (data: ScheduleData) => void;
+	seasonCode: string | null;
 }
 
 const DivisionAccordion = memo<DivisionAccordionProps>(
@@ -36,13 +49,13 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 		matchData,
 		handleSetEnableSaveButton,
 		handleFetchUpdatedData,
+		seasonCode,
 	}) => (
 		<Accordion
 			key={index}
 			type="single"
 			collapsible
 			className="w-full mb-4"
-			defaultValue={`division-${index}`}
 		>
 			<AccordionItem value={`division-${index}`}>
 				<AccordionTrigger className="underline">{division}</AccordionTrigger>
@@ -54,7 +67,6 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 								type="single"
 								collapsible
 								className="w-full mt-2"
-								defaultValue={`subdivision-${subIndex}`}
 							>
 								<AccordionItem
 									value={`subdivision-${subIndex}`}
@@ -75,6 +87,7 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 													handleSetEnableSaveButton
 												}
 												handleSaveData={handleFetchUpdatedData}
+												seasonCode={seasonCode}
 											/>
 										)}
 									</AccordionContent>
@@ -181,8 +194,7 @@ export default function ScheduleContent() {
 							gameDates={gameDates}
 							matchData={matchData}
 							handleSetEnableSaveButton={handleSetEnableSaveButton}
-							handleFetchUpdatedData={handleFetchUpdatedData}
-						/>
+							handleFetchUpdatedData={handleFetchUpdatedData}						seasonCode={seasonCode}						/>
 					))}
 				</div>
 			)}

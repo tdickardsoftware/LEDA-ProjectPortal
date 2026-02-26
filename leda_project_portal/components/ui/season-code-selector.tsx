@@ -1,3 +1,12 @@
+/**
+ * SeasonCodeSelector component
+ *
+ * Uncontrolled searchable combobox for selecting a season code.  Fetches
+ * all available season codes from the season-code API via TanStack Query.
+ * When `useCurrentSeason` is true, pre-selects the season flagged as
+ * current.  Fires `handleSelect` on selection and optionally calls
+ * `setDisabled` to unlock dependent controls.
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";

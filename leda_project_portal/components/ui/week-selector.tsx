@@ -1,3 +1,12 @@
+/**
+ * WeekSelector component
+ *
+ * Searchable combobox for selecting a week within a given season.
+ * Fetches the season's date map from the API and builds labelled week
+ * entries ("Week N - YYYY-MM-DD").  When `useFinishedWeeksOnly` is true,
+ * only weeks whose date is on or before today are shown.  Fires
+ * `handleSelect` with the selected week key on change.
+ */
 "use client";
 import React, { useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";

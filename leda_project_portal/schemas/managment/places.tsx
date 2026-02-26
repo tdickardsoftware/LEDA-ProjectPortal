@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Places data table (Management section).
+ * Includes sortable columns for LEDA ID, place name, address, phone number,
+ * and place type. Sorting is triggered via the column header buttons.
+ */
 //
 // Use the client
 //

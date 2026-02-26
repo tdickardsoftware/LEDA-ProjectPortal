@@ -1,3 +1,7 @@
+/**
+ * League Play reports page — view and export reports related to in-season
+ * league play activity, including standings and performance statistics.
+ */
 import LeaguePlayReportLandingContent from "@/components/page-content/reports-content/league-play/league-play-report-landing-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
