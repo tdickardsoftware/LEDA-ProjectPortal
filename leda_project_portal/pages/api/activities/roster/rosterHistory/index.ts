@@ -4,6 +4,9 @@
  * GET — Returns a player's full roster history across seasons, ordered by
  *        season descending. Requires `ledaId` as a query param.
  */
+import { query } from "@/lib/dbTypeGet";
+import { PlayerRosterHistory } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(

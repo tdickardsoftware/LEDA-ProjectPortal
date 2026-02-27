@@ -6,6 +6,8 @@
  *         Body: { sourceSeasonCode, targetSeasonCode }.
  *         Requires an authenticated session.
  */
+import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
 
 type RosterUpserter = {

@@ -9,6 +9,29 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PaymentHistory } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
+import { parseFieldSearch, buildSQLWhereClause, createColumnMapping } from "@/lib/search-parser";
+
+export default async function handler(
+	req: NextApiRequest,
+	res: NextApiResponse
+) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
+
+	if (req.method === "GET") {
+		try {
+			const page = parseInt((req.query.page as string) || "1");
+			const pageSize = parseInt((req.query.pageSize as string) || "10");
+			const search = (req.query.search as string) || "";
+			const ledaId = req.query.ledaId as string | undefined;
+			const offset = (page - 1) * pageSize;
+
+			// Column mapping for search - using createColumnMapping for search parsing
+			const paymentColumnMappings = createColumnMapping([
+				{ displayName: "Payment #", dataKey: "paymentNbr", variations: ["paymentNbr", "paymentnbr", "payment", "Payment #", "payment #", "#"] },
+				{ displayName: "LEDA ID", dataKey: "ledaId", variations: ["ledaId", "ledaid", "id"] },
+				{ displayName: "Name", dataKey: "fullName", variations: ["fullName", "fullname", "name"] },
 				{ displayName: "Amount", dataKey: "amount", variations: ["amount"] },
 				{ displayName: "Date", dataKey: "date", variations: ["date"] },
 				{ displayName: "Type", dataKey: "type", variations: ["type"] },

@@ -11,6 +11,7 @@
  */
 
 import React from "react";
+import { Document, Page, Text, View, StyleSheet, Image as PDFImage } from "@react-pdf/renderer";
 import { DivisionsData, ScheduleData, TeamData, MatchData } from "@/lib/schedule";
 import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
 

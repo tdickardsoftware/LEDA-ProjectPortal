@@ -21,6 +21,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { trailsPlayerHistoryRoute } from "@/lib/apiRoutes";
 
 interface TrailsAuditRecord {
 	trailsDate: string;

@@ -9,6 +9,10 @@
  * DELETE — Removes the roster record for the specified season.
  * Requires an authenticated session.
  */
+import { query } from "@/lib/dbTypeGet";
+import { Roster } from "@/lib/definitions";
+import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(

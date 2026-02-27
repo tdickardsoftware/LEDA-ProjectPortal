@@ -12,7 +12,7 @@
  */
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { PaymentVisualisor } from "@/components/payment-visualisor";
 
 export default function PaymentsPageContent() {

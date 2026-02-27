@@ -14,7 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
 import { rosterRoute } from "@/lib/apiRoutes";
 import { useMutation } from "@tanstack/react-query";

@@ -6,6 +6,9 @@
  *        Both `seasonCode` and `minimumPoints` query params are required.
  */
 // Import necessary types and database query function
+import { query } from "@/lib/dbTypeGet";
+import { TopDarter } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
 
 // Define the API route handler

@@ -5,6 +5,9 @@
  *        When `getSeasonCodeInfo=true`, also joins season metadata
  *        (description, isCurrentSeason) from the maintenance seasons table.
  */
+import { query } from "@/lib/dbTypeGet";
+import { SeasonCode, Roster } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(

@@ -7,6 +7,9 @@
  *        The `seasonCode` query param is required.
  */
 // Import necessary types and database query function
+import { query } from "@/lib/dbTypeGet";
+import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
 
 // Define the API route handler

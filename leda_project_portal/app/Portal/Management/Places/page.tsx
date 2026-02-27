@@ -8,6 +8,8 @@ import { columns } from "@/schemas/managment/places";
 import { usePlacesData } from "@/hooks/usePlacesData";
 import { Spinner } from "@/components/ui/skeleton";
 import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
+import { ServerSideDataTable } from "@/components/server-side-datatable";
+import { placeRoute } from "@/lib/apiRoutes";
 
 export default function Page() {
 	const { page, setPage, pageSize, setPageSize, search, setSearch, sorting, setSorting } = usePersistedDataTableState(

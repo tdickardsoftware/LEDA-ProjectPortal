@@ -9,6 +9,10 @@
  *          expected by the UI.
  * Requires an authenticated session.
  */
+import { query } from "@/lib/dbTypeGet";
+import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
+import { ScheduleData } from "@/lib/schedule";
 import { NextApiRequest, NextApiResponse } from "next";
 
 interface NormalizedScheduleRow {

@@ -11,7 +11,7 @@
 // Imports
 //
 import { ColumnDef } from "@tanstack/react-table";
-import { Place, PlaceDataTable } from "@/lib/definitions";
+import { PlaceDataTable } from "@/lib/definitions";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";

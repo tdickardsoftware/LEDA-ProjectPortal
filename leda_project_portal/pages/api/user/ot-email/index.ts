@@ -7,6 +7,9 @@
  * DELETE — Removes all one-time token records for the specified email address.
  */
 // Import necessary types and database query function
+import { query } from "@/lib/dbTypeGet";
+import { EmailOneTimeToken } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
 
 // Define the API route handler

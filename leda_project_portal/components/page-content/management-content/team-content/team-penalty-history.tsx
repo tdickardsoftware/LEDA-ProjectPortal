@@ -10,6 +10,8 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
+import {
+	Table,
 	TableBody,
 	TableCell,
 	TableHead,

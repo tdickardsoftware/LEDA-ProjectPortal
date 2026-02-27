@@ -13,7 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import DivisionSelector from "@/components/ui/division-selector";
 
 // Define the schema for form validation using zod

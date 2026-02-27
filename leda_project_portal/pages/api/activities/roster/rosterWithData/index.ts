@@ -5,6 +5,18 @@
  *        populated (i.e., the roster has been built out).
  */
 import { NextApiRequest, NextApiResponse } from "next";
+import { query } from "@/lib/dbTypeGet";
+import { requireApiSession } from "@/lib/require-session";
+
+export default async function handler(
+	req: NextApiRequest,
+	res: NextApiResponse
+) {
+	await requireApiSession(req, res);
+	if (req.method === "GET") {
+		try {
+			const result = await query(
+				`SELECT "seasonCode" FROM public.leda_roster_info WHERE "teamInformation" IS NOT NULL`
 			);
 			res.status(200).json(result.rows);
 		} catch (error) {

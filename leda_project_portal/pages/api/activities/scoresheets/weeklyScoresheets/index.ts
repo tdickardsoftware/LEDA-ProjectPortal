@@ -6,6 +6,9 @@
  *        scoresheet reports. Both `seasonCode` and `weekNum` are required.
  */
 // Import necessary types and database query function
+import { query } from "@/lib/dbTypeGet";
+import { LeaguePlayWeeklyScoresheets } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
 
 // Define the API route handler

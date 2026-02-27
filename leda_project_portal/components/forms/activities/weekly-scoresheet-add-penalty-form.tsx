@@ -24,7 +24,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import PenaltySelector from "@/components/ui/penalty-selector";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";

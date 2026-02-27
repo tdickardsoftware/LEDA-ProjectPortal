@@ -34,7 +34,6 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation"; // Import usePathname
 import { useUserAbilities } from "@/lib/use-user-abilities";
-import React from "react";
 import { Can } from "@casl/react";
 import NavUserManagement from "@/components/nav-user-management";
 import { Spinner } from "./ui/skeleton";

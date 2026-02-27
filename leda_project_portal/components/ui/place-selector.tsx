@@ -25,7 +25,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { placeRoute, placeSelectorRoute } from "@/lib/apiRoutes";
+import { placeSelectorRoute } from "@/lib/apiRoutes";
 import {
 	FormControl,
 	FormField,

@@ -13,7 +13,6 @@
 
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import React from "react";
 import { Can } from "@casl/react";
 import { useUserAbilities } from "@/lib/use-user-abilities";
 import {

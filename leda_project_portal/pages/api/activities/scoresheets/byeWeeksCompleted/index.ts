@@ -8,7 +8,7 @@
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
-import {  WeeklyScoresheetsByeWeeksProcessed, WeeklyScoresheetsScoresheetCount } from "@/lib/definitions";
+import {  WeeklyScoresheetsByeWeeksProcessed } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler

@@ -8,6 +8,10 @@
  *          • seasonCode alone → first scoresheet row for the season
  * Requires an authenticated session.
  */
+import { query } from "@/lib/dbTypeGet";
+import { WeeklyScoresheet } from "@/lib/definitions";
+import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(

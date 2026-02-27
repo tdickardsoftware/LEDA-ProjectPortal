@@ -12,7 +12,7 @@
 // Imports
 //
 import { ColumnDef } from "@tanstack/react-table";
-import { Team, TeamDataTable } from "@/lib/definitions";
+import { TeamDataTable } from "@/lib/definitions";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";

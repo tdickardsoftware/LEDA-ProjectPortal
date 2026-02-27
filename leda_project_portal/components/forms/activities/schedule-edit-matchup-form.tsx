@@ -22,7 +22,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import React, { useEffect } from "react";
+import  { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import TeamSelector from "@/components/team-selector-scheduling";
 import CheckboxDefault from "@/components/ui/checkbox-default";
