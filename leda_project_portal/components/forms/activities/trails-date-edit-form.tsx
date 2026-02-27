@@ -111,7 +111,6 @@ export default function TrailsDateEditForm({
 			toast.success("Successfully updated the form!");
 			form.reset();
 			handleRefresh(index);
-			console.log("Form updated successfully!", results);
 		},
 		onError: (error) => {
 			console.error("Form update error", error);

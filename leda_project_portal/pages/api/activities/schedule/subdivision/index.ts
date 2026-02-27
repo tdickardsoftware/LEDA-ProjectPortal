@@ -90,7 +90,6 @@ export default async function handler(
 	if (req.method === "GET") {
 		const { seasonCode, division, subdivision } = req.query;
 
-		console.log('Subdivision API called with:', { seasonCode, division, subdivision });
 
 		if (!seasonCode || !division || !subdivision) {
 			return res.status(400).json({
@@ -110,12 +109,10 @@ export default async function handler(
 				[seasonCode as string, division as string, subdivision as string]
 			);
 
-			console.log(`Found ${result.rows.length} rows for ${division} - ${subdivision}`);
 
 			// Transform to nested structure
 			const scheduleData = transformSubdivisionToNested(result.rows);
 
-			console.log('Transformed schedule data structure:', Object.keys(scheduleData));
 
 			res.status(200).json({
 				seasonCode,

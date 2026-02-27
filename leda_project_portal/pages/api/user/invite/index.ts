@@ -68,7 +68,6 @@ ${link}`,
 
       return res.status(200).json({ ok: true });
     } catch (error) {
-      console.log(error);
       return res.status(500).json({ error: String(error), details: String(error) });
     } finally {
       client.smtp.close();

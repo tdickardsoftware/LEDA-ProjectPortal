@@ -105,7 +105,6 @@ export default async function handler(
                     ORDER BY p."lastName", p."firstName"
                     LIMIT 10000
                 `);
-                console.log(`Fetched ${result.rows.length} available players`);
                 return res.status(200).json(result.rows);
             } catch (error) {
                 console.error('Error fetching available players:', error);
@@ -116,7 +115,6 @@ export default async function handler(
             }
         } else if (req.query.alreadySelected) {
             try {
-                console.log("alreadySelected", req.query.alreadySelected);
                 // Format the already selected string for SQL IN clause
                 const selectedString = req.query.alreadySelected as string;
 

@@ -124,7 +124,6 @@ export default function MentionEditForm({
 		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
 			form.reset();
-			console.log("Form updated successfully!", results);
 			onClose();
 			onRefresh();
 		},

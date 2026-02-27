@@ -86,7 +86,6 @@ export default function PlaceTypeAddForm({
 		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
 			form.reset();
-			console.log("Form submitted successfully!", results);
 			onClose();
 			onRefresh();
 		},

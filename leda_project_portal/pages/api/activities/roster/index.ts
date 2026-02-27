@@ -25,7 +25,6 @@ export default async function handler(
 		if (req.query.seasonCode) {
 			try {
 				const seasonCode = req.query.seasonCode;
-				console.log(seasonCode);
 				// Fetch a single season's roster record by season code
 				const result = await query<Roster>(
 					`SELECT "seasonCode", "teamInformation" FROM public.leda_roster_info WHERE "seasonCode" = $1`,

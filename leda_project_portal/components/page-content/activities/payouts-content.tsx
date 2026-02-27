@@ -304,7 +304,6 @@ export default function PayoutsContent() {
 					});
 				});
 
-				console.log("Merged payouts data:", mergedPayoutsData);
 				return mergedPayoutsData;
 			});
 		}
@@ -449,7 +448,6 @@ export default function PayoutsContent() {
 						subdivision,
 						teamIds
 					};
-					console.log(`Division: ${division}, Subdivision: ${subdivision}, Teams:`, teamIds);
 				}
 			);
 		});

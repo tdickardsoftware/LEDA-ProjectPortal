@@ -147,7 +147,6 @@ export default function PlaceAddForm({
 			form.reset();
 			setGenerateIDStatus(true);
 			setCurrentStep(0);
-			console.log("Form submitted successfully!", results);
 			onClose();
 			onRefresh();
 		},

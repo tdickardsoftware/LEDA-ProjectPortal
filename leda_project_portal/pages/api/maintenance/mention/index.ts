@@ -49,7 +49,6 @@ export default async function handler(
 	// Handle POST requests
 	else if (req.method === "POST") {
 		try {
-			console.log(req.body);
 			const results = req.body as Mention;
 
 			// Define the query to insert a new mention

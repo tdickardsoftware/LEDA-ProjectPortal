@@ -187,7 +187,6 @@ export async function fetchPlayerMember(ledaId: string) {
 			if (response.status === 404) {
 				return null;
 			}
-			console.log(response);
 			throw new Error("Network response was not ok");
 		}
 		const data = (await response.json()) as PlayerMemberInfo;
@@ -248,7 +247,6 @@ export async function fetchTeam(ledaId: string) {
 			if (response.status === 404) {
 				return null;
 			}
-			console.log(response);
 			throw new Error("Network response was not ok");
 		}
 		const data = (await response.json()) as Team;
@@ -342,7 +340,6 @@ export async function fetchPlace(ledaId: string) {
 			if (response.status === 404) {
 				return null;
 			}
-			console.log(response);
 			throw new Error("Network response was not ok");
 		}
 		const data = (await response.json()) as Place;
@@ -578,7 +575,6 @@ export async function fetchTrailsDateData(
 			throw new Error("Network response was not ok");
 		}
 		const data = (await response.json()).rows as TrailsDateData[];
-		console.log(data);
 		return data;
 		// if it cannot get data error out
 	} catch (error) {

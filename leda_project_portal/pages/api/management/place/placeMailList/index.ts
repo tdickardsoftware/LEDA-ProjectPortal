@@ -105,7 +105,6 @@ export default async function handler(
                     ORDER BY p."name"
                     LIMIT 10000
                 `);
-                console.log(`Fetched ${result.rows.length} available places`);
                 return res.status(200).json(result.rows);
             } catch (error) {
                 console.error('Error fetching available places:', error);

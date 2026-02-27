@@ -28,10 +28,6 @@ export default async function handler(
 	if (req.method === "POST") {
 		try {
 			const data = req.body as PlayerPoints;
-			console.log(
-				"POST received with data:",
-				JSON.stringify(data, null, 2)
-			);
 			let originalTotalPoints = 0;
 			let isUpdate = false;
 
@@ -51,9 +47,6 @@ export default async function handler(
 				if (existingRecord.rows.length > 0) {
 					originalTotalPoints = existingRecord.rows[0].totalPoints;
 					isUpdate = true;
-					console.log(
-						`Updating existing record. Original total points: ${originalTotalPoints}`
-					);
 				}
 			} catch (error) {
 				console.error("Error checking for existing record:", error);
@@ -71,18 +64,11 @@ export default async function handler(
 						data.ledaId,
 						data.teamLedaId,
 					];
-					console.log("Fetching previous week with values:", values);
 					const result = await query<PlayerPoints>(queryText, values);
 					if (result.rows.length !== 0) {
 						data.prevTotalPoints = result.rows[0].totalPoints;
-						console.log(
-							`Previous total points: ${data.prevTotalPoints}`
-						);
 					} else {
 						data.prevTotalPoints = 0;
-						console.log(
-							"No previous week found, using 0 for prevTotalPoints"
-						);
 					}
 				} catch (error) {
 					console.error(
@@ -101,16 +87,11 @@ export default async function handler(
 				}
 			} else {
 				data.prevTotalPoints = 0;
-				console.log("Week 1, setting prevTotalPoints to 0");
 			}
 
 			try {
 				const newTotalPoints =
 					Number(data.prevTotalPoints) + Number(data.totalPoints);
-				console.log(
-					`Calculated new total points: ${newTotalPoints} (prev: ${data.prevTotalPoints} + current: ${data.totalPoints})`
-				);
-
 				const queryString = `
                     INSERT INTO public.leda_weekly_player_points ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "prevTotalPoints", "totalPoints", "teamLedaId")
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -127,14 +108,10 @@ export default async function handler(
 					newTotalPoints,
 					data.teamLedaId,
 				];
-				console.log("Executing upsert with values:", values);
 				const result = await queryPost(queryString, values);
 
 				// If this is an update and the total points have changed, update subsequent weeks
 				if (isUpdate && originalTotalPoints !== newTotalPoints) {
-					console.log(
-						`Points changed from ${originalTotalPoints} to ${newTotalPoints}. Updating subsequent weeks...`
-					);
 					try {
 						await updateSubsequentWeeks(
 							data.seasonCode,
@@ -145,7 +122,6 @@ export default async function handler(
 							data.teamLedaId.toString(),
 							newTotalPoints - originalTotalPoints
 						);
-						console.log("Subsequent weeks updated successfully");
 					} catch (updateError) {
 						console.error(
 							"Error updating subsequent weeks:",
@@ -276,9 +252,6 @@ async function updateSubsequentWeeks(
 	teamLedaId: string,
 	pointDifference: number
 ) {
-	console.log(
-		`Updating subsequent weeks - Season: ${seasonCode}, After Week: ${weekNum}, Player: ${ledaId}, Team: ${teamLedaId}, Difference: ${pointDifference}`
-	);
 
 	try {
 		// Get all subsequent weeks for this player
@@ -288,11 +261,6 @@ async function updateSubsequentWeeks(
              ORDER BY "weekNum" ASC`,
 			[seasonCode, weekNum, division, subdivision, ledaId, teamLedaId]
 		);
-
-		console.log(
-			`Found ${subsequentWeeks.rows.length} subsequent weeks to update`
-		);
-
 		// Process each subsequent week
 		for (const week of subsequentWeeks.rows) {
 			// Calculate new values
@@ -301,14 +269,6 @@ async function updateSubsequentWeeks(
 			const weeklyPoints = week.totalPoints - week.prevTotalPoints; // Extract just this week's points
 			const newTotalPoints =
 				Number(newPrevTotalPoints) + Number(weeklyPoints);
-
-			console.log(`Week ${week.weekNum} details before update:
-                - Previous total: ${week.prevTotalPoints}
-                - Current total: ${week.totalPoints}
-                - Weekly points contribution: ${weeklyPoints}
-                - Point difference to apply: ${pointDifference}
-                - New previous total: ${newPrevTotalPoints}
-                - New total points: ${newTotalPoints}`);
 
 			// Sanity check for unusual values
 			if (Math.abs(pointDifference) > 100 || newTotalPoints > 1000) {
@@ -335,7 +295,6 @@ async function updateSubsequentWeeks(
 			);
 
 			// Log the completed update
-			console.log(`Updated Week ${week.weekNum} successfully`);
 		}
 	} catch (error) {
 		console.error("Error in updateSubsequentWeeks:", error);

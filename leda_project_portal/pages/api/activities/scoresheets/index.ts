@@ -38,7 +38,6 @@ export default async function handler(
 			];
 
 			// Log the query values for debugging
-			console.log("Query Values:", values);
 
 			const result = await queryPost(query, values);
 			res.status(201).json(result);

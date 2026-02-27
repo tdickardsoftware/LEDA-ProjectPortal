@@ -49,7 +49,6 @@ export default async function handler(
 	// Handle PUT requests
 	else if (req.method === "POST") {
 		try {
-			console.log(req.body);
 			const results = req.body as PayoutTier;
 
 			// Define the query to insert a new payout tier
