@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * PlacePageContent
+ *
+ * Detail view for a single place (bar/venue) record. Displays place contact
+ * information and membership metadata in read-only cards.
+ *
+ * Toolbar actions (via `FolderTabMed`):
+ *   - Edit Place — opens `PlaceEditForm` in a dialog.
+ *   - Add Place Payment — opens `PaymentHistoryFormDialog`.
+ *   - Payment History — opens `PlacePaymentHistoryContent` in a dialog.
+ *   - Team History — opens `PlaceTeamHistoryContent` in a dialog.
+ */
+
 import { Place } from "@/lib/definitions";
 import {
 	Card,
@@ -41,6 +54,7 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 	const handlePaymentHistory = () => {
 		setIsPaymentHistoryDialogOpen(!isPaymentHistoryDialogOpen);
 	};
+
 	return (
 		<div className="container mx-auto p-6">
 			<div>
@@ -55,9 +69,9 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 				<div className="flex justify-center pb-4">
 					<FolderTabMed title="Place Actions">
 						<div className="flex gap-2">
-							<Button
+							<Button variant="outline"
 								onClick={handleEdit}
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								className="hover:bg-muted border-border text-foreground"
 							>
 								Edit Place
 							</Button>
@@ -67,14 +81,14 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 								route={placePaymentHistoryRoute}
 								type="place"
 							/>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handlePaymentHistory}
 							>
 								Payment History
 							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={() => setIsTeamHistoryDialogOpen(true)}
 							>
 								Team History
@@ -83,7 +97,7 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 					</FolderTabMed>
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-					<Card className="shadow-md border border-gray-300 hover:bg-gray-50 transition-colors">
+					<Card className="shadow-md border border-border hover:bg-muted transition-colors">
 						<CardHeader>
 							<CardTitle>Place Information</CardTitle>
 						</CardHeader>
@@ -116,7 +130,7 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 							<p className="text-lg">Zip: {placeData.zip}</p>
 						</CardContent>
 					</Card>
-					<Card className="shadow-md border border-gray-300 hover:bg-gray-50 transition-colors">
+					<Card className="shadow-md border border-border hover:bg-muted transition-colors">
 						<CardHeader>
 							<CardTitle>Membership Information</CardTitle>
 						</CardHeader>
@@ -135,13 +149,17 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 								Established Date:{" "}
 								{new Date(
 									placeData.establishDate
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">
 								Last Sanctioning Date:{" "}
 								{new Date(
 									placeData.lastSanctioningDate
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">
 								Send Mailings:{" "}
@@ -167,8 +185,8 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 					</Card>
 				</div>
 				<div className="mt-6">
-					<Button
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+					<Button variant="outline"
+						className="hover:bg-muted border-border text-foreground"
 						asChild
 					>
 						<Link href="/Portal/Management/Places" prefetch={true}>
@@ -179,7 +197,7 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 			</div>
 
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent className="w-fit bg-white">
+				<DialogContent className="w-fit bg-background">
 					<DialogHeader>
 						<DialogTitle>Edit Place: {placeData.name}</DialogTitle>
 					</DialogHeader>
@@ -196,7 +214,7 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 				open={isPaymentHistoryDialogOpen}
 				onOpenChange={setIsPaymentHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							Payment History for {placeData.name}
@@ -210,7 +228,7 @@ export default function PlacePageContent({ placeData }: { placeData: Place }) {
 				open={isTeamHistoryDialogOpen}
 				onOpenChange={setIsTeamHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<PlaceTeamHistoryContent placeData={placeData} />
 				</DialogContent>
 			</Dialog>

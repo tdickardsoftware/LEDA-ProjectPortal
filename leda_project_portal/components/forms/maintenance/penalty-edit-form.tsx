@@ -1,3 +1,11 @@
+/**
+ * PenaltyEditForm Component
+ *
+ * Edit form for an existing penalty code. Fetches the full record by
+ * `penaltyCode` from the API on mount and pre-populates the fields. The
+ * penalty code field is disabled to prevent changing the primary key after
+ * creation. Submits a PUT request to update the description.
+ */
 "use client";
 
 import { z } from "zod";
@@ -19,15 +27,25 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "@/components/ui/textarea";
 import { penaltyRoute } from "@/lib/apiRoutes";
 import { Penalty } from "@/lib/definitions";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for penalty fields
 const penaltyFormSchema = z.object({
 	penaltyCode: z.string().min(1, { message: "Penalty Code is required." }),
 	desc: z.string().optional(),
 });
 
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * PenaltyEditForm fetches a penalty record and provides an edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the penaltyCode used to fetch details
+ */
 export default function PenaltyEditForm({
 	onClose,
 	onRefresh,
@@ -37,6 +55,7 @@ export default function PenaltyEditForm({
 	onRefresh: () => void;
 	rowData: Penalty;
 }) {
+	// Local state to store the full penalty record fetched from the API
 	const [formData, setFormData] = useState<Penalty>({} as Penalty);
 
 	const formRef = React.useRef<HTMLFormElement>(null);
@@ -53,7 +72,7 @@ export default function PenaltyEditForm({
 			if (!rowData || !rowData.penaltyCode) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				penaltyRoute + `?penaltyCode=${rowData.penaltyCode}`,
 				{
 					method: "GET",
@@ -71,25 +90,20 @@ export default function PenaltyEditForm({
 			setFormData(data);
 			form.reset({
 				...data,
-			}); // Set form values to the retrieved data
+			});
 		};
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No penalty data available.</div>;
-	}
-
-	async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
-		try {
-			const response = await fetch(penaltyRoute, {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof penaltyFormSchema>) => {
+			const response = await fetchWithSession(penaltyRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(
@@ -97,24 +111,30 @@ export default function PenaltyEditForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
-
-			// Reset form and state
 			form.reset();
-
-			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the penalty API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form update error", error);
 			toast.error(
 				`Failed to update the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof penaltyFormSchema>) {
+		mutation.mutate(values);
+	}
+
+	if (!rowData) {
+		return <div>No penalty data available.</div>;
 	}
 
 	return (
@@ -158,10 +178,10 @@ export default function PenaltyEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
+					<Button variant="outline" type="button" onClick={onClose} className="hover:bg-muted border-border text-foreground">
 						Back
 					</Button>
-					<Button type="submit">Update</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Update</Button>
 				</div>
 			</form>
 		</Form>

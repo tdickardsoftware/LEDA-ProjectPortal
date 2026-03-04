@@ -1,8 +1,20 @@
 "use client";
 
+/**
+ * PlayerRosterHistoryContent
+ *
+ * Shows every roster entry (season, team) a player has belonged to across
+ * their LEDA membership career. Results are paginated client-side at
+ * 10 rows per page using a Shadcn `Pagination` component.
+ *
+ * Quick-link icon buttons (tooltip-wrapped) let the user jump directly to
+ * the scoresheet or stats views for teams in prior seasons.
+ */
+
 import { rosterRoute } from "@/lib/apiRoutes";
 import { PlayerMemberInfo, PlayerRosterHistory } from "@/lib/definitions";
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -36,20 +48,18 @@ export default function PlayerRosterHistoryContent({
 }: {
 	playerData: PlayerMemberInfo;
 }) {
-	const [rosterHistory, setRosterHistory] = useState<PlayerRosterHistory[]>(
-		[]
-	);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
-	const [error, setError] = useState<string | null>(null);
-
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize] = useState(10);
 	const [totalPages, setTotalPages] = useState(1);
 
-	const getPlayerRosterHistory = useCallback(async () => {
-		try {
-			setIsLoading(true);
+	const {
+		data: rosterHistory = [],
+		isLoading,
+		error,
+	} = useQuery<PlayerRosterHistory[]>({
+		queryKey: ["playerRosterHistory", playerData.ledaId],
+		queryFn: async () => {
 			const response = await fetch(
 				rosterRoute + `/rosterHistory?ledaId=${playerData.ledaId}`,
 				{
@@ -62,23 +72,9 @@ export default function PlayerRosterHistoryContent({
 			if (!response.ok) {
 				throw new Error("Failed to fetch data");
 			}
-			const data = await response.json();
-			setRosterHistory(data);
-			return data;
-		} catch (error) {
-			setError(
-				error instanceof Error
-					? error.message
-					: "An unknown error occurred"
-			);
-		} finally {
-			setIsLoading(false);
-		}
-	}, [playerData.ledaId]);
-
-	useEffect(() => {
-		getPlayerRosterHistory();
-	}, [getPlayerRosterHistory]);
+			return await response.json();
+		},
+	});
 
 	// Calculate total pages whenever roster history or page size changes
 	useEffect(() => {
@@ -186,7 +182,11 @@ export default function PlayerRosterHistoryContent({
 	};
 
 	if (error) {
-		return <div className="p-4 text-red-500">Error: {error}</div>;
+		return (
+			<div className="p-4 text-red-500">
+				Error: {(error as Error).message || "Failed to load roster history"}
+			</div>
+		);
 	}
 
 	return (
@@ -256,10 +256,10 @@ export default function PlayerRosterHistoryContent({
 												<TooltipProvider>
 													<Tooltip>
 														<TooltipTrigger asChild>
-															<Button
+															<Button variant="outline"
 																asChild
 																size="icon"
-																className="hover:bg-gray-100 border-gray-300 text-gray-700"
+																className="hover:bg-muted border-border text-foreground"
 															>
 																<Link
 																	href={`/Portal/Management/Teams/${item.team_id}`}
@@ -270,7 +270,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-white">
+															<TooltipContent className="bg-background text-foreground">
 															<p>View Team</p>
 														</TooltipContent>
 													</Tooltip>
@@ -279,10 +279,10 @@ export default function PlayerRosterHistoryContent({
 												<TooltipProvider>
 													<Tooltip>
 														<TooltipTrigger asChild>
-															<Button
+															<Button variant="outline"
 																asChild
 																size="icon"
-																className="hover:bg-gray-100 border-gray-300 text-gray-700"
+																className="hover:bg-muted border-border text-foreground"
 															>
 																<Link
 																	href={`/Portal/Activities/Rosters/${item.seasonCode}`}
@@ -293,7 +293,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-white">
+															<TooltipContent className="bg-background text-foreground">
 															<p>
 																View Roster for{" "}
 																{
@@ -307,10 +307,10 @@ export default function PlayerRosterHistoryContent({
 												<TooltipProvider>
 													<Tooltip>
 														<TooltipTrigger asChild>
-															<Button
+															<Button variant="outline"
 																asChild
 																size="icon"
-																className="hover:bg-gray-100 border-gray-300 text-gray-700"
+																className="hover:bg-muted border-border text-foreground"
 															>
 																<Link
 																	href={`/Portal/Activities/Weekly-Score/${item.seasonCode}`}
@@ -321,7 +321,7 @@ export default function PlayerRosterHistoryContent({
 																</Link>
 															</Button>
 														</TooltipTrigger>
-														<TooltipContent className="bg-white">
+															<TooltipContent className="bg-background text-foreground">
 															<p>
 																View Weekly
 																Scoresheet Data
@@ -378,7 +378,7 @@ export default function PlayerRosterHistoryContent({
 					</div>
 				</div>
 			) : (
-				<div className="text-center p-4 text-gray-500">
+				<div className="text-center p-4 text-muted-foreground">
 					No roster history found for this player
 				</div>
 			)}

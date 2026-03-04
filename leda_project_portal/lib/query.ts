@@ -1,3 +1,10 @@
+/**
+ * Low-level PostgreSQL query helpers.
+ *
+ * Provides two functions that acquire a pooled client, run a query,
+ * release the client, and propagate errors with a console log.
+ * Prefer `queryGet` for SELECT and `queryPost` for INSERT/UPDATE/DELETE.
+ */
 // Import the database connection pool
 import { pool } from "@/lib/getPool";
 

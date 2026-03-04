@@ -1,3 +1,11 @@
+/**
+ * PayoutTierEditForm Component
+ *
+ * Edit form for an existing payout tier. Fetches the full record by place number
+ * from the API on mount and pre-populates the place (disabled) and amount fields.
+ * Submits a PUT request to update the payout amount. Place is read-only because
+ * it serves as the primary key.
+ */
 "use client";
 
 import { z } from "zod";
@@ -18,7 +26,10 @@ import React from "react";
 import { payoutTierRoute } from "@/lib/apiRoutes";
 import { PayoutTier } from "@/lib/definitions";
 import { Input } from "@/components/ui/input";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema — both place and amount must be non-negative numbers
 const payoutTierFormSchema = z.object({
 	place: z
 		.number()
@@ -27,9 +38,16 @@ const payoutTierFormSchema = z.object({
 });
 
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
+/**
+ * PayoutTierEditForm fetches a payout tier record and provides an edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the place number used to fetch details
+ */
 export default function PayoutTierEditForm({
 	onClose,
 	onRefresh,
@@ -39,6 +57,7 @@ export default function PayoutTierEditForm({
 	onRefresh: () => void;
 	rowData: PayoutTier;
 }) {
+	// Local state to store the full payout tier record fetched from the API
 	const [formData, setFormData] = useState<PayoutTier>({} as PayoutTier);
 
 	const formRef = React.useRef<HTMLFormElement>(null);
@@ -55,7 +74,7 @@ export default function PayoutTierEditForm({
 			if (!rowData || !rowData.place) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				payoutTierRoute + `?place=${rowData.place}`,
 				{
 					method: "GET",
@@ -80,20 +99,15 @@ export default function PayoutTierEditForm({
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No payout tier data available.</div>;
-	}
-
-	async function onSubmit(values: z.infer<typeof payoutTierFormSchema>) {
-		try {
-			const response = await fetch(payoutTierRoute, {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof payoutTierFormSchema>) => {
+			const response = await fetchWithSession(payoutTierRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(
@@ -101,24 +115,30 @@ export default function PayoutTierEditForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
-
-			// Reset form and state
 			form.reset();
-
-			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the payout tier API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form update error", error);
 			toast.error(
 				`Failed to update the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof payoutTierFormSchema>) {
+		mutation.mutate(values);
+	}
+
+	if (!rowData) {
+		return <div>No payout tier data available.</div>;
 	}
 
 	return (
@@ -194,10 +214,10 @@ export default function PayoutTierEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
+					<Button variant="outline" type="button" onClick={onClose} className="hover:bg-muted border-border text-foreground">
 						Back
 					</Button>
-					<Button type="submit">Update</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Update</Button>
 				</div>
 			</form>
 		</Form>

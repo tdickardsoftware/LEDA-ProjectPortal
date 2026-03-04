@@ -1,3 +1,13 @@
+/**
+ * MentionForm Component
+ *
+ * Dual-mode form for adding or editing a mentions entry on a weekly scoresheet.
+ * In add mode, resets after submission so multiple mentions can be entered in
+ * sequence. In edit mode, pre-populates from `initialMention` and delegates
+ * the update to the `updateMention` callback.
+ * Validates the nested `mentionData` object and optional override fields for
+ * points, count, and notes.
+ */
 "use client";
 
 import { z } from "zod";
@@ -43,7 +53,7 @@ const divisionFormSchema = z.object({
 
 // Define styles for the form container
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
 /**
  * Mention Add/Edit Form component
@@ -117,6 +127,21 @@ export default function MentionForm({
 			form.setValue("points", initialMention.points);
 			form.setValue("count", initialMention.count ?? undefined); // Properly set the count field
 			form.setValue("notes", initialMention.notes || "");
+		} else if (!isEditMode) {
+			// Reset to defaults when not in edit mode (ensures clean state on reopen)
+			form.reset({
+				mentionData: {
+					mentionCode: "",
+					desc: "",
+					points: "",
+					mentionBasis: "",
+				},
+				points: undefined,
+				count: undefined,
+				mentionCode: "",
+				mentionDesc: "",
+				notes: "",
+			});
 		}
 	}, [form, isEditMode, initialMention]);
 
@@ -125,10 +150,10 @@ export default function MentionForm({
 	 * Delegates to either updateMention or handleMentionSubmit based on mode
 	 */
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
+		
 		// Ensure count is always set to a valid number
 		const countValue = values.count ?? 0;
 
-		console.log(countValue);
 
 		if (isEditMode && initialMention && updateMention) {
 			updateMention(
@@ -155,6 +180,7 @@ export default function MentionForm({
 				notes: "",
 			});
 		} else {
+			
 			handleMentionSubmit(
 				values.mentionCode || "",
 				values.mentionDesc || "",
@@ -186,9 +212,9 @@ export default function MentionForm({
 		points: string;
 		mentionBasis: string;
 	}) => {
-		// Parse points as integer and handle NaN case
+		// Parse points as integer; leave blank if 0 or invalid so the user can type their own value
 		const pointsValue = parseInt(value.points);
-		form.setValue("points", isNaN(pointsValue) ? undefined : pointsValue);
+		form.setValue("points", (isNaN(pointsValue) || pointsValue === 0) ? undefined : pointsValue);
 		form.setValue("mentionCode", value.mentionCode);
 		form.setValue("mentionDesc", value.desc);
 
@@ -223,24 +249,15 @@ export default function MentionForm({
 									<FormControl>
 										<Input
 											placeholder="Points"
-											type="number"
+											type="text"
+											inputMode="numeric"
+											pattern="[0-9]*"
 											{...field}
-											value={
-												field.value === undefined
-													? ""
-													: field.value
-											}
+											value={field.value === undefined ? "" : field.value}
 											onChange={(e) => {
 												const value = e.target.value;
 												if (/^\d*$/.test(value)) {
-													field.onChange(
-														value === ""
-															? undefined
-															: parseInt(
-																	value,
-																	10
-															  )
-													);
+													field.onChange(value === "" ? undefined : parseInt(value, 10));
 												}
 											}}
 										/>
@@ -259,24 +276,15 @@ export default function MentionForm({
 									<FormControl>
 										<Input
 											placeholder="Number of Darts"
-											type="number"
+											type="text"
+											inputMode="numeric"
+											pattern="[0-9]*"
 											{...field}
-											value={
-												field.value === undefined
-													? ""
-													: field.value
-											}
+											value={field.value === undefined ? "" : field.value}
 											onChange={(e) => {
 												const value = e.target.value;
 												if (/^\d*$/.test(value)) {
-													field.onChange(
-														value === ""
-															? undefined
-															: parseInt(
-																	value,
-																	10
-															  )
-													);
+													field.onChange(value === "" ? undefined : parseInt(value, 10));
 												}
 											}}
 										/>
@@ -305,7 +313,13 @@ export default function MentionForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">
+					<Button 
+						type="submit" 
+						className="hover:bg-muted border-border text-foreground"
+						onClick={() => {
+							
+						}}
+					>
 						{isEditMode ? "Update Mention" : "Add Mention"}
 					</Button>
 				</div>

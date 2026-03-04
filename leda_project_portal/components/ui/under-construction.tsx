@@ -1,3 +1,4 @@
+/** UnderConstruction page placeholder — displays a hard-hat icon and a message for pages that are not yet implemented. */
 'use client'
 import { HardHat } from "lucide-react";
 

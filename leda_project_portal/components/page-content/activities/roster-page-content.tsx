@@ -1,5 +1,19 @@
 "use client";
 
+/**
+ * RosterPageContent
+ *
+ * Full CRUD interface for the LEDA league roster (divisions, subdivisions,
+ * teams, and members). Changes are buffered in local state and persisted
+ * with `saveRosterMutation` / `updateRosterMutation` / `deleteRosterMutation`.
+ *
+ * Saving the roster also cascades a schedule regeneration via
+ * `updateScheduleMutation` so match slots stay in sync with team counts.
+ *
+ * The season is selected via `SeasonCodeSelector`. Drag-and-drop handles
+ * re-ordering teams within a subdivision using `@dnd-kit/sortable`.
+ */
+
 import { useState, useCallback, useEffect } from "react";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Button } from "@/components/ui/button";
@@ -36,6 +50,32 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { FolderTabMed } from "@/components/ui/folder-tab";
+import { 
+	useQuery, 
+	useMutation, 
+	useQueryClient 
+} from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
+
+async function safeReadJson<T>(response: Response): Promise<T | null> {
+	// Avoid "Unexpected end of JSON input" when backend returns 200 with an empty body.
+	const text = await response.text();
+	if (!text) return null;
+	try {
+		return JSON.parse(text) as T;
+	} catch {
+		return null;
+	}
+}
+
+function deepCloneOrEmptyObject<T extends object>(value: unknown): T {
+	if (!value || typeof value !== "object") return {} as T;
+	try {
+		return JSON.parse(JSON.stringify(value)) as T;
+	} catch {
+		return {} as T;
+	}
+}
 
 // Define types for better code readability
 type TeamInfo = {
@@ -82,13 +122,124 @@ type ScheduleData = Record<
 	>
 >;
 
+// API functions for TanStack Query
+const fetchRoster = async (seasonCode: string | null): Promise<{teamInformation: RosterData} | null> => {
+	if (!seasonCode) return null;
+	
+	const result = await fetchWithSession(`${rosterRoute}?seasonCode=${seasonCode}`, {
+		method: "GET",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+	
+	if (result.status === 200) {
+		const json = await safeReadJson<{ teamInformation?: RosterData | null }>(result);
+		if (!json) return null;
+		return { teamInformation: deepCloneOrEmptyObject<RosterData>(json.teamInformation) };
+	}
+	
+	if (result.status === 404) {
+		return null;
+	}
+	
+	throw new Error('Failed to fetch roster data');
+};
+
+const updateRoster = async ({seasonCode, data}: {seasonCode: string, data: RosterData}): Promise<void> => {
+	const response = await fetchWithSession(rosterRoute, {
+		method: "PUT",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			seasonCode,
+			teamInformation: data,
+		}),
+	});
+	
+	if (!response.ok) {
+		throw new Error('Failed to update roster');
+	}
+};
+
+const saveRoster = async ({seasonCode, data}: {seasonCode: string, data: RosterData}): Promise<void> => {
+	const response = await fetchWithSession(rosterRoute, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			seasonCode,
+			teamInformation: data,
+		}),
+	});
+	
+	if (!response.ok) {
+		throw new Error('Failed to save roster');
+	}
+};
+
+const deleteRoster = async (seasonCode: string): Promise<void> => {
+	const response = await fetchWithSession(`${rosterRoute}?seasonCode=${seasonCode}`, {
+		method: "DELETE",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+	
+	if (!response.ok) {
+		throw new Error('Failed to delete roster');
+	}
+};
+
+const fetchSchedule = async (seasonCode: string): Promise<{scheduleData: ScheduleData} | null> => {
+	const response = await fetchWithSession(`${scheduleRoute}?seasonCode=${seasonCode}`, {
+		method: "GET",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+	
+	if (response.status === 200) {
+		const json = await safeReadJson<{ scheduleData?: ScheduleData | null }>(response);
+		if (!json) return null;
+		return { scheduleData: deepCloneOrEmptyObject<ScheduleData>(json.scheduleData) };
+	}
+	
+	return null;
+};
+
+const updateSchedule = async ({
+	seasonCode, 
+	data
+}: {
+	seasonCode: string, 
+	data: ScheduleData
+}): Promise<void> => {
+	const response = await fetchWithSession(scheduleRoute, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			seasonCode,
+			scheduleData: data,
+		}),
+	});
+	
+	if (!response.ok) {
+		throw new Error('Failed to update schedule');
+	}
+};
+
 export default function RostersContent({
 	renderSeasonCode,
 }: {
 	renderSeasonCode?: string;
 }) {
 	// State variables
-	const [seasonCode, setSeasonCode] = useState<string | null>(null);
+	const [seasonCode, setSeasonCode] = useState<string | null>(renderSeasonCode || null);
 	const [selectedDivisions, setSelectedDivisions] = useState<string[]>([]);
 	const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
 	const [disabled, setDisabled] = useState<boolean>(true);
@@ -96,9 +247,7 @@ export default function RostersContent({
 	const [teamOpen, setTeamOpen] = useState<{ [key: string]: boolean }>({});
 	const [open, setOpen] = useState(false);
 	const [copyOpen, setCopyOpen] = useState(false);
-	const [divisionToDelete, setDivisionToDelete] = useState<string | null>(
-		null
-	);
+	const [divisionToDelete, setDivisionToDelete] = useState<string | null>(null);
 	const [subdivisionToDelete, setSubdivisionToDelete] = useState<{
 		division: string;
 		subdivision: string;
@@ -116,18 +265,146 @@ export default function RostersContent({
 	const [initialData, setInitialData] = useState<RosterData>({});
 	const [update, setUpdate] = useState(false);
 	const [deleteRosterAlertOpen, setDeleteRosterAlertOpen] = useState(false);
-	const [loading, setLoading] = useState(false);
 	const [currentSeason, setCurrentSeason] = useState(
 		renderSeasonCode ? false : true
 	);
+	const [isRosterInitialized, setIsRosterInitialized] = useState(false);
+	
+	// Setup QueryClient
+	const queryClient = useQueryClient();
+	
+	// TanStack Query hooks
+	const { 
+		data: rosterData, 
+		isLoading: rosterLoading, 
+		isFetching: rosterFetching,
+	} = useQuery({
+		queryKey: ['roster', seasonCode],
+		queryFn: () => fetchRoster(seasonCode),
+		enabled: !!seasonCode,
+	});
 
+	// Handle rosterData changes (mimics onSuccess)
+	useEffect(() => {
+		if (rosterData !== undefined) {
+			const data = rosterData;
+			if (data) {
+				const fetchedData = deepCloneOrEmptyObject<RosterData>(data.teamInformation);
+				const divisions = Object.keys(fetchedData);
+				const teamIds = extractTeamIds(fetchedData);
+
+				setSelectedDivisions(divisions);
+				setSelectedTeams(teamIds);
+				setDivisionsData(fetchedData);
+				setInitialData(fetchedData);
+				setUpdate(true);
+				setHasChanges(false);
+				setDisabled(false);
+				setIsRosterInitialized(true);
+			} else {
+				setInitialData({});
+				setDivisionsData({});
+				setSelectedTeams([]);
+				setSelectedDivisions([]);
+				setUpdate(false);
+				setHasChanges(false);
+				setDisabled(false);
+				setIsRosterInitialized(true);
+			}
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [rosterData]);
+
+	// When changing seasons (or toggling to current season), ensure we don't render stale/half-initialized state.
+	useEffect(() => {
+		if (!seasonCode) {
+			setIsRosterInitialized(true);
+			return;
+		}
+		setIsRosterInitialized(false);
+	}, [seasonCode]);
+	
+	// Mutations
+	const updateRosterMutation = useMutation({
+		mutationFn: updateRoster,
+		onSuccess: async () => {
+			setInitialData(JSON.parse(JSON.stringify(divisionsData)));
+			setHasChanges(false);
+			toast.success("Roster updated successfully");
+			
+			// Update the schedule if there's a successful roster update
+			if (seasonCode) {
+				try {
+					const scheduleData = await fetchSchedule(seasonCode);
+					if (scheduleData) {
+						const potentialChanges = generateScheduleData(
+							scheduleData.scheduleData,
+							divisionsData
+						);
+						
+						await updateSchedule({
+							seasonCode,
+							data: potentialChanges
+						});
+					}
+				} catch (error) {
+					console.error("Failed to update schedule:", error);
+				}
+			}
+			
+			// Invalidate queries to refresh data
+			queryClient.invalidateQueries({ queryKey: ['roster', seasonCode] });
+		},
+		onError: (error) => {
+			console.error("Failed to update roster:", error);
+			toast.error("Failed to update roster");
+		}
+	});
+	
+	const saveRosterMutation = useMutation({
+		mutationFn: saveRoster,
+		onSuccess: () => {
+			setInitialData(JSON.parse(JSON.stringify(divisionsData)));
+			setUpdate(true);
+			setHasChanges(false);
+			toast.success("Roster saved successfully");
+			
+			// Invalidate queries to refresh data
+			queryClient.invalidateQueries({ queryKey: ['roster', seasonCode] });
+			window.location.reload();
+		},
+		onError: (error) => {
+			console.error("Failed to save roster:", error);
+			toast.error("Failed to save roster");
+		}
+	});
+	
+	const deleteRosterMutation = useMutation({
+		mutationFn: (code: string) => deleteRoster(code),
+		onSuccess: () => {
+			setInitialData({});
+			setDivisionsData({});
+			setSelectedTeams([]);
+			setSelectedDivisions([]);
+			setUpdate(false);
+			setHasChanges(false);
+			toast.success("Roster deleted successfully");
+			
+			// Invalidate queries to refresh data
+			queryClient.invalidateQueries({ queryKey: ['roster', seasonCode] });
+		},
+		onError: (error) => {
+			console.error("Failed to delete roster:", error);
+			toast.error("Failed to delete roster");
+		}
+	});
+	
 	// Use renderSeasonCode if provided
 	useEffect(() => {
-		if (renderSeasonCode) {
+		if (renderSeasonCode && !seasonCode) {
 			setSeasonCode(renderSeasonCode);
-			handleSeasonCodeSelect(renderSeasonCode);
 		}
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [renderSeasonCode, seasonCode]); 
 
 	// Extract all team IDs from divisions data
 	const extractTeamIds = useCallback((data: RosterData): string[] => {
@@ -156,59 +433,12 @@ export default function RostersContent({
 
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(
-		async (value: string) => {
+		(value: string) => {
 			if (value === seasonCode) return;
 			setSeasonCode(value);
-
-			try {
-				setLoading(true);
-				const result = await fetch(
-					`${rosterRoute}?seasonCode=${value}`,
-					{
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
-
-				if (result.status === 200) {
-					const data = await result.json();
-					if (data) {
-						const roster = data;
-						// Update state with the fetched data
-						const fetchedData = JSON.parse(
-							JSON.stringify(roster.teamInfomation)
-						);
-
-						// Extract divisions and team IDs
-						const divisions = Object.keys(fetchedData);
-						const teamIds = extractTeamIds(fetchedData);
-
-						setSelectedDivisions(divisions);
-						setSelectedTeams(teamIds); // Populate selectedTeams to prevent duplicates
-						setDivisionsData(fetchedData);
-						setInitialData(fetchedData);
-						setUpdate(true);
-						setHasChanges(false);
-					}
-				} else {
-					setInitialData({});
-					setDivisionsData({});
-					setSelectedTeams([]);
-					setSelectedDivisions([]);
-					setUpdate(false);
-					setHasChanges(false);
-				}
-			} catch (error) {
-				console.error("Failed to fetch roster data:", error);
-				toast.error("Failed to load roster data");
-			} finally {
-				setLoading(false);
-				setDisabled(false);
-			}
+			// The data fetching will be handled by the useQuery hook
 		},
-		[seasonCode, extractTeamIds]
+		[seasonCode]
 	);
 
 	// Generate Schedule Data
@@ -384,104 +614,22 @@ export default function RostersContent({
 	};
 
 	// Handle updating the roster to the database
-	const handleUpdateRoster = useCallback(async () => {
+	const handleUpdateRoster = useCallback(() => {
 		if (!seasonCode) return;
-
-		try {
-			setLoading(true);
-			const response = await fetch(rosterRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					seasonCode: seasonCode,
-					teamInformation: divisionsData,
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error(`Error: ${response.statusText}`);
-			}
-
-			setInitialData(JSON.parse(JSON.stringify(divisionsData)));
-			setHasChanges(false);
-			toast.success("Roster updated successfully");
-		} catch (error) {
-			console.error("Failed to update roster:", error);
-			toast.error("Failed to update roster");
-		} finally {
-			setLoading(false);
-		}
-		/////////////////////////////
-		// Schedule Updating Logic
-		/////////////////////////////
-		const scheduleDataResults = await fetch(
-			`${scheduleRoute}?seasonCode=${seasonCode}`,
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			}
-		);
-		if (scheduleDataResults.status === 200) {
-			const scheduleData = (await scheduleDataResults.json())
-				.scheduleData;
-			if (scheduleData) {
-				// Update the schedule data
-				const potentialChanges = generateScheduleData(
-					scheduleData,
-					divisionsData
-				);
-
-				await fetch(scheduleRoute, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						seasonCode: seasonCode,
-						scheduleData: potentialChanges,
-					}),
-				});
-			}
-		}
-	}, [divisionsData, seasonCode]);
+		updateRosterMutation.mutate({ 
+			seasonCode, 
+			data: divisionsData 
+		});
+	}, [divisionsData, seasonCode, updateRosterMutation]);
 
 	// Handle saving the roster to the database
-	const handleSaveRoster = useCallback(async () => {
+	const handleSaveRoster = useCallback(() => {
 		if (!seasonCode) return;
-
-		try {
-			setLoading(true);
-			const response = await fetch(rosterRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					seasonCode: seasonCode,
-					teamInformation: divisionsData,
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error(`Error: ${response.statusText}`);
-			}
-
-			setInitialData(JSON.parse(JSON.stringify(divisionsData)));
-			setUpdate(true);
-			setHasChanges(false);
-			toast.success("Roster saved successfully");
-			window.location.reload();
-		} catch (error) {
-			console.error("Failed to save roster:", error);
-			toast.error("Failed to save roster");
-		} finally {
-			setLoading(false);
-		}
-	}, [seasonCode, divisionsData]);
+		saveRosterMutation.mutate({ 
+			seasonCode, 
+			data: divisionsData 
+		});
+	}, [seasonCode, divisionsData, saveRosterMutation]);
 
 	// Handle division selection
 	const handleSelectDivision = useCallback(
@@ -596,7 +744,7 @@ export default function RostersContent({
 							{maxTeamsReached ? "Max Teams (8)" : "Add Team"}
 						</Button>
 					</DialogTrigger>
-					<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
+					<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
 						<DialogHeader>
 							<DialogTitle>Add Team</DialogTitle>
 						</DialogHeader>
@@ -627,12 +775,12 @@ export default function RostersContent({
 					<Button
 						variant="outline"
 						disabled={disabled}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						className="hover:bg-muted border-border text-foreground"
 					>
 						Add Division
 					</Button>
 				</DialogTrigger>
-				<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
+				<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
 					<DialogHeader>
 						<DialogTitle>Add Division</DialogTitle>
 					</DialogHeader>
@@ -654,12 +802,12 @@ export default function RostersContent({
 				<DialogTrigger asChild>
 					<Button
 						variant="outline"
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+						className="hover:bg-muted border-border text-foreground"
 					>
 						Copy Roster
 					</Button>
 				</DialogTrigger>
-				<DialogContent className="bg-white max-w-full w-fit max-h-full h-fit overflow-auto">
+				<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
 					<DialogHeader>
 						<DialogTitle>Copy Roster</DialogTitle>
 					</DialogHeader>
@@ -866,43 +1014,20 @@ export default function RostersContent({
 	}, [teamToDelete, handleRemoveTeam]);
 
 	// Handle deletion of a roster
-	const handleDeleteRoster = useCallback(async () => {
+	const handleDeleteRoster = useCallback(() => {
 		if (!seasonCode) return;
+		deleteRosterMutation.mutate(seasonCode);
+	}, [seasonCode, deleteRosterMutation]);
 
-		try {
-			setLoading(true);
-			const response = await fetch(
-				`${rosterRoute}?seasonCode=${seasonCode}`,
-				{
-					method: "DELETE",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				}
-			);
-
-			if (!response.ok) {
-				throw new Error(`Error: ${response.statusText}`);
-			}
-
-			setInitialData({});
-			setDivisionsData({});
-			setSelectedTeams([]);
-			setSelectedDivisions([]);
-			setUpdate(false);
-			setHasChanges(false);
-			toast.success("Roster deleted successfully");
-		} catch (error) {
-			console.error("Failed to delete roster:", error);
-			toast.error("Failed to delete roster");
-		} finally {
-			setLoading(false);
-		}
-	}, [seasonCode]);
+	// Determine if we're in a loading state from any mutation
+	const isLoading = (seasonCode ? (rosterLoading || rosterFetching || !isRosterInitialized) : false) ||
+		updateRosterMutation.isPending || 
+		saveRosterMutation.isPending || 
+		deleteRosterMutation.isPending;
 
 	return (
 		<div className="flex flex-col max-w-[65vw]">
-			{loading ? (
+			{isLoading ? (
 				<Spinner />
 			) : (
 				<>
@@ -933,7 +1058,7 @@ export default function RostersContent({
 								{update && (
 									<Button
 										variant="outline"
-										className="hover:bg-gray-100 border-gray-300 text-gray-700"
+										className="hover:bg-muted border-border text-foreground"
 										onClick={() =>
 											setDeleteRosterAlertOpen(true)
 										}
@@ -954,7 +1079,7 @@ export default function RostersContent({
 						<AlertDialogTrigger asChild>
 							<div></div>
 						</AlertDialogTrigger>
-						<AlertDialogContent className="bg-white text-black">
+						<AlertDialogContent className="bg-background text-foreground">
 							<AlertDialogHeader>
 								<AlertDialogTitle>
 									Confirm Deletion
@@ -1018,7 +1143,7 @@ export default function RostersContent({
 													<X className="text-red-500" />
 												</div>
 											</AlertDialogTrigger>
-											<AlertDialogContent className="bg-white text-black">
+											<AlertDialogContent className="bg-background text-foreground">
 												<AlertDialogHeader>
 													<AlertDialogTitle>
 														Confirm Deletion
@@ -1068,7 +1193,7 @@ export default function RostersContent({
 										</div>
 										<Separator
 											orientation="horizontal"
-											className="my-2 bg-gray-300"
+											className="my-2 bg-muted"
 										/>
 
 										{/* Subdivisions Accordion */}
@@ -1085,7 +1210,7 @@ export default function RostersContent({
 											>
 												<AccordionItem
 													value={`subdivisions-${subIndex}`}
-													className="border-b border-gray-200"
+													className="border-b border-border"
 												>
 													<div className="flex justify-between items-center">
 														<AccordionTrigger>
@@ -1117,7 +1242,7 @@ export default function RostersContent({
 																	<X className="text-red-500" />
 																</div>
 															</AlertDialogTrigger>
-															<AlertDialogContent className="bg-white text-black">
+															<AlertDialogContent className="bg-background text-foreground">
 																<AlertDialogHeader>
 																	<AlertDialogTitle>
 																		Confirm
@@ -1235,7 +1360,7 @@ export default function RostersContent({
 																						<X className="text-red-500" />
 																					</div>
 																				</AlertDialogTrigger>
-																				<AlertDialogContent className="bg-white text-black">
+																				<AlertDialogContent className="bg-background text-foreground">
 																					<AlertDialogHeader>
 																						<AlertDialogTitle>
 																							Confirm
@@ -1297,7 +1422,7 @@ export default function RostersContent({
 							<Button
 								className="mt-4"
 								variant="outline"
-								disabled={!hasChanges || loading}
+								disabled={!hasChanges || isLoading}
 								onClick={handleSaveRoster}
 							>
 								Save Roster
@@ -1307,17 +1432,17 @@ export default function RostersContent({
 					{update && (
 						<div className="flex justify-center gap-4">
 							<Button
-								className="hover:bg-gray-100 border-gray-300 text-gray-700 mt-4"
+								className="hover:bg-muted border-border text-foreground mt-4"
 								variant="outline"
-								disabled={!hasChanges || loading}
+								disabled={!hasChanges || isLoading}
 								onClick={handleUpdateRoster}
 							>
 								Update Roster
 							</Button>
 							<Button
-								className="hover:bg-gray-100 border-gray-300 text-gray-700 mt-4"
+								className="hover:bg-muted border-border text-foreground mt-4"
 								variant="outline"
-								disabled={!hasChanges || loading}
+								disabled={!hasChanges || isLoading}
 								onClick={() => {
 									setDivisionsData(
 										JSON.parse(JSON.stringify(initialData))

@@ -10,8 +10,8 @@ CREATE OR REPLACE VIEW public.leda_place_team_history
     team_json."placeId",
     p.name AS placename
    FROM ( SELECT leda_roster_info."seasonCode",
-            jsonb_path_query(leda_roster_info."teamInfomation"::jsonb, '$.*."subdivisions".*.*'::jsonpath) ->> 'teamId'::text AS "teamId",
-            jsonb_path_query(leda_roster_info."teamInfomation"::jsonb, '$.*."subdivisions".*.*'::jsonpath) ->> 'placeId'::text AS "placeId"
+            jsonb_path_query(leda_roster_info."teamInformation"::jsonb, '$.*."subdivisions".*.*'::jsonpath) ->> 'teamId'::text AS "teamId",
+            jsonb_path_query(leda_roster_info."teamInformation"::jsonb, '$.*."subdivisions".*.*'::jsonpath) ->> 'placeId'::text AS "placeId"
            FROM leda_roster_info) team_json
      LEFT JOIN leda_team_info t ON team_json."teamId" = t."ledaId"::text
      LEFT JOIN leda_roster_info r ON team_json."seasonCode" = r."seasonCode"

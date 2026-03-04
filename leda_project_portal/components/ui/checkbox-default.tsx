@@ -1,3 +1,10 @@
+/**
+ * CheckboxDefault component
+ *
+ * Reusable React Hook Form checkbox field that wraps the shadcn Checkbox with
+ * FormField / FormLabel / FormMessage scaffolding.  Accepts a `control` prop
+ * and a `name` to bind directly into the surrounding form context.
+ */
 import React from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +22,7 @@ interface CheckboxDefaultProps {
 	name: string;
 	label: string;
 	className?: string;
+	disabled?: boolean;
 }
 
 const CheckboxDefault: React.FC<CheckboxDefaultProps> = ({
@@ -22,6 +30,7 @@ const CheckboxDefault: React.FC<CheckboxDefaultProps> = ({
 	name,
 	label,
 	className,
+	disabled,
 }) => {
 	return (
 		<FormProvider {...useFormContext()}>
@@ -38,6 +47,7 @@ const CheckboxDefault: React.FC<CheckboxDefaultProps> = ({
 								checked={field.value}
 								onCheckedChange={field.onChange}
 								className={className}
+								disabled={disabled}
 							/>
 						</FormControl>
 						<FormMessage />

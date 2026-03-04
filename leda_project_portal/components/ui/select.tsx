@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Select primitive wrapper with full styled sub-component set (trigger, content, items, labels, separators). */
 "use client"
 
 import * as React from "react"

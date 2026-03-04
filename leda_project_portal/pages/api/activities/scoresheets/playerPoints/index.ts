@@ -1,3 +1,14 @@
+/**
+ * API Route: /api/activities/scoresheets/playerPoints
+ *
+ * POST — Upserts weekly player point totals (cumulative). Automatically
+ *          fetches the previous week's running total and propagates any
+ *          point delta forward through all subsequent weeks.
+ * GET  — Retrieves player point data filtered by various combinations of
+ *          seasonCode, weekNum, ledaId, teamLedaId, division, and subdivision.
+ *          Supports report views for top-darter totals and per-week breakdowns.
+ * Requires an authenticated session.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { queryPost } from "@/lib/query";
 import {
@@ -6,28 +17,29 @@ import {
 	WeeklyTopDarterScores,
 } from "@/lib/definitions";
 import { query } from "@/lib/dbTypeGet";
+import { requireApiSession } from "@/lib/require-session";
 
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	if (req.method === "POST") {
 		try {
 			const data = req.body as PlayerPoints;
-			console.log(
-				"POST received with data:",
-				JSON.stringify(data, null, 2)
-			);
 			let originalTotalPoints = 0;
 			let isUpdate = false;
 
 			// Check if this is an update to an existing record
 			try {
 				const existingRecord = await query<PlayerPoints>(
-					`SELECT "totalPoints" FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "ledaId" = $3 AND "teamLedaId" = $4`,
+					`SELECT "totalPoints" FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "division" = $3 AND "subdivision" = $4 AND "ledaId" = $5 AND "teamLedaId" = $6`,
 					[
 						data.seasonCode,
 						data.weekNum,
+						data.division,
+						data.subdivision,
 						data.ledaId,
 						data.teamLedaId,
 					]
@@ -35,9 +47,6 @@ export default async function handler(
 				if (existingRecord.rows.length > 0) {
 					originalTotalPoints = existingRecord.rows[0].totalPoints;
 					isUpdate = true;
-					console.log(
-						`Updating existing record. Original total points: ${originalTotalPoints}`
-					);
 				}
 			} catch (error) {
 				console.error("Error checking for existing record:", error);
@@ -46,25 +55,20 @@ export default async function handler(
 
 			if (data.weekNum != 1) {
 				try {
-					const queryText = `SELECT "totalPoints" from public.leda_weekly_player_points where "seasonCode" = $1 and "weekNum" = $2 and "ledaId" = $3 and "teamLedaId" = $4`;
+					const queryText = `SELECT "totalPoints" from public.leda_weekly_player_points where "seasonCode" = $1 and "weekNum" = $2 and "division" = $3 and "subdivision" = $4 and "ledaId" = $5 and "teamLedaId" = $6`;
 					const values = [
 						data.seasonCode,
 						data.weekNum - 1,
+						data.division,
+						data.subdivision,
 						data.ledaId,
 						data.teamLedaId,
 					];
-					console.log("Fetching previous week with values:", values);
 					const result = await query<PlayerPoints>(queryText, values);
 					if (result.rows.length !== 0) {
 						data.prevTotalPoints = result.rows[0].totalPoints;
-						console.log(
-							`Previous total points: ${data.prevTotalPoints}`
-						);
 					} else {
 						data.prevTotalPoints = 0;
-						console.log(
-							"No previous week found, using 0 for prevTotalPoints"
-						);
 					}
 				} catch (error) {
 					console.error(
@@ -83,47 +87,41 @@ export default async function handler(
 				}
 			} else {
 				data.prevTotalPoints = 0;
-				console.log("Week 1, setting prevTotalPoints to 0");
 			}
 
 			try {
 				const newTotalPoints =
 					Number(data.prevTotalPoints) + Number(data.totalPoints);
-				console.log(
-					`Calculated new total points: ${newTotalPoints} (prev: ${data.prevTotalPoints} + current: ${data.totalPoints})`
-				);
-
 				const queryString = `
-                    INSERT INTO public.leda_weekly_player_points ("seasonCode", "weekNum", "ledaId", "prevTotalPoints", "totalPoints", "teamLedaId")
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT ("seasonCode", "weekNum", "ledaId", "teamLedaId")
-                    DO UPDATE SET "prevTotalPoints" = $4, "totalPoints" = $5;
+                    INSERT INTO public.leda_weekly_player_points ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "prevTotalPoints", "totalPoints", "teamLedaId")
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    ON CONFLICT ("seasonCode", "weekNum", "division", "subdivision", "ledaId", "teamLedaId")
+                    DO UPDATE SET "prevTotalPoints" = $6, "totalPoints" = $7;
                 `;
 				const values = [
 					data.seasonCode,
 					data.weekNum,
+					data.division,
+					data.subdivision,
 					data.ledaId,
 					data.prevTotalPoints,
 					newTotalPoints,
 					data.teamLedaId,
 				];
-				console.log("Executing upsert with values:", values);
 				const result = await queryPost(queryString, values);
 
 				// If this is an update and the total points have changed, update subsequent weeks
 				if (isUpdate && originalTotalPoints !== newTotalPoints) {
-					console.log(
-						`Points changed from ${originalTotalPoints} to ${newTotalPoints}. Updating subsequent weeks...`
-					);
 					try {
 						await updateSubsequentWeeks(
 							data.seasonCode,
 							data.weekNum,
+							data.division,
+							data.subdivision,
 							data.ledaId.toString(),
 							data.teamLedaId.toString(),
 							newTotalPoints - originalTotalPoints
 						);
-						console.log("Subsequent weeks updated successfully");
 					} catch (updateError) {
 						console.error(
 							"Error updating subsequent weeks:",
@@ -152,17 +150,21 @@ export default async function handler(
 			});
 		}
 	} else if (req.method === "GET") {
-		if (req.query.seasonCode && req.query.weekNum && req.query.ledaId) {
+		if (req.query.seasonCode && req.query.weekNum && req.query.ledaId && req.query.teamLedaId && req.query.division && req.query.subdivision) {
 			try {
 				const seasonCode = req.query.seasonCode;
 				const weekNum = req.query.weekNum;
 				const ledaId = req.query.ledaId;
 				const teamLedaId = req.query.teamLedaId;
+				const division = req.query.division;
+				const subdivision = req.query.subdivision;
 				const result = await query<PlayerPoints>(
-					`SELECT * FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "ledaId" = $3 and "teamLedaId" = $4`,
+					`SELECT * FROM public.leda_weekly_player_points WHERE "seasonCode" = $1 AND "weekNum" = $2 AND "division" = $3 AND "subdivision" = $4 AND "ledaId" = $5 and "teamLedaId" = $6`,
 					[
 						seasonCode as string,
 						weekNum as string,
+						division as string,
+						subdivision as string,
 						ledaId as string,
 						teamLedaId as string,
 					]
@@ -236,30 +238,29 @@ export default async function handler(
 }
 
 // Function to update all subsequent weeks when a week's points are updated
+/**
+ * Cascades a point delta forward through all recorded weeks after the
+ * edited week, keeping prevTotalPoints and totalPoints consistent for
+ * the given player within a season/division/subdivision.
+ */
 async function updateSubsequentWeeks(
 	seasonCode: string,
 	weekNum: number,
+	division: string,
+	subdivision: string,
 	ledaId: string,
 	teamLedaId: string,
 	pointDifference: number
 ) {
-	console.log(
-		`Updating subsequent weeks - Season: ${seasonCode}, After Week: ${weekNum}, Player: ${ledaId}, Team: ${teamLedaId}, Difference: ${pointDifference}`
-	);
 
 	try {
 		// Get all subsequent weeks for this player
 		const subsequentWeeks = await query<PlayerPoints>(
 			`SELECT * FROM public.leda_weekly_player_points 
-             WHERE "seasonCode" = $1 AND "weekNum" > $2 AND "ledaId" = $3 AND "teamLedaId" = $4
+             WHERE "seasonCode" = $1 AND "weekNum" > $2 AND "division" = $3 AND "subdivision" = $4 AND "ledaId" = $5 AND "teamLedaId" = $6
              ORDER BY "weekNum" ASC`,
-			[seasonCode, weekNum, ledaId, teamLedaId]
+			[seasonCode, weekNum, division, subdivision, ledaId, teamLedaId]
 		);
-
-		console.log(
-			`Found ${subsequentWeeks.rows.length} subsequent weeks to update`
-		);
-
 		// Process each subsequent week
 		for (const week of subsequentWeeks.rows) {
 			// Calculate new values
@@ -268,14 +269,6 @@ async function updateSubsequentWeeks(
 			const weeklyPoints = week.totalPoints - week.prevTotalPoints; // Extract just this week's points
 			const newTotalPoints =
 				Number(newPrevTotalPoints) + Number(weeklyPoints);
-
-			console.log(`Week ${week.weekNum} details before update:
-                - Previous total: ${week.prevTotalPoints}
-                - Current total: ${week.totalPoints}
-                - Weekly points contribution: ${weeklyPoints}
-                - Point difference to apply: ${pointDifference}
-                - New previous total: ${newPrevTotalPoints}
-                - New total points: ${newTotalPoints}`);
 
 			// Sanity check for unusual values
 			if (Math.abs(pointDifference) > 100 || newTotalPoints > 1000) {
@@ -288,19 +281,20 @@ async function updateSubsequentWeeks(
 			await queryPost(
 				`UPDATE public.leda_weekly_player_points 
                  SET "prevTotalPoints" = $1, "totalPoints" = $2
-                 WHERE "seasonCode" = $3 AND "weekNum" = $4 AND "ledaId" = $5 AND "teamLedaId" = $6`,
+                 WHERE "seasonCode" = $3 AND "weekNum" = $4 AND "division" = $5 AND "subdivision" = $6 AND "ledaId" = $7 AND "teamLedaId" = $8`,
 				[
 					newPrevTotalPoints,
 					newTotalPoints,
 					seasonCode,
 					week.weekNum,
+					week.division,
+					week.subdivision,
 					ledaId,
 					teamLedaId,
 				]
 			);
 
 			// Log the completed update
-			console.log(`Updated Week ${week.weekNum} successfully`);
 		}
 	} catch (error) {
 		console.error("Error in updateSubsequentWeeks:", error);

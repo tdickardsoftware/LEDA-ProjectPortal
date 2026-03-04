@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Seasons data table (Maintenance section).
+ * Defines a bulk-selectable checkbox column and columns for season code,
+ * description, fiscal year, and current-season flag.
+ */
 //
 // Use the client
 //
@@ -6,12 +11,12 @@
 // Imports
 //
 import { ColumnDef } from "@tanstack/react-table";
-import { Season } from "@/lib/definitions";
+import { SeasonDataTable } from "@/lib/definitions";
 import { Checkbox } from "@/components/ui/checkbox";
 //
 //Define the columns
 //
-export const columns: ColumnDef<Season>[] = [
+export const columns: ColumnDef<SeasonDataTable>[] = [
 	{
 		id: "select",
 		header: ({ table }) => (

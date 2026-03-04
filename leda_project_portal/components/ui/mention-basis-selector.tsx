@@ -1,3 +1,10 @@
+/**
+ * MentionBasisSelector component
+ *
+ * Searchable combobox for choosing a mention basis value (NONE / LOW / HIGH)
+ * within a React Hook Form context.  Reads and writes the `mentionBasis`
+ * field directly via `useFormContext`.
+ */
 "use client";
 
 import React from "react";
@@ -58,7 +65,7 @@ const MentionBasisSelector: React.FC = () => {
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
+					<PopoverContent className="w-[200px] p-0 bg-background">
 						<Command>
 							<CommandInput placeholder="Search gender..." />
 							<CommandEmpty>No mention basis found.</CommandEmpty>
@@ -75,7 +82,7 @@ const MentionBasisSelector: React.FC = () => {
 												);
 												setOpen(false);
 											}}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

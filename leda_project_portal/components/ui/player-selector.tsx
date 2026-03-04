@@ -1,3 +1,12 @@
+/**
+ * PlayerSelector component
+ *
+ * Multi-select searchable combobox for adding players to a team roster.
+ * Loads players in pages (infinite scroll via offset) from the API, supports
+ * debounced search, shows captain / cannot-be-captain status badges, and
+ * manages a de-duplicated selected-player list.  The serialised JSON member
+ * list is surfaced to the parent via `setMemberIdList`.
+ */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -17,13 +26,14 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { playerRoute } from "@/lib/apiRoutes";
+import { playerRoute, playerSelectorRoute } from "@/lib/apiRoutes";
 import {
 	Tooltip,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { TooltipContent } from "@radix-ui/react-tooltip";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the player interface
 interface Player {
@@ -36,50 +46,122 @@ interface Player {
 interface PlayerSelectorProps {
 	setMemberIdList: (memberIdList: string) => void;
 	existingJsonList?: string;
+	onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export default function PlayerSelector({
 	setMemberIdList,
 	existingJsonList = "{}",
+	onLoadingChange,
 }: PlayerSelectorProps) {
-	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
-	// State to store the fetched players
-	const [players, setPlayers] = useState<Player[]>([]);
-	// State to store the selected players
-	const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
+	const [isLoadingExisting, setIsLoadingExisting] = useState(false);
+	const [searchQuery, setSearchQuery] = React.useState("");
+	const [debouncedSearch, setDebouncedSearch] = React.useState("");
+	const [offset, setOffset] = React.useState(0);
+	const [allPlayers, setAllPlayers] = React.useState<Player[]>([]);
+	const [hasMore, setHasMore] = React.useState(true);
 
-	// Fetch players from the API endpoint
-	useEffect(() => {
-		async function loadPlayers() {
-			try {
-				const response = await fetch(playerRoute);
-				const data = await response.json();
-				setPlayers(
-					data.map(
-						(player: {
-							ledaId: string;
-							fullName: string;
-							cannotBeCaptain: boolean;
-						}) => ({
-							ledaId: player.ledaId,
-							fullName: player.fullName,
-							cannotBeCaptain: player.cannotBeCaptain,
-							isCaptain: false,
-						})
-					)
-				);
-			} catch (error) {
-				console.error("Failed to fetch players", error);
+	// Reset search and state when dropdown closes
+	React.useEffect(() => {
+		if (!open) {
+			setSearchQuery("");
+			setOffset(0);
+			setAllPlayers([]);
+			setHasMore(true);
+		}
+	}, [open]);
+
+	// Debounce search input
+	React.useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearch(searchQuery);
+			setOffset(0);
+			setAllPlayers([]);
+			setHasMore(true);
+		}, 300);
+
+		return () => clearTimeout(timer);
+	}, [searchQuery]);
+
+	// Fetch records based on search and offset
+	const { data: players = [], isLoading: isLoadingPlayers, isFetching } = useQuery({
+		queryKey: ["players", debouncedSearch, offset],
+		queryFn: async () => {
+			const params = new URLSearchParams({
+				search: debouncedSearch,
+				limit: "50",
+				offset: offset.toString(),
+			});
+			const response = await fetch(`${playerSelectorRoute}?${params}`);
+			if (!response.ok) {
+				throw new Error("Failed to fetch players");
+			}
+			const data = await response.json();
+			
+			// If we got fewer than 50 results, we've reached the end
+			if (data.length < 50) {
+				setHasMore(false);
+			}
+			
+			return data.map(
+				(player: {
+					ledaId: string;
+					fullName: string;
+					cannotBeCaptain: boolean;
+				}) => ({
+					ledaId: player.ledaId,
+					fullName: player.fullName,
+					cannotBeCaptain: player.cannotBeCaptain,
+					isCaptain: false,
+				})
+			);
+		},
+		staleTime: 0,
+		enabled: open,
+		refetchOnMount: true,
+	});
+
+	// Append new players to the list when they arrive
+	React.useEffect(() => {
+		if (players.length > 0 && !isFetching) {
+			if (offset === 0) {
+				// First batch or new search - replace
+				setAllPlayers(players);
+			} else {
+				// Additional batches - append
+				setAllPlayers(prev => [...prev, ...players]);
 			}
 		}
-		loadPlayers();
+	}, [players, offset, isFetching]);
+
+	// Handle scroll to load more
+	const handleScroll = React.useCallback(
+		(e: React.UIEvent<HTMLDivElement>) => {
+			const target = e.currentTarget;
+			const scrolledToBottom =
+				target.scrollHeight - target.scrollTop <= target.clientHeight + 50;
+
+			if (scrolledToBottom && hasMore && !isFetching) {
+				setOffset(prev => prev + 50);
+			}
+		},
+		[hasMore, isFetching]
+	);
+
+	const handleWheel = React.useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+		e.stopPropagation();
 	}, []);
+
+	const [selectedPlayers, setSelectedPlayers] = useState<
+		{ ledaId: string; fullName: string; isCaptain: boolean; cannotBeCaptain: boolean }[]
+	>([]);
 
 	// Load existing selected players from JSON list
 	useEffect(() => {
 		async function loadExistingPlayers() {
-			if (existingJsonList) {
+			if (existingJsonList && existingJsonList !== "{}") {
+				setIsLoadingExisting(true);
 				try {
 					const parsedList = JSON.parse(existingJsonList);
 					const playerEntries = Object.keys(parsedList).map(
@@ -88,24 +170,42 @@ export default function PlayerSelector({
 							isCaptain: parsedList[key].isCaptain,
 						})
 					);
-					// Fetch cannotBeCaptain for each player
+					// Fetch full player details for each existing player
 					const updatedPlayers: Player[] = await Promise.all(
 						playerEntries.map(async (entry) => {
 							let cannotBeCaptain = false;
+							let fullName = "";
+							
 							try {
-								const response = await fetch(
-									`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(
+								// Fetch player details including fullName
+								const playerResponse = await fetch(
+									`${playerSelectorRoute}?search=${encodeURIComponent(
 										entry.ledaId
-									)}`
+									)}&limit=1`
 								);
-								const data = await response.json();
-								cannotBeCaptain = !!data.cannotBeCaptain;
-							} catch {
+								if (playerResponse.ok) {
+									const playerData = await playerResponse.json();
+									if (playerData.length > 0) {
+										fullName = playerData[0].fullName;
+										cannotBeCaptain = playerData[0].cannotBeCaptain;
+									}
+								}
+								
+								// If we didn't get cannotBeCaptain from the selector, try the other endpoint
+								if (!fullName) {
+									const captainResponse = await fetch(
+										`${playerRoute}/canBeCaptain?ledaId=${encodeURIComponent(
+											entry.ledaId
+										)}`
+									);
+									const captainData = await captainResponse.json();
+									cannotBeCaptain = !!captainData.cannotBeCaptain;
+								}
+							} catch (error) {
+								console.error(`Failed to fetch player ${entry.ledaId}`, error);
 								cannotBeCaptain = false;
 							}
-							const fullName =
-								players.find((p) => p.ledaId === entry.ledaId)
-									?.fullName || "";
+							
 							return {
 								ledaId: entry.ledaId,
 								fullName,
@@ -117,17 +217,28 @@ export default function PlayerSelector({
 					setSelectedPlayers(updatedPlayers);
 				} catch (error) {
 					console.error("Failed to parse existing JSON list", error);
+				} finally {
+					setIsLoadingExisting(false);
 				}
 			}
 		}
 		loadExistingPlayers();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [existingJsonList, players]);
+	}, [existingJsonList]);
+
+	// Report loading state to parent
+	useEffect(() => {
+		if (onLoadingChange) {
+			onLoadingChange(isLoadingPlayers || isLoadingExisting);
+		}
+	}, [isLoadingPlayers, isLoadingExisting, onLoadingChange]);
 
 	// Filter out selected players from the list
-	const availablePlayers = players.filter(
-		(player) => !selectedPlayers.some((p) => p.ledaId === player.ledaId)
+	const availablePlayers = allPlayers.filter(
+		(player: Player) => !selectedPlayers.some((p) => p.ledaId === player.ledaId)
 	);
+
+	const isLoading = isLoadingPlayers || isLoadingExisting;
 
 	// Generate the stringified JSON list
 	const generateJsonList = (players: Player[]) => {
@@ -210,27 +321,42 @@ export default function PlayerSelector({
 							role="combobox"
 							aria-expanded={open}
 							className="w-[200px] justify-between"
+							disabled={isLoading}
 						>
-							{selectedPlayers.length > 0
-								? `${selectedPlayers.length} player(s) selected`
-								: "Select players..."}
+							{isLoading ? (
+								"Loading players..."
+							) : selectedPlayers.length > 0 ? (
+								`${selectedPlayers.length} player(s) selected`
+							) : (
+								"Select players..."
+							)}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
-						<Command>
-							<CommandInput placeholder="Search players..." />
-							<CommandEmpty>No player found.</CommandEmpty>
+					<PopoverContent className="w-[200px] p-0 bg-background">
+						<Command shouldFilter={true}>
+							<CommandInput 
+								placeholder="Search players..." 
+								value={searchQuery}
+								onValueChange={setSearchQuery}
+							/>
+							<CommandEmpty>
+								{isLoadingPlayers || isFetching ? "Loading..." : "No player found."}
+							</CommandEmpty>
 							<CommandGroup>
-								<CommandList>
-									{availablePlayers.map((player) => (
+								<CommandList
+									className="max-h-60 overflow-y-auto"
+									onScroll={handleScroll}
+									onWheel={handleWheel}
+								>
+									{availablePlayers.map((player: Player) => (
 										<CommandItem
 											key={player.ledaId}
-											value={player.ledaId}
+											value={`${player.ledaId} - ${player.fullName}`}
 											onSelect={() =>
 												handlePlayerSelection(player)
 											}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(
@@ -247,6 +373,11 @@ export default function PlayerSelector({
 											{player.ledaId} - {player.fullName}
 										</CommandItem>
 									))}
+									{isFetching && (
+										<div className="py-2 text-center text-sm text-muted-foreground">
+											Loading more...
+										</div>
+									)}
 								</CommandList>
 							</CommandGroup>
 						</Command>
@@ -258,7 +389,7 @@ export default function PlayerSelector({
 				{selectedPlayers.map((player) => (
 					<div
 						key={player.ledaId}
-						className="flex items-center justify-between gap-2 px-2 py-1 bg-gray-200 rounded"
+						className="flex items-center justify-between gap-2 px-2 py-1 bg-secondary rounded"
 					>
 						<div className="flex items-center gap-2">
 							<span>{player.fullName}</span>
@@ -282,13 +413,13 @@ export default function PlayerSelector({
 														"h-4 w-4",
 														player.isCaptain
 															? "text-yellow-500"
-															: "text-gray-400"
+															: "text-muted-foreground"
 													)}
 												/>
 											</Button>
 										</TooltipTrigger>
 									)}
-									<TooltipContent className="bg-white p-2 rounded shadow-lg">
+									<TooltipContent className="bg-background text-foreground p-2 rounded shadow-lg">
 										<p>
 											{player.cannotBeCaptain
 												? "Cannot be Captain"

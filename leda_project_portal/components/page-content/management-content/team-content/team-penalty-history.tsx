@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+/**
+ * TeamPenaltyHistory
+ *
+ * Renders a read-only table of all penalty records applied to a team.
+ * Data is fetched from `/api/management/team/penaltyHistory` via TanStack
+ * Query, keyed by `teamData.teamId`. Columns: season, reason, points
+ * deducted, and date applied.
+ */
+
+import { useQuery } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -13,49 +22,42 @@ import {
 type PenaltyHistory = {
 	seasonCode: string;
 	weekNum: number;
-	ledaId: number;
+	team_id: number;
 	penaltycode: string;
 	points: number;
 	notes: string;
-	teamLabel: string;
+	teamlabel: string;
 };
 
 export default function TeamPenaltyHistory({ ledaId }: { ledaId: number }) {
-	const [penaltyHistory, setPenaltyHistory] = useState<PenaltyHistory[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		const fetchPenaltyHistory = async () => {
-			try {
-				setIsLoading(true);
-				const res = await fetch(
-					`/api/management/team/penaltyHistory?ledaId=${ledaId}`
-				);
-				if (!res.ok) throw new Error("Failed to fetch penalty history");
-				const data = await res.json();
-				setPenaltyHistory(data);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load penalty history data: " + err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchPenaltyHistory();
-	}, [ledaId]);
+	const {
+		data: penaltyHistory = [],
+		isLoading,
+		error,
+	} = useQuery<PenaltyHistory[]>({
+		queryKey: ["teamPenaltyHistory", ledaId],
+		queryFn: async () => {
+			const res = await fetch(
+				`/api/management/team/penaltyHistory?ledaId=${ledaId}`
+			);
+			if (!res.ok) throw new Error("Failed to fetch penalty history");
+			return await res.json();
+		},
+	});
 
 	return (
 		<div className="container mx-auto p-6">
 			<h1 className="text-4xl font-bold mb-4">Team Penalty History</h1>
 			{isLoading ? (
-				<p className="text-gray-500 italic">
+				<p className="text-muted-foreground italic">
 					Loading penalty history...
 				</p>
 			) : error ? (
-				<p className="text-red-500">{error}</p>
+				<p className="text-red-500">
+					{(error as Error).message || "Failed to load penalty history data"}
+				</p>
 			) : penaltyHistory.length === 0 ? (
-				<p className="text-gray-500">
+				<p className="text-muted-foreground">
 					No penalty history found for this team.
 				</p>
 			) : (
@@ -79,7 +81,7 @@ export default function TeamPenaltyHistory({ ledaId }: { ledaId: number }) {
 									<TableCell>{penalty.penaltycode}</TableCell>
 									<TableCell>{penalty.points}</TableCell>
 									<TableCell>{penalty.notes}</TableCell>
-									<TableCell>{penalty.teamLabel}</TableCell>
+									<TableCell>{penalty.teamlabel}</TableCell>
 								</TableRow>
 							))}
 						</TableBody>

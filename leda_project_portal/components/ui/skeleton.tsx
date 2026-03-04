@@ -1,3 +1,8 @@
+/**
+ * Skeleton and Spinner loading-state components.
+ * Skeleton renders an animated placeholder block; Spinner centers a spinning
+ * SVG indicator used during async data fetching.
+ */
 import { cn } from "@/lib/utils"
 
 function Skeleton({
@@ -19,7 +24,7 @@ function Spinner ({
   return (
     <div className={cn("flex items-center justify-center", className)} {...props}>
       <svg
-        className="h-8 w-8 animate-spin text-gray-900 dark:text-gray-50"
+        className="h-8 w-8 animate-spin text-foreground dark:text-gray-50"
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"

@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Places data table (Management section).
+ * Includes sortable columns for LEDA ID, place name, address, phone number,
+ * and place type. Sorting is triggered via the column header buttons.
+ */
 //
 // Use the client
 //
@@ -6,14 +11,14 @@
 // Imports
 //
 import { ColumnDef } from "@tanstack/react-table";
-import { Place } from "@/lib/definitions";
+import { PlaceDataTable } from "@/lib/definitions";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 //
 //Define the columns
 //
-export const columns: ColumnDef<Place>[] = [
+export const columns: ColumnDef<PlaceDataTable>[] = [
 	{
 		id: "select",
 		header: ({ table }) => (

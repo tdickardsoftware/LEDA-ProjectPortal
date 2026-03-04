@@ -1,3 +1,10 @@
+/**
+ * TeamAddForm Component (Activities)
+ *
+ * Form for adding a team to a specific division and subdivision within the
+ * current season's schedule. Requires a team LEDA ID, home place, and team name.
+ * Prevents selecting teams that are already in the division.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -6,7 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import React from "react";
+import { useEffect } from "react";
 import TeamSelector from "@/components/ui/team-selector";
 import PlaceSelector from "@/components/ui/place-selector";
 
@@ -19,9 +26,17 @@ const divisionFormSchema = z.object({
 
 // Define styles for the form container
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the DivisionAddForm component
+/**
+ * TeamAddForm renders the team selection form for a division/subdivision.
+ *
+ * @param selectedTeams - Team LEDA IDs already in the division (excluded from selector)
+ * @param handleSelectTeam - Callback invoked with the chosen team's details
+ * @param setOpen - Function to close the containing dialog
+ * @param division - Division name that the team is being added to
+ * @param subdivision - Subdivision name that the team is being added to
+ */
 export default function TeamAddForm({
 	selectedTeams,
 	handleSelectTeam,
@@ -50,6 +65,15 @@ export default function TeamAddForm({
 			teamName: "",
 		},
 	});
+
+	// Reset form when component mounts to ensure clean state when dialog reopens
+	useEffect(() => {
+		form.reset({
+			teamLedaId: "",
+			placeId: "",
+			teamName: "",
+		});
+	}, [form]);
 
 	// Define the onSubmit function to handle form submission
 	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
@@ -86,7 +110,7 @@ export default function TeamAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">Add Team</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Add Team</Button>
 				</div>
 			</form>
 		</Form>

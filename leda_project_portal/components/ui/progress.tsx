@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Progress primitive wrapper — displays a horizontal progress bar. */
 "use client"
 
 import * as React from "react"

@@ -1,3 +1,4 @@
+/** Shadcn Calendar component built on react-day-picker with navigation chevron icons. */
 "use client";
 
 import * as React from "react";
@@ -23,7 +24,12 @@ function Calendar({
 				months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
 				month: "space-y-4",
 				caption: "flex justify-center pt-1 relative items-center",
-				caption_label: "text-sm font-medium",
+				caption_label: props.captionLayout?.startsWith("dropdown") ? "hidden" : "text-sm font-medium",
+				caption_dropdowns: "flex gap-2 items-center",
+				dropdown: "bg-background border border-input rounded-md text-sm px-2 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring",
+				dropdown_month: "flex items-center gap-1",
+				dropdown_year: "flex items-center gap-1",
+				dropdown_icon: "hidden",
 				nav: "space-x-1 flex items-center",
 				nav_button: cn(
 					buttonVariants({ variant: "outline" }),

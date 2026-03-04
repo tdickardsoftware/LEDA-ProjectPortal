@@ -1,3 +1,9 @@
+/**
+ * PlaceTypeAddForm Component
+ *
+ * Form for creating a new place type code (e.g., BAR, VENUE) in the maintenance
+ * section. Returns a 422 conflict error when the code already exists.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -18,6 +24,8 @@ import React from "react";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "../../ui/textarea";
 import { placeTypeRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for form validation using zod
 const placeTypeFormSchema = z.object({
@@ -29,9 +37,14 @@ const placeTypeFormSchema = z.object({
 
 // Define styles for the form container
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the PlaceTypeAddForm component
+/**
+ * PlaceTypeAddForm creates a new place type code record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function PlaceTypeAddForm({
 	onClose,
 	onRefresh,
@@ -49,17 +62,15 @@ export default function PlaceTypeAddForm({
 
 	const [placeTypeExists, setPlaceTypeExists] = React.useState(false);
 
-	// Define the onSubmit function to handle form submission
-	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
-		try {
-			const response = await fetch(placeTypeRoute, {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof placeTypeFormSchema>) => {
+			const response = await fetchWithSession(placeTypeRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				if (response.status === 422) {
 					setPlaceTypeExists(true);
@@ -70,24 +81,35 @@ export default function PlaceTypeAddForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
-
-			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPlaceTypeExists(false);
+		form.reset({
+			placeTypeCode: "",
+		});
+	}, [form]);
+
+	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
+		setPlaceTypeExists(false);
+		mutation.mutate(values);
 	}
 
 	// Render the form
@@ -128,7 +150,7 @@ export default function PlaceTypeAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">Add</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Add</Button>
 				</div>
 			</form>
 		</Form>

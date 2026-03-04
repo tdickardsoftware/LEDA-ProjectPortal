@@ -5,12 +5,14 @@ import { Team } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import getNextLedaId from "@/lib/getNextLedaId";
 import { DatabaseError } from "pg";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
 		try {

@@ -1,3 +1,4 @@
+/** Shadcn Textarea component — styled HTML textarea element forwarded with className merging. */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"

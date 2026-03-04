@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * PlayerTDPHistorySidenav
+ *
+ * Renders a collapsible side-navigation tree for browsing a player's TDP
+ * records. The hierarchy is: Calendar Year → Season → Team → Game Week.
+ *
+ * `calculateTeamTotalPoints` sums points by reading the last (highest-week)
+ * entry for the team within a season to avoid double-counting.
+ *
+ * Emits `onTeamSelect` and `onGameSelect` callbacks upward so the parent
+ * (`PlayerTDPHistoryContent`) can trigger the appropriate data fetches.
+ */
+
 import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -166,7 +179,7 @@ const PlayerTDPHistorySidenav = ({
 	if (!tdpData || tdpData.length === 0) {
 		return (
 			<div className="w-64 border-r h-full flex items-center justify-center p-4">
-				<p className="text-gray-500 text-center">
+				<p className="text-muted-foreground text-center">
 					No TDP history data available.
 				</p>
 			</div>
@@ -185,7 +198,7 @@ const PlayerTDPHistorySidenav = ({
 								key={year}
 								open={openYears[year]}
 								onOpenChange={() => toggleYear(year)}
-								className="border-b border-gray-100 pb-2"
+								className="border-b border-border pb-2"
 							>
 								<CollapsibleTrigger asChild>
 									<Button
@@ -235,9 +248,9 @@ const PlayerTDPHistorySidenav = ({
 															selectedSeason ===
 																tdp.seasonCode &&
 															!selectedTeam
-																? "bg-gray-200"
+																? "bg-secondary"
 																: ""
-														} hover:bg-gray-100`}
+														} hover:bg-muted`}
 														onClick={() =>
 															handleSeasonSelect(
 																tdp.seasonCode
@@ -322,9 +335,9 @@ const PlayerTDPHistorySidenav = ({
 																				selectedTeam ===
 																					teamName &&
 																				!selectedGame
-																					? "bg-gray-200 font-medium"
+																					? "bg-secondary font-medium"
 																					: ""
-																			} hover:bg-gray-100 rounded-md`}
+																			} hover:bg-muted rounded-md`}
 																			onClick={() =>
 																				handleTeamSelect(
 																					tdp.seasonCode,
@@ -337,7 +350,7 @@ const PlayerTDPHistorySidenav = ({
 																					displayName
 																				}
 																			</span>
-																			<span className="text-right text-xs ml-2 px-1.5 py-0.5 bg-gray-100 rounded font-medium text-gray-700">
+																			<span className="text-right text-xs ml-2 px-1.5 py-0.5 bg-muted rounded font-medium text-foreground">
 																				{
 																					teamTotalPoints
 																				}{" "}
@@ -346,7 +359,7 @@ const PlayerTDPHistorySidenav = ({
 																		</Button>
 																	</div>
 
-																	<CollapsibleContent className="ml-6 mt-0.5 border-l-2 border-gray-100 pl-2 space-y-0.5">
+																	<CollapsibleContent className="ml-6 mt-0.5 border-l-2 border-border pl-2 space-y-0.5">
 																		{teamData &&
 																			teamData.weekData &&
 																			Object.entries(
@@ -383,9 +396,9 @@ const PlayerTDPHistorySidenav = ({
 																									teamName &&
 																								selectedGame ===
 																									weekNum
-																									? "bg-gray-300 text-gray-800 font-medium"
-																									: "text-gray-600"
-																							} hover:bg-gray-200 rounded`}
+																									? "bg-muted text-foreground font-medium"
+																									: "text-muted-foreground"
+																							} hover:bg-secondary rounded`}
 																							onClick={() =>
 																								handleGameSelect(
 																									tdp.seasonCode,
@@ -406,7 +419,7 @@ const PlayerTDPHistorySidenav = ({
 																										: gameData.changeBy <
 																										  0
 																										? "text-red-600"
-																										: "text-gray-500"
+																										: "text-muted-foreground"
 																								}`}
 																							>
 																								{gameData.changeBy >

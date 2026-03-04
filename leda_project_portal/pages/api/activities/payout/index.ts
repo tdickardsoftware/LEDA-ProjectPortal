@@ -1,17 +1,28 @@
+/**
+ * API Route: /api/activities/payout
+ *
+ * GET  — Returns payout data for a given season code.
+ * POST — Inserts or updates (upserts) the payout data for a season.
+ * Requires an authenticated session.
+ */
 // Import necessary types and database query function
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { Payout } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	// Handle GET requests
 	if (req.method === "GET") {
 		if (req.query.seasonCode) {
+			// Fetch payout JSON blob for the specified season
 			const result = await query<Payout>(
 				`SELECT "payoutsData" FROM public.leda_payouts WHERE "seasonCode" = $1`,
 				[req.query.seasonCode as string]
@@ -19,6 +30,7 @@ export default async function handler(
 			return res.status(200).json(result.rows);
 		}
 	} else if (req.method === "POST") {
+		// Upsert payout data for the season
 		const body = req.body as Payout;
 		const query = `INSERT INTO public.leda_payouts ("seasonCode", "payoutsData") VALUES ($1, $2) ON CONFLICT ("seasonCode") DO UPDATE SET "payoutsData" = $2;`;
 		const values = [body.seasonCode, body.payoutsData];

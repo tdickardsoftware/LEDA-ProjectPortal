@@ -1,3 +1,7 @@
+/**
+ * Activities index page — overview of all activity-related sections
+ * available in the portal (Payouts, Rosters, Scheduling, Trails, Weekly Score).
+ */
 import ActivitiesPageContent from "@/components/page-content/landing-content/activities-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

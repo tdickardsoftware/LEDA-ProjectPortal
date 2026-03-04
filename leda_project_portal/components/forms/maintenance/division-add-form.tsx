@@ -1,3 +1,11 @@
+/**
+ * DivisionAddForm Component (Maintenance)
+ *
+ * Form for creating a new division in the maintenance section.
+ * Submits a POST request to the division API and shows a duplicate-name
+ * error when the server returns a 422 status. Resets the form and refreshes
+ * the parent list on successful creation.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -10,6 +18,8 @@ import { toast } from "sonner";
 import React from "react";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { divisionRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for form validation using zod
 const divisionFormSchema = z.object({
@@ -18,9 +28,14 @@ const divisionFormSchema = z.object({
 
 // Define styles for the form container
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
-// Define the DivisionAddForm component
+/**
+ * DivisionAddForm creates a new division record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function DivisionAddForm({
 	onClose,
 	onRefresh,
@@ -38,45 +53,60 @@ export default function DivisionAddForm({
 
 	const [divisionNameExists, setDivisionNameExists] = React.useState(false);
 
-	// Define the onSubmit function to handle form submission
-	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
-		try {
-			const response = await fetch(divisionRoute, {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof divisionFormSchema>) => {
+			const response = await fetchWithSession(divisionRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				if (response.status === 422) {
 					setDivisionNameExists(true);
 				}
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
+				let errorMessage = `HTTP error! status: ${response.status}`;
+				try {
+					const errorData = await response.json();
+					// prefer server-provided message if present
+					errorMessage =
+						(errorData?.message as string | undefined) ||
+						(errorData?.error as string | undefined) ||
+						errorMessage;
+				} catch {
+					// ignore JSON parse errors and use default message
+				}
+				throw new Error(errorMessage);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setDivisionNameExists(false);
+		form.reset({ divisionName: "" });
+	}, [form]);
+
+	async function onSubmit(values: z.infer<typeof divisionFormSchema>) {
+		setDivisionNameExists(false);
+		mutation.mutate(values);
 	}
 
 	// Render the form
@@ -101,7 +131,7 @@ export default function DivisionAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">Add</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Add</Button>
 				</div>
 			</form>
 		</Form>

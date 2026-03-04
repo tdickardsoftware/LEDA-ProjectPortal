@@ -1,3 +1,11 @@
+/**
+ * PlayerEditInformationForm Component
+ *
+ * Multi-step form for editing an existing LEDA member record. Fetches full
+ * player data by LEDA ID on mount and pre-populates all fields. The
+ * `hasChanges` flag reflects whether any field has been dirtied. Reloads
+ * the page on successful save to reflect the updated player data.
+ */
 "use client";
 
 import { z } from "zod";
@@ -24,17 +32,21 @@ import { isValidPhoneNumber } from "libphonenumber-js";
 import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
+import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { PlayerMemberInfo } from "@/lib/definitions";
 import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for all player fields — mirrors PlayerAddInformationForm
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
-	middleInitial: z.optional(z.string()),
+	middleInitial: z.string().nullable().optional(),
 	lastName: z.string().min(1, { message: "Last Name is Required" }),
 	addressOne: z.string().min(1, { message: "Address is Required" }),
-	addressTwo: z.optional(z.string()),
+	addressTwo: z.string().nullable().optional(),
 	city: z.string().min(1, { message: "City is Required" }),
 	state: z.string().min(1, { message: "State is Required" }),
 	zip: z.string().min(1, { message: "Zip Code is Required" }),
@@ -46,17 +58,22 @@ const playerInfoSchema = z.object({
 		}),
 	otherNumber: z
 		.string()
+		.nullable()
 		.optional()
 		.refine(
-			(value) => value === "" || isValidPhoneNumber(value ?? "", "US"),
+			(value) => !value || value === "" || isValidPhoneNumber(value, "US"),
 			{ message: "Other Number is Invalid" }
 		),
 	email: z
 		.string()
 		.min(1, { message: "Email is Required" })
-		.refine(validator.isEmail, { message: "Email is Invalid" }),
+		.refine(
+			(value) => value.toUpperCase() === "UNKNOWN" || validator.isEmail(value),
+			{ message: "Email is Invalid" }
+		)
+		.transform((value) => value.toUpperCase() === "UNKNOWN" ? "UNKNOWN" : value),
 	gender: z.string().min(1, { message: "Gender is Required" }),
-	dateOfBirth: z.string().optional(),
+	dateOfBirth: z.string().nullable().optional(),
 	// Membership Information
 	ledaId: z
 		.number()
@@ -64,24 +81,33 @@ const playerInfoSchema = z.object({
 		.optional(),
 	establishedDate: z.string(),
 	badStanding: z.boolean(),
-	badStandingReason: z.optional(z.string()),
+	badStandingReason: z.string().nullable().optional(),
 	takeOffMailing: z.boolean(),
 	mailStandings: z.boolean(),
 	formOnFile: z.boolean(),
 	needsMemberCard: z.boolean(),
-	inactiveDate: z.optional(z.string()),
-	lastTrailsDate: z.optional(z.string()),
+	inactiveDate: z.string().nullable().optional(),
+	lastTrailsDate: z.string().nullable().optional(),
 	memberType: z.string().min(1, { message: "Member Type is Required" }),
 	cannotBeCaptain: z.boolean(),
 	lifetimeMember: z.boolean(),
-	lifetimeMemberReason: z.optional(z.string()),
+	lifetimeMemberReason: z.string().nullable().optional(),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlayerEditInformationForm fetches a player record and provides a multi-step edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - The player record used to look up full data by ledaId
+ * @param handleEdit - Optional alternative close handler
+ */
 export default function PlayerEditInformationForm({
 	onClose,
 	onRefresh,
@@ -90,15 +116,18 @@ export default function PlayerEditInformationForm({
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	rowData: PlayerMemberInfo;
 	handleEdit?: () => void;
 }) {
+	// Conditional flag to show/hide the bad standing reason textarea
 	const [badStandingStatus, setBadStandingStatus] = useState(false);
+	// Conditional flag to show/hide the lifetime member reason textarea
 	const [lifetimeMemberStatus, setLifetimeMemberStatus] = useState(false);
+	// Local state to store the full player record fetched from the API
 	const [formData, setFormData] = useState<PlayerMemberInfo>(
 		{} as PlayerMemberInfo
 	);
+	// Track which wizard step is currently active
 	const [currentStep, setCurrentStep] = useState(0);
 
 	// Define the steps
@@ -171,11 +200,11 @@ export default function PlayerEditInformationForm({
 			gender: formData.gender || "",
 			dateOfBirth: formData.dateOfBirth
 				? new Date(formData.dateOfBirth).toISOString().split("T")[0]
-				: undefined,
+				: "",
 			ledaId: formData.ledaId ?? undefined,
 			establishedDate: formData.establishedDate
 				? new Date(formData.establishedDate).toISOString().split("T")[0]
-				: undefined,
+				: "",
 			badStanding: formData.badStanding || false,
 			badStandingReason: formData.badStandingReason || "",
 			takeOffMailing: formData.takeOffMailing || false,
@@ -184,14 +213,54 @@ export default function PlayerEditInformationForm({
 			needsMemberCard: formData.needsMemberCard || false,
 			inactiveDate: formData.inactiveDate
 				? new Date(formData.inactiveDate).toISOString().split("T")[0]
-				: undefined,
+				: "",
 			lastTrailsDate: formData.lastTrailsDate
 				? new Date(formData.lastTrailsDate).toISOString().split("T")[0]
-				: undefined,
+				: "",
 			memberType: formData.memberType || "",
 			cannotBeCaptain: formData.cannotBeCaptain || false,
 			lifetimeMember: formData.lifetimeMember || false,
 			lifetimeMemberReason: formData.lifetimeMemberReason || "",
+		},
+	});
+
+	// True when any form field has been modified from its original value
+	const hasChanges = form.formState.isDirty;
+
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
+			const response = await fetchWithSession(playerRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: () => {
+			toast.success("Successfully updated the form!");
+			form.reset();
+			setBadStandingStatus(false);
+			setLifetimeMemberStatus(false);
+			window.location.reload();
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
+			console.error("Form update error", error);
+			toast.error(
+				`Failed to update the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
 		},
 	});
 
@@ -228,7 +297,7 @@ export default function PlayerEditInformationForm({
 		}
 
 		const fetchData = async () => {
-			const response = await fetch(
+			const response = await fetchWithSession(
 				playerRoute + `?ledaId=${rowData.ledaId}`,
 				{
 					method: "GET",
@@ -267,45 +336,12 @@ export default function PlayerEditInformationForm({
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No player data available.</div>;
+	if (!rowData || !formData.state) {
+		return <div>Loading player data...</div>;
 	}
 
-	async function onSubmit(values: z.infer<typeof playerInfoSchema>) {
-		try {
-			const response = await fetch(playerRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(values),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			toast.success("Successfully updated the form!");
-
-			// Reset form and state
-			form.reset();
-			setBadStandingStatus(false);
-			setLifetimeMemberStatus(false);
-			window.location.reload();
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the player API route
-		} catch (error) {
-			console.error("Form update error", error);
-			toast.error(
-				`Failed to update the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+	function onSubmit(values: z.infer<typeof playerInfoSchema>) {
+		mutation.mutate(values);
 	}
 
 	return (
@@ -322,7 +358,7 @@ export default function PlayerEditInformationForm({
 					onChange={setCurrentStep}
 				>
 					<div className="mb-6">
-						<div className="flex border-b border-gray-200">
+						<div className="flex border-b border-border">
 							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
 								{steps.map((step, index) => (
 									<Tab
@@ -332,7 +368,7 @@ export default function PlayerEditInformationForm({
 											${
 												selected
 													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+													: "text-muted-foreground hover:text-foreground hover:border-border"
 											} ${
 												index < currentStep
 													? "text-green-500"
@@ -384,11 +420,11 @@ export default function PlayerEditInformationForm({
 									control={form.control}
 									name="gender"
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="dateOfBirth"
 									label="Date of Birth"
-									type="date"
+									enableMonthYearPicker
 								/>
 							</div>
 						</Tab.Panel>
@@ -458,6 +494,7 @@ export default function PlayerEditInformationForm({
 													disabled
 													className={inputWidth}
 													type="number"
+													value={field.value ?? ""}
 													onChange={(e) => {
 														field.onChange(
 															e.target.value ===
@@ -480,11 +517,11 @@ export default function PlayerEditInformationForm({
 									name="memberType"
 									label="Member Type"
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="establishedDate"
 									label="Established Date *"
-									type="date"
+									enableMonthYearPicker
 								/>
 								{/* Bad Standing Checkbox */}
 								<FormField
@@ -525,6 +562,7 @@ export default function PlayerEditInformationForm({
 												<Input
 													placeholder="Reasoning..."
 													{...field}
+													value={field.value ?? ""}
 													disabled={
 														!badStandingStatus
 													}
@@ -582,6 +620,7 @@ export default function PlayerEditInformationForm({
 												<Input
 													placeholder="Reasoning..."
 													{...field}
+													value={field.value ?? ""}
 													disabled={
 														!lifetimeMemberStatus
 													}
@@ -633,17 +672,17 @@ export default function PlayerEditInformationForm({
 									label="Cannot be Captain"
 									className={checkboxWidth}
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="inactiveDate"
 									label="Inactive Date"
-									type="date"
+									enableMonthYearPicker
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="lastTrailsDate"
 									label="Last Trails Date"
-									type="date"
+									enableMonthYearPicker
 								/>
 							</div>
 						</Tab.Panel>
@@ -651,16 +690,28 @@ export default function PlayerEditInformationForm({
 				</Tab.Group>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === 0
 							? handleEdit
 								? "Edit"
 								: "Back"
 							: "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
-						{currentStep === steps.length - 1 ? "Update" : "Next"}
-					</Button>
+					<div className="flex gap-2">
+						{hasChanges && currentStep < steps.length - 1 && (
+							<Button
+								variant="outline"
+								type="button"
+								onClick={() => setCurrentStep(steps.length - 1)}
+								className="hover:bg-muted border-border text-foreground"
+							>
+								Skip to Update
+							</Button>
+						)}
+						<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
+							{currentStep === steps.length - 1 ? "Update" : "Next"}
+						</Button>
+					</div>
 				</div>
 			</form>
 		</Form>

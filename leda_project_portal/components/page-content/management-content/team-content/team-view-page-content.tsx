@@ -1,5 +1,22 @@
 "use client";
 
+/**
+ * TeamPageContent
+ *
+ * Detail view for a single team record. Displays team metadata and its
+ * associated place in read-only cards.
+ *
+ * Toolbar actions (via `FolderTabMed`):
+ *   - Edit Team — opens `TeamEditForm` in a dialog.
+ *   - Payment History / Add Team Payment — opens payment dialogs.
+ *   - League History — opens `TeamLeagueHistory`.
+ *   - Penalty History — opens `TeamPenaltyHistory`.
+ *
+ * `renderPaymentStatusIcon` fetches each roster member's payment status
+ * and renders a colour-coded icon (PAID / PART-PAID / UNPAID) with a
+ * tooltip inside a popover.
+ */
+
 import { Team } from "@/lib/definitions";
 import {
 	Card,
@@ -9,7 +26,7 @@ import {
 } from "@/components//ui/card";
 import TeamEditForm from "@/components/forms/management/team-edit-form";
 import Link from "next/link";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import { FolderTabMed } from "@/components/ui/folder-tab";
@@ -46,6 +63,7 @@ import {
 import TeamPaymentHistoryContent from "./team-payment-history-content";
 import TeamPenaltyHistory from "./team-penalty-history";
 import TeamLeagueHistory from "./team-league-history";
+import { useQuery } from "@tanstack/react-query";
 
 export default function TeamPageContent({
 	teamData,
@@ -61,13 +79,8 @@ export default function TeamPageContent({
 	}[];
 }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	// Payment status dialog state
 	const [showPaymentPopover, setShowPaymentPopover] = useState(false);
 	const [paymentSeasonCode, setPaymentSeasonCode] = useState<string>("");
-	const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
-	const [paymentStatusData, setPaymentStatusData] = useState<
-		{ ledaId: string; status: "PAID" | "PART" | "UNPAID" }[]
-	>([]);
 	const [filterCurrentSeason, setFilterCurrentSeason] = useState(true);
 	const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] =
 		useState(false);
@@ -75,6 +88,61 @@ export default function TeamPageContent({
 		useState(false);
 	const [isTeamLeagueHistoryDialogOpen, setIsTeamLeagueHistoryDialogOpen] =
 		useState(false);
+
+	// --- TanStack Query: Fetch payment status for team members for the selected season ---
+	const {
+		data: paymentStatusData = [],
+		isFetching: paymentStatusLoading,
+		error: paymentStatusError,
+		refetch: refetchPaymentStatus,
+	} = useQuery<{
+		ledaId: string;
+		status: "PAID" | "PART" | "UNPAID" | null;
+	}[]>({
+		queryKey: [
+			"teamMemberPaymentStatus",
+			paymentSeasonCode,
+			memberDetails.map((m) => m.ledaId).join(","),
+		],
+		enabled: !!paymentSeasonCode && memberDetails.length > 0 && showPaymentPopover,
+		queryFn: async () => {
+			// Use sequential fetching instead of Promise.all to prevent overwhelming the server
+			const results = [];
+			for (const member of memberDetails) {
+				try {
+					const res = await fetch(
+						`${playerPaymentHistoryRoute}/viewData?seasonCode=${paymentSeasonCode}&ledaId=${member.ledaId}`
+					);
+					
+					if (!res.ok) {
+						console.error(`Error fetching payment status for ledaId ${member.ledaId}: ${res.status}`);
+						// Add a record with null status rather than failing the whole query
+						results.push({
+							ledaId: member.ledaId,
+							status: null
+						});
+						continue;
+					}
+					
+					const data = await res.json();
+					results.push({
+						ledaId: member.ledaId,
+						status: data?.status || null,
+					});
+				} catch (err) {
+					console.error(`Error processing payment status for ledaId ${member.ledaId}:`, err);
+					// Still add a record with null status
+					results.push({
+						ledaId: member.ledaId,
+						status: null
+					});
+				}
+			}
+			return results;
+		},
+		retry: 1, // Only retry once to avoid hammering the server
+		retryDelay: 1000, // Wait 1 second between retries
+	});
 
 	const handleEdit = () => {
 		setIsEditDialogOpen(!isEditDialogOpen);
@@ -96,95 +164,56 @@ export default function TeamPageContent({
 		setIsTeamLeagueHistoryDialogOpen(!isTeamLeagueHistoryDialogOpen);
 	};
 
-	// Fetch payment status for team members for the selected season
-	const fetchPaymentStatus = useCallback(
-		async (seasonCode: string) => {
-			if (!seasonCode) return;
-			setPaymentStatusLoading(true);
-			try {
-				// Fetch payment status for each member using playerPaymentHistoryRoute
-				const results = await Promise.all(
-					memberDetails.map(async (member) => {
-						const res = await fetch(
-							`${playerPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}&ledaId=${member.ledaId}`
-						);
-						const data = await res.json();
-						// data may be null/undefined if not found
-						return {
-							ledaId: member.ledaId,
-							status: data?.status || null,
-						};
-					})
-				);
-				setPaymentStatusData(results);
-			} catch (e) {
-				console.error("Failed to fetch payment status", e);
-				setPaymentStatusData([]);
-			} finally {
-				setPaymentStatusLoading(false);
-			}
-		},
-			[memberDetails]
-	);
-
 	const handleShowPaymentStatus = async () => {
 		if (!paymentSeasonCode) return;
-		await fetchPaymentStatus(paymentSeasonCode);
+		await refetchPaymentStatus();
 	};
 
-	// Helper to get payment status for a member
-	const getPaymentStatus = useCallback(
-		(ledaId: string) => {
-			const paymentRecord = paymentStatusData.find(
-				(p) => String(p.ledaId) === String(ledaId)
-			);
-			return paymentRecord?.status || null;
-		},
-		[paymentStatusData]
-	);
+	const getPaymentStatus = (ledaId: string) => {
+		const paymentRecord = paymentStatusData.find(
+			(p) => String(p.ledaId) === String(ledaId)
+		);
+		return paymentRecord?.status || null;
+	};
 
-	// Helper to render payment status icon with tooltip
-	const renderPaymentStatusIcon = useCallback(
-		(ledaId: string) => {
-			const status = getPaymentStatus(ledaId);
-			if (!status) return null;
-			let icon = null;
-			let tooltipText = "";
-			switch (status) {
-				case "PAID":
-					icon = (
-						<CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />
-					);
-					tooltipText = "Paid";
-					break;
-				case "PART":
-					icon = (
-						<AlertTriangle className="h-5 w-5 text-amber-500 ml-2" />
-					);
-					tooltipText = "Partial";
-					break;
-				case "UNPAID":
-					icon = <XCircle className="h-5 w-5 text-red-500 ml-2" />;
-					tooltipText = "Unpaid";
-					break;
-				default:
-					return null;
-			}
-			return (
-				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<span>{icon}</span>
-						</TooltipTrigger>
-						<TooltipContent className="bg-white rounded-lg">
-							{tooltipText}
-						</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
-			);
-		},
-		[getPaymentStatus]
-	);
+	const renderPaymentStatusIcon = (ledaId: string) => {
+		const status = getPaymentStatus(ledaId);
+		if (!status) return null;
+		let icon = null;
+		let tooltipText = "";
+		switch (status) {
+			case "PAID":
+				icon = (
+					<CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />
+				);
+				tooltipText = "Paid";
+				break;
+			case "PART":
+				icon = (
+					<AlertTriangle className="h-5 w-5 text-amber-500 ml-2" />
+				);
+				tooltipText = "Partial";
+				break;
+			case "UNPAID":
+				icon = <XCircle className="h-5 w-5 text-red-500 ml-2" />;
+				tooltipText = "Unpaid";
+				break;
+			default:
+				return null;
+		}
+		return (
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<span>{icon}</span>
+					</TooltipTrigger>
+					<TooltipContent className="bg-background text-foreground rounded-lg">
+						{tooltipText}
+					</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		);
+	};
 
 	return (
 		<div className="container mx-auto p-6">
@@ -200,9 +229,9 @@ export default function TeamPageContent({
 				<div className="flex justify-center pb-4">
 					<FolderTabMed title="Team Actions">
 						<div className="flex gap-2">
-							<Button
+							<Button variant="outline"
 								onClick={handleEdit}
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+								className="hover:bg-muted border-border text-foreground"
 							>
 								Edit Team
 							</Button>
@@ -212,20 +241,20 @@ export default function TeamPageContent({
 								route={teamPaymentHistoryRoute}
 								type="team"
 							/>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handlePaymentHistory}
 							>
 								Payment History
 							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handlePenaltyHistory}
 							>
 								Penalty History
 							</Button>
-							<Button
-								className="hover:bg-gray-100 border-gray-400 text-gray-700"
+							<Button variant="outline"
+								className="hover:bg-muted border-border text-foreground"
 								onClick={handleLeagueHistory}
 							>
 								League History
@@ -236,8 +265,8 @@ export default function TeamPageContent({
 								onOpenChange={setShowPaymentPopover}
 							>
 								<PopoverTrigger asChild>
-									<Button
-										className="hover:bg-gray-100 border-gray-400 text-gray-700"
+									<Button variant="outline"
+										className="hover:bg-muted border-border text-foreground"
 										onClick={() =>
 											setShowPaymentPopover(true)
 										}
@@ -245,7 +274,7 @@ export default function TeamPageContent({
 										Show Payment Status
 									</Button>
 								</PopoverTrigger>
-								<PopoverContent className="w-[350px] bg-white shadow-md rounded-lg border border-gray-200 p-4">
+								<PopoverContent className="w-[350px] bg-background shadow-md rounded-lg border border-border p-4">
 									<div className="flex flex-col gap-4">
 										<RosterSeasonCodeSelector
 											disabled={filterCurrentSeason}
@@ -264,10 +293,15 @@ export default function TeamPageContent({
 													)
 												}
 											/>
-											<span className="text-gray-700 text-sm">
+											<span className="text-foreground text-sm">
 												Current Season?
 											</span>
 										</div>
+										{paymentStatusError && (
+											<div className="text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
+												Error loading payment statuses. Please try again.
+											</div>
+										)}
 										<Button
 											onClick={handleShowPaymentStatus}
 											disabled={
@@ -287,7 +321,7 @@ export default function TeamPageContent({
 					</FolderTabMed>
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-					<Card className="shadow-md border border-gray-300 hover:bg-gray-50 transition-colors">
+					<Card className="shadow-md border border-border hover:bg-muted transition-colors">
 						<CardHeader>
 							<CardTitle>Team Information</CardTitle>
 						</CardHeader>
@@ -296,7 +330,9 @@ export default function TeamPageContent({
 								Established Date:{" "}
 								{new Date(
 									teamData.establishedDate
-								).toLocaleDateString("en-US")}
+								).toLocaleDateString("en-US", {
+									timeZone: "UTC",
+								})}
 							</p>
 							<p className="text-lg">
 								Last Team Fee Payment:{" "}
@@ -307,7 +343,7 @@ export default function TeamPageContent({
 							)}
 						</CardContent>
 					</Card>
-					<Card className="shadow-md border border-gray-300 hover:bg-gray-50 transition-colors">
+					<Card className="shadow-md border border-border hover:bg-muted transition-colors">
 						<CardHeader>
 							<CardTitle>Team Member Information</CardTitle>
 						</CardHeader>
@@ -326,7 +362,7 @@ export default function TeamPageContent({
 												Captain
 											</TableHead>
 											<TableHead className="px-4 py-2 text-center">
-												Cannot Be Captain
+												Can&apos;t Be Captain
 											</TableHead>
 											<TableHead className="px-4 py-2 text-center">
 												Bad Standing
@@ -350,7 +386,7 @@ export default function TeamPageContent({
 													{member.isCaptain ? (
 														<Star className="h-4 w-4 text-yellow-500 inline" />
 													) : (
-														<span className="text-gray-400">
+														<span className="text-muted-foreground">
 															—
 														</span>
 													)}
@@ -392,8 +428,8 @@ export default function TeamPageContent({
 					</Card>
 				</div>
 				<div className="mt-6">
-					<Button
-						className="hover:bg-gray-100 border-gray-300 text-gray-700"
+					<Button variant="outline"
+						className="hover:bg-muted border-border text-foreground"
 						asChild
 					>
 						<Link href="/Portal/Management/Teams" prefetch={true}>
@@ -403,7 +439,7 @@ export default function TeamPageContent({
 				</div>
 			</div>
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent className="w-fit bg-white">
+				<DialogContent className="w-fit bg-background">
 					<DialogHeader>
 						<DialogTitle>
 							Edit Team: {teamData.teamName}
@@ -422,7 +458,7 @@ export default function TeamPageContent({
 				open={isPaymentHistoryDialogOpen}
 				onOpenChange={setIsPaymentHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							Payment History for {teamData.teamName}
@@ -436,7 +472,7 @@ export default function TeamPageContent({
 				open={isTeamPenaltyHistoryDialogOpen}
 				onOpenChange={setIsTeamHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							Penalty History for {teamData.teamName}
@@ -449,7 +485,7 @@ export default function TeamPageContent({
 				open={isTeamLeagueHistoryDialogOpen}
 				onOpenChange={setIsTeamLeagueHistoryDialogOpen}
 			>
-				<DialogContent className="min-w-fit bg-white max-h-[90vh] overflow-y-auto">
+				<DialogContent className="min-w-fit bg-background max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>
 							League History for {teamData.teamName}
@@ -461,3 +497,4 @@ export default function TeamPageContent({
 		</div>
 	);
 }
+							

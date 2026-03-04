@@ -1,4 +1,7 @@
-import "@/app/ui/globals.css";
+/**
+ * Portal root layout — wraps all authenticated portal pages with the
+ * collapsible sidebar, dynamic breadcrumb navigation, and main content area.
+ */
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -21,7 +24,7 @@ export default function RootLayout({
 							<SidebarTrigger className="-ml-1" />
 							<Separator
 								orientation="vertical"
-								className="mr-2 h-4 bg-gray-300"
+								className="mr-2 h-4 bg-muted"
 							/>
 							<div className="flex-1">
 								<Breadcrumb>

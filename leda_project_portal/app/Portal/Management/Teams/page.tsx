@@ -1,55 +1,74 @@
-import AlertDialogDelete from "@/components/alert-dialog-delete";
-import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-with-button";
-import CustomLink from "@/components/ui/custom-link";
+/**
+ * Teams management page — client-side server-paginated data table for managing
+ * league team records. Supports add, edit, delete, and detail view navigation.
+ * Table state (pagination, sorting, search) is persisted across navigation.
+ */
+"use client";
+
+import { ServerSideDataTable } from "@/components/server-side-datatable";
 import { teamRoute } from "@/lib/apiRoutes";
-import { fetchTeams } from "@/lib/getData";
 import { columns } from "@/schemas/managment/teams";
-import { Metadata } from "next";
+import { useTeamsData } from "@/hooks/useTeamsData";
+import { Spinner } from "@/components/ui/skeleton";
+import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
 
-export const metadata: Metadata = {
-	title: "Teams",
-};
+export default function Page() {
+	const { page, setPage, pageSize, setPageSize, search, setSearch, sorting, setSorting } = usePersistedDataTableState(
+		"datatable:/Portal/Management/Teams"
+	);
 
-export const dynamic = "force-dynamic";
+	const { data, isLoading } = useTeamsData(page, pageSize, search, sorting);
 
-export default async function Page() {
-	return (
-		<>
+	// Show initial loading state
+	if (isLoading && !data) {
+		return (
 			<div className="container mx-auto py-10">
-				<DataTable
-					columns={columns}
-					data={await fetchTeams()}
-					pageName="Teams Page"
-					addDialog={
-						<DialogWithButton
-							form="TeamAddForm"
-							title="Add Team"
-							buttonName="Add Team +"
-						/>
-					}
-					deleteDialog={
-						<AlertDialogDelete
-							buttonName="Delete Team"
-							title="Delete Team"
-							apiEndpoint={teamRoute}
-						/>
-					}
-					editDialog={
-						<DialogWithButton
-							form="TeamEditForm"
-							title="Edit Team"
-							buttonName="Edit Team"
-						/>
-					}
-					viewLink={
-						<CustomLink linkName="View Team" parentPage="Teams" />
-					}
-					apiEndpoint={teamRoute}
-					defaultSort="ledaId"
-					filter={true}
-				/>
+				<div className="flex items-center justify-center min-h-[400px]">
+					<Spinner />
+				</div>
 			</div>
-		</>
+		);
+	}
+
+	return (
+		<div className="container mx-auto py-10">
+			<ServerSideDataTable
+				columns={columns}
+				data={data?.data || []}
+				pageName="Teams Page"
+				stateKey="datatable:/Portal/Management/Teams"
+				queryKey={["teams-datatable"]}
+				pageSize={pageSize}
+				onPageSizeChange={setPageSize}
+				addDialogConfig={{
+					form: "TeamAddForm",
+					title: "Add Team",
+					buttonName: "Add Team +"
+				}}
+				deleteDialogConfig={{
+					buttonName: "Delete Team",
+					title: "Delete Team",
+					apiEndpoint: teamRoute
+				}}
+				editDialogConfig={{
+					form: "TeamEditForm",
+					title: "Edit Team",
+					buttonName: "Edit Team"
+				}}
+				viewLinkConfig={{
+					linkName: "View Team",
+					parentPage: "Teams"
+				}}
+				defaultSort="ledaId"
+				sorting={sorting}
+				onSortingChange={setSorting}
+				isLoading={isLoading}
+				totalPages={data?.pagination.totalPages || 1}
+				currentPage={page}
+				onPageChange={setPage}
+				onSearchChange={setSearch}
+				searchValue={search}
+			/>
+		</div>
 	);
 }

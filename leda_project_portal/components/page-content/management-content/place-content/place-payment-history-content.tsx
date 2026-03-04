@@ -1,8 +1,19 @@
 "use client";
 
+/**
+ * PlacePaymentHistoryContent
+ *
+ * Displays the full payment history for a specific place (bar/venue).
+ * Supports filtering by payment date (select dropdown) and payment type
+ * (popover filter using `PaymentTypeSelectorNF`).
+ *
+ * Payment data is fetched via TanStack Query using the place's LEDA ID.
+ * Dates are always formatted in UTC to avoid timezone-based day shifts.
+ */
+
 import { PaymentHistory, Place } from "@/lib/definitions";
 import { placePaymentHistoryRoute } from "@/lib/apiRoutes";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
 	Table,
 	TableBody,
@@ -26,18 +37,13 @@ import {
 } from "@/components/ui/popover";
 import { FilterIcon, XIcon } from "lucide-react";
 import PaymentTypeSelectorNF from "@/components/ui/payment-type-selector-nf";
+import { useQuery } from "@tanstack/react-query";
 
 export default function PlacePaymentHistoryContent({
 	placeData,
 }: {
 	placeData: Place;
 }) {
-	const [paymentData, setPaymentData] = useState<PaymentHistory[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [uniqueDates, setUniqueDates] = useState<{ paymentDate: string }[]>(
-		[]
-	);
 	const [selectedDate, setSelectedDate] = useState<string>("all");
 	const [selectedPaymentType, setSelectedPaymentType] = useState<
 		{ paymentType: string; desc: string } | undefined
@@ -47,9 +53,14 @@ export default function PlacePaymentHistoryContent({
 	>(undefined);
 	const [filterOpen, setFilterOpen] = useState(false);
 
-	// Fetch payment data
-	useEffect(() => {
-		const getPaymentData = async () => {
+	// TanStack Query for payment data
+	const {
+		data: paymentData = [],
+		isLoading,
+		error,
+	} = useQuery<PaymentHistory[]>({
+		queryKey: ["placePaymentHistory", placeData.ledaId],
+		queryFn: async () => {
 			const results = await fetch(
 				`${placePaymentHistoryRoute}?ledaId=${placeData.ledaId}`,
 				{
@@ -61,47 +72,27 @@ export default function PlacePaymentHistoryContent({
 			}
 			const data = await results.json();
 			return data;
-		};
+		},
+	});
 
-		const fetchPaymentData = async () => {
-			try {
-				setIsLoading(true);
-				const data = await getPaymentData();
-				setPaymentData(data);
-
-				// Extract unique dates for the filter, using a consistent date format
-				const dates = [
-					...new Set(
-						data.map((item: PaymentHistory) => {
-							if (!item.date) return null;
-							const date = new Date(item.date);
-							// Always use UTC for date string
-							return `${date.getUTCFullYear()}-${String(
-								date.getUTCMonth() + 1
-							).padStart(2, "0")}-${String(
-								date.getUTCDate()
-							).padStart(2, "0")}`;
-						})
-					),
-				]
-					.filter(Boolean)
-					.map((date) => ({ paymentDate: date as string }));
-
-				setUniqueDates(dates);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load payment history data");
-				console.error(err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchPaymentData();
-	}, [placeData.ledaId]);
+	// Extract unique dates for the filter, using a consistent date format
+	const uniqueDates: { paymentDate: string }[] = [
+		...new Set(
+			(paymentData || []).map((item: PaymentHistory) => {
+				if (!item.date) return null;
+				const date = new Date(item.date);
+				// Always use UTC for date string
+				return `${date.getUTCFullYear()}-${String(
+					date.getUTCMonth() + 1
+				).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+			})
+		),
+	]
+		.filter(Boolean)
+		.map((date) => ({ paymentDate: date as string }));
 
 	// Filter payment data
-	const filteredPaymentData = paymentData.filter((payment) => {
+	const filteredPaymentData = (paymentData || []).filter((payment) => {
 		let matchesDate = true;
 		let matchesType = true;
 
@@ -155,10 +146,10 @@ export default function PlacePaymentHistoryContent({
 							value={selectedDate}
 							onValueChange={setSelectedDate}
 						>
-							<SelectTrigger className="w-[200px] border-gray-400 text-gray-700">
+							<SelectTrigger className="w-[200px] border-border text-foreground">
 								<SelectValue placeholder="Filter by date" />
 							</SelectTrigger>
-							<SelectContent className="bg-white border-gray-400 text-gray-700">
+							<SelectContent className="bg-background border-border text-foreground">
 								<SelectItem value="all">All Dates</SelectItem>
 								{uniqueDates.map((date, index) => (
 									<SelectItem
@@ -189,7 +180,7 @@ export default function PlacePaymentHistoryContent({
 							<PopoverTrigger asChild>
 								<Button
 									variant="outline"
-									className="border-gray-400 text-gray-700"
+									className="border-border text-foreground"
 								>
 									<FilterIcon className="h-4 w-4 mr-2" />
 									{appliedPaymentType
@@ -197,7 +188,7 @@ export default function PlacePaymentHistoryContent({
 										: "Filter by Type"}
 								</Button>
 							</PopoverTrigger>
-							<PopoverContent className="w-80 p-4 bg-white border-gray-400 text-gray-700">
+							<PopoverContent className="w-80 p-4 bg-background border-border text-foreground">
 								<div className="space-y-4">
 									<h4 className="font-medium">
 										Filter by Payment Type
@@ -211,13 +202,13 @@ export default function PlacePaymentHistoryContent({
 										<Button
 											variant="outline"
 											onClick={clearFilters}
-											className="text-sm border-gray-400 text-gray-700"
+											className="text-sm border-border text-foreground"
 										>
 											Clear Filters
 										</Button>
 										<Button
 											onClick={applyFilter}
-											className="text-sm border-gray-400 text-gray-700"
+											className="text-sm border-border text-foreground"
 										>
 											Apply
 										</Button>
@@ -230,14 +221,14 @@ export default function PlacePaymentHistoryContent({
 
 				{(selectedDate !== "all" || appliedPaymentType) && (
 					<div className="flex gap-2 mb-4 items-center">
-						<span className="text-sm text-gray-500">
+						<span className="text-sm text-muted-foreground">
 							Active filters:
 						</span>
 						{selectedDate !== "all" && (
 							<Button
 								variant="outline"
 								size="sm"
-								className="text-xs flex items-center gap-1 bg-gray-100"
+								className="text-xs flex items-center gap-1 bg-muted"
 								onClick={() => setSelectedDate("all")}
 							>
 								Date:{" "}
@@ -253,7 +244,7 @@ export default function PlacePaymentHistoryContent({
 							<Button
 								variant="outline"
 								size="sm"
-								className="text-xs flex items-center gap-1 bg-gray-100"
+								className="text-xs flex items-center gap-1 bg-muted"
 								onClick={() => {
 									setAppliedPaymentType(undefined);
 									setSelectedPaymentType(undefined);
@@ -267,13 +258,15 @@ export default function PlacePaymentHistoryContent({
 				)}
 
 				{isLoading ? (
-					<p className="text-gray-500 italic">
+					<p className="text-muted-foreground italic">
 						Loading payment history...
 					</p>
 				) : error ? (
-					<p className="text-red-500">{error}</p>
+					<p className="text-red-500">
+						{(error as Error).message || "Failed to load payment history data"}
+					</p>
 				) : filteredPaymentData.length === 0 ? (
-					<p className="text-gray-500">
+					<p className="text-muted-foreground">
 						No payment history found for this place.
 					</p>
 				) : (

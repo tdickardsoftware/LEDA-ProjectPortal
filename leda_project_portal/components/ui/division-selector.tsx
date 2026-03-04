@@ -1,6 +1,15 @@
+/**
+ * DivisionSelector component
+ *
+ * Searchable combobox for selecting a division within a React Hook Form
+ * context.  Fetches the full division list from the API via TanStack Query,
+ * filters out already-selected divisions, and writes the chosen division name
+ * back into the form field.  The inner content component handles popover
+ * open/close state and keyboard navigation.
+ */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +35,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
@@ -71,6 +81,24 @@ interface DivisionSelectorContentProps {
 	selectedDivisions: string[];
 }
 
+// Utility hook to track last input type (keyboard or mouse)
+function useLastInputType() {
+	const [lastInputType, setLastInputType] = React.useState<"keyboard" | "mouse" | null>(null);
+
+	React.useEffect(() => {
+		const handleKeyDown = () => setLastInputType("keyboard");
+		const handleMouseDown = () => setLastInputType("mouse");
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("mousedown", handleMouseDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("mousedown", handleMouseDown);
+		};
+	}, []);
+
+	return lastInputType;
+}
+
 const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 	selectedDivisions,
 }) => {
@@ -78,33 +106,42 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 	const { watch, setValue } = useFormContext<FormValues>();
 	// Watch the memberType field value
 	const divisionName = watch("divisionName");
-	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
-	// State to store the fetched member types
-	const [divisions, setDivisions] = useState<{ value: string }[]>([]);
 
-	// Fetch member types from the API endpoint
-	useEffect(() => {
-		async function loadDivisions() {
-			try {
-				const response = await fetch(divisionRoute);
-				const data = await response.json();
-				setDivisions(
-					data
-						.filter(
-							(type: { divisionName: string }) =>
-								!selectedDivisions.includes(type.divisionName)
-						)
-						.map((type: { divisionName: string }) => ({
-							value: type.divisionName,
-						}))
-				);
-			} catch (error) {
-				console.error("Failed to fetch member types", error);
-			}
+	const justClosedRef = React.useRef(false);
+	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+	const lastInputType = useLastInputType();
+
+	const { data: divisions = [] } = useQuery({
+		queryKey: ["divisions", selectedDivisions],
+		queryFn: async () => {
+			const response = await fetch(divisionRoute);
+			const data = await response.json();
+			return data
+				.filter(
+					(type: { divisionName: string }) =>
+						!selectedDivisions.includes(type.divisionName)
+				)
+				.map((type: { divisionName: string }) => ({
+					value: type.divisionName,
+				}));
+		},
+	});
+
+	const handleFocus = React.useCallback(() => {
+		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
+			setOpen(true);
 		}
-		loadDivisions();
-	}, [selectedDivisions]);
+		if (justClosedRef.current) {
+			justClosedRef.current = false;
+		}
+	}, [lastInputType, open]);
+
+	const handleSelect = (type: { value: string }) => {
+		setValue("divisionName", type.value);
+		setOpen(false);
+		justClosedRef.current = true;
+	};
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -112,37 +149,37 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild>
 						<Button
+							ref={popoverTriggerRef}
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
 							className="w-[200px] justify-between"
+							onFocus={handleFocus}
 						>
 							{divisionName
 								? divisions.find(
-										(type) => type.value === divisionName
+										(type: { value: string }) => type.value === divisionName
 								  )?.value
 								: "Select division"}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
+					<PopoverContent className="w-[200px] p-0 bg-background">
 						<Command>
 							<CommandInput placeholder="Search member type..." />
 							<CommandEmpty>No division found.</CommandEmpty>
 							<CommandGroup>
-								<CommandList>
-									{divisions.map((type) => (
+								<CommandList
+									className="max-h-60 overflow-y-auto"
+									tabIndex={0}
+									onWheel={e => e.stopPropagation()}
+								>
+									{divisions.map((type: { value: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}
-											onSelect={() => {
-												setValue(
-													"divisionName",
-													type.value
-												);
-												setOpen(false);
-											}}
-											className="hover:bg-gray-200"
+											onSelect={() => handleSelect(type)}
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

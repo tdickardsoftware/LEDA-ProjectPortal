@@ -1,3 +1,7 @@
+/**
+ * Weekly Score index page — entry point for accessing weekly scoresheet data.
+ * Selecting a season navigates to the season-specific scoresheet view.
+ */
 import WeeklyScoresheetsContent from "@/components/page-content/activities/weekly-scoreesheets-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

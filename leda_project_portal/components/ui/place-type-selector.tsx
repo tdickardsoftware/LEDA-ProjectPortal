@@ -1,6 +1,14 @@
+/**
+ * PlaceTypeSelector component
+ *
+ * Searchable combobox for selecting a place type within a React Hook Form
+ * context.  Tracks the last input type (keyboard vs mouse) to apply correct
+ * focus styling.  Fetches place types from the API via TanStack Query and
+ * writes the selected value into the bound form field.
+ */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Control, FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +34,7 @@ import {
 	FormControl,
 	FormMessage,
 } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the form values interface
 interface FormValues {
@@ -42,6 +51,24 @@ interface PlaceTypeSelectorProps {
 interface PlaceTypeSelectorContentProps {
 	value?: string;
 	onChange?: (value: string) => void;
+}
+
+// Utility hook to track last input type (keyboard or mouse)
+function useLastInputType() {
+	const [lastInputType, setLastInputType] = React.useState<"keyboard" | "mouse" | null>(null);
+
+	React.useEffect(() => {
+		const handleKeyDown = () => setLastInputType("keyboard");
+		const handleMouseDown = () => setLastInputType("mouse");
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("mousedown", handleMouseDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("mousedown", handleMouseDown);
+		};
+	}, []);
+
+	return lastInputType;
 }
 
 export default function PlaceTypeSelector({
@@ -78,11 +105,54 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 	const formContext = useFormContext<FormValues>();
 	const [localValue, setLocalValue] = useState(propValue || "");
 	const [open, setOpen] = useState(false);
-	const [memberTypes, setMemberTypes] = useState<
-		{ value: string; label: string }[]
-	>([]);
 
-	// Use form context if available, otherwise use props
+	const justClosedRef = React.useRef(false);
+	const closeFromTabRef = React.useRef(false);
+	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+	const lastInputType = useLastInputType();
+
+	const focusAdjacentField = React.useCallback((direction: "next" | "prev") => {
+		const trigger = popoverTriggerRef.current;
+		if (!trigger) return;
+
+		const root = trigger.closest("form") ?? trigger.closest("[role='dialog']") ?? document;
+		const focusableSelector =
+			"a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
+
+		const focusables = Array.from(
+			root.querySelectorAll<HTMLElement>(focusableSelector)
+		).filter((el) => {
+			if (el.hasAttribute("disabled")) return false;
+			if (el.getAttribute("aria-disabled") === "true") return false;
+			if (el.tabIndex < 0) return false;
+			if (el.offsetParent === null) {
+				const style = window.getComputedStyle(el);
+				if (style.position !== "fixed") return false;
+			}
+			return true;
+		});
+
+		const index = focusables.indexOf(trigger);
+		if (index === -1) return;
+		const nextIndex = direction === "next" ? index + 1 : index - 1;
+		const nextEl = focusables[nextIndex];
+		if (nextEl) nextEl.focus();
+	}, []);
+
+	const { data: memberTypes = [] } = useQuery({
+		queryKey: ["placeTypes"],
+		queryFn: async () => {
+			const response = await fetch(placeTypeRoute);
+			const data = await response.json();
+			return data.map(
+				(type: { placeTypeCode: string; desc: string }) => ({
+					value: type.placeTypeCode,
+					label: type.placeTypeCode + " - " + type.desc,
+				})
+			);
+		},
+	});
+
 	const currentValue = formContext
 		? formContext.watch("placeType")
 		: localValue;
@@ -96,25 +166,20 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 		}
 	};
 
-	useEffect(() => {
-		async function loadPlaceTypes() {
-			try {
-				const response = await fetch(placeTypeRoute);
-				const data = await response.json();
-				setMemberTypes(
-					data.map(
-						(type: { placeTypeCode: string; desc: string }) => ({
-							value: type.placeTypeCode,
-							label: type.placeTypeCode + " - " + type.desc,
-						})
-					)
-				);
-			} catch (error) {
-				console.error("Failed to fetch place types", error);
-			}
+	const handleFocus = React.useCallback(() => {
+		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
+			setOpen(true);
 		}
-		loadPlaceTypes();
-	}, []);
+		if (justClosedRef.current) {
+			justClosedRef.current = false;
+		}
+	}, [lastInputType, open]);
+
+	const handleSelect = (value: string) => {
+		handleValueChange(value);
+		setOpen(false);
+		justClosedRef.current = true;
+	};
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -122,34 +187,59 @@ const PlaceTypeSelectorContent: React.FC<PlaceTypeSelectorContentProps> = ({
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild>
 						<Button
+							ref={popoverTriggerRef}
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
 							className="w-[200px] justify-between"
+							onFocus={handleFocus}
 						>
 							{currentValue
 								? memberTypes.find(
-										(type) => type.value === currentValue
+										(type: { value: string; label: string }) => type.value === currentValue
 								  )?.label
 								: "Select a place type..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
+					<PopoverContent
+						className="w-[200px] p-0 bg-background"
+						onKeyDownCapture={(e) => {
+							if (e.key === "Tab") {
+								closeFromTabRef.current = true;
+								e.preventDefault();
+								setOpen(false);
+								justClosedRef.current = true;
+								const direction = e.shiftKey ? "prev" : "next";
+								requestAnimationFrame(() => focusAdjacentField(direction));
+							}
+						}}
+						onFocusOutside={() => {
+							setOpen(false);
+							justClosedRef.current = true;
+						}}
+						onCloseAutoFocus={(e) => {
+							if (closeFromTabRef.current) {
+								e.preventDefault();
+								closeFromTabRef.current = false;
+							}
+						}}
+					>
 						<Command>
 							<CommandInput placeholder="Search place type..." />
 							<CommandEmpty>No place type found.</CommandEmpty>
 							<CommandGroup>
-								<CommandList>
-									{memberTypes.map((type) => (
+								<CommandList
+									className="max-h-60 overflow-y-auto"
+									tabIndex={0}
+									onWheel={e => e.stopPropagation()}
+								>
+									{memberTypes.map((type: { value: string; label: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}
-											onSelect={() => {
-												handleValueChange(type.value);
-												setOpen(false);
-											}}
-											className="hover:bg-gray-200"
+											onSelect={() => handleSelect(type.value)}
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

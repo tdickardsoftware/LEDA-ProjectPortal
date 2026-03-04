@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI AlertDialog primitive wrapper with styled overlay, content, header, footer, title, description, action, and cancel sub-components. */
 "use client";
 
 import * as React from "react";

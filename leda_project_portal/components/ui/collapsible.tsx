@@ -1,3 +1,4 @@
+/** Shadcn/Radix UI Collapsible primitive re-export (Collapsible, CollapsibleTrigger, CollapsibleContent). */
 "use client";
 
 import * as CollapsiblePrimitive from "@radix-ui/react-collapsible";

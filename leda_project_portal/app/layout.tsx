@@ -1,5 +1,12 @@
+/**
+ * Root layout for the entire application.
+ * Wraps all pages with global CSS, theme support (light/dark via next-themes),
+ * and the React Query provider for client-side data fetching.
+ */
 import "@/app/ui/globals.css";
 import { Metadata } from "next";
+import QueryProvider from "@/providers/query-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 export const metadata: Metadata = {
 	title: {
@@ -8,6 +15,11 @@ export const metadata: Metadata = {
 	},
 	description: "The official Next.js Learn Dashboard built with App Router.",
 	metadataBase: new URL("https://next-learn-dashboard.vercel.sh"),
+	icons: {
+		icon: "/leda-reports-logo.ico",
+		shortcut: "/leda-reports-logo.ico",
+		apple: "/leda-reports-logo.ico",
+	},
 };
 
 export default function RootLayout({
@@ -16,8 +28,19 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html>
-			<body>{children}</body>
+		<html lang="en" suppressHydrationWarning>
+			<body>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="system"
+					enableSystem
+					disableTransitionOnChange
+					storageKey="leda-portal-theme"
+					enableColorScheme
+				>
+					<QueryProvider>{children}</QueryProvider>
+				</ThemeProvider>
+			</body>
 		</html>
 	);
 }

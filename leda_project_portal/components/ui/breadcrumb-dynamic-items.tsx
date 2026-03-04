@@ -1,3 +1,13 @@
+/**
+ * BreadcrumbDynamicItems component
+ *
+ * Automatically generates a breadcrumb trail from the current URL pathname.
+ * Each path segment is converted to a readable label (kebab-case → Title Case
+ * by default, overridable via `transformLabel`).  Specific segments can be
+ * excluded via `excludeSegments`, and the home crumb can be hidden via
+ * `showHome`.  The last segment is rendered as a non-linked current-page
+ * indicator.
+ */
 "use client";
 import { usePathname } from "next/navigation";
 import Link from "next/link";

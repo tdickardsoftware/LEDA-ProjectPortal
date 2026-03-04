@@ -4,12 +4,14 @@ import { query } from "@/lib/dbTypeGet";
 import { PlaceType } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import { DatabaseError } from "pg";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
 		if (req.query.placeTypeCode) {
@@ -46,7 +48,6 @@ export default async function handler(
 	// Handle POST requests
 	else if (req.method === "POST") {
 		try {
-			console.log(req.body);
 			const results = req.body as PlaceType;
 
 			// Define the query to insert a new place type

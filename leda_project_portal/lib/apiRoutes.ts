@@ -1,3 +1,14 @@
+/**
+ * Centralised API route constants for the LEDA portal.
+ *
+ * Exports two groups of constants:
+ * - Local routes  – relative paths used by client-side fetch calls and hooks.
+ * - Server routes – absolute URLs constructed from VERCEL_URL, used in
+ *   server-side data-fetching functions that must call internal API handlers.
+ *
+ * All route strings are intentionally kept as plain constants so IDEs can
+ * easily find references when an endpoint is renamed or removed.
+ */
 //
 // Local Routes
 //
@@ -8,10 +19,24 @@ require("dotenv").config();
 export const placeOwnerRoute = "/api/management/player/placeOwner";
 // Define route for players not on the serverside
 export const playerRoute = "/api/management/player";
+// Define route for batch player fetch (reduces N+1 requests)
+export const playerBatchRoute = "/api/management/player/batch";
+// Define route for players for selector not on the serverside
+export const playerSelectorRoute = "/api/management/player/playerSelector";
+// Define route for single player selector not on the serverside
+export const singlePlayerSelectorRoute = "/api/management/singlePlayerSelector";
+// Define route for players for datatable not on the serverside
+export const playersDataTableRoute = "/api/management/player/datatable";
 // Define route for places not on the serverside
 export const placeRoute = "/api/management/place";
+// Define route for place datatable not on the serverside
+export const placeDataTableRoute = "/api/management/place/datatable";
+// Define route for place selector not on the serverside
+export const placeSelectorRoute = "/api/management/place/placeSelector";
 // Define route for teams not on the serverside
 export const teamRoute = "/api/management/team";
+// Define route for teams for datatable not on the serverside
+export const teamsDataTableRoute = "/api/management/team/datatable";
 // Define route for division not on the serverside
 export const divisionRoute = "/api/maintenance/division";
 // Define route for mention not on the serverside
@@ -28,6 +53,8 @@ export const peopleTypeRoute = "/api/maintenance/peopleType";
 export const placeTypeRoute = "/api/maintenance/placeType";
 // Define route for season not on the serverside
 export const seasonRoute = "/api/maintenance/season";
+// Define route for season datatable not on the serverside
+export const seasonDataTableRoute = "/api/maintenance/season/datatable";
 // Define route for seasonCode not on the serverside
 export const seasonCodeRoute = "/api/maintenance/season/seasonCode";
 // Define route for trailsDate not on the serverside
@@ -40,6 +67,12 @@ export const rosterRoute = "/api/activities/roster";
 export const scheduleRoute = "/api/activities/schedule";
 // Define route for weekly scoresheets not on serverside
 export const weeklyScoresheetsRoute = "/api/activities/scoresheets";
+// Define route for scoresheet count not on serverside
+export const scoresheetCountRoute = "/api/activities/scoresheets/weeklyScoresheetsV2/scoresheetCount";
+// Define route for roster team view not on serverside
+export const rosterTeamViewRoute = "/api/activities/roster/rosterTeamView";
+// Define route for member info not on serverside
+export const memberInfoRoute = "/api/management/team/memberInfo";
 // Define route for payout not on the serverside
 export const payoutRoute = "/api/activities/payout";
 // Define route for trailsPlayerHistory not on the serverside
@@ -49,12 +82,15 @@ export const trailsPlayerHistoryRoute =
 export const mentionPlayerHistoryRoute =
 	"/api/maintenance/mention/mentionHistory";
 // Define route for playerPaymentHistory not on the serverside
-export const playerPaymentHistoryRoute =
-	"/api/maintenance/payment/playerPayment";
+export const playerPaymentHistoryRoute = "/api/maintenance/payment/playerPayment";
 // Define route for teamPaymentHistory not on the serverside
 export const teamPaymentHistoryRoute = "/api/maintenance/payment/teamPayment";
 // Define route for placePaymentHistory not on the serverside
 export const placePaymentHistoryRoute = "/api/maintenance/payment/placePayment";
+// Define route for Users not on the serverside
+export const userRoute = "/api/user";
+// Define route for calendar route not on serverside
+export const calendarRoute = "/api/maintenance/calendar";
 
 //
 // Server Routes
@@ -124,3 +160,6 @@ export const teamPaymentHistoryRouteServer =
 // Define route for placePaymentHistory api
 export const placePaymentHistoryRouteServer =
 	"http://" + process.env.VERCEL_URL + placePaymentHistoryRoute;
+// Define route for user api
+export const userRouteServer =
+	"http://" + process.env.VERCEL_URL + userRoute;

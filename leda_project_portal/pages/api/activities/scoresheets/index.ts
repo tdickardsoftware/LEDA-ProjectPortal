@@ -1,13 +1,27 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { queryPost } from "@/lib/query";
-import { WeeklyScoresheet } from "@/lib/definitions";
+/**
+ * API Route: /api/activities/scoresheets
+ *
+ * POST — Upserts a weekly scoresheet record (scoresheetData + finishedScoresheet flag).
+ * GET  — Retrieves scoresheet data filtered by:
+ *          • seasonCode + weekNumber → a single week's scoresheet
+ *          • seasonCode + countOfFinishedWeeks → count of completed weeks
+ *          • seasonCode alone → first scoresheet row for the season
+ * Requires an authenticated session.
+ */
 import { query } from "@/lib/dbTypeGet";
+import { WeeklyScoresheet } from "@/lib/definitions";
+import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
+import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	if (req.method === "POST") {
+		// Upsert the weekly scoresheet (scoresheetData and finishedScoresheet) for the given season and week
 		const data = req.body as WeeklyScoresheet;
 		try {
 			const query = `
@@ -24,7 +38,6 @@ export default async function handler(
 			];
 
 			// Log the query values for debugging
-			console.log("Query Values:", values);
 
 			const result = await queryPost(query, values);
 			res.status(201).json(result);
@@ -36,6 +49,7 @@ export default async function handler(
 			});
 		}
 	} else if (req.method === "GET") {
+		// Retrieve scoresheet data based on the provided query parameters
 		if (req.query.seasonCode && req.query.weekNumber) {
 			try {
 				const seasonCode = req.query.seasonCode;
@@ -60,6 +74,7 @@ export default async function handler(
 			}
 		} else if (req.query.seasonCode && req.query.countOfFinishedWeeks) {
 			try {
+				// Count how many weeks have been marked as finished for this season
 				const seasonCode = req.query.seasonCode;
 				const result = await query(
 					`SELECT COUNT(*) FROM public.leda_weekly_scoresheets WHERE "seasonCode" = $1 AND "finishedScoresheet" = true`,

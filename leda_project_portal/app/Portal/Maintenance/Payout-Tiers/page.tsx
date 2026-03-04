@@ -1,6 +1,8 @@
-import AlertDialogDelete from "@/components/alert-dialog-delete";
+/**
+ * Payout Tiers maintenance page — server-rendered data table for managing
+ * payout tier configurations. Supports add, edit, and delete operations.
+ */
 import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-with-button";
 import { payoutTierRoute } from "@/lib/apiRoutes";
 import { fetchPayoutTiers } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/payout_tiers";
@@ -13,37 +15,31 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-	return (
-		<>
-			<div className="container mx-auto py-10">
-				<DataTable
-					columns={columns}
-					data={await fetchPayoutTiers()}
-					pageName="Payout Tiers Page"
-					addDialog={
-						<DialogWithButton
-							form="PayoutTierAddForm"
-							title="Add Payout Tier"
-							buttonName="Add Payout Tier +"
-						/>
-					}
-					deleteDialog={
-						<AlertDialogDelete
-							buttonName="Delete Payout Tier(s)"
-							title="Delete Payout Tier(s)"
-							apiEndpoint={payoutTierRoute}
-						/>
-					}
-					editDialog={
-						<DialogWithButton
-							form="PayoutTierEditForm"
-							title="Edit Payout Tier"
-							buttonName="Edit Payout Tier"
-						/>
-					}
-					apiEndpoint={payoutTierRoute}
-				/>
-			</div>
-		</>
-	);
+	 return (
+		 <>
+			 <div className="container mx-auto py-10">
+				 <DataTable
+					 columns={columns}
+					 data={await fetchPayoutTiers()}
+					 pageName="Payout Tiers Page"
+					 addDialogConfig={{
+						 form: "PayoutTierAddForm",
+						 title: "Add Payout Tier",
+						 buttonName: "Add Payout Tier +"
+					 }}
+					 deleteDialogConfig={{
+						 buttonName: "Delete Payout Tier(s)",
+						 title: "Delete Payout Tier(s)",
+						 apiEndpoint: payoutTierRoute
+					 }}
+					 editDialogConfig={{
+						 form: "PayoutTierEditForm",
+						 title: "Edit Payout Tier",
+						 buttonName: "Edit Payout Tier"
+					 }}
+					 apiEndpoint={payoutTierRoute}
+				 />
+			 </div>
+		 </>
+	 );
 }

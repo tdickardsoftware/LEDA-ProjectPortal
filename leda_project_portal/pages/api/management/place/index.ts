@@ -1,15 +1,24 @@
-// imports
+/**
+ * API route for managing place (venue/bar) records.
+ *
+ * GET    - Returns a single place by ledaId, or all places ordered by ledaId.
+ * POST   - Creates a new place; auto-assigns ledaId via getNextLedaId if not provided.
+ * DELETE - Removes a place record by ledaId.
+ * PUT    - Updates an existing place record.
+ */
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { Place } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import getNextLedaId from "@/lib/getNextLedaId";
 import { DatabaseError } from "pg";
-// handler function
+import { requireApiSession } from "@/lib/require-session";
+
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	await requireApiSession(req, res);
 	// handle get method
 	if (req.method === "GET") {
 		if (req.query.ledaId) {
@@ -40,7 +49,7 @@ export default async function handler(
 				});
 			}
 		}
-		// handle post method
+		// Handle POST requests — create a new place record
 	} else if (req.method === "POST") {
 		try {
 			// get data from request body and set it to fit the place type
@@ -73,7 +82,7 @@ export default async function handler(
 				results.currentSponsor,
 				results.issues,
 				results.lastBarFeePayment,
-				results.lastSanctioningDate,
+				results.lastSanctioningDate || null,
 				results.contactId,
 				results.placeType,
 			];
@@ -92,7 +101,7 @@ export default async function handler(
 				}); // Send error info in JSON
 			}
 		}
-		// handle invalid method
+		// Handle DELETE requests — remove a place record by ledaId
 	} else if (req.method === "DELETE") {
 		try {
 			const data = req.body as Place;
@@ -106,6 +115,7 @@ export default async function handler(
 				message: (error as Error).message || "Server error",
 			});
 		}
+		// Handle PUT requests — update an existing place record
 	} else if (req.method === "PUT") {
 		try {
 			const data = req.body as Place;
@@ -151,7 +161,7 @@ export default async function handler(
 				data.regularSponsor,
 				data.currentSponsor,
 				data.issues,
-				data.lastSanctioningDate,
+				data.lastSanctioningDate || null,
 				data.contactId,
 				data.placeType,
 			];

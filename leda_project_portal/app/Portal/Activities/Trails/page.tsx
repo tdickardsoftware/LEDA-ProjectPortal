@@ -1,3 +1,6 @@
+/**
+ * Trails page — view and manage trail activity information for the league.
+ */
 import TrailsPageContent from "@/components/page-content/activities/trails-page-content";
 import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";

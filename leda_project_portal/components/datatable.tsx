@@ -1,6 +1,25 @@
+/**
+ * DataTable component
+ *
+ * A client-side, fully-featured data table built on TanStack Table.  Supports:
+ * - Client-side sorting, pagination, and fuzzy/field-specific search (via Fuse.js)
+ * - Optional Add / Edit dialogs (DialogWithButton)
+ * - Optional row-level Delete confirmation (AlertDialogDelete)
+ * - Optional View navigation links and custom action links
+ * - Row selection with checkbox column
+ * - Payment-status indicators (PAID / PART / UNPAID) fetched per row
+ * - Roster season-code sub-filter popover for team/player roster views
+ * - Persisted page / page-size state via usePersistedDataTableState
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
+import { DialogWithButton } from "@/components/dialog-with-button";
+import AlertDialogDelete from "@/components/alert-dialog-delete";
+import CustomLink from "@/components/ui/custom-link";
+import Fuse from "fuse.js";
+import { parseFieldSearch, filterDataBySearch, createColumnMapping, type ColumnMapping } from "@/lib/search-parser";
 import {
 	ColumnDef,
 	SortingState,
@@ -34,7 +53,7 @@ import {
 	teamPaymentHistoryRoute,
 } from "@/lib/apiRoutes";
 // Import the required icons and paymentRoute
-import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, RotateCw, Loader2 } from "lucide-react";
 import { playerPaymentHistoryRoute } from "@/lib/apiRoutes";
 import {
 	Tooltip,
@@ -42,6 +61,15 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 // Add interface for payment status data
 interface PaymentStatus {
@@ -49,45 +77,83 @@ interface PaymentStatus {
 	status: "PAID" | "PART" | "UNPAID";
 }
 
+type keyofFormComponents =
+	| "PlayerAddInformationForm"
+	| "PlayerEditInformationForm"
+	| "PlaceAddForm"
+	| "TeamAddForm"
+	| "TeamEditForm"
+	| "DivisionAddForm"
+	| "MentionAddForm"
+	| "PaymentTypeAddForm"
+	| "PayoutTierAddForm"
+	| "PenaltyAddForm"
+	| "PeopleTypeAddForm"
+	| "PlaceTypeAddForm"
+	| "SeasonAddForm"
+	| "PlaceEditForm"
+	| "MentionEditForm"
+	| "PaymentTypeEditForm"
+	| "PayoutTierEditForm"
+	| "PenaltyEditForm"
+	| "PlaceTypeEditForm"
+	| "PeopleTypeEditForm"
+	| "SeasonEditForm";
+
 interface DataTableProps<TData extends Record<string, unknown>, TValue> {
-	columns: ColumnDef<TData, TValue>[];
-	data: TData[];
-	pageName: string;
-	addDialog?: React.ReactNode;
-	deleteDialog?: React.ReactNode;
-	editDialog?: React.ReactNode;
-	viewLink?: React.ReactNode;
-	onRefresh?: (api: string) => void;
-	apiEndpoint: string; // New prop for API endpoint
-	defaultSort?: string;
-	singleRowSelection?: boolean;
-	passValueToParent?: (value: string) => void;
-	defaultSelectedRow?: number; // Optional prop for default selected row
-	filter?: boolean; // New optional prop
+		columns: ColumnDef<TData, TValue>[];
+		data: TData[];
+		pageName: string;
+		stateKey?: string;
+		addDialogConfig?: { form: keyofFormComponents; title: string; buttonName: string };
+		editDialogConfig?: { form: keyofFormComponents; title: string; buttonName: string };
+		deleteDialogConfig?: { buttonName: string; title: string; apiEndpoint: string };
+		viewLinkConfig?: { linkName: string; parentPage: string };
+		customLink?: { buttonName: string; link: string };
+		onRefresh?: (api: string) => void;
+		apiEndpoint: string;
+		defaultSort?: string;
+		singleRowSelection?: boolean;
+		passValueToParent?: (value: string) => void;
+		defaultSelectedRow?: number;
+		filter?: boolean;
 }
 
 export function DataTable<TData extends Record<string, unknown>, TValue>({
 	columns,
 	data,
 	pageName,
-	addDialog,
-	deleteDialog,
-	editDialog,
-	viewLink,
+	stateKey,
+	addDialogConfig,
+	editDialogConfig,
+	deleteDialogConfig,
+	viewLinkConfig,
+	customLink,
 	onRefresh,
-	apiEndpoint, // Destructure the new prop
+	apiEndpoint,
 	defaultSort,
 	singleRowSelection,
 	passValueToParent,
 	defaultSelectedRow,
 	filter,
 }: DataTableProps<TData, TValue>) {
+	const router = useRouter();
+	const effectiveStateKey = stateKey ?? pageName;
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [searchQuery, setSearchQuery] = React.useState(""); // State for search input
-	const [debouncedQuery, setDebouncedQuery] = React.useState(""); // State for debounced query
+	const [activeSearchQuery, setActiveSearchQuery] = React.useState(""); // State for executed search
 	const [tableData, setTableData] = React.useState(data); // State for table data
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
 	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
+	const [isRefreshing, setIsRefreshing] = React.useState(false);
+	const [didRestorePageIndex, setDidRestorePageIndex] = React.useState(false);
+	const [pageSize, setPageSize] = React.useState<number>(10);
+	// Always start at 0 for the first render (prevents SSR/client hydration mismatches).
+	// We restore the persisted value in an effect after mount.
+	const [pageIndex, setPageIndex] = React.useState<number>(0);
+	// Define a unique storage key for page index based on pageName
+	const pageIndexStorageKey = `datatable:pageIndex:${effectiveStateKey}`;
+	const preserveKey = `datatable:preserve:${effectiveStateKey}`;
 
 	// Filter state
 	const [filterPopoverOpen, setFilterPopoverOpen] = React.useState(false);
@@ -102,110 +168,187 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	// Add new state for payment status
 	const [showPaymentStatus, setShowPaymentStatus] =
 		React.useState<boolean>(false);
-	const [paymentStatusData, setPaymentStatusData] = React.useState<
-		PaymentStatus[]
-	>([]);
-	const [paymentStatusLoading, setPaymentStatusLoading] =
-		React.useState(false);
 
 	// Add local state for the Show Payment Status checkbox
 	const [pendingShowPaymentStatus, setPendingShowPaymentStatus] =
 		React.useState<boolean>(false);
 
-	// Debounce the search input
-	React.useEffect(() => {
-		const handler = setTimeout(() => {
-			setDebouncedQuery(searchQuery);
-		}, 300); // Update after 300ms of inactivity
-
-		return () => clearTimeout(handler); // Cleanup on each change
-	}, [searchQuery]);
-
-	// When filterCurrentSeason changes, reset filterSeasonCode and pendingShowPaymentStatus if needed
-	React.useEffect(() => {
-		if (filterCurrentSeason) {
-			setFilterSeasonCode("");
-			setPendingShowPaymentStatus(false);
-			setShowPaymentStatus(false); // Reset payment status when changing season
-		}
-	}, [filterCurrentSeason]);
-
-	// Function to fetch payment status data
-	const fetchPaymentStatus = React.useCallback(
-		async (seasonCode: string) => {
-			if (!seasonCode) return;
-
-			setPaymentStatusLoading(true);
-			try {
-				let res;
-				if (pageName.includes("Players")) {
-					res = await fetch(
-						`${playerPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`
-					);
-				} else if (pageName.includes("Places")) {
-					res = await fetch(
-						`${placePaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`
-					);
-				} else {
-					res = await fetch(
-						`${teamPaymentHistoryRoute}/viewData?seasonCode=${seasonCode}`
-					);
-				}
-				const data = await res.json();
-				setPaymentStatusData(Array.isArray(data) ? data : []);
-			} catch (e) {
-				console.error("Failed to fetch payment status", e);
-				setPaymentStatusData([]);
-			} finally {
-				setPaymentStatusLoading(false);
-			}
-		},
-		[pageName]
-	);
-
-	// Only fetch payment status when showPaymentStatus is set (after Apply)
-	React.useEffect(() => {
-		if (showPaymentStatus && filterSeasonCode) {
-			fetchPaymentStatus(filterSeasonCode);
-		} else {
-			setPaymentStatusData([]);
-		}
-	}, [showPaymentStatus, filterSeasonCode, fetchPaymentStatus]);
-
-	const handleApplyFilter = async () => {
-		if (!filterSeasonCode) return;
-		setFilterLoading(true);
-		try {
+	// --- TanStack Query: Fetch payment status data ---
+	const {
+		data: paymentStatusData = [],
+		isFetching: paymentStatusLoading,
+		refetch: refetchPaymentStatus,
+	} = useQuery<PaymentStatus[]>({
+		queryKey: [
+			"datatablePaymentStatus",
+			pageName,
+			filterSeasonCode,
+			showPaymentStatus,
+		],
+		enabled: !!showPaymentStatus && !!filterSeasonCode,
+		queryFn: async () => {
 			let res;
 			if (pageName.includes("Players")) {
 				res = await fetch(
-					`${rosterRoute}/rosterPlayerView?seasonCode=${filterSeasonCode}`
+					`${playerPaymentHistoryRoute}/viewData?seasonCode=${filterSeasonCode}`
 				);
 			} else if (pageName.includes("Places")) {
 				res = await fetch(
-					`${rosterRoute}/rosterPlaceView?seasonCode=${filterSeasonCode}`
+					`${placePaymentHistoryRoute}/viewData?seasonCode=${filterSeasonCode}`
 				);
 			} else {
 				res = await fetch(
-					`${rosterRoute}/rosterTeamView?seasonCode=${filterSeasonCode}`
+					`${teamPaymentHistoryRoute}/viewData?seasonCode=${filterSeasonCode}`
 				);
 			}
-			const ids: { ledaId: string | number }[] = await res.json();
-			// Extract ledaId values from the array of objects
-			const ledaIds = Array.isArray(ids)
-				? ids.map((item) => String(item.ledaId))
-				: [];
-			setFilteredLedaIds(ledaIds);
-			setShowPaymentStatus(pendingShowPaymentStatus); // Only set showPaymentStatus on Apply
-			setFilterPopoverOpen(false);
-		} catch (e) {
-			console.error("Failed to filter by season", e);
-		} finally {
-			setFilterLoading(false);
-		}
-	};
+			const data = await res.json();
+			return Array.isArray(data) ? data : [];
+		},
+	});
 
-	// Filtered data based on debounced query and filter
+	// Remove the old debounce effect and replace with manual search execution
+	const executeSearch = React.useCallback(() => {
+		setActiveSearchQuery(searchQuery);
+	}, [searchQuery]);
+
+	// Clear search function
+	const clearSearch = React.useCallback(() => {
+		setSearchQuery("");
+		setActiveSearchQuery("");
+	}, []);
+
+	// Handle enter key in search input
+	const handleSearchKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			executeSearch();
+		} else if (e.key === 'Escape') {
+			clearSearch();
+		}
+	}, [executeSearch, clearSearch]);
+
+	// Configure Fuse.js for search
+	const fuseOptions = React.useMemo(() => {
+		const searchKeys = columns
+			.map((col) => {
+				if (col.id) return col.id;
+				if ("accessorKey" in col && typeof col.accessorKey === "string") {
+					return col.accessorKey;
+				}
+				return null;
+			})
+			.filter(Boolean) as string[];
+
+		return {
+			keys: searchKeys,
+			threshold: 0.3, // Lower = more strict matching
+			includeScore: true,
+			includeMatches: true,
+			ignoreLocation: true,
+			minMatchCharLength: 1,
+		};
+	}, [columns]);
+
+	// Initialize Fuse instance
+	const fuse = React.useMemo(() => {
+		let base = tableData;
+		if (filteredLedaIds) {
+			base = base.filter((row) =>
+				filteredLedaIds.includes(String(row.ledaId))
+			);
+		}
+		return new Fuse(base, fuseOptions);
+	}, [tableData, filteredLedaIds, fuseOptions]);
+
+	// Helper function to extract text from React elements (improved)
+	const extractTextFromReactElement = React.useCallback((element: unknown): string => {
+		if (typeof element === "string") return element;
+		if (typeof element === "number") return String(element);
+
+		// Handle React elements
+		if (element && typeof element === "object") {
+			const el = element as { props?: { [key: string]: unknown } };
+			// If it has props.children, recurse into children
+			if (el.props?.children) {
+				if (typeof el.props.children === "string") {
+					return el.props.children;
+				}
+				if (Array.isArray(el.props.children)) {
+					return el.props.children
+						.map((child) => extractTextFromReactElement(child))
+						.filter((text) => text && text.trim())
+						.join(" ");
+				}
+				// Single child that's not a string
+				return extractTextFromReactElement(el.props.children);
+			}
+
+			// Check for common text properties
+			if (el.props?.title && typeof el.props.title === "string") return el.props.title;
+			if (el.props?.alt && typeof el.props.alt === "string") return el.props.alt;
+			if (el.props?.label && typeof el.props.label === "string") return el.props.label;
+		}
+
+		return "";
+	}, []);
+
+	// Create column mapping for field name translation using search-parser utility
+	const columnMapping = React.useMemo(() => {
+		const columnMappings: ColumnMapping[] = [];
+		
+		columns.forEach((col, index) => {
+			let displayName = "";
+			let dataKey = "";
+			
+			// Get display name from header - handle all possible header types
+			if (typeof col.header === "string") {
+				displayName = col.header;
+			} else if (typeof col.header === "function") {
+				// Try to render the header function to get the display name
+				try {
+					const mockContext = {
+						header: {
+							column: { columnDef: col },
+							getContext: () => ({}),
+						}
+					} as any;
+					const rendered = col.header(mockContext);
+					if (typeof rendered === "string") {
+						displayName = rendered;
+					} else if (rendered && typeof rendered === "object" && "props" in rendered) {
+						// Handle React elements - try to extract text content
+						displayName = extractTextFromReactElement(rendered);
+					}
+				} catch (e) {
+					console.warn(`Error rendering header function for column ${index}:`, e);
+				}
+			}
+			
+			// Get data key
+			if (col.id) {
+				dataKey = col.id;
+			} else if ("accessorKey" in col && typeof col.accessorKey === "string") {
+				dataKey = col.accessorKey;
+			}
+			
+			if (dataKey) {
+				columnMappings.push({
+					displayName,
+					dataKey,
+					variations: []
+				});
+			}
+		});
+		
+		return createColumnMapping(columnMappings);
+	}, [columns, extractTextFromReactElement]);
+
+	// Parse field-specific search queries with AND/OR logic using search-parser utility
+	const parsedSearch = React.useCallback((query: string) => {
+		return parseFieldSearch(query, columnMapping);
+	}, [columnMapping]);
+
+	// Enhanced filtered data with manual search execution
 	const filteredData = React.useMemo(() => {
 		let base = tableData;
 		if (filteredLedaIds) {
@@ -213,15 +356,20 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 				filteredLedaIds.includes(String(row.ledaId))
 			);
 		}
-		if (!debouncedQuery) return base;
-		return base.filter((row) =>
-			Object.values(row).some((value) =>
-				String(value)
-					.toLowerCase()
-					.includes(debouncedQuery.toLowerCase())
-			)
-		);
-	}, [debouncedQuery, tableData, filteredLedaIds]);
+		
+		if (!activeSearchQuery) return base;
+
+		const searchConfig = parsedSearch(activeSearchQuery);
+
+		if (searchConfig.type === "general") {
+			// Use Fuse.js for general search
+			const results = fuse.search(searchConfig.query || "");
+			return results.map(result => result.item);
+		} else {
+			// Use the reusable search-parser filter function
+			return filterDataBySearch(base, searchConfig);
+		}
+	}, [activeSearchQuery, tableData, filteredLedaIds, fuse, parsedSearch]);
 
 	// Function to get payment status for a given ledaId
 	const getPaymentStatus = React.useCallback(
@@ -271,7 +419,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 						<TooltipTrigger asChild>
 							<span>{icon}</span>
 						</TooltipTrigger>
-						<TooltipContent className="bg-white rounded-lg">
+						<TooltipContent className="bg-background text-foreground rounded-lg">
 							{tooltipText}
 						</TooltipContent>
 					</Tooltip>
@@ -348,9 +496,34 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		state: {
 			sorting,
 			rowSelection,
+			pagination: {
+				pageIndex,
+				pageSize,
+			}, // Add pagination state
+		},
+		onPaginationChange: (updater) => {
+			const next =
+				typeof updater === "function"
+					? updater({ pageIndex, pageSize })
+					: updater;
+
+			if (next && typeof next === "object") {
+				if ("pageSize" in next && typeof (next as any).pageSize === "number") {
+					const nextSize = (next as any).pageSize as number;
+					if (nextSize !== pageSize) {
+						setPageSize(nextSize);
+						setPageIndex(0);
+						return;
+					}
+				}
+				if ("pageIndex" in next && typeof (next as any).pageIndex === "number") {
+					setPageIndex((next as any).pageIndex as number);
+				}
+			}
 		},
 		initialState: {
 			sorting: [{ id: defaultSort ? defaultSort : "", desc: false }],
+			pagination: { pageIndex, pageSize }, // Use the initialized pageIndex
 		},
 	});
 
@@ -374,19 +547,22 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	// Refresh the table data
 	const handleRefresh = async () => {
 		try {
+			setIsRefreshing(true);
 			const response = await fetch(apiEndpoint); // Use the dynamic API endpoint
 			const newData = await response.json();
 			setTableData(newData);
 			setRowSelection({}); // Clear row selection on refresh
+			// Don't reset page index on refresh - keep user's current position
 		} catch (error) {
 			console.error("Failed to refresh data", error);
+		} finally {
+			setIsRefreshing(false);
 		}
 	};
 
 	React.useEffect(() => {
-		handleRefresh(); // Call handleRefresh without arguments
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [onRefresh]);
+		setTableData(data);
+	}, [data]);
 
 	// Set default selected row if provided
 	React.useEffect(() => {
@@ -395,24 +571,372 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 		}
 	}, [defaultSelectedRow]);
 
+	// When filterCurrentSeason changes, reset filterSeasonCode and pendingShowPaymentStatus if needed
+	React.useEffect(() => {
+		if (filterCurrentSeason) {
+			setFilterSeasonCode("");
+			setPendingShowPaymentStatus(false);
+			setShowPaymentStatus(false);
+		}
+	}, [filterCurrentSeason]);
+
+	// Only fetch payment status when showPaymentStatus is set (after Apply)
+	React.useEffect(() => {
+		if (showPaymentStatus && filterSeasonCode) {
+			refetchPaymentStatus();
+		}
+		// No else branch needed, paymentStatusData will be empty if not enabled
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [showPaymentStatus, filterSeasonCode]);
+
+	const handleApplyFilter = async () => {
+		if (!filterSeasonCode) return;
+		setFilterLoading(true);
+		try {
+			let res;
+			if (pageName.includes("Players")) {
+				res = await fetch(
+					`${rosterRoute}/rosterPlayerView?seasonCode=${filterSeasonCode}`
+				);
+			} else if (pageName.includes("Places")) {
+				res = await fetch(
+					`${rosterRoute}/rosterPlaceView?seasonCode=${filterSeasonCode}`
+				);
+			} else {
+				res = await fetch(
+					`${rosterRoute}/rosterTeamView?seasonCode=${filterSeasonCode}`
+				);
+			}
+			const ids: { ledaId: string | number }[] = await res.json();
+			// Extract ledaId values from the array of objects
+			const ledaIds = Array.isArray(ids)
+				? ids.map((item) => String(item.ledaId))
+				: [];
+			setFilteredLedaIds(ledaIds);
+			setShowPaymentStatus(pendingShowPaymentStatus); // Only set showPaymentStatus on Apply
+			setFilterPopoverOpen(false);
+		} catch (e) {
+			console.error("Failed to filter by season", e);
+		} finally {
+			setFilterLoading(false);
+		}
+	};
+
+	// Add state for context menu
+	const [contextMenu, setContextMenu] = React.useState<{
+		show: boolean;
+		x: number;
+		y: number;
+		columnName: string;
+	}>({ show: false, x: 0, y: 0, columnName: "" });
+
+	// Add state for row context menu
+	const [rowContextMenu, setRowContextMenu] = React.useState<{
+		show: boolean;
+		x: number;
+		y: number;
+		columnKey: string;
+		columnName: string;
+		cellValue: string;
+	}>({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
+
+	// Ref for the search input to focus and position cursor
+	const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+	// Handle right-click on column headers
+	const handleColumnRightClick = React.useCallback((e: React.MouseEvent, columnName: string) => {
+		e.preventDefault();
+		setContextMenu({
+			show: true,
+			x: e.clientX,
+			y: e.clientY,
+			columnName
+		});
+	}, []);
+
+	// Handle right-click on table cells
+	const handleCellRightClick = React.useCallback((
+		e: React.MouseEvent, 
+		columnKey: string, 
+		columnName: string, 
+		cellValue: any
+	) => {
+		// Don't show context menu for select column
+		if (columnKey === "select") return;
+		
+		e.preventDefault();
+		setRowContextMenu({
+			show: true,
+			x: e.clientX,
+			y: e.clientY,
+			columnKey,
+			columnName,
+			cellValue: String(cellValue || "")
+		});
+	}, []);
+
+	// Handle context menu option selection
+	const handleAddToSearch = React.useCallback(() => {
+		const { columnName } = contextMenu;
+		const searchPattern = `"${columnName}"=""`;
+		
+		// If there's existing search text, add " and " before the new pattern
+		const newSearchQuery = searchQuery 
+			? `${searchQuery} and ${searchPattern}`
+			: searchPattern;
+		
+		setSearchQuery(newSearchQuery);
+		setContextMenu({ show: false, x: 0, y: 0, columnName: "" });
+		
+		// Focus the input and position cursor between the quotes
+		setTimeout(() => {
+			if (searchInputRef.current) {
+				searchInputRef.current.focus();
+				const cursorPosition = newSearchQuery.length - 1; // Position inside the closing quotes
+				searchInputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+			}
+		}, 0);
+	}, [contextMenu, searchQuery]);
+
+	// Handle adding cell value to search with exact match
+	const handleAddCellToSearchExact = React.useCallback(() => {
+		const { columnName, cellValue } = rowContextMenu;
+		
+		// Check if this field is already in the search query with IN operator
+		const inPattern = new RegExp(`"${columnName.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}"\\s+IN\\s*\\(([^)]+)\\)`, 'i');
+		const inMatch = searchQuery.match(inPattern);
+		
+		if (inMatch) {
+			// Field exists with IN operator, add to its values
+			const existingValues = inMatch[1];
+			const newSearchQuery = searchQuery.replace(
+				inPattern,
+				`"${columnName}" IN (${existingValues}, "${cellValue}")`
+			);
+			setSearchQuery(newSearchQuery);
+		} else {
+			// Check if exact match exists
+			const exactPattern = new RegExp(`"${columnName.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}"\\s*=\\s*"([^"]+)"`);
+			const exactMatch = searchQuery.match(exactPattern);
+			
+			if (exactMatch) {
+				// Convert exact match to IN operator with both values
+				const existingValue = exactMatch[1];
+				const newSearchQuery = searchQuery.replace(
+					exactPattern,
+					`"${columnName}" IN ("${existingValue}", "${cellValue}")`
+				);
+				setSearchQuery(newSearchQuery);
+			} else {
+				// Field doesn't exist, add new exact match
+				const searchPattern = `"${columnName}"="${cellValue}"`;
+				const newSearchQuery = searchQuery 
+					? `${searchQuery} and ${searchPattern}`
+					: searchPattern;
+				setSearchQuery(newSearchQuery);
+			}
+		}
+		
+		setRowContextMenu({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
+	}, [rowContextMenu, searchQuery]);
+
+	// Handle adding cell value to search with contains/partial match
+	const handleAddCellToSearchContains = React.useCallback(() => {
+		const { columnName, cellValue } = rowContextMenu;
+		
+		// Check if reverse IN pattern already exists for this field
+		const reverseInPattern = new RegExp(`\\(([^)]+)\\)\\s+IN\\s+"${columnName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i');
+		const reverseInMatch = searchQuery.match(reverseInPattern);
+		
+		if (reverseInMatch) {
+			// Pattern exists, add to the values list
+			const existingValues = reverseInMatch[1];
+			const newSearchQuery = searchQuery.replace(
+				reverseInPattern,
+				`(${existingValues}, "${cellValue}") IN "${columnName}"`
+			);
+			setSearchQuery(newSearchQuery);
+		} else {
+			// Check if single value reverse IN exists
+			const singleReverseInPattern = new RegExp(`"([^"]+)"\\s+IN\\s+"${columnName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i');
+			const singleReverseInMatch = searchQuery.match(singleReverseInPattern);
+			
+			if (singleReverseInMatch) {
+				// Convert single value to multiple values
+				const existingValue = singleReverseInMatch[1];
+				const newSearchQuery = searchQuery.replace(
+					singleReverseInPattern,
+					`("${existingValue}", "${cellValue}") IN "${columnName}"`
+				);
+				setSearchQuery(newSearchQuery);
+			} else {
+				// No existing pattern, create new single value reverse IN
+				const searchPattern = `"${cellValue}" IN "${columnName}"`;
+				const newSearchQuery = searchQuery 
+					? `${searchQuery} and ${searchPattern}`
+					: searchPattern;
+				setSearchQuery(newSearchQuery);
+			}
+		}
+		
+		setRowContextMenu({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
+	}, [rowContextMenu, searchQuery]);
+
+	// Close context menus when clicking elsewhere
+	React.useEffect(() => {
+		const handleClickOutside = () => {
+			setContextMenu({ show: false, x: 0, y: 0, columnName: "" });
+			setRowContextMenu({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
+		};
+
+		if (contextMenu.show || rowContextMenu.show) {
+			document.addEventListener('click', handleClickOutside);
+			return () => document.removeEventListener('click', handleClickOutside);
+		}
+	}, [contextMenu.show, rowContextMenu.show]);
+
+	// Helper function to extract display name from column header
+	const getColumnDisplayName = React.useCallback((col: ColumnDef<TData, TValue>): string => {
+		if (typeof col.header === "string") {
+			return col.header;
+		} else if (typeof col.header === "function") {
+			try {
+				const mockColumn = {
+					columnDef: col,
+					getIsSorted: () => false,
+					toggleSorting: () => {},
+					...col
+				};
+				const mockContext = {
+					column: mockColumn,
+					header: {
+						column: mockColumn,
+						getContext: () => mockContext
+					},
+					table: {
+						getIsAllPageRowsSelected: () => false,
+						getIsSomePageRowsSelected: () => false,
+						toggleAllPageRowsSelected: () => {}
+					}
+				} as any;
+				
+				const rendered = col.header(mockContext);
+				if (typeof rendered === "string") {
+					return rendered;
+				} else if (rendered) {
+					return extractTextFromReactElement(rendered);
+				}
+			} catch {
+				// Fallback to accessor key or id
+				if ("accessorKey" in col && typeof col.accessorKey === "string") {
+					return col.accessorKey;
+				}
+				if (col.id) {
+					return col.id;
+				}
+			}
+		}
+		return "";
+	}, [extractTextFromReactElement]);
+
+	// Save page index for the current session
+	React.useEffect(() => {
+		if (typeof window === "undefined") return;
+		if (!didRestorePageIndex) return;
+		sessionStorage.setItem(pageIndexStorageKey, pageIndex.toString());
+	}, [didRestorePageIndex, pageIndex, pageIndexStorageKey]);
+
+	// Restore page index after mount (client-only) to avoid hydration mismatch.
+	React.useEffect(() => {
+		if (typeof window === "undefined") return;
+		const savedPageIndex = sessionStorage.getItem(pageIndexStorageKey);
+		const parsedIndex = savedPageIndex ? parseInt(savedPageIndex, 10) : 0;
+		if (!isNaN(parsedIndex) && parsedIndex >= 0) {
+			setPageIndex(parsedIndex);
+		}
+		setDidRestorePageIndex(true);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [pageIndexStorageKey]);
+
+	// Reset persisted page index when leaving this page unless explicitly preserved (e.g., navigating to a View page)
+	React.useEffect(() => {
+		return () => {
+			if (typeof window === "undefined") return;
+			const shouldPreserve = sessionStorage.getItem(preserveKey) === "1";
+			if (shouldPreserve) {
+				sessionStorage.removeItem(preserveKey);
+				return;
+			}
+			sessionStorage.setItem(pageIndexStorageKey, "0");
+		};
+	}, [pageIndexStorageKey, preserveKey]);
+
+	if (!didRestorePageIndex) {
+		return (
+			<div className="w-full">
+				<div className="p-5 shadow-sm bg-background rounded-xl border border-border w-full transition-all">
+					<div className="flex items-center justify-center py-16 gap-3 text-muted-foreground">
+						<Loader2 className="h-6 w-6 animate-spin" />
+						<span className="text-sm">Loading table…</span>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="w-full">
-			<div className="p-5 shadow-sm bg-white rounded-xl border border-gray-200 w-full transition-all">
+			<div className="p-5 shadow-sm bg-background rounded-xl border border-border w-full transition-all">
 				<div className="overflow-hidden rounded-lg">
-					<h1 className="text-2xl font-medium pb-4 text-center text-gray-700">
+					<h1 className="text-2xl font-medium pb-4 text-center text-foreground">
 						{pageName}
 					</h1>
 					<div className="flex items-center justify-between space-x-3 mb-4">
-						{addDialog ? (
-							<div>
-								{React.cloneElement(
-									// eslint-disable-next-line @typescript-eslint/no-explicit-any
-									addDialog as React.ReactElement<any>,
-									{ onRefresh: handleRefresh }
-								)}
-							</div>
-						) : null}
+						{addDialogConfig && (
+							<DialogWithButton
+								form={addDialogConfig.form}
+								title={addDialogConfig.title}
+								buttonName={addDialogConfig.buttonName}
+								onRefresh={handleRefresh}
+							/>
+						)}
 						<div className="flex space-x-2">
+							<Button
+								variant="outline"
+								size="icon"
+								onClick={handleRefresh}
+								disabled={isRefreshing}
+								className="hover:bg-muted border-border text-foreground transition-colors"
+								aria-label="Refresh"
+							>
+								<RotateCw
+									className={
+										isRefreshing
+											? "h-4 w-4 animate-spin"
+											: "h-4 w-4"
+									}
+								/>
+							</Button>
+							<Select
+								value={String(pageSize)}
+								onValueChange={(value) => {
+									const next = Number(value);
+									if (!Number.isFinite(next)) return;
+									setPageSize(next);
+									setPageIndex(0);
+								}}
+								disabled={isRefreshing}
+							>
+								<SelectTrigger className="w-[120px]">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="10">10 rows</SelectItem>
+									<SelectItem value="25">25 rows</SelectItem>
+									<SelectItem value="50">50 rows</SelectItem>
+									<SelectItem value="100">100 rows</SelectItem>
+								</SelectContent>
+							</Select>
 							{/* Filter By Season Button and Popover */}
 							{filter && (
 								<Popover
@@ -422,7 +946,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									<PopoverTrigger asChild>
 										<Button
 											variant="outline"
-											className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+											className="hover:bg-muted border-border text-foreground transition-colors"
 											onClick={() =>
 												setFilterPopoverOpen(true)
 											}
@@ -430,7 +954,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 											Filter By Season
 										</Button>
 									</PopoverTrigger>
-									<PopoverContent className="w-[260px] bg-white shadow-md rounded-lg border border-gray-200 p-4">
+									<PopoverContent className="w-[260px] bg-background shadow-md rounded-lg border border-border p-4">
 										<div className="flex flex-col gap-3">
 											<RosterSeasonCodeSelector
 												disabled={filterCurrentSeason}
@@ -453,7 +977,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 														)
 													}
 												/>
-												<span className="text-gray-700 text-sm">
+												<span className="text-foreground text-sm">
 													Current Season?
 												</span>
 											</div>
@@ -473,11 +997,11 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 															paymentStatusLoading
 														}
 													/>
-													<span className="text-gray-700 text-sm">
+													<span className="text-foreground text-sm">
 														Show Payment Status
 													</span>
 													{paymentStatusLoading && (
-														<span className="text-xs ml-2 text-gray-500">
+														<span className="text-xs ml-2 text-muted-foreground">
 															(Loading...)
 														</span>
 													)}
@@ -485,11 +1009,12 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 											)}
 											<Button
 												onClick={handleApplyFilter}
+												variant="outline"
 												disabled={
 													!filterSeasonCode ||
 													filterLoading
 												}
-												className="w-full hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+												className="w-full hover:bg-muted border-border text-foreground transition-colors"
 											>
 												{filterLoading
 													? "Applying..."
@@ -508,11 +1033,8 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 														setPendingShowPaymentStatus(
 															false
 														);
-														setPaymentStatusData(
-															[]
-														);
 													}}
-													className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
+													className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors"
 												>
 													Clear Filter
 												</Button>
@@ -521,98 +1043,111 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									</PopoverContent>
 								</Popover>
 							)}
-							{/* ...existing code for viewLink, editDialog, deleteDialog... */}
-							{viewLink ? (
-								<div>
-									{React.cloneElement(
-										// eslint-disable-next-line @typescript-eslint/no-explicit-any
-										viewLink as React.ReactElement<any>,
-										{
-											disabled:
-												selectedRowCount === 1
-													? false
-													: true,
-											href: `/Portal/${
-												selectedRowsData[0]?.ledaId
-													? "Management"
-													: "Maintenance"
-											}/**REPLACE**/${
-												selectedRowsData[0]?.ledaId ??
-												selectedRowsData[0]?.seasonCode
-											}`,
-										}
-									)}
-								</div>
-							) : null}
-							{editDialog ? (
-								<div>
-									{React.cloneElement(
-										// eslint-disable-next-line @typescript-eslint/no-explicit-any
-										editDialog as React.ReactElement<any>,
-										{
-											disabled:
-												selectedRowCount === 1
-													? false
-													: true,
-											rowData: selectedRowsData[0], // Pass the first selected row's data
-											onRefresh: handleRefresh,
-										}
-									)}
-								</div>
-							) : null}
-							{deleteDialog ? (
-								<div>
-									{React.cloneElement(
-										// eslint-disable-next-line @typescript-eslint/no-explicit-any
-										deleteDialog as React.ReactElement<any>,
-										{
-											selectedRowCount,
-											disabled:
-												selectedRowCount > 0
-													? false
-													: true,
-											rowData: selectedRowsData, // Pass the selected rows' data
-											onRefresh: handleRefresh,
-										}
-									)}
-								</div>
-							) : null}
+							{customLink && (
+								<Button
+									variant="outline"
+									onClick={() => router.push(`/Portal/${customLink.link}`)}
+									className="hover:bg-muted border-border text-foreground"
+								>
+									{customLink.buttonName}
+								</Button>
+							)}
+							{viewLinkConfig && (
+								<CustomLink
+									linkName={viewLinkConfig.linkName}
+									parentPage={viewLinkConfig.parentPage}
+									disabled={selectedRowCount !== 1}
+									href={`/Portal/${selectedRowsData[0]?.ledaId ? "Management" : "Maintenance"}/**REPLACE**/${selectedRowsData[0]?.ledaId ?? selectedRowsData[0]?.seasonCode}`}
+									onClick={() => {
+										if (typeof window === "undefined") return;
+										sessionStorage.setItem(preserveKey, "1");
+									}}
+								/>
+							)}
+							{editDialogConfig && (
+								<DialogWithButton
+									form={editDialogConfig.form}
+									title={editDialogConfig.title}
+									buttonName={editDialogConfig.buttonName}
+									onRefresh={handleRefresh}
+									rowData={selectedRowsData[0]}
+									disabled={selectedRowCount !== 1}
+								/>
+							)}
+							{deleteDialogConfig && (
+								<AlertDialogDelete
+									buttonName={deleteDialogConfig.buttonName}
+									title={deleteDialogConfig.title}
+									apiEndpoint={deleteDialogConfig.apiEndpoint}
+									onRefresh={handleRefresh}
+									rowData={selectedRowsData}
+									selectedRowCount={selectedRowCount}
+									disabled={selectedRowCount === 0}
+								/>
+							)}
 						</div>
 					</div>
 					{/* Search Input */}
 					<div className="mb-4">
-						<Input
-							type="text"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							placeholder="Search..."
-							className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-all"
-						/>
+						<div className="flex gap-2">
+							<Input
+								ref={searchInputRef}
+								type="text"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								onKeyDown={handleSearchKeyDown}
+								placeholder="Search... (Press Esc to clear)"
+								className="flex-1 p-2 border border-border rounded-md shadow-sm focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-all"
+							/>
+							<Button
+								onClick={executeSearch}
+								variant="outline"
+								className="px-4 hover:bg-muted border-border text-foreground transition-colors"
+							>
+								Search
+							</Button>
+							{(searchQuery || activeSearchQuery) && (
+								<Button
+									onClick={clearSearch}
+									variant="outline"
+									className="px-4 hover:bg-red-100 border-red-300 text-red-700 transition-colors"
+								>
+									Clear
+								</Button>
+							)}
+						</div>
 					</div>
 
-					<div className="border border-gray-200 rounded-lg overflow-hidden">
+					<div className="border border-border rounded-lg overflow-hidden relative">
 						<Table className="min-w-full">
-							<TableHeader className="bg-gray-50 border-b">
+							<TableHeader className="bg-muted border-b">
 								{table.getHeaderGroups().map((headerGroup) => (
 									<TableRow
 										key={headerGroup.id}
-										className="border-gray-200"
+										className="border-border"
 									>
-										{headerGroup.headers.map((header) => (
-											<TableHead
-												key={header.id}
-												className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
-											>
-												{header.isPlaceholder
-													? null
-													: flexRender(
-															header.column
-																.columnDef
-																.header,
-															header.getContext()
-													  )}
-											</TableHead>
-										))}
+										{headerGroup.headers.map((header) => {
+											const isSelectColumn = header.column.columnDef.id === "select";
+											const displayName = isSelectColumn ? "" : getColumnDisplayName(header.column.columnDef);
+											
+											return (
+												<TableHead
+													key={header.id}
+													className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
+													onContextMenu={isSelectColumn ? undefined : (e) => handleColumnRightClick(e, displayName)}
+													style={{ userSelect: 'none' }}
+												>
+													{header.isPlaceholder
+														? null
+														: flexRender(
+																header.column
+																	.columnDef
+																	.header,
+																header.getContext()
+														  )}
+												</TableHead>
+											);
+										})}
 									</TableRow>
 								))}
 							</TableHeader>
@@ -621,7 +1156,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 									table.getRowModel().rows.map((row) => (
 										<TableRow
 											key={row.id}
-											className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+											className="hover:bg-muted transition-colors border-b border-border last:border-0"
 											data-state={
 												row.getIsSelected() &&
 												"selected"
@@ -629,25 +1164,35 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 										>
 											{row
 												.getVisibleCells()
-												.map((cell) => (
-													<TableCell
-														key={cell.id}
-														className="px-6 py-3 text-sm text-gray-700"
-													>
-														{flexRender(
-															cell.column
-																.columnDef.cell,
-															cell.getContext()
-														)}
-													</TableCell>
-												))}
+												.map((cell) => {
+													const columnKey = cell.column.id;
+													const isSelectColumn = columnKey === "select";
+													const columnName = isSelectColumn ? "" : getColumnDisplayName(cell.column.columnDef);
+													const cellValue = cell.getValue();
+												
+													return (
+														<TableCell
+															key={cell.id}
+															className="px-6 py-3 text-sm text-foreground"
+															onContextMenu={isSelectColumn ? undefined : (e) => 
+																handleCellRightClick(e, columnKey, columnName, cellValue)
+															}
+														>
+															{flexRender(
+																cell.column
+																	.columnDef.cell,
+																cell.getContext()
+															)}
+														</TableCell>
+													);
+												})}
 										</TableRow>
 									))
 								) : (
 									<TableRow>
 										<TableCell
 											colSpan={columns.length}
-											className="h-24 text-center text-gray-500"
+											className="h-24 text-center text-muted-foreground"
 										>
 											No Results.
 										</TableCell>
@@ -655,28 +1200,76 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 								)}
 							</TableBody>
 						</Table>
+
+						{/* Column Header Context Menu */}
+						{contextMenu.show && (
+							<div
+								className="fixed bg-background border border-border rounded-md shadow-lg py-1 z-50"
+								style={{
+									left: contextMenu.x,
+									top: contextMenu.y,
+								}}
+								onClick={(e) => e.stopPropagation()}
+							>
+								<button
+									className="w-full px-4 py-2 text-left text-sm hover:bg-muted transition-colors"
+									onClick={handleAddToSearch}
+								>
+									Add &quot;{contextMenu.columnName}&quot; to search
+								</button>
+							</div>
+						)}
+
+						{/* Row Cell Context Menu */}
+						{rowContextMenu.show && (
+							<div
+								className="fixed bg-background border border-border rounded-md shadow-lg py-1 z-50"
+								style={{
+									left: rowContextMenu.x,
+									top: rowContextMenu.y,
+								}}
+								onClick={(e) => e.stopPropagation()}
+							>
+								<button
+									className="w-full px-4 py-2 text-left text-sm hover:bg-muted transition-colors border-b border-border"
+									onClick={handleAddCellToSearchExact}
+								>
+									Search for exact match: &quot;{rowContextMenu.cellValue}&quot;
+								</button>
+								<button
+									className="w-full px-4 py-2 text-left text-sm hover:bg-muted transition-colors"
+									onClick={handleAddCellToSearchContains}
+								>
+									Search for all records containing: &quot;{rowContextMenu.cellValue}&quot;
+								</button>
+							</div>
+						)}
 					</div>
 				</div>
 				<div className="flex items-center justify-between space-x-2 py-4 mt-2">
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() => table.previousPage()}
+						onClick={() => {
+								table.previousPage();
+						}}
 						disabled={!table.getCanPreviousPage()}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+						className="hover:bg-muted border-border text-foreground transition-colors"
 					>
 						Previous
 					</Button>
-					<div className="text-sm text-gray-500">
+					<div className="text-sm text-muted-foreground">
 						Page {table.getState().pagination.pageIndex + 1} of{" "}
 						{table.getPageCount()}
 					</div>
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() => table.nextPage()}
+						onClick={() => {
+								table.nextPage();
+						}}
 						disabled={!table.getCanNextPage()}
-						className="hover:bg-gray-100 border-gray-300 text-gray-700 transition-colors"
+						className="hover:bg-muted border-border text-foreground transition-colors"
 					>
 						Next
 					</Button>

@@ -1,14 +1,24 @@
-import { NextApiRequest, NextApiResponse } from "next";
+/**
+ * API Route: /api/activities/roster/rosterHistory
+ *
+ * GET — Returns a player's full roster history across seasons, ordered by
+ *        season descending. Requires `ledaId` as a query param.
+ */
 import { query } from "@/lib/dbTypeGet";
 import { PlayerRosterHistory } from "@/lib/definitions";
+import { requireApiSession } from "@/lib/require-session";
+import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	await requireApiSession(req, res);
+	// Handle GET requests
 	if (req.method === "GET") {
 		try {
 			if (req.query.ledaId) {
+				// Fetch all season roster entries for the given player, most recent first
 				const result = await query<PlayerRosterHistory>(
 					`SELECT player_id, team_id, team_letter, team_name, division, subdivision, "seasonCode", "totalPoints", place FROM public.leda_players_roster_history WHERE player_id = $1 ORDER BY "seasonCode" DESC`,
 					[req.query.ledaId as string]

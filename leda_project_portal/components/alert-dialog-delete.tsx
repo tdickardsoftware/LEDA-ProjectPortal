@@ -1,3 +1,11 @@
+/**
+ * AlertDialogDelete component
+ *
+ * Renders a button that, when clicked, opens a confirmation dialog before
+ * deleting one or more selected rows via a DELETE request to the given API
+ * endpoint.  Uses TanStack Mutation to iterate over each rowData entry and
+ * fires the optional onRefresh callback when the deletion succeeds.
+ */
 "use client";
 import {
 	AlertDialog,
@@ -12,6 +20,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 interface AlertDialogDeleteProps {
 	buttonName: string;
@@ -40,21 +50,27 @@ export default function AlertDialogDelete({
 		setCurrentSelectedRowCount(selectedRowCount || 0);
 	}, [selectedRowCount]);
 
-	async function onClickDelete() {
-		for (let j = 0; j < rowData.length; j++) {
-			await fetch(apiEndpoint, {
-				method: "DELETE",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(
-					rowData[j] // Ensure targetValue is correctly passed
-				),
-			});
-		}
-		if (onRefresh) {
-			onRefresh();
-		}
+	const deleteMutation = useMutation({
+		mutationFn: async () => {
+			for (let j = 0; j < rowData.length; j++) {
+				await fetchWithSession(apiEndpoint, {
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(rowData[j]),
+				});
+			}
+		},
+		onSuccess: () => {
+			if (onRefresh) {
+				onRefresh();
+			}
+		},
+	});
+
+	function onClickDelete() {
+		deleteMutation.mutate();
 	}
 
 	return (
@@ -63,12 +79,12 @@ export default function AlertDialogDelete({
 				<Button
 					variant={"outline"}
 					disabled={disabled}
-					className="hover:bg-gray-100 border-gray-300 text-gray-700"
+					className="hover:bg-muted border-border text-foreground"
 				>
 					{buttonName}
 				</Button>
 			</AlertDialogTrigger>
-			<AlertDialogContent className="bg-white">
+			<AlertDialogContent className="bg-background">
 				<AlertDialogHeader>
 					<AlertDialogTitle>{title}</AlertDialogTitle>
 					<AlertDialogDescription>

@@ -1,8 +1,22 @@
 "use client";
 
+/**
+ * TeamPaymentHistoryContent
+ *
+ * Displays a team's full payment history with date and payment-type filters.
+ * Filtering is client-side over the TanStack Query result from
+ * `teamPaymentHistoryRoute`.
+ *
+ * - Date filter: dropdown of unique UTC-formatted payment dates.
+ * - Type filter: popover using `PaymentTypeSelectorNF` with Apply / Clear.
+ *
+ * All dates are derived in UTC to prevent day-shift rendering artefacts.
+ */
+
 import { PaymentHistory } from "@/lib/definitions";
 import { teamPaymentHistoryRoute } from "@/lib/apiRoutes";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Table,
 	TableBody,
@@ -32,12 +46,6 @@ export default function TeamPaymentHistoryContent({
 }: {
 	teamData: { ledaId: number; teamName: string };
 }) {
-	const [paymentData, setPaymentData] = useState<PaymentHistory[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [uniqueDates, setUniqueDates] = useState<{ paymentDate: string }[]>(
-		[]
-	);
 	const [selectedDate, setSelectedDate] = useState<string>("all");
 	const [selectedPaymentType, setSelectedPaymentType] = useState<
 		{ paymentType: string; desc: string } | undefined
@@ -47,8 +55,13 @@ export default function TeamPaymentHistoryContent({
 	>(undefined);
 	const [filterOpen, setFilterOpen] = useState(false);
 
-	useEffect(() => {
-		const getPaymentData = async () => {
+	const {
+		data: paymentData = [],
+		isLoading,
+		error,
+	} = useQuery<PaymentHistory[]>({
+		queryKey: ["teamPaymentHistory", teamData.ledaId],
+		queryFn: async () => {
 			const results = await fetch(
 				`${teamPaymentHistoryRoute}?teamId=${teamData.ledaId}`,
 				{
@@ -58,54 +71,31 @@ export default function TeamPaymentHistoryContent({
 			if (!results.ok) {
 				throw new Error("Failed to fetch payment data");
 			}
-			const data = await results.json();
-			return data;
-		};
+			return await results.json();
+		},
+	});
 
-		const fetchPaymentData = async () => {
-			try {
-				setIsLoading(true);
-				const data = await getPaymentData();
-				setPaymentData(data);
+	const uniqueDates: { paymentDate: string }[] = [
+		...new Set(
+			(paymentData || []).map((item: PaymentHistory) => {
+				if (!item.date) return null;
+				const date = new Date(item.date);
+				return `${date.getUTCFullYear()}-${String(
+					date.getUTCMonth() + 1
+				).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+			})
+		),
+	]
+		.filter(Boolean)
+		.map((date) => ({ paymentDate: date as string }));
 
-				const dates = [
-					...new Set(
-						data.map((item: PaymentHistory) => {
-							if (!item.date) return null;
-							const date = new Date(item.date);
-							// Always use UTC for date string
-							return `${date.getUTCFullYear()}-${String(
-								date.getUTCMonth() + 1
-							).padStart(2, "0")}-${String(
-								date.getUTCDate()
-							).padStart(2, "0")}`;
-						})
-					),
-				]
-					.filter(Boolean)
-					.map((date) => ({ paymentDate: date as string }));
-
-				setUniqueDates(dates);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load payment history data");
-				console.error(err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchPaymentData();
-	}, [teamData.ledaId]);
-
-	const filteredPaymentData = paymentData.filter((payment) => {
+	const filteredPaymentData = (paymentData || []).filter((payment) => {
 		let matchesDate = true;
 		let matchesType = true;
 
 		if (selectedDate !== "all") {
 			if (payment.date) {
 				const paymentDate = new Date(payment.date);
-				// Use UTC for comparison
 				const paymentDateStr = `${paymentDate.getUTCFullYear()}-${String(
 					paymentDate.getUTCMonth() + 1
 				).padStart(2, "0")}-${String(paymentDate.getUTCDate()).padStart(
@@ -152,10 +142,10 @@ export default function TeamPaymentHistoryContent({
 							value={selectedDate}
 							onValueChange={setSelectedDate}
 						>
-							<SelectTrigger className="w-[200px] border-gray-400 text-gray-700">
+							<SelectTrigger className="w-[200px] border-border text-foreground">
 								<SelectValue placeholder="Filter by date" />
 							</SelectTrigger>
-							<SelectContent className="bg-white border-gray-400 text-gray-700">
+							<SelectContent className="bg-background border-border text-foreground">
 								<SelectItem value="all">All Dates</SelectItem>
 								{uniqueDates.map((date, index) => (
 									<SelectItem
@@ -185,7 +175,7 @@ export default function TeamPaymentHistoryContent({
 							<PopoverTrigger asChild>
 								<Button
 									variant="outline"
-									className="border-gray-400 text-gray-700"
+									className="border-border text-foreground"
 								>
 									<FilterIcon className="h-4 w-4 mr-2" />
 									{appliedPaymentType
@@ -193,7 +183,7 @@ export default function TeamPaymentHistoryContent({
 										: "Filter by Type"}
 								</Button>
 							</PopoverTrigger>
-							<PopoverContent className="w-80 p-4 bg-white border-gray-400 text-gray-700">
+							<PopoverContent className="w-80 p-4 bg-background border-border text-foreground">
 								<div className="space-y-4">
 									<h4 className="font-medium">
 										Filter by Payment Type
@@ -207,13 +197,13 @@ export default function TeamPaymentHistoryContent({
 										<Button
 											variant="outline"
 											onClick={clearFilters}
-											className="text-sm border-gray-400 text-gray-700"
+											className="text-sm border-border text-foreground"
 										>
 											Clear Filters
 										</Button>
 										<Button
 											onClick={applyFilter}
-											className="text-sm border-gray-400 text-gray-700"
+											className="text-sm border-border text-foreground"
 										>
 											Apply
 										</Button>
@@ -225,14 +215,14 @@ export default function TeamPaymentHistoryContent({
 				</div>
 				{(selectedDate !== "all" || appliedPaymentType) && (
 					<div className="flex gap-2 mb-4 items-center">
-						<span className="text-sm text-gray-500">
+						<span className="text-sm text-muted-foreground">
 							Active filters:
 						</span>
 						{selectedDate !== "all" && (
 							<Button
 								variant="outline"
 								size="sm"
-								className="text-xs flex items-center gap-1 bg-gray-100"
+								className="text-xs flex items-center gap-1 bg-muted"
 								onClick={() => setSelectedDate("all")}
 							>
 								Date:{" "}
@@ -253,7 +243,7 @@ export default function TeamPaymentHistoryContent({
 							<Button
 								variant="outline"
 								size="sm"
-								className="text-xs flex items-center gap-1 bg-gray-100"
+								className="text-xs flex items-center gap-1 bg-muted"
 								onClick={() => {
 									setAppliedPaymentType(undefined);
 									setSelectedPaymentType(undefined);
@@ -266,13 +256,15 @@ export default function TeamPaymentHistoryContent({
 					</div>
 				)}
 				{isLoading ? (
-					<p className="text-gray-500 italic">
+					<p className="text-muted-foreground italic">
 						Loading payment history...
 					</p>
 				) : error ? (
-					<p className="text-red-500">{error}</p>
+					<p className="text-red-500">
+						{(error as Error).message || "Failed to load payment history data"}
+					</p>
 				) : filteredPaymentData.length === 0 ? (
-					<p className="text-gray-500">
+					<p className="text-muted-foreground">
 						No payment history found for this team.
 					</p>
 				) : (

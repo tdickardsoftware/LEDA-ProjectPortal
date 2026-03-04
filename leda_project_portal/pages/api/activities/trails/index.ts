@@ -3,12 +3,15 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { TrailsDateData } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	// Handle GET requests
 	if (req.method === "GET") {
 		try {
@@ -160,16 +163,6 @@ export default async function handler(
 				'update public.leda_membership_info set "lastTrailsDate" = $2 where "ledaId" = $1;';
 			const values5 = [data.ledaId, data.trailsDate];
 			result4 = await queryPost(query5, values5);
-			console.log(
-				"Updated lastTrailsDate for player",
-				data.ledaId,
-				"to",
-				data.trailsDate
-			);
-		} else {
-			console.log(
-				"Did not update lastTrailsDate - new date not later than existing"
-			);
 		}
 
 		// execute queries

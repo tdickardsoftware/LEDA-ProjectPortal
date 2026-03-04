@@ -1,3 +1,13 @@
+/**
+ * PlaceAddForm Component
+ *
+ * Multi-step form for registering a new venue (place) in the LEDA system.
+ * Steps: Basic Info → Contact Info → Membership Info → Additional Info.
+ * Validates each step before advancing. Optionally auto-generates a LEDA ID
+ * (sent as 0 so the server assigns one). Returns a 422 conflict when the
+ * provided LEDA ID is already taken. Uses `libphonenumber-js` for US phone
+ * validation and `validator` for email/URL validation.
+ */
 "use client";
 
 import { z } from "zod";
@@ -28,8 +38,11 @@ import { InputDefault } from "../../ui/form-input-default";
 import { placeRoute } from "@/lib/apiRoutes";
 import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
-import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
+import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 
+// Validation schema with cross-field rules for phone, email, and URL formats
 const placeFormSchema = z.object({
 	ledaId: z
 		.number()
@@ -37,7 +50,7 @@ const placeFormSchema = z.object({
 		.optional(),
 	name: z.string().min(1, { message: "Name is required." }),
 	addressOne: z.string().min(1, { message: "Address is required." }),
-	addressTwo: z.string().optional(),
+	addressTwo: z.string().nullable().optional(),
 	city: z.string().min(1, { message: "City is required." }),
 	state: z.string().min(1, { message: "State is required." }),
 	zip: z.string().min(1, { message: "Zip is required." }),
@@ -49,41 +62,54 @@ const placeFormSchema = z.object({
 		}),
 	otherNumber: z
 		.string()
+		.nullable()
 		.optional()
 		.refine(
-			(value) => value === "" || isValidPhoneNumber(value ?? "", "US"),
+			(value) => !value || value === "" || isValidPhoneNumber(value, "US"),
 			{ message: "Other Number is Invalid" }
 		),
 	email: z
 		.string()
-		.min(1, { message: "Email is Required" })
-		.refine(validator.isEmail, { message: "Email is Invalid" }),
+		.nullable()
+		.optional()
+		.refine((value) => !value || validator.isEmail(value), { message: "Email is Invalid" }),
 	website: z
 		.string()
+		.nullable()
 		.optional()
-		.refine((value) => value === undefined || validator.isURL(value), {
+		.refine((value) => !value || validator.isURL(value), {
 			message: "Website is Invalid",
 		}),
 	establishDate: z.string(),
-	memo: z.string().optional(),
-	numberOfBoards: z
-		.number()
-		.min(0, { message: "Number of Boards Must be a Postive Number." }),
+	memo: z.string().nullable().optional(),
+	numberOfBoards: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, {
+			message: "Number of Boards Must be a Postive Number.",
+		})
+	),
 	sendMailings: z.boolean(),
 	regularSponsor: z.boolean(),
 	currentSponsor: z.boolean(),
 	issues: z.boolean(),
 	lastBarFeePayment: z.string(),
-	lastSanctioningDate: z.string().optional(),
+	lastSanctioningDate: z.string().nullable().optional(),
 	placeType: z.string().min(1, { message: "Place Type is Required" }),
 	contactId: z.string().min(1, { message: "Place Owner is Required" }),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlaceAddForm renders a stepped place creation form.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function PlaceAddForm({
 	onClose,
 	onRefresh,
@@ -91,6 +117,7 @@ export default function PlaceAddForm({
 	onClose: () => void;
 	onRefresh: () => void;
 }) {
+	// When true, ledaId is set to 0 so the server auto-assigns an ID
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [ledaIdExists, setLedaIdExists] = useState(false);
 	const [currentStep, setCurrentStep] = useState(0);
@@ -137,7 +164,7 @@ export default function PlaceAddForm({
 			addressOne: "",
 			addressTwo: "",
 			city: "",
-			state: "",
+			state: "OH",
 			zip: "",
 			phoneNumber: "",
 			otherNumber: "",
@@ -145,7 +172,7 @@ export default function PlaceAddForm({
 			website: "",
 			establishDate: "",
 			memo: "",
-			numberOfBoards: undefined,
+			numberOfBoards: ("" as any),
 			sendMailings: false,
 			regularSponsor: false,
 			currentSponsor: false,
@@ -157,40 +184,44 @@ export default function PlaceAddForm({
 		},
 	});
 
-	// Handle step navigation
-	const nextStep = async () => {
-		const currentStepFields = steps[currentStep].fields;
+	// Reset form and all state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setGenerateIDStatus(true);
+		setLedaIdExists(false);
+		setCurrentStep(0);
+		form.reset({
+			ledaId: undefined,
+			name: "",
+			addressOne: "",
+			addressTwo: "",
+			city: "",
+			state: "OH",
+			zip: "",
+			phoneNumber: "",
+			otherNumber: "",
+			email: "",
+			website: "",
+			establishDate: "",
+			memo: "",
+			numberOfBoards: ("" as any),
+			sendMailings: false,
+			regularSponsor: false,
+			currentSponsor: false,
+			issues: false,
+			lastBarFeePayment: "UNPAID - NEW PLACE ADDED",
+			lastSanctioningDate: "",
+			placeType: "",
+			contactId: "",
+		});
+	}, [form]);
 
-		// Validate only the fields in the current step
-		const result = await form.trigger(
-			currentStepFields as (keyof z.infer<typeof placeFormSchema>)[]
-		);
-
-		if (result) {
-			if (currentStep < steps.length - 1) {
-				setCurrentStep(currentStep + 1);
-			} else {
-				// If we're on the last step, submit the form
-				form.handleSubmit(onSubmit)();
-			}
-		}
-	};
-
-	const prevStep = () => {
-		if (currentStep > 0) {
-			setCurrentStep(currentStep - 1);
-		} else {
-			onClose();
-		}
-	};
-
-	async function onSubmit(values: z.infer<typeof placeFormSchema>) {
-		try {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof placeFormSchema>) => {
 			const submissionValues = generateIDStatus
 				? { ...values, ledaId: 0 }
 				: values;
 
-			const response = await fetch(placeRoute, {
+			const response = await fetchWithSession(placeRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -209,21 +240,52 @@ export default function PlaceAddForm({
 				);
 			}
 
+			return await response.json();
+		},
+		onSuccess: () => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
 			setGenerateIDStatus(true);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
+		},
+	});
+
+	// Handle step navigation
+	const nextStep = async () => {
+		const currentStepFields = steps[currentStep].fields;
+		const result = await form.trigger(
+			currentStepFields as (keyof z.infer<typeof placeFormSchema>)[]
+		);
+
+		if (result) {
+			if (currentStep < steps.length - 1) {
+				setCurrentStep(currentStep + 1);
+			} else {
+				form.handleSubmit(onSubmit)();
+			}
 		}
+	};
+
+	const prevStep = () => {
+		if (currentStep > 0) {
+			setCurrentStep(currentStep - 1);
+		} else {
+			onClose();
+		}
+	};
+
+	function onSubmit(values: z.infer<typeof placeFormSchema>) {
+		setLedaIdExists(false);
+		mutation.mutate(values);
 	}
 
 	return (
@@ -232,281 +294,269 @@ export default function PlaceAddForm({
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4 mx-auto"
 			>
-				<Tab.Group
-					selectedIndex={currentStep}
-					onChange={setCurrentStep}
-				>
-					<div className="mb-6">
-						<div className="flex border-b border-gray-200">
-							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
-								{steps.map((step, index) => (
-									<Tab
-										key={index}
-										className={({ selected }) =>
-											`w-full py-2.5 text-sm font-medium leading-5 
-											${
-												selected
-													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-											} ${
-												index < currentStep
-													? "text-green-500"
-													: ""
-											}`
-										}
-									>
-										<span className="flex items-center justify-center">
-											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
-												{index < currentStep
-													? "✓"
-													: index + 1}
-											</span>
-											{step.name}
+				<div className="mb-6">
+					<div className="flex border-b border-border">
+						{/* Render step headers as non-clickable */}
+						<div className="flex space-x-1 rounded-xl p-1 w-full">
+							{steps.map((step, index) => (
+								<div
+									key={index}
+									className={`w-full py-2.5 text-sm font-medium leading-5 
+						${
+							index === currentStep
+								? "border-b-2 border-blue-500 text-blue-600"
+								: "text-muted-foreground"
+						} ${index < currentStep ? "text-green-500" : ""}`}
+								>
+									<span className="flex items-center justify-center">
+										<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
+											{index < currentStep ? "✓" : index + 1}
 										</span>
-									</Tab>
-								))}
-							</Tab.List>
+										{step.name}
+									</span>
+								</div>
+							))}
 						</div>
 					</div>
+				</div>
 
-					<Tab.Panels>
-						{/* Step 1: Basic Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Basic Place Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<InputDefault
-									control={form.control}
-									name="name"
-									label="Name of Place *"
-								/>
-								<InputDefault
-									control={form.control}
-									name="website"
-									label="Website"
-								/>
-								<FormField
-									control={form.control}
-									name="numberOfBoards"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>
-												Number of Boards *
-											</FormLabel>
-											<FormControl>
-												<Input
-													placeholder="Number of Boards..."
-													{...field}
-													className={inputWidth}
-													type="number"
-													onChange={(e) => {
-														field.onChange(
-															e.target.value ===
-																""
-																? undefined
-																: parseFloat(
-																		e.target
-																			.value
-																  )
-														);
-													}}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
+				{/* Step 1: Basic Info */}
+				{currentStep === 0 && (
+					<div className={formContainerStyle}>
+						<h1>Basic Place Information</h1>
+						<hr className="bg-muted mb-4"></hr>
+						<InputDefault
+							control={form.control}
+							name="name"
+							label="Name of Place *"
+						/>
+						<InputDefault
+							control={form.control}
+							name="website"
+							label="Website"
+						/>
+						<FormField
+							control={form.control}
+							name="numberOfBoards"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>
+										Number of Boards *
+									</FormLabel>
+									<FormControl>
+										<Input
+											placeholder="Number of Boards..."
+											{...field}
+											value={field.value ?? ""}
+											className={inputWidth}
+											type="number"
+											onChange={(e) => {
+												field.onChange(
+													e.target.value ===
+														""
+														? ""
+														: parseFloat(
+																e.target
+																	.value
+														  )
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				)}
+
+				{/* Step 2: Contact Info */}
+				{currentStep === 1 && (
+					<div className={formContainerStyle}>
+						<h1>Contact Information</h1>
+						<hr className="bg-muted mb-4"></hr>
+						<InputDefault
+							control={form.control}
+							name="addressOne"
+							label="Address One *"
+						/>
+						<InputDefault
+							control={form.control}
+							name="addressTwo"
+							label="Address Two"
+						/>
+						<div className="flex space-x-4">
+							<InputDefault
+								control={form.control}
+								name="city"
+								label="City *"
+							/>
+							<StatePicker
+								control={form.control}
+								name="state"
+							/>
+							<InputDefault
+								control={form.control}
+								name="zip"
+								label="Zip Code *"
+							/>
+						</div>
+						<InputDefault
+							control={form.control}
+							name="email"
+							label="Email"
+							type="email"
+						/>
+						<PhoneNumberInput
+							control={form.control}
+							name="phoneNumber"
+							label="Phone Number *"
+						/>
+						<PhoneNumberInput
+							control={form.control}
+							name="otherNumber"
+							label="Other Number"
+						/>
+					</div>
+				)}
+
+				{/* Step 3: Membership Info */}
+				{currentStep === 2 && (
+					<div className={formContainerStyle}>
+						<h1>Membership Information</h1>
+						<hr className="bg-muted mb-4"></hr>
+						{/* Generate ID Checkbox */}
+						<div className="flex items-start space-x-2">
+							<Label
+								className="whitespace-nowrap"
+								htmlFor="generateID"
+							>
+								Generate LEDA ID
+							</Label>
+							<Checkbox
+								checked={generateIDStatus}
+								onCheckedChange={(checked: boolean) =>
+									setGenerateIDStatus(checked)
+								}
+								className={checkboxWidth}
+								id="generateID"
+							/>
+						</div>
+
+						<FormField
+							control={form.control}
+							name="ledaId"
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<Input
+											placeholder="LEDA ID #"
+											{...field}
+											disabled={generateIDStatus}
+											className={inputWidth}
+											type="number"
+											onChange={(e) => {
+												field.onChange(
+													e.target.value ===
+														""
+														? undefined
+														: parseFloat(
+																e.target
+																	.value
+														  )
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+									{ledaIdExists && (
+										<p className="text-red-500 text-sm mt-1">
+											This LEDA ID is already in
+											use
+										</p>
 									)}
-								/>
-							</div>
-						</Tab.Panel>
+								</FormItem>
+							)}
+						/>
+						<PlaceOwnerSelector
+							control={form.control}
+							name="contactId"
+							label="Select Place Owner *"
+						/>
+						<PlaceTypeSelector
+							control={form.control}
+							name="placeType"
+							label="Place Type *"
+						/>
+						<DatePickerFormField
+							control={form.control}
+							name="establishDate"
+							label="Established Date *"
+							enableMonthYearPicker
+						/>
+					</div>
+				)}
 
-						{/* Step 2: Contact Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Contact Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<InputDefault
-									control={form.control}
-									name="addressOne"
-									label="Address One *"
-								/>
-								<InputDefault
-									control={form.control}
-									name="addressTwo"
-									label="Address Two"
-								/>
-								<div className="flex space-x-4">
-									<InputDefault
-										control={form.control}
-										name="city"
-										label="City *"
-									/>
-									<StatePicker
-										control={form.control}
-										name="state"
-									/>
-									<InputDefault
-										control={form.control}
-										name="zip"
-										label="Zip Code *"
-									/>
-								</div>
-								<InputDefault
-									control={form.control}
-									name="email"
-									label="Email *"
-									type="email"
-								/>
-								<PhoneNumberInput
-									control={form.control}
-									name="phoneNumber"
-									label="Phone Number *"
-								/>
-								<PhoneNumberInput
-									control={form.control}
-									name="otherNumber"
-									label="Other Number"
-								/>
-							</div>
-						</Tab.Panel>
-
-						{/* Step 3: Membership Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Membership Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								{/* Generate ID Checkbox */}
-								<div className="flex items-start space-x-2">
-									<Label
-										className="whitespace-nowrap"
-										htmlFor="generateID"
-									>
-										Generate LEDA ID
-									</Label>
-									<Checkbox
-										checked={generateIDStatus}
-										onCheckedChange={(checked: boolean) =>
-											setGenerateIDStatus(checked)
-										}
-										className={checkboxWidth}
-										id="generateID"
-									/>
-								</div>
-
-								<FormField
-									control={form.control}
-									name="ledaId"
-									render={({ field }) => (
-										<FormItem>
-											<FormControl>
-												<Input
-													placeholder="LEDA ID #"
-													{...field}
-													disabled={generateIDStatus}
-													className={inputWidth}
-													type="number"
-													onChange={(e) => {
-														field.onChange(
-															e.target.value ===
-																""
-																? undefined
-																: parseFloat(
-																		e.target
-																			.value
-																  )
-														);
-													}}
-												/>
-											</FormControl>
-											<FormMessage />
-											{ledaIdExists && (
-												<p className="text-red-500 text-sm mt-1">
-													This LEDA ID is already in
-													use
-												</p>
-											)}
-										</FormItem>
-									)}
-								/>
-								<PlaceOwnerSelector
-									control={form.control}
-									name="contactId"
-									label="Select Place Owner *"
-								/>
-								<PlaceTypeSelector
-									control={form.control}
-									name="placeType"
-									label="Place Type *"
-								/>
-								<InputDefault
-									control={form.control}
-									name="establishDate"
-									label="Established Date *"
-									type="date"
-								/>
-							</div>
-						</Tab.Panel>
-
-						{/* Step 4: Additional Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Additional Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<InputDefault
-									control={form.control}
-									name="lastSanctioningDate"
-									label="Last Sanctioning Date *"
-									type="date"
-								/>
-								<CheckboxDefault
-									control={form.control}
-									name="sendMailings"
-									label="Send Mailings"
-									className={checkboxWidth}
-								/>
-								<CheckboxDefault
-									control={form.control}
-									name="regularSponsor"
-									label="Regular Sponsor"
-									className={checkboxWidth}
-								/>
-								<CheckboxDefault
-									control={form.control}
-									name="currentSponsor"
-									label="Current Sponsor"
-									className={checkboxWidth}
-								/>
-								<CheckboxDefault
-									control={form.control}
-									name="issues"
-									label="Issues"
-									className={checkboxWidth}
-								/>
-								<FormField
-									control={form.control}
-									name="memo"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Memo</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder="Additional Data Here..."
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
-						</Tab.Panel>
-					</Tab.Panels>
-				</Tab.Group>
+				{/* Step 4: Additional Info */}
+				{currentStep === 3 && (
+					<div className={formContainerStyle}>
+						<h1>Additional Information</h1>
+						<hr className="bg-muted mb-4"></hr>
+						<DatePickerFormField
+							control={form.control}
+							name="lastSanctioningDate"
+							label="Last Sanctioning Date"
+							enableMonthYearPicker
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="sendMailings"
+							label="Send Mailings"
+							className={checkboxWidth}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="regularSponsor"
+							label="Regular Sponsor"
+							className={checkboxWidth}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="currentSponsor"
+							label="Current Sponsor"
+							className={checkboxWidth}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="issues"
+							label="Issues"
+							className={checkboxWidth}
+						/>
+						<FormField
+							control={form.control}
+							name="memo"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Memo</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder="Additional Data Here..."
+											{...field}
+											value={field.value ?? ""}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				)}
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === 0 ? "Cancel" : "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
+					<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === steps.length - 1 ? "Submit" : "Next"}
 					</Button>
 				</div>

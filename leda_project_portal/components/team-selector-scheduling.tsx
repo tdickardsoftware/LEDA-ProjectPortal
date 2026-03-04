@@ -1,3 +1,11 @@
+/**
+ * TeamSelectorScheduling component
+ *
+ * Searchable combobox for selecting a team within the schedule-builder forms.
+ * Renders the available team entries (filtered to exclude already-selected
+ * teams) via a Command popover and writes the chosen teamId / teamName back
+ * into the parent React Hook Form context.  Pre-selects `defaultId` on mount.
+ */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -159,7 +167,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
+					<PopoverContent className="w-[200px] p-0 bg-background">
 						<Command>
 							<CommandInput placeholder="Search teams..." />
 							<CommandEmpty>No team found.</CommandEmpty>
@@ -180,7 +188,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 												);
 												setOpen(false);
 											}}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

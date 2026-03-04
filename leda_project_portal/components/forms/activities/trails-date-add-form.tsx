@@ -1,3 +1,12 @@
+/**
+ * TrailsDateAddForm Component
+ *
+ * Form for adding or editing a player's Trails tournament entry for a specific date.
+ * Collects trails points, singles place, doubles place, and optional notes.
+ * Operates in both "add" mode (requires player selection) and "edit" mode
+ * (player is pre-determined by `editData`). Uses `z.preprocess` to coerce empty
+ * numeric inputs to 0 rather than undefined.
+ */
 "use client";
 
 import { z } from "zod";
@@ -19,19 +28,40 @@ import { Input } from "@/components/ui/input";
 import { TrailsDateData } from "@/lib/definitions";
 import PlayerSelect from "@/components/ui/single-player-select";
 
+// Validation schema — uses z.preprocess to coerce empty inputs to 0
 const TrailsDateDataFormSchema = z.object({
-	singlesPlace: z.number().positive(),
-	doublesPlace: z.number().positive(),
+	singlesPlace: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Singles place must be 0 or greater." })
+	),
+	doublesPlace: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Doubles place must be 0 or greater." })
+	),
 	notes: z.string().optional(),
-	trailsPoints: z.number().positive(),
+	trailsPoints: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Trails points must be 0 or greater." })
+	),
 	ledaId: z.number().positive(),
 	trailsDate: z.string().optional(),
 	fullName: z.string().optional(),
 });
 
+// Shared style for the form card container
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * TrailsDateAddForm renders the Trails entry add/edit form.
+ *
+ * @param goBack - Callback to return to the parent view without submitting
+ * @param handleFormSubmit - Callback invoked with the validated Trails entry
+ * @param trailsDate - The trails event date string to associate with the entry
+ * @param trailsDateData - Existing entries for the date (used to exclude already-added players)
+ * @param editData - Optional existing entry data for edit mode
+ * @param index - Optional row index used when updating an existing entry in-place
+ */
 export default function TrailsDateAddForm({
 	goBack,
 	handleFormSubmit,
@@ -51,14 +81,26 @@ export default function TrailsDateAddForm({
 	const form = useForm<z.infer<typeof TrailsDateDataFormSchema>>({
 		resolver: zodResolver(TrailsDateDataFormSchema),
 		defaultValues: {
-			singlesPlace: editData?.singlesPlace || undefined,
-			doublesPlace: editData?.doublesPlace || undefined,
-			trailsPoints: editData?.trailsPoints || undefined,
+			singlesPlace: editData?.singlesPlace !== undefined ? editData.singlesPlace : ("" as any),
+			doublesPlace: editData?.doublesPlace !== undefined ? editData.doublesPlace : ("" as any),
+			trailsPoints: editData?.trailsPoints !== undefined ? editData.trailsPoints : ("" as any),
 			notes: editData?.notes || "",
 			ledaId: editData?.ledaId || undefined,
 			fullName: editData?.fullName || "",
 		},
 	});
+
+	// Reset form when component mounts or editData changes to ensure clean state
+	React.useEffect(() => {
+		form.reset({
+			singlesPlace: editData?.singlesPlace !== undefined ? editData.singlesPlace : ("" as any),
+			doublesPlace: editData?.doublesPlace !== undefined ? editData.doublesPlace : ("" as any),
+			trailsPoints: editData?.trailsPoints !== undefined ? editData.trailsPoints : ("" as any),
+			notes: editData?.notes || "",
+			ledaId: editData?.ledaId || undefined,
+			fullName: editData?.fullName || "",
+		});
+	}, [form, editData]);
 
 	async function onSubmit(values: z.infer<typeof TrailsDateDataFormSchema>) {
 		try {
@@ -118,7 +160,7 @@ export default function TrailsDateAddForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target.value
 														  )
@@ -144,7 +186,7 @@ export default function TrailsDateAddForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target.value
 														  )
@@ -170,7 +212,7 @@ export default function TrailsDateAddForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target.value
 														  )
@@ -205,15 +247,16 @@ export default function TrailsDateAddForm({
 						type="button"
 						variant={"outline"}
 						onClick={() => goBack(false)}
+						className="hover:bg-muted border-border text-foreground"
 					>
 						Cancel
 					</Button>
 					{index !== undefined ? (
-						<Button type="submit" variant={"outline"}>
+						<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">
 							Update Player
 						</Button>
 					) : (
-						<Button type="submit" variant={"outline"}>
+						<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">
 							Add Player
 						</Button>
 					)}

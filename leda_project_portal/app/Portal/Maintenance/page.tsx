@@ -1,3 +1,7 @@
+/**
+ * Maintenance index page — overview of all lookup/reference data management
+ * sections (Divisions, Mentions, Payment Types, Payments, Seasons, etc.).
+ */
 import { Metadata } from "next";
 import MaintenancePageContent from "@/components/page-content/landing-content/maintenance-page-content";
 import { Separator } from "@/components/ui/separator";

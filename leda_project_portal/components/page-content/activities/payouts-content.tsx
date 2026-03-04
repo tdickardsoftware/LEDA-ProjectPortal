@@ -1,12 +1,29 @@
 "use client";
 
+/**
+ * PayoutsContent
+ *
+ * Manages end-of-season payout calculations for all divisions.
+ *
+ * Data flow:
+ *   - `rosterQuery`         — loads current season roster (divisions/subdivisions/teams).
+ *   - `payoutsQuery`        — loads saved payout overrides for the selected season.
+ *   - `scoresheetCountQuery`— fetches the number of completed scoresheets per team.
+ *   - `calculatePayoutsMutation` — POSTs team/scoresheet data to derive suggested amounts.
+ *   - `savePayoutsMutation`      — PUTs final corrected amounts to the database.
+ *
+ * State includes per-division / per-subdivision accordion open/close flags and
+ * per-team adjustment dialogs for manual overrides. Season is selected via
+ * `SeasonCodeSelector`; payouts are locked once saved.
+ */
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import React, { useState, useCallback, useEffect } from "react";
 import {
 	rosterRoute,
-	seasonRoute,
+	scoresheetCountRoute,
 	weeklyScoresheetsRoute,
 	payoutRoute,
 } from "@/lib/apiRoutes";
@@ -35,6 +52,14 @@ import {
 } from "@/components/ui/dialog";
 import ManageGlobalAdjustments from "@/components/forms/activities/manage-global-adjustments";
 import { Pencil, X } from "lucide-react";
+
+// TanStack Query imports
+import {
+	useQuery,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define types for roster data structure
 type TeamInfo = {
@@ -85,14 +110,17 @@ type PayoutsData = {
 };
 
 export default function PayoutsContent() {
+	const queryClient = useQueryClient();
 	const [seasonCode, setSeasonCode] = useState<string | null>(null);
 	const [currentSeason, setCurrentSeason] = useState(true);
 	const [divisionsData, setDivisionsData] = useState<RosterData>({});
 	const [payoutsData, setPayoutsData] = useState<PayoutsData>({});
 	const [loading, setLoading] = useState(false);
-	const [weekCount, setWeekCount] = useState<number>(0);
+	const [expectedScoresheetCount, setExpectedScoresheetCount] =
+		useState<number>(0);
 	const [completedScoresheetCount, setCompletedScoresheetCount] =
 		useState<number>(0);
+	const [totalWeeks, setTotalWeeks] = useState<number>(0);
 
 	// State for accordion open/closed status
 	const [openDivisions, setOpenDivisions] = useState<string[]>([]);
@@ -146,6 +174,93 @@ export default function PayoutsContent() {
 		{}
 	); // Store original data for comparison
 
+	// --- TanStack Query: Fetch payouts data ---
+	const {
+		data: payoutsQueryData,
+		isLoading: payoutsLoading,
+	} = useQuery({
+		queryKey: ["payouts", seasonCode],
+		queryFn: async () => {
+			if (!seasonCode) return null;
+			const res = await fetch(`${payoutRoute}?seasonCode=${seasonCode}`);
+			if (!res.ok) throw new Error("Failed to fetch payouts data");
+			const data = await res.json();
+			return data && data.length > 0 ? data[0].payoutsData : null;
+		},
+		enabled: !!seasonCode,
+	});
+
+	// --- TanStack Query: Fetch roster data ---
+	const {
+		data: rosterQueryData,
+		isLoading: rosterLoading,
+	} = useQuery({
+		queryKey: ["roster", seasonCode],
+		queryFn: async () => {
+			if (!seasonCode) return null;
+			const res = await fetch(`${rosterRoute}?seasonCode=${seasonCode}`);
+			if (!res.ok) throw new Error("Failed to fetch roster data");
+			const data = await res.json();
+			return data ? JSON.parse(JSON.stringify(data.teamInformation)) : {};
+		},
+		enabled: !!seasonCode,
+	});
+
+	// --- TanStack Query: Fetch scoresheet count (expected and completed) ---
+	const {
+		data: scoresheetCountData,
+		isLoading: scoresheetCountLoading,
+	} = useQuery({
+		queryKey: ["scoresheetCount", seasonCode],
+		queryFn: async () => {
+			if (!seasonCode) return null;
+			const res = await fetch(
+				`${scoresheetCountRoute}?seasonCode=${seasonCode}`
+			);
+			if (!res.ok) throw new Error("Failed to fetch scoresheet count");
+			const data = await res.json();
+			return data;
+		},
+		enabled: !!seasonCode,
+	});
+
+	// --- Effect: When seasonCode changes, update local state from queries ---
+	useEffect(() => {
+		if (!seasonCode) return;
+		setLoading(
+			payoutsLoading ||
+			rosterLoading ||
+			scoresheetCountLoading
+		);
+
+		if (rosterQueryData) {
+			setDivisionsData(rosterQueryData);
+		}
+		if (payoutsQueryData) {
+			setPayoutsData(payoutsQueryData);
+			setOriginalPayoutsData(deepCopy(payoutsQueryData));
+			toast.success("Payouts data loaded successfully");
+		} else if (rosterQueryData) {
+			// If no payouts data, but roster exists, create new payoutsData structure
+			toast.info("Creating new payouts data from roster");
+			// This will be handled by the effect below (when divisionsData changes)
+		}
+		if (scoresheetCountData) {
+			setExpectedScoresheetCount(scoresheetCountData.expectedScoresheets || 0);
+			setCompletedScoresheetCount(scoresheetCountData.completedScoresheets || 0);
+			setTotalWeeks(scoresheetCountData.totalWeeks || 0);
+		}
+		// eslint-disable-next-line
+	}, [
+		seasonCode,
+		payoutsQueryData,
+		rosterQueryData,
+		scoresheetCountData,
+		payoutsLoading,
+		rosterLoading,
+		scoresheetCountLoading,
+	]);
+
 	// Create payouts data when divisions data changes
 	useEffect(() => {
 		if (Object.keys(divisionsData).length > 0) {
@@ -189,7 +304,6 @@ export default function PayoutsContent() {
 					});
 				});
 
-				console.log("Merged payouts data:", mergedPayoutsData);
 				return mergedPayoutsData;
 			});
 		}
@@ -222,123 +336,153 @@ export default function PayoutsContent() {
 		}
 	}, [divisionsData]);
 
-	// Utility function to create a deep copy of an object
-	const deepCopy = (obj: PayoutsData): PayoutsData => {
-		return JSON.parse(JSON.stringify(obj));
-	};
-
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(
 		async (value: string) => {
 			if (value === seasonCode) return;
 			setSeasonCode(value);
-
-			try {
-				setLoading(true);
-
-				// Fetch payouts data for the selected seasonCode
-				const payoutsResult = await fetch(
-					`${payoutRoute}?seasonCode=${value}`,
-					{
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
-
-				let foundPayoutsData = false;
-				if (payoutsResult.status === 200) {
-					const payoutsData = await payoutsResult.json();
-					if (payoutsData && payoutsData.length > 0) {
-						setPayoutsData(payoutsData[0].payoutsData);
-						setOriginalPayoutsData(
-							deepCopy(payoutsData[0].payoutsData)
-						); // Use deep copy here
-						foundPayoutsData = true;
-						toast.success("Payouts data loaded successfully");
-					}
-				}
-
-				// Always fetch roster data to ensure UI structure is populated
-				const result = await fetch(
-					`${rosterRoute}?seasonCode=${value}`,
-					{
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
-
-				if (result.status === 200) {
-					const data = await result.json();
-					if (data) {
-						const roster = data;
-						const fetchedData = JSON.parse(
-							JSON.stringify(roster.teamInfomation)
-						);
-						setDivisionsData(fetchedData);
-
-						if (!foundPayoutsData) {
-							toast.info("Creating new payouts data from roster");
-						}
-					}
-				}
-
-				const weeksResult = await fetch(
-					`${seasonRoute}?seasonCode=${value}`,
-					{
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
-
-				if (weeksResult.status === 200) {
-					const weeksData = await weeksResult.json();
-					if (weeksData) {
-						setWeekCount(Object.keys(weeksData.dates).length);
-					}
-
-					const completedScoresheetCountResult = await fetch(
-						`${weeklyScoresheetsRoute}?seasonCode=${value}&countOfFinishedWeeks=${true}`,
-						{
-							method: "GET",
-							headers: {
-								"Content-Type": "application/json",
-							},
-						}
-					);
-
-					if (completedScoresheetCountResult.status === 200) {
-						const completedScoresheetData =
-							await completedScoresheetCountResult.json();
-						if (completedScoresheetData) {
-							setCompletedScoresheetCount(
-								completedScoresheetData.count
-							);
-						}
-					}
-				}
-			} catch (error) {
-				console.error("Failed to fetch data:", error);
-				toast.error("Failed to load data");
-			} finally {
-				setLoading(false);
-			}
+			// TanStack Query will refetch automatically due to queryKey dependency
 		},
 		[seasonCode]
 	);
 
-	// Utility function to check if payouts data has changed
-	const hasPayoutsDataChanged = () => {
-		return (
-			JSON.stringify(payoutsData) !== JSON.stringify(originalPayoutsData)
-		);
+	// --- TanStack Mutation: Save payouts data ---
+	const savePayoutsMutation = useMutation({
+		mutationFn: async (payload: { seasonCode: string | null; payoutsData: PayoutsData }) => {
+			const response = await fetchWithSession(payoutRoute, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(payload),
+			});
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.message || "Failed to save payouts data");
+			return result;
+		},
+		onSuccess: () => {
+			toast.success("Payouts data saved successfully");
+			queryClient.invalidateQueries({ queryKey: ["payouts", seasonCode] });
+		},
+		onError: (error: unknown) => {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: typeof error === "string"
+					? error
+					: "Unknown error";
+			toast.error(`Failed to save payouts data: ${errorMessage}`);
+		},
+	});
+
+	const handleSavePayoutsData = async () => {
+		savePayoutsMutation.mutate({ seasonCode, payoutsData });
+		setOriginalPayoutsData(deepCopy(payoutsData));
 	};
 
+	// --- TanStack Query: Calculate payouts (team points) ---
+	const calculatePayoutsMutation = useMutation({
+		mutationFn: async (params: {
+			seasonCode: string | null;
+			totalWeeks: number;
+			teamIdsByDivisionSubdivision: { [key: string]: { division: string; subdivision: string; teamIds: string[] } };
+			payoutsData: PayoutsData;
+		}) => {
+			const { seasonCode, totalWeeks, teamIdsByDivisionSubdivision, payoutsData } = params;
+			const newPayoutsData = { ...payoutsData };
+			for (const key of Object.keys(teamIdsByDivisionSubdivision)) {
+				const { division, subdivision, teamIds } = teamIdsByDivisionSubdivision[key];
+				const response = await fetchWithSession(
+					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${totalWeeks}&teamLedaIds=${teamIds}&division=${division}&subdivision=${subdivision}`,
+					{ method: "GET", headers: { "Content-Type": "application/json" } }
+				);
+				if (!response.ok) throw new Error("Failed to fetch team points data");
+				const data = await response.json();
+				if (data && Array.isArray(data)) {
+					data.forEach(
+						(teamData: {
+							teamLedaId: string;
+							place: string;
+							amount: string;
+						}) => {
+							// Only update if this team is in the current subdivision's team list
+							if (teamIds.includes(teamData.teamLedaId)) {
+								if (
+									newPayoutsData[division]?.[subdivision]?.[teamData.teamLedaId]
+								) {
+									newPayoutsData[division][subdivision][teamData.teamLedaId].place =
+										parseInt(teamData.place, 10) || null;
+									newPayoutsData[division][subdivision][teamData.teamLedaId].amount =
+										parseFloat(teamData.amount) || 0;
+								}
+							}
+						}
+					);
+				}
+			}
+			return newPayoutsData;
+		},
+		onSuccess: (data) => {
+			setPayoutsData(data);
+			toast.success("Payouts calculated successfully");
+		},
+		onError: () => {
+			toast.error("Failed to retrieve team standings");
+		},
+	});
+
+	const handleCalculatePayoutsClick = async () => {
+		const teamIdsByDivisionSubdivision: { [key: string]: { division: string; subdivision: string; teamIds: string[] } } = {};
+		Object.keys(divisionsData).forEach((division) => {
+			Object.keys(divisionsData[division]?.subdivisions || {}).forEach(
+				(subdivision) => {
+					const key = `${division}|${subdivision}`;
+					const teamIds = Object.keys(
+						divisionsData[division]?.subdivisions[subdivision] || {}
+					).map(
+						(team) =>
+							divisionsData[division]?.subdivisions[subdivision][
+								team
+							]?.teamId
+					);
+					teamIdsByDivisionSubdivision[key] = {
+						division,
+						subdivision,
+						teamIds
+					};
+				}
+			);
+		});
+		
+		// Clean up payoutsData: remove teams that don't belong to their subdivisions
+		const cleanedPayoutsData = { ...payoutsData };
+		Object.keys(cleanedPayoutsData).forEach((division) => {
+			Object.keys(cleanedPayoutsData[division]).forEach((subdivision) => {
+				const key = `${division}|${subdivision}`;
+				const validTeamIds = teamIdsByDivisionSubdivision[key]?.teamIds || [];
+				
+				// Remove teams that aren't in the current subdivision's roster
+				Object.keys(cleanedPayoutsData[division][subdivision]).forEach((teamId) => {
+					if (!validTeamIds.includes(teamId)) {
+						console.warn(`Removing team ${teamId} from ${division} - ${subdivision} (not in roster)`);
+						delete cleanedPayoutsData[division][subdivision][teamId];
+					}
+				});
+			});
+		});
+		
+		calculatePayoutsMutation.mutate({
+			seasonCode,
+			totalWeeks,
+			teamIdsByDivisionSubdivision,
+			payoutsData: cleanedPayoutsData,
+		});
+	};
+
+	// Utility function to create a deep copy of an object
+	const deepCopy = (obj: PayoutsData): PayoutsData => {
+		return JSON.parse(JSON.stringify(obj));
+	};
+
+	// Handle adjustment
 	const handleAdjustment = (
 		teamId: string,
 		amount: number,
@@ -594,115 +738,9 @@ export default function PayoutsContent() {
 		setManageGlobalAdjustmentsDialogOpen(true);
 	};
 
-	const handleCalculatePayoutsClick = async () => {
-		const teamIdsBySubdivision: { [subdivision: string]: string[] } = {};
-		const newPayoutsData = { ...payoutsData };
-
-		Object.keys(divisionsData).forEach((division) => {
-			Object.keys(divisionsData[division]?.subdivisions || {}).forEach(
-				(subdivision) => {
-					teamIdsBySubdivision[subdivision] = Object.keys(
-						divisionsData[division]?.subdivisions[subdivision] || {}
-					).map(
-						(team) =>
-							divisionsData[division]?.subdivisions[subdivision][
-								team
-							]?.teamId
-					);
-				}
-			);
-		});
-
-		for (const subdivision of Object.keys(teamIdsBySubdivision)) {
-			try {
-				const response = await fetch(
-					`${weeklyScoresheetsRoute}/teamPoints?seasonCode=${seasonCode}&totalWeeks=${weekCount}&teamLedaIds=${teamIdsBySubdivision[subdivision]}`,
-					{
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-					}
-				);
-				if (!response.ok) {
-					throw new Error("Failed to fetch team points data");
-				}
-
-				const data = await response.json();
-				console.log("Team points data:", data);
-				if (data && Array.isArray(data)) {
-					// Correctly map fetched data to payoutsData
-					data.forEach(
-						(teamData: {
-							teamLedaId: string;
-							place: string;
-							amount: string;
-						}) => {
-							Object.keys(divisionsData).forEach((division) => {
-								Object.keys(
-									divisionsData[division]?.subdivisions || {}
-								).forEach((subdivisionKey) => {
-									if (
-										newPayoutsData[division]?.[
-											subdivisionKey
-										]?.[teamData.teamLedaId]
-									) {
-										newPayoutsData[division][
-											subdivisionKey
-										][teamData.teamLedaId].place =
-											parseInt(teamData.place, 10) ||
-											null;
-										newPayoutsData[division][
-											subdivisionKey
-										][teamData.teamLedaId].amount =
-											parseFloat(teamData.amount) || 0;
-									}
-								});
-							});
-						}
-					);
-				}
-			} catch (error) {
-				console.error("Error fetching team points:", error);
-				toast.error("Failed to retrieve team standings");
-			}
-		}
-		console.log(newPayoutsData);
-		setPayoutsData(newPayoutsData);
-		toast.success("Payouts calculated successfully");
-	};
-
-	const handleSavePayoutsData = async () => {
-		try {
-			const response = await fetch(payoutRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					seasonCode: seasonCode,
-					payoutsData: payoutsData, // Explicitly stringify the payoutsData object
-				}),
-			});
-
-			const result = await response.json();
-
-			if (response.ok) {
-				toast.success("Payouts data saved successfully");
-			} else {
-				throw new Error(
-					result.message || "Failed to save payouts data"
-				);
-			}
-		} catch (error) {
-			console.error("Error saving payouts data:", error);
-			toast.error(
-				`Failed to save payouts data: ${
-					error instanceof Error ? error.message : "Unknown error"
-				}`
-			);
-		}
-		setOriginalPayoutsData(deepCopy(payoutsData));
+	// Utility function to check if payoutsData has changed compared to originalPayoutsData
+	const hasPayoutsDataChanged = (): boolean => {
+		return JSON.stringify(payoutsData) !== JSON.stringify(originalPayoutsData);
 	};
 
 	return (
@@ -755,7 +793,7 @@ export default function PayoutsContent() {
 										{/* Added flex-wrap */}
 										<Button
 											variant="outline"
-											className="hover:bg-gray-100 border-gray-300 text-gray-700"
+											className="hover:bg-muted border-border text-foreground"
 											onClick={() => {
 												handleGlobalAdjustmentClick();
 											}}
@@ -764,7 +802,7 @@ export default function PayoutsContent() {
 										</Button>
 										<Button
 											variant="outline"
-											className="hover:bg-gray-100 border-gray-300 text-gray-700"
+											className="hover:bg-muted border-border text-foreground"
 											onClick={() => {
 												handleManageGlobalAdjustmentsClick();
 											}}
@@ -773,82 +811,83 @@ export default function PayoutsContent() {
 										</Button>
 									</div>
 								</FolderTabMed>
-								<FolderTabMed
-									title="Payouts"
-									className="w-fit self-start"
-								>
-									<div className="flex flex-col gap-2">
-										{weekCount > 0 && (
-											<TooltipProvider>
-												<Tooltip delayDuration={300}>
-													<TooltipTrigger asChild>
-														<div>
-															<Button
-																variant="outline"
-																className="relative w-full h-10 bg-gray-200 border-gray-300 text-gray-700 overflow-hidden"
-																onClick={() => {
-																	handleCalculatePayoutsClick();
-																}}
-																disabled={
-																	completedScoresheetCount !==
-																	weekCount
-																}
-															>
-																{completedScoresheetCount ===
-																weekCount ? (
-																	<span className="relative z-10 font-semibold">
-																		Calculate
-																		Payouts
-																	</span>
-																) : (
-																	<>
-																		<div
-																			className="absolute top-0 left-0 h-full bg-green-500"
-																			style={{
-																				width: `${
-																					(completedScoresheetCount /
-																						weekCount) *
-																					100
-																				}%`,
-																				minWidth:
-																					completedScoresheetCount >
-																					0
-																						? "5%"
-																						: "0%",
-																			}}
-																		></div>
+								{!payoutsQueryData && (
+									<FolderTabMed
+										title="Payouts"
+										className="w-fit self-start"
+									>
+										<div className="flex flex-col gap-2">
+											{expectedScoresheetCount > 0 && (
+												<TooltipProvider>
+													<Tooltip delayDuration={300}>
+														<TooltipTrigger asChild>
+															<div>
+																<Button
+																	variant="outline"
+																	className="relative w-full h-10 bg-secondary border-border text-foreground overflow-hidden"
+																	onClick={() => {
+																		handleCalculatePayoutsClick();
+																	}}
+																	disabled={
+																		completedScoresheetCount !==
+																		expectedScoresheetCount
+																	}
+																>
+																	{completedScoresheetCount ===
+																	expectedScoresheetCount ? (
 																		<span className="relative z-10 font-semibold">
-																			{
-																				completedScoresheetCount
-																			}
-																			/
-																			{
-																				weekCount
-																			}{" "}
-																			Weeks
-																			Completed
+																			Calculate
+																			Payouts
 																		</span>
-																	</>
-																)}
-															</Button>
-														</div>
-													</TooltipTrigger>
-													<TooltipContent
-														side="top"
-														className="bg-white text-black px-4 py-3 rounded-lg shadow-lg border-0"
-													>
-														<p className="text-sm font-medium">
-															{completedScoresheetCount !==
-															weekCount
-																? "Scoresheets are not yet complete"
-																: "All scoresheets are complete, calculate placements"}
-														</p>
-													</TooltipContent>
-												</Tooltip>
-											</TooltipProvider>
-										)}
-									</div>
-								</FolderTabMed>
+																	) : (
+																		<>
+																			<div
+																				className="absolute top-0 left-0 h-full bg-green-500"
+																				style={{
+																					width: `${
+																						(completedScoresheetCount /
+																							expectedScoresheetCount) *
+																						100
+																					}%`,
+																					minWidth:
+																						completedScoresheetCount >
+																						0
+																							? "5%"
+																							: "0%",
+																				}}
+																			></div>
+																			<span className="relative z-10 font-semibold">
+																				{expectedScoresheetCount > 0
+																					? `${Math.round(
+																							(completedScoresheetCount /
+																								expectedScoresheetCount) *
+																								100
+																					  )}%`
+																					: "0%"}{" "}
+																				Complete
+																			</span>
+																		</>
+																	)}
+																</Button>
+															</div>
+														</TooltipTrigger>
+														<TooltipContent
+															side="top"
+															className="bg-background text-foreground px-4 py-3 rounded-lg shadow-lg border-0"
+														>
+															<p className="text-sm font-medium">
+																{completedScoresheetCount !==
+																expectedScoresheetCount
+																	? "Scoresheets are not yet complete"
+																	: "All scoresheets are complete, calculate placements"}
+															</p>
+														</TooltipContent>
+													</Tooltip>
+												</TooltipProvider>
+											)}
+										</div>
+									</FolderTabMed>
+								)}
 							</div>
 						</div>
 					</div>
@@ -882,7 +921,7 @@ export default function PayoutsContent() {
 												<AccordionItem
 													key={subIndex}
 													value={`subdiv-${division}-${subdivision}`}
-													className="border-b border-gray-200"
+													className="border-b border-border"
 												>
 													<AccordionTrigger>
 														{subdivision}
@@ -914,23 +953,36 @@ export default function PayoutsContent() {
 																		][team];
 																	const teamId =
 																		teamInfo?.teamId;
-																	const place =
+																	const payoutTeam =
+																		teamId &&
 																		payoutsData[
 																			division
-																		]?.[
-																			subdivision
-																		]?.[
+																		] &&
+																		payoutsData[
+																			division
+																		][subdivision] &&
+																		payoutsData[
+																			division
+																		][subdivision][
 																			teamId
 																		]
-																			?.place;
+																			? payoutsData[
+																					division
+																			  ][subdivision][
+																					teamId
+																			  ]
+																			: undefined;
+																	const place =
+																		payoutTeam && typeof payoutTeam.place === "number"
+																			? payoutTeam.place
+																			: Number.MAX_SAFE_INTEGER;
 																	return {
 																		team,
 																		teamInfo,
 																		teamId,
-																		place:
-																			place ||
-																			Number.MAX_SAFE_INTEGER,
-																	}; // Use MAX_SAFE_INTEGER for teams without place
+																		payoutTeam,
+																		place,
+																	};
 																})
 																.sort(
 																	(a, b) =>
@@ -939,11 +991,7 @@ export default function PayoutsContent() {
 																) // Sort by place (ascending)
 																.map(
 																	(
-																		{
-																			team,
-																			teamInfo,
-																			teamId,
-																		},
+																		{ team, teamInfo, teamId, payoutTeam },
 																		teamIndex
 																	) => {
 																		return (
@@ -952,32 +1000,15 @@ export default function PayoutsContent() {
 																					teamIndex
 																				}
 																				value={`team-${division}-${subdivision}-${team}`}
-																				className="border-b border-gray-200 group relative"
+																				className="border-b border-border group relative"
 																			>
 																				<AccordionTrigger className="flex justify-between items-center">
 																					<div className="flex items-center gap-6">
 																						<span className="text-left">
-																							{payoutsData[
-																								division
-																							]?.[
-																								subdivision
-																							]?.[
-																								teamId
-																							]
-																								?.place !==
-																							null ? (
+																							{payoutTeam && payoutTeam.place !== null ? (
 																								<span>
 																									<span className="font-semibold">
-																										{
-																											payoutsData[
-																												division
-																											][
-																												subdivision
-																											][
-																												teamId
-																											]
-																												.place
-																										}
+																										{payoutTeam.place}
 																									</span>
 																									{
 																										" - "
@@ -1002,25 +1033,11 @@ export default function PayoutsContent() {
 																										Base
 																										Winnings:
 																										$
-																										{payoutsData[
-																											division
-																										][
-																											subdivision
-																										][
-																											teamId
-																										].amount.toFixed(
+																										{payoutTeam.amount.toFixed(
 																											2
 																										)}
 																									</span>
-																									{payoutsData[
-																										division
-																									][
-																										subdivision
-																									][
-																										teamId
-																									]
-																										.adjustmentAmount !==
-																										0 && (
+																									{payoutTeam.adjustmentAmount !== 0 && (
 																										<>
 																											{
 																												" - "
@@ -1031,22 +1048,8 @@ export default function PayoutsContent() {
 																												Adjustments:
 																												$
 																												{(
-																													payoutsData[
-																														division
-																													][
-																														subdivision
-																													][
-																														teamId
-																													]
-																														.amount +
-																													payoutsData[
-																														division
-																													][
-																														subdivision
-																													][
-																														teamId
-																													]
-																														.adjustmentAmount
+																													payoutTeam.amount +
+																													payoutTeam.adjustmentAmount
 																												).toFixed(
 																													2
 																												)}
@@ -1067,7 +1070,7 @@ export default function PayoutsContent() {
 																							)}
 																						</span>
 																						<div
-																							className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-xs text-gray-700 cursor-pointer"
+																							className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted border border-border rounded-md px-3 py-1 text-xs text-foreground cursor-pointer"
 																							onClick={(
 																								e
 																							) => {
@@ -1084,45 +1087,22 @@ export default function PayoutsContent() {
 																					</div>
 																				</AccordionTrigger>
 																				<AccordionContent>
-																					{payoutsData[
-																						division
-																					]?.[
-																						subdivision
-																					]?.[
-																						teamId
-																					]
-																						?.adjustments &&
-																					Object.keys(
-																						payoutsData[
-																							division
-																						][
-																							subdivision
-																						][
-																							teamId
-																						]
-																							.adjustments ||
+																					{payoutTeam && payoutTeam.adjustments &&
+																						Object.keys(
+																							payoutTeam.adjustments ||
 																							{}
-																					)
-																						.length >
+																						).length >
 																						0 ? (
 																						<div className="space-y-4">
 																							{/* Global Adjustments */}
 																							<div>
-																								<h4 className="font-semibold text-gray-700">
+																								<h4 className="font-semibold text-foreground">
 																									Global
 																									Adjustments
 																								</h4>
 																								<div className="flex flex-wrap gap-2">
 																									{Object.entries(
-																										payoutsData[
-																											division
-																										][
-																											subdivision
-																										][
-																											teamId
-																										]
-																											.adjustments ||
-																											{}
+																										payoutTeam.adjustments || {}
 																									)
 																										.filter(
 																											([
@@ -1177,7 +1157,7 @@ export default function PayoutsContent() {
 																																2
 																															)}
 																														</p>
-																														<p className="text-gray-500">
+																														<p className="text-muted-foreground">
 																															{
 																																adjustment.notes
 																															}
@@ -1189,7 +1169,7 @@ export default function PayoutsContent() {
 																															<Button
 																																variant="ghost"
 																																size="sm"
-																																className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																																className="h-6 w-6 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 																																title="Edit adjustment"
 																																onClick={() =>
 																																	handleManageGlobalAdjustmentClick(
@@ -1202,7 +1182,7 @@ export default function PayoutsContent() {
 																															<Button
 																																variant="ghost"
 																																size="sm"
-																																className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																																className="h-6 w-6 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 																																title="Remove adjustment"
 																																onClick={() =>
 																																	handleManageGlobalAdjustmentClick(
@@ -1222,21 +1202,13 @@ export default function PayoutsContent() {
 
 																							{/* Team-Specific Adjustments */}
 																							<div>
-																								<h4 className="font-semibold text-gray-700">
+																								<h4 className="font-semibold text-foreground">
 																									Team-Specific
 																									Adjustments
 																								</h4>
 																								<div className="flex flex-wrap gap-2">
 																									{Object.entries(
-																										payoutsData[
-																											division
-																										][
-																											subdivision
-																										][
-																											teamId
-																										]
-																											.adjustments ||
-																											{}
+																										payoutTeam.adjustments || {}
 																									)
 																										.filter(
 																											([
@@ -1291,7 +1263,7 @@ export default function PayoutsContent() {
 																																2
 																															)}
 																														</p>
-																														<p className="text-gray-500">
+																														<p className="text-muted-foreground">
 																															{
 																																adjustment.notes
 																															}
@@ -1303,7 +1275,7 @@ export default function PayoutsContent() {
 																															<Button
 																																variant="ghost"
 																																size="sm"
-																																className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																																className="h-6 w-6 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 																																title="Edit adjustment"
 																																onClick={() =>
 																																	handleEditTeamAdjustment(
@@ -1319,7 +1291,7 @@ export default function PayoutsContent() {
 																															<Button
 																																variant="ghost"
 																																size="sm"
-																																className="h-6 w-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm"
+																																className="h-6 w-6 p-0 rounded-full bg-background/90 hover:bg-background shadow-sm"
 																																title="Remove adjustment"
 																																onClick={() =>
 																																	confirmRemoveTeamAdjustment(
@@ -1341,7 +1313,7 @@ export default function PayoutsContent() {
 																							</div>
 																						</div>
 																					) : (
-																						<p className="text-gray-500 italic">
+																						<p className="text-muted-foreground italic">
 																							No
 																							adjustments
 																							found...
@@ -1364,7 +1336,7 @@ export default function PayoutsContent() {
 					<div className="flex justify-center gap-4 mt-6">
 						<Button
 							variant="outline"
-							className="hover:bg-gray-100 border-gray-300 text-gray-700"
+							className="hover:bg-muted border-border text-foreground"
 							onClick={() => {
 								handleSavePayoutsData();
 							}}
@@ -1374,7 +1346,7 @@ export default function PayoutsContent() {
 						</Button>
 						<Button
 							variant="outline"
-							className="hover:bg-red-600 border-gray-300 text-gray-700"
+							className="hover:bg-red-600 border-border text-foreground"
 							onClick={() => {
 								// Ask for confirmation before resetting
 								if (
@@ -1434,7 +1406,7 @@ export default function PayoutsContent() {
 						open={adjustmentDialogOpen}
 						onOpenChange={setAdjustmentDialogOpen}
 					>
-						<DialogContent className="sm:max-w-[425px] bg-white">
+						<DialogContent className="sm:max-w-[425px] bg-background">
 							<DialogHeader>
 								<DialogTitle>
 									Add Adjustment for {selectedTeamName}
@@ -1454,7 +1426,7 @@ export default function PayoutsContent() {
 						open={globalAdjustmentDialogOpen}
 						onOpenChange={setGlobalAdjustmentDialogOpen}
 					>
-						<DialogContent className="sm:max-w-[425px] bg-white">
+						<DialogContent className="sm:max-w-[425px] bg-background">
 							<DialogHeader>
 								<DialogTitle>Add Global Adjustment</DialogTitle>
 							</DialogHeader>
@@ -1472,7 +1444,7 @@ export default function PayoutsContent() {
 						open={manageGlobalAdjustmentsDialogOpen}
 						onOpenChange={setManageGlobalAdjustmentsDialogOpen}
 					>
-						<DialogContent className="sm:max-w-[700px] bg-white">
+						<DialogContent className="sm:max-w-[700px] bg-background">
 							<DialogHeader>
 								<DialogTitle>
 									Manage Global Adjustments
@@ -1496,7 +1468,7 @@ export default function PayoutsContent() {
 							open={editTeamAdjustmentDialogOpen}
 							onOpenChange={setEditTeamAdjustmentDialogOpen}
 						>
-							<DialogContent className="sm:max-w-[425px] bg-white">
+							<DialogContent className="sm:max-w-[425px] bg-background">
 								<DialogHeader>
 									<DialogTitle>
 										Edit Team Adjustment

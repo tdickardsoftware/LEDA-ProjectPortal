@@ -1,6 +1,15 @@
+/**
+ * PaymentTypeSelectorNF component
+ *
+ * Standalone (non-form) searchable combobox for selecting a payment type.
+ * Operates in either controlled mode (via `value` + `onChange`) or
+ * uncontrolled via internal state.  Fires the optional
+ * `handlePaymentTypeChange` callback on selection.  Fetches payment types
+ * from the API via TanStack Query.
+ */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,6 +27,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { paymentTypeRoute } from "@/lib/apiRoutes";
+import { useQuery } from "@tanstack/react-query";
 
 // Props for the non-form payment type selector
 interface PaymentTypeSelectorNFProps {
@@ -39,15 +49,24 @@ const PaymentTypeSelectorNF: React.FC<PaymentTypeSelectorNFProps> = ({
 	handlePaymentTypeChange,
 }) => {
 	const [open, setOpen] = useState(false);
-	const [paymentTypes, setPaymentTypes] = useState<
-		{ value: { paymentType: string; desc: string }; label: string }[]
-	>([]);
 	const [localValue, setLocalValue] = useState<
 		{ paymentType: string; desc: string } | undefined
 	>(propValue);
 
+	const { data: paymentTypes = [] } = useQuery({
+		queryKey: ["paymentTypes"],
+		queryFn: async () => {
+			const response = await fetch(paymentTypeRoute);
+			const data = await response.json();
+			return data.map((item: { paymentType: string; desc: string }) => ({
+				value: item,
+				label: item.paymentType + " - " + item.desc,
+			}));
+		},
+	});
+
 	// Keep localValue in sync with propValue if controlled
-	useEffect(() => {
+	React.useEffect(() => {
 		if (propValue !== undefined) {
 			setLocalValue(propValue);
 		}
@@ -63,34 +82,17 @@ const PaymentTypeSelectorNF: React.FC<PaymentTypeSelectorNFProps> = ({
 		setOpen(false);
 	};
 
-	useEffect(() => {
-		async function loadPaymentTypes() {
-			try {
-				const response = await fetch(paymentTypeRoute);
-				const data = await response.json();
-				setPaymentTypes(
-					data.map((item: { paymentType: string; desc: string }) => ({
-						value: item,
-						label: item.paymentType + " - " + item.desc,
-					}))
-				);
-			} catch (error) {
-				console.error("Failed to fetch payment types", error);
-			}
-		}
-		loadPaymentTypes();
-	}, []);
-
 	const getSelectedPaymentType = () => {
 		if (localValue) {
 			const exactMatch = paymentTypes.find(
-				(type) =>
+				(type: { value: { paymentType: string; desc: string }; label: string }) =>
 					JSON.stringify(type.value) === JSON.stringify(localValue)
 			);
 			if (exactMatch) return exactMatch.label;
 			if (typeof localValue === "object" && "paymentType" in localValue) {
 				const codeMatch = paymentTypes.find(
-					(type) => type.value.paymentType === localValue.paymentType
+					(type: { value: { paymentType: string; desc: string }; label: string }) =>
+						type.value.paymentType === localValue.paymentType
 				);
 				if (codeMatch) return codeMatch.label;
 			}
@@ -108,51 +110,58 @@ const PaymentTypeSelectorNF: React.FC<PaymentTypeSelectorNFProps> = ({
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
-							className="w-fit justify-between border-gray-400 text-gray-700"
+							className="w-fit justify-between border-border text-foreground"
 						>
 							{getSelectedPaymentType()}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-fit p-0 bg-white border-gray-400 text-gray-700">
+					<PopoverContent className="w-fit p-0 bg-background border-border text-foreground">
 						<Command>
 							<CommandInput placeholder="Search payment type..." />
 							<CommandEmpty>No payment type found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{paymentTypes.map((type) => (
-										<CommandItem
-											key={type.label}
-											value={type.label}
-											onSelect={() => {
-												handleValueChange(type.value);
-											}}
-											className="hover:bg-gray-200"
-										>
-											<Check
-												className={cn(
-													"mr-2 h-4 w-4",
-													localValue &&
-														(JSON.stringify(
-															type.value
-														) ===
-															JSON.stringify(
-																localValue
-															) ||
-															(typeof localValue ===
-																"object" &&
-																"paymentType" in
-																	localValue &&
+									{paymentTypes.map(
+										(
+											type: {
+												value: { paymentType: string; desc: string };
+												label: string;
+											}
+										) => (
+											<CommandItem
+												key={type.label}
+												value={type.label}
+												onSelect={() => {
+													handleValueChange(type.value);
+												}}
+												className="hover:bg-secondary"
+											>
+												<Check
+													className={cn(
+														"mr-2 h-4 w-4",
+														localValue &&
+															(JSON.stringify(
 																type.value
-																	.paymentType ===
-																	localValue.paymentType))
-														? "opacity-100"
-														: "opacity-0"
-												)}
-											/>
-											{type.label}
-										</CommandItem>
-									))}
+															) ===
+																JSON.stringify(
+																	localValue
+																) ||
+																(typeof localValue ===
+																	"object" &&
+																	"paymentType" in
+																		localValue &&
+																	type.value
+																		.paymentType ===
+																		localValue.paymentType))
+															? "opacity-100"
+															: "opacity-0"
+													)}
+												/>
+												{type.label}
+											</CommandItem>
+										)
+									)}
 								</CommandList>
 							</CommandGroup>
 						</Command>

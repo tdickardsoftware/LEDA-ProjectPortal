@@ -1,3 +1,13 @@
+/**
+ * PaymentHistoryFormDialog component
+ *
+ * Dialog form for adding or editing a payment history record for a player,
+ * team, or place.  Accepts a `type` prop to control which entity selector
+ * (PlayerSelect / TeamSelector / PlaceSelector) is rendered and which API
+ * route receives the submission.  Uses React Hook Form + Zod validation.
+ * When `isEditing` is true the form is pre-populated from `paymentData` and
+ * issues a PUT request; otherwise issues a POST.
+ */
 "use client";
 
 import { useState, useEffect, ReactNode } from "react"; // Add ReactNode for buttonIcon
@@ -34,20 +44,14 @@ import {
 } from "@/components/ui/select";
 import PaymentTypeSelector from "@/components/ui/payment-type-selector";
 import SeasonCodeSelector from "@/components/ui/season-code-selector-form";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { DatePickerCustom } from "@/components/ui/date-picker";
 // Import all selector components
 import PlayerSelect from "@/components/ui/single-player-select";
 import TeamSelector from "@/components/ui/team-selector";
 import PlaceSelector from "@/components/ui/place-selector";
 import { PaymentHistory } from "@/lib/definitions";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define form schema with Zod
 const formSchema = z.object({
@@ -61,7 +65,8 @@ const formSchema = z.object({
 	paymentType: z.string({
 		required_error: "Please select payment type",
 	}),
-	amount: z.string().min(1, "Amount is required"),
+	// Allow blank in the UI; normalize to 0.00 on submit.
+	amount: z.string().trim().default(""),
 	seasonCode: z.string().min(1, "Season code is required"),
 	comp: z.boolean().default(false),
 	notes: z.string().optional(),
@@ -159,34 +164,21 @@ export default function PaymentHistoryFormDialog({
 		}
 	}, [paymentData, isEditing, initialLedaId, form, type]);
 
-	// Handle form submission
-	const onSubmit = async (data: FormValues) => {
-		try {
-			console.log("Form submission data:", data); // Add this for debugging
-
+	// Mutation for adding/editing payment history
+	const mutation = useMutation({
+		mutationFn: async (data: FormValues) => {
 			// Extract payment type more reliably
 			let paymentTypeValue = "Unknown";
-
 			if (data.type) {
-				// If data.type has paymentType property directly
 				if (
 					typeof data.type === "object" &&
 					"paymentType" in data.type
 				) {
 					paymentTypeValue = data.type.paymentType;
-				}
-				// If data.type is a string
-				else if (typeof data.type === "string") {
+				} else if (typeof data.type === "string") {
 					paymentTypeValue = data.type;
 				}
-				// Log the type value to help with debugging
-				console.log(
-					"Payment type data structure:",
-					JSON.stringify(data.type, null, 2)
-				);
 			}
-
-			// Get the appropriate ID based on the type
 			let ledaId: string;
 			if (type === "player" && data.ledaId) {
 				ledaId = data.ledaId.toString();
@@ -197,7 +189,6 @@ export default function PaymentHistoryFormDialog({
 			} else {
 				throw new Error("No valid ID found for the selected type");
 			}
-
 			const payload = {
 				ledaId: ledaId,
 				type: paymentTypeValue,
@@ -208,24 +199,18 @@ export default function PaymentHistoryFormDialog({
 				notes: data.notes,
 				paidOff: data.paidOff,
 				date: data.date,
-				// Include payment number if editing
 				...(isEditing &&
 					paymentData?.paymentNbr && {
 						paymentNbr: paymentData.paymentNbr,
 					}),
 			};
-
-			console.log("API payload:", payload); // Add this for debugging
-
-			// Send data to your API - using POST for both create and update (upsert)
-			const response = await fetch(route, {
+			const response = await fetchWithSession(route, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(payload),
 			});
-
 			if (!response.ok) {
 				throw new Error(
 					isEditing
@@ -233,23 +218,32 @@ export default function PaymentHistoryFormDialog({
 						: "Failed to add payment"
 				);
 			}
-
-			// Reset form and close dialog on success
+			return response;
+		},
+		onSuccess: () => {
 			form.reset();
 			setOpen(false);
-			// Call success callback if provided, otherwise reload the page
 			if (onSuccess) {
 				onSuccess();
-				window.location.reload(); // Reload the page after success
+				window.location.reload();
 			} else {
 				window.location.reload();
 			}
-		} catch (error) {
+		},
+		onError: (error) => {
 			console.error(
 				isEditing ? "Error updating payment:" : "Error adding payment:",
 				error
 			);
-		}
+		},
+	});
+
+	// Handle form submission
+	const onSubmit = (data: FormValues) => {
+		mutation.mutate({
+			...data,
+			amount: data.amount.trim() === "" ? "0.00" : data.amount,
+		});
 	};
 
 	return (
@@ -261,14 +255,14 @@ export default function PaymentHistoryFormDialog({
 					</Button>
 				) : (
 					<Button
-						variant="default"
-						className="border-gray-400 text-gray-700"
+						variant="outline"
+						className="hover:bg-muted border-border text-foreground"
 					>
 						{buttonText}
 					</Button>
 				)}
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[500px] bg-white">
+			<DialogContent className="sm:max-w-[500px] bg-background">
 				<DialogHeader>
 					<DialogTitle>
 						{isEditing ? "Edit Payment" : "Add Payment History"}
@@ -338,7 +332,7 @@ export default function PaymentHistoryFormDialog({
 												<SelectValue placeholder="Select payment type" />
 											</SelectTrigger>
 										</FormControl>
-										<SelectContent className="bg-white">
+										<SelectContent className="bg-background">
 											<SelectItem value="Full">
 												Full
 											</SelectItem>
@@ -378,41 +372,14 @@ export default function PaymentHistoryFormDialog({
 							render={({ field }) => (
 								<FormItem className="flex flex-col">
 									<FormLabel>Date</FormLabel>
-									<Popover>
-										<PopoverTrigger asChild>
-											<FormControl>
-												<Button
-													variant={"outline"}
-													className={cn(
-														"w-full pl-3 text-left font-normal",
-														!field.value &&
-															"text-muted-foreground"
-													)}
-												>
-													{field.value ? (
-														format(
-															field.value,
-															"PPP"
-														)
-													) : (
-														<span>Pick a date</span>
-													)}
-													<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-												</Button>
-											</FormControl>
-										</PopoverTrigger>
-										<PopoverContent
-											className="w-auto p-0 bg-white"
-											align="start"
-										>
-											<Calendar
-												mode="single"
-												selected={field.value}
-												onSelect={field.onChange}
-												initialFocus
-											/>
-										</PopoverContent>
-									</Popover>
+									<FormControl>
+										<DatePickerCustom
+											showInput={true}
+											dateSelected={field.value}
+											initialMonth={field.value}
+											onDateChange={(date) => field.onChange(date)}
+										/>
+									</FormControl>
 									<FormMessage />
 								</FormItem>
 							)}

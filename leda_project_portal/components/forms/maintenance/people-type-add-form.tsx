@@ -1,5 +1,13 @@
 // Import necessary modules and components
 "use client";
+
+/**
+ * PeopleTypeAddForm Component
+ *
+ * Form for creating a new people type code (e.g., PLAYER, SPONSOR) in the
+ * maintenance section. Includes an optional description. Returns a 422 conflict
+ * when the code already exists, surfacing an inline error to the user.
+ */
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -17,6 +25,8 @@ import React from "react";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "../../ui/textarea";
 import { peopleTypeRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for the form validation
 const peopleTypeFormSchema = z.object({
@@ -28,8 +38,14 @@ const peopleTypeFormSchema = z.object({
 
 // Define the style for the form container
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * PeopleTypeAddForm creates a new people type code record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 // PeopleTypeAddForm component definition
 export default function PeopleTypeAddForm({
 	onClose,
@@ -48,17 +64,15 @@ export default function PeopleTypeAddForm({
 
 	const [peopleTypeExists, setPeopleTypeExists] = React.useState(false);
 
-	// Handle form submission
-	async function onSubmit(values: z.infer<typeof peopleTypeFormSchema>) {
-		try {
-			const response = await fetch(peopleTypeRoute, {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof peopleTypeFormSchema>) => {
+			const response = await fetchWithSession(peopleTypeRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				if (response.status === 422) {
 					setPeopleTypeExists(true);
@@ -69,24 +83,35 @@ export default function PeopleTypeAddForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
-
-			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPeopleTypeExists(false);
+		form.reset({
+			peopleTypeCode: "",
+		});
+	}, [form]);
+
+	async function onSubmit(values: z.infer<typeof peopleTypeFormSchema>) {
+		setPeopleTypeExists(false);
+		mutation.mutate(values);
 	}
 
 	return (
@@ -126,7 +151,7 @@ export default function PeopleTypeAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">Add</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Add</Button>
 				</div>
 			</form>
 		</Form>

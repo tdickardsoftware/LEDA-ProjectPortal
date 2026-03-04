@@ -1,3 +1,11 @@
+/**
+ * MentionEditForm Component
+ *
+ * Edit form for an existing mention type. Fetches the full mention record by
+ * `mentionCode` from the API on mount, then pre-populates all fields. Submits
+ * a PUT request to update the record. The mention code field is disabled to
+ * prevent changing the primary key after creation.
+ */
 "use client";
 
 import { z } from "zod";
@@ -21,7 +29,10 @@ import MentionBasisSelector from "@/components/ui/mention-basis-selector";
 import { Textarea } from "@/components/ui/textarea";
 import { mentionRoute } from "@/lib/apiRoutes";
 import { Mention } from "@/lib/definitions";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema — points must be a non-negative number
 const mentionFormSchema = z.object({
 	mentionCode: z.string().min(1, { message: "Mention Code is required." }),
 	desc: z.string().optional(),
@@ -30,9 +41,16 @@ const mentionFormSchema = z.object({
 });
 
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
+/**
+ * MentionEditForm fetches mention data by code and provides an edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the mentionCode used to fetch full details
+ */
 export default function MentionEditForm({
 	onClose,
 	onRefresh,
@@ -42,6 +60,7 @@ export default function MentionEditForm({
 	onRefresh: () => void;
 	rowData: Mention;
 }) {
+	// Local state to store the full mention record fetched from the API
 	const [formData, setFormData] = useState<Mention>({} as Mention);
 
 	const formRef = React.useRef<HTMLFormElement>(null);
@@ -60,7 +79,7 @@ export default function MentionEditForm({
 			if (!rowData || !rowData.mentionCode) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				mentionRoute + `?mentionCode=${rowData.mentionCode}`,
 				{
 					method: "GET",
@@ -79,25 +98,20 @@ export default function MentionEditForm({
 			form.reset({
 				...data,
 				points: data.points ? Number(data.points) : undefined,
-			}); // Set form values to the retrieved data
+			});
 		};
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No mention data available.</div>;
-	}
-
-	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
-		try {
-			const response = await fetch(mentionRoute, {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof mentionFormSchema>) => {
+			const response = await fetchWithSession(mentionRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(
@@ -105,24 +119,30 @@ export default function MentionEditForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
-
-			// Reset form and state
 			form.reset();
-
-			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the mention API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form update error", error);
 			toast.error(
 				`Failed to update the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
+		mutation.mutate(values);
+	}
+
+	if (!rowData) {
+		return <div>No mention data available.</div>;
 	}
 
 	return (
@@ -204,10 +224,10 @@ export default function MentionEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
+					<Button variant="outline" type="button" onClick={onClose} className="hover:bg-muted border-border text-foreground">
 						Back
 					</Button>
-					<Button type="submit">Update</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Update</Button>
 				</div>
 			</form>
 		</Form>

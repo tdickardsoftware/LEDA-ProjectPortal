@@ -1,3 +1,4 @@
+/** Shadcn Form components — wraps React Hook Form Controller with Radix Label and accessible error/description primitives. */
 "use client"
 
 import * as React from "react"

@@ -4,12 +4,15 @@ import { query } from "@/lib/dbTypeGet";
 import { PeopleType } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import { DatabaseError } from "pg";
+import { requireApiSession } from "@/lib/require-session";
 
 // Define the API route handler
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	const session = await requireApiSession(req, res);
+	if (!session) return;
 	// Handle GET requests
 	if (req.method === "GET") {
 		if (req.query.peopleTypeCode) {
@@ -46,7 +49,6 @@ export default async function handler(
 	// Handle POST requests
 	else if (req.method === "POST") {
 		try {
-			console.log(req.body);
 			const results = req.body as PeopleType;
 
 			// Define the query to insert a new people type

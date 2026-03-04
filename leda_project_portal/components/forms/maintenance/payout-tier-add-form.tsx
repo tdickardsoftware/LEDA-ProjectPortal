@@ -1,5 +1,13 @@
 // Import necessary modules and components
 "use client";
+
+/**
+ * PayoutTierAddForm Component
+ *
+ * Form for creating a new payout tier that maps a finishing place (1st, 2nd, etc.)
+ * to a dollar/point amount. Returns a 422 conflict when the place already has
+ * an existing tier, surfacing an inline error next to the place field.
+ */
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -16,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import React from "react";
 import { payoutTierRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for the form validation
 const paymentTypeFormSchema = z.object({
@@ -27,9 +37,15 @@ const paymentTypeFormSchema = z.object({
 
 // Define the style for the form container and input width
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
+/**
+ * PayoutTierAddForm creates a new payout tier record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 // PayoutTierAddForm component definition
 export default function PayoutTierAddForm({
 	onClose,
@@ -49,17 +65,15 @@ export default function PayoutTierAddForm({
 
 	const [payoutTierExists, setPayoutTierExists] = React.useState(false);
 
-	// Handle form submission
-	async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
-		try {
-			const response = await fetch(payoutTierRoute, {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof paymentTypeFormSchema>) => {
+			const response = await fetchWithSession(payoutTierRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				if (response.status === 422) {
 					setPayoutTierExists(true);
@@ -70,24 +84,36 @@ export default function PayoutTierAddForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
-
-			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setPayoutTierExists(false);
+		form.reset({
+			place: undefined,
+			amount: undefined,
+		});
+	}, [form]);
+
+	async function onSubmit(values: z.infer<typeof paymentTypeFormSchema>) {
+		setPayoutTierExists(false);
+		mutation.mutate(values);
 	}
 
 	return (
@@ -160,7 +186,7 @@ export default function PayoutTierAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">Add</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Add</Button>
 				</div>
 			</form>
 		</Form>

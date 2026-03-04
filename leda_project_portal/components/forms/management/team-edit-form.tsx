@@ -1,3 +1,13 @@
+/**
+ * TeamEditForm Component
+ *
+ * Multi-step form for editing an existing team record.
+ * Steps: Basic Info → Team Details → Team Members.
+ * Fetches full team data by LEDA ID on mount. Tracks member list changes
+ * independently of RHF dirty state via `initialMemberIdListRef`. The
+ * `hasChanges` flag is true when either form fields or the member list differ
+ * from the originally-loaded values.
+ */
 "use client";
 
 import { z } from "zod";
@@ -22,7 +32,10 @@ import { teamRoute } from "@/lib/apiRoutes";
 import { Team } from "@/lib/definitions";
 import PlayerSelector from "@/components/ui/player-selector";
 import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for team edit fields (no memberIdList — managed via state)
 const teamInfoSchema = z.object({
 	ledaId: z
 		.number()
@@ -30,13 +43,22 @@ const teamInfoSchema = z.object({
 		.optional(),
 	teamName: z.string().min(1, { message: "Team Name is required." }),
 	establishedDate: z.string(),
-	memo: z.string().optional(),
+	memo: z.string().nullable().optional(),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
+/**
+ * TeamEditForm fetches a team record and provides a multi-step edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - The team record used to look up full data by ledaId
+ * @param handleRefresh - Optional alternative refresh/close handler
+ */
 export default function TeamEditForm({
 	onClose,
 	onRefresh,
@@ -48,8 +70,13 @@ export default function TeamEditForm({
 	rowData: Team;
 	handleRefresh?: () => void;
 }) {
+	// Local state to store the full team record fetched from the API
 	const [formData, setFormData] = useState<Team>({} as Team);
+	// Comma-separated list of member LEDA IDs; managed separately from RHF
 	const [memberIdList, setMemberIdList] = useState<string>("");
+	// Ref to compare current memberIdList against its initial loaded value
+	const initialMemberIdListRef = React.useRef<string>("");
+	// Track which wizard step is currently active
 	const [currentStep, setCurrentStep] = useState(0);
 
 	// Define the steps
@@ -76,6 +103,46 @@ export default function TeamEditForm({
 		},
 	});
 
+	// True when either form fields or the member list differ from initial loaded values
+	const hasChanges =
+		form.formState.isDirty || memberIdList !== initialMemberIdListRef.current;
+
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof teamInfoSchema>) => {
+			const submittedValues = { ...values, memberIdList: memberIdList };
+			const response = await fetchWithSession(teamRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(submittedValues),
+			});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: (results) => {
+			toast.success("Successfully updated the form!");
+			form.reset();
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
+			console.error("Form update error", error);
+			toast.error(
+				`Failed to update the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		},
+	});
+
+	// Propagates the serialized member ID list from the PlayerSelector child component
 	function handleSetMemberIdList(memberIdList: string) {
 		setMemberIdList(memberIdList);
 	}
@@ -126,7 +193,7 @@ export default function TeamEditForm({
 			return;
 		}
 		const fetchData = async () => {
-			const response = await fetch(
+			const response = await fetchWithSession(
 				teamRoute + `?ledaId=${rowData.ledaId}`,
 				{
 					method: "GET",
@@ -142,7 +209,9 @@ export default function TeamEditForm({
 			}
 			const data = await response.json();
 			setFormData(data);
-			setMemberIdList(JSON.stringify(data.memberIdList));
+			const initialMemberIdList = JSON.stringify(data.memberIdList);
+			initialMemberIdListRef.current = initialMemberIdList;
+			setMemberIdList(initialMemberIdList);
 			form.reset({
 				...data,
 				ledaId: data.ledaId ? Number(data.ledaId) : undefined,
@@ -154,46 +223,12 @@ export default function TeamEditForm({
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No team data available.</div>;
+	function onSubmit(values: z.infer<typeof teamInfoSchema>) {
+		mutation.mutate(values);
 	}
 
-	async function onSubmit(values: z.infer<typeof teamInfoSchema>) {
-		const submittedValues = { ...values, memberIdList: memberIdList };
-		try {
-			const response = await fetch(teamRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(submittedValues),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			const results = await response.json();
-			toast.success("Successfully updated the form!");
-
-			// Reset form and state
-			form.reset();
-
-			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the team API route
-		} catch (error) {
-			console.error("Form update error", error);
-			toast.error(
-				`Failed to update the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+	if (!rowData) {
+		return <div>No team data available.</div>;
 	}
 
 	return (
@@ -209,7 +244,7 @@ export default function TeamEditForm({
 					onChange={setCurrentStep}
 				>
 					<div className="mb-6">
-						<div className="flex border-b border-gray-200">
+						<div className="flex border-b border-border">
 							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
 								{steps.map((step, index) => (
 									<Tab
@@ -219,7 +254,7 @@ export default function TeamEditForm({
 											${
 												selected
 													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+													: "text-muted-foreground hover:text-foreground hover:border-border"
 											} ${
 												index < currentStep
 													? "text-green-500"
@@ -249,7 +284,7 @@ export default function TeamEditForm({
 									Team Basic Information for LEDA ID #
 									{rowData.ledaId}
 								</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
+								<hr className="bg-muted mb-4"></hr>
 								<FormField
 									control={form.control}
 									name="ledaId"
@@ -262,6 +297,7 @@ export default function TeamEditForm({
 													disabled
 													className={inputWidth}
 													type="number"
+													value={field.value ?? ""}
 													onChange={(e) => {
 														field.onChange(
 															e.target.value ===
@@ -291,7 +327,7 @@ export default function TeamEditForm({
 						<Tab.Panel>
 							<div className={formContainerStyle}>
 								<h1>Team Details</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
+								<hr className="bg-muted mb-4"></hr>
 								<InputDefault
 									control={form.control}
 									name="establishedDate"
@@ -308,6 +344,7 @@ export default function TeamEditForm({
 												<Textarea
 													placeholder="Additional Data Here..."
 													{...field}
+													value={field.value ?? ""}
 												/>
 											</FormControl>
 											<FormMessage />
@@ -321,7 +358,7 @@ export default function TeamEditForm({
 						<Tab.Panel>
 							<div className={formContainerStyle}>
 								<h1>Team Members</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
+								<hr className="bg-muted mb-4"></hr>
 								<div className="player-selector-container">
 									<PlayerSelector
 										setMemberIdList={handleSetMemberIdList}
@@ -334,16 +371,28 @@ export default function TeamEditForm({
 				</Tab.Group>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === 0
 							? handleRefresh
 								? "Back"
 								: "Cancel"
 							: "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
-						{currentStep === steps.length - 1 ? "Update" : "Next"}
-					</Button>
+					<div className="flex gap-2">
+						{hasChanges && currentStep < steps.length - 1 && (
+							<Button
+								variant="outline"
+								type="button"
+								onClick={() => setCurrentStep(steps.length - 1)}
+								className="hover:bg-muted border-border text-foreground"
+							>
+								Skip to Update
+							</Button>
+						)}
+						<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
+							{currentStep === steps.length - 1 ? "Update" : "Next"}
+						</Button>
+					</div>
 				</div>
 			</form>
 		</Form>

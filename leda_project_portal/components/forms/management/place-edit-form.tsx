@@ -1,3 +1,12 @@
+/**
+ * PlaceEditForm Component
+ *
+ * Multi-step form for editing an existing venue record. Fetches full place data
+ * by LEDA ID on mount and pre-populates all fields. Steps mirror PlaceAddForm:
+ * Basic Info → Contact Info → Membership Info → Additional Info. The `hasChanges`
+ * flag (from `form.formState.isDirty`) can be used by the parent to warn before
+ * discarding edits.
+ */
 "use client";
 
 import { z } from "zod";
@@ -28,7 +37,11 @@ import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { Place } from "@/lib/definitions";
 import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
+import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 
+// Validation schema — mirrors PlaceAddForm but does not include lastBarFeePayment
 const placeFormSchema = z.object({
 	ledaId: z
 		.number()
@@ -36,7 +49,7 @@ const placeFormSchema = z.object({
 		.optional(),
 	name: z.string().min(1, { message: "Name is required." }),
 	addressOne: z.string().min(1, { message: "Address is required." }),
-	addressTwo: z.string().optional(),
+	addressTwo: z.string().nullable().optional(),
 	city: z.string().min(1, { message: "City is required." }),
 	state: z.string().min(1, { message: "State is required." }),
 	zip: z.string().min(1, { message: "Zip is required." }),
@@ -48,40 +61,58 @@ const placeFormSchema = z.object({
 		}),
 	otherNumber: z
 		.string()
+		.nullable()
 		.optional()
 		.refine(
-			(value) => value === "" || isValidPhoneNumber(value ?? "", "US"),
+			(value) => !value || value === "" || isValidPhoneNumber(value, "US"),
 			{ message: "Other Number is Invalid" }
 		),
 	email: z
 		.string()
-		.min(1, { message: "Email is Required" })
-		.refine(validator.isEmail, { message: "Email is Invalid" }),
+		.nullable()
+		.optional()
+		.refine((value) => !value || validator.isEmail(value), { message: "Email is Invalid" }),
 	website: z
 		.string()
+		.nullable()
 		.optional()
-		.refine((value) => value === undefined || validator.isURL(value), {
+		.refine((value) => !value || validator.isURL(value), {
 			message: "Website is Invalid",
 		}),
 	establishDate: z.string(),
-	memo: z.string().optional(),
-	numberOfBoards: z
-		.number()
-		.min(0, { message: "Number of Boards Must be a Postive Number." }),
+	memo: z.string().nullable().optional(),
+	numberOfBoards: z.preprocess(
+		(value) => (value === "" ? undefined : value),
+		z
+			.number({
+				required_error: "Number of Boards is required.",
+				invalid_type_error: "Number of Boards must be a number.",
+			})
+			.min(0, { message: "Number of Boards Must be a Postive Number." })
+	),
 	sendMailings: z.boolean(),
 	regularSponsor: z.boolean(),
 	currentSponsor: z.boolean(),
 	issues: z.boolean(),
-	lastSanctioningDate: z.string().optional(),
+	lastSanctioningDate: z.string().nullable().optional(),
 	placeType: z.string().min(1, { message: "Place Type is Required" }),
 	contactId: z.string().min(1, { message: "Place Owner is Required" }),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * PlaceEditForm fetches a place record and provides a multi-step edit interface.
+ *
+ * @param onClose - Optional callback to close the edit panel
+ * @param onRefresh - Optional callback to reload the parent data table
+ * @param rowData - The place record used to look up full data by ledaId
+ * @param handleEdit - Alternative close handler used in some parent contexts
+ */
 export default function PlaceEditForm({
 	onClose,
 	onRefresh,
@@ -93,7 +124,9 @@ export default function PlaceEditForm({
 	rowData: Place;
 	handleEdit?: () => void;
 }) {
+	// Local state to store the full place record fetched from the API
 	const [formData, setFormData] = useState<Place>({} as Place);
+	// Track which wizard step is currently active
 	const [currentStep, setCurrentStep] = useState(0);
 
 	// Define the steps
@@ -134,7 +167,7 @@ export default function PlaceEditForm({
 		resolver: zodResolver(placeFormSchema),
 		mode: "onChange",
 		defaultValues: {
-			ledaId: formData.ledaId ?? undefined,
+				ledaId: formData.ledaId ?? undefined,
 			name: formData.name || "",
 			addressOne: formData.addressOne || "",
 			addressTwo: formData.addressTwo || "",
@@ -147,9 +180,9 @@ export default function PlaceEditForm({
 			website: formData.website || "",
 			establishDate: formData.establishDate
 				? new Date(formData.establishDate).toISOString().split("T")[0]
-				: undefined,
+				: "",
 			memo: formData.memo || "",
-			numberOfBoards: formData.numberOfBoards || undefined,
+			numberOfBoards: formData.numberOfBoards ?? undefined,
 			sendMailings: formData.sendMailings || false,
 			regularSponsor: formData.regularSponsor || false,
 			currentSponsor: formData.currentSponsor || false,
@@ -158,17 +191,56 @@ export default function PlaceEditForm({
 				? new Date(formData.lastSanctioningDate)
 						.toISOString()
 						.split("T")[0]
-				: undefined,
+				: "",
 			placeType: formData.placeType || "",
 			contactId: formData.contactId ? String(formData.contactId) : "",
+		},
+	});
+
+	// True when any form field has been modified from its original value
+	const hasChanges = form.formState.isDirty;
+
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof placeFormSchema>) => {
+			const response = await fetchWithSession(placeRoute, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
+			});
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+			return await response.json();
+		},
+		onSuccess: (results) => {
+			toast.success("Successfully updated the form!");
+			form.reset();
+			if (onClose) {
+				onClose();
+			}
+			if (onRefresh) {
+				onRefresh();
+			}
+		},
+		onError: (error: unknown) => {
+			console.error("Form update error", error);
+			toast.error(
+				`Failed to update the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
 		},
 	});
 
 	// Handle step navigation
 	const nextStep = async () => {
 		const currentStepFields = steps[currentStep].fields;
-
-		// Validate only the fields in the current step
 		const result = await form.trigger(
 			currentStepFields as (keyof z.infer<typeof placeFormSchema>)[]
 		);
@@ -177,7 +249,6 @@ export default function PlaceEditForm({
 			if (currentStep < steps.length - 1) {
 				setCurrentStep(currentStep + 1);
 			} else {
-				// If we're on the last step, submit the form
 				form.handleSubmit(onSubmit)();
 			}
 		}
@@ -200,7 +271,7 @@ export default function PlaceEditForm({
 			if (!rowData || !rowData.ledaId) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				placeRoute + `?ledaId=${rowData.ledaId}`,
 				{
 					method: "GET",
@@ -239,45 +310,8 @@ export default function PlaceEditForm({
 		return <div>No place data available.</div>;
 	}
 
-	async function onSubmit(values: z.infer<typeof placeFormSchema>) {
-		try {
-			const response = await fetch(placeRoute, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(values),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			const results = await response.json();
-			toast.success("Successfully updated the form!");
-
-			// Reset form and state
-			form.reset();
-
-			console.log("Form updated successfully!", results);
-			if (onClose) {
-				onClose(); // Close the form
-			}
-			if (onRefresh) {
-				onRefresh(); // Refresh the data table
-			}
-		} catch (error) {
-			console.error("Form update error", error);
-			toast.error(
-				`Failed to update the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+	function onSubmit(values: z.infer<typeof placeFormSchema>) {
+		mutation.mutate(values);
 	}
 
 	return (
@@ -293,7 +327,7 @@ export default function PlaceEditForm({
 					onChange={setCurrentStep}
 				>
 					<div className="mb-6">
-						<div className="flex border-b border-gray-200">
+						<div className="flex border-b border-border">
 							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
 								{steps.map((step, index) => (
 									<Tab
@@ -303,7 +337,7 @@ export default function PlaceEditForm({
 											${
 												selected
 													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+													: "text-muted-foreground hover:text-foreground hover:border-border"
 											} ${
 												index < currentStep
 													? "text-green-500"
@@ -333,7 +367,7 @@ export default function PlaceEditForm({
 									Basic Place Information for LEDA ID #
 									{rowData.ledaId}
 								</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
+								<hr className="bg-muted mb-4"></hr>
 								<InputDefault
 									control={form.control}
 									name="name"
@@ -356,6 +390,7 @@ export default function PlaceEditForm({
 													{...field}
 													className={inputWidth}
 													type="number"
+													value={field.value ?? ""}
 													onChange={(e) => {
 														field.onChange(
 															e.target.value ===
@@ -380,7 +415,7 @@ export default function PlaceEditForm({
 						<Tab.Panel>
 							<div className={formContainerStyle}>
 								<h1>Contact Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
+								<hr className="bg-muted mb-4"></hr>
 								<InputDefault
 									control={form.control}
 									name="addressOne"
@@ -410,7 +445,7 @@ export default function PlaceEditForm({
 								<InputDefault
 									control={form.control}
 									name="email"
-									label="Email *"
+									label="Email"
 									type="email"
 								/>
 								<PhoneNumberInput
@@ -430,7 +465,7 @@ export default function PlaceEditForm({
 						<Tab.Panel>
 							<div className={formContainerStyle}>
 								<h1>Membership Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
+								<hr className="bg-muted mb-4"></hr>
 								<FormField
 									control={form.control}
 									name="ledaId"
@@ -443,6 +478,7 @@ export default function PlaceEditForm({
 													disabled
 													className={inputWidth}
 													type="number"
+													value={field.value ?? ""}
 													onChange={(e) => {
 														field.onChange(
 															e.target.value ===
@@ -470,11 +506,11 @@ export default function PlaceEditForm({
 									name="placeType"
 									label="Place Type *"
 								/>
-								<InputDefault
+								<DatePickerFormField
 									control={form.control}
 									name="establishDate"
 									label="Established Date *"
-									type="date"
+									enableMonthYearPicker
 								/>
 							</div>
 						</Tab.Panel>
@@ -483,12 +519,12 @@ export default function PlaceEditForm({
 						<Tab.Panel>
 							<div className={formContainerStyle}>
 								<h1>Additional Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<InputDefault
+								<hr className="bg-muted mb-4"></hr>
+								<DatePickerFormField
 									control={form.control}
 									name="lastSanctioningDate"
-									label="Last Sanctioning Date *"
-									type="date"
+									label="Last Sanctioning Date"
+									enableMonthYearPicker
 								/>
 								<CheckboxDefault
 									control={form.control}
@@ -524,6 +560,7 @@ export default function PlaceEditForm({
 												<Textarea
 													placeholder="Additional Data Here..."
 													{...field}
+													value={field.value ?? ""}
 												/>
 											</FormControl>
 											<FormMessage />
@@ -536,16 +573,28 @@ export default function PlaceEditForm({
 				</Tab.Group>
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === 0
 							? handleEdit
 								? "Edit"
 								: "Back"
 							: "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
-						{currentStep === steps.length - 1 ? "Update" : "Next"}
-					</Button>
+					<div className="flex gap-2">
+						{hasChanges && currentStep < steps.length - 1 && (
+							<Button
+								variant="outline"
+								type="button"
+								onClick={() => setCurrentStep(steps.length - 1)}
+								className="hover:bg-muted border-border text-foreground"
+							>
+								Skip to Update
+							</Button>
+						)}
+						<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
+							{currentStep === steps.length - 1 ? "Update" : "Next"}
+						</Button>
+					</div>
 				</div>
 			</form>
 		</Form>

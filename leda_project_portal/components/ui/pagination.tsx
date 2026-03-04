@@ -1,3 +1,4 @@
+/** Shadcn Pagination component — accessible navigation bar with previous/next buttons, page links, and ellipsis. */
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ButtonProps, buttonVariants } from "@/components/ui/button"

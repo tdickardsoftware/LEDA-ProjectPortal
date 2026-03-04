@@ -1,3 +1,12 @@
+/**
+ * TeamAddForm Component (Management)
+ *
+ * Multi-step form for creating a new team record.
+ * Steps: Basic Info (LEDA ID, name) → Team Details (dates, memo) → Team Members.
+ * The Team Members step does not require validation before advancing. Optionally
+ * auto-generates a LEDA ID (sent as 0 for server assignment). Returns a 422
+ * conflict when the provided LEDA ID is already in use.
+ */
 "use client";
 
 import { z } from "zod";
@@ -22,8 +31,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import PlayerSelector from "@/components/ui/player-selector";
-import { Tab } from "@headlessui/react";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
+// Validation schema for team fields
 export const teamFormSchema = z.object({
 	ledaId: z
 		.number()
@@ -31,16 +42,23 @@ export const teamFormSchema = z.object({
 		.optional(),
 	teamName: z.string().min(1, { message: "Team Name is required." }),
 	establishedDate: z.string(),
-	memo: z.string().optional(),
+	memo: z.string().nullable().optional(),
 	lastTeamFeePayment: z.string(),
-	memberIdList: z.string().optional(),
+	memberIdList: z.string().nullable().optional(),
 });
 
+// Shared style constants for the form layout
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 const checkboxWidth = "h-5 w-5";
 
+/**
+ * TeamAddForm (exported as PlaceAddForm) renders a stepped team creation form.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function PlaceAddForm({
 	onClose,
 	onRefresh,
@@ -48,6 +66,7 @@ export default function PlaceAddForm({
 	onClose: () => void;
 	onRefresh: () => void;
 }) {
+	// When true, ledaId is set to 0 so the server auto-assigns an ID
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
 	const [ledaIdExists, setLedaIdExists] = useState(false);
 	const [memberIdList, setMemberIdList] = useState<string>("");
@@ -76,6 +95,72 @@ export default function PlaceAddForm({
 		},
 	});
 
+	// Reset form and all state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setGenerateIDStatus(true);
+		setLedaIdExists(false);
+		setMemberIdList("");
+		setCurrentStep(0);
+		form.reset({
+			ledaId: undefined,
+			teamName: "",
+			establishedDate: "",
+			memo: "",
+			lastTeamFeePayment: "UNPAID - NEW TEAM ADDED",
+			memberIdList: "",
+		});
+	}, [form]);
+
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof teamFormSchema>) => {
+			const submissionValues = generateIDStatus
+				? { ...values, ledaId: 0 }
+				: values;
+			const submissionValues2 = {
+				...submissionValues,
+				memberIdList: memberIdList,
+			};
+
+			const response = await fetchWithSession(teamRoute, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(submissionValues2),
+			});
+
+			if (!response.ok) {
+				if (response.status === 422) {
+					setLedaIdExists(true);
+				}
+				const errorData = await response.json();
+				throw new Error(
+					errorData?.message ||
+						`HTTP error! status: ${response.status}`
+				);
+			}
+
+			return await response.json();
+		},
+		onSuccess: (results) => {
+			toast.success("Successfully submitted the form!");
+			form.reset();
+			setGenerateIDStatus(true);
+			setCurrentStep(0);
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
+			console.error("Form submission error", error);
+			toast.error(
+				`Failed to submit the form: ${
+					(error as Error).message || "Please try again."
+				}`
+			);
+		},
+	});
+
+	// Propagates the serialized member ID list from the PlayerSelector child component
 	function handleSetMemberIdList(memberIdList: string) {
 		setMemberIdList(memberIdList);
 	}
@@ -117,55 +202,9 @@ export default function PlaceAddForm({
 		}
 	};
 
-	async function onSubmit(values: z.infer<typeof teamFormSchema>) {
-		try {
-			// If generateIDStatus is true, set ledaId to 0
-			const submissionValues = generateIDStatus
-				? { ...values, ledaId: 0 }
-				: values;
-			const submissionValues2 = {
-				...submissionValues,
-				memberIdList: memberIdList,
-			};
-
-			const response = await fetch(teamRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(submissionValues2),
-			});
-
-			if (!response.ok) {
-				if (response.status === 422) {
-					setLedaIdExists(true);
-				}
-				const errorData = await response.json();
-				throw new Error(
-					errorData?.message ||
-						`HTTP error! status: ${response.status}`
-				);
-			}
-
-			const results = await response.json();
-			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
-			form.reset();
-			setGenerateIDStatus(true);
-			setCurrentStep(0);
-
-			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
-			console.error("Form submission error", error);
-			toast.error(
-				`Failed to submit the form: ${
-					(error as Error).message || "Please try again."
-				}`
-			);
-		}
+	function onSubmit(values: z.infer<typeof teamFormSchema>) {
+		setLedaIdExists(false);
+		mutation.mutate(values);
 	}
 
 	return (
@@ -174,156 +213,143 @@ export default function PlaceAddForm({
 				onSubmit={form.handleSubmit(onSubmit)}
 				className="space-y-4 mx-auto"
 			>
-				<Tab.Group
-					selectedIndex={currentStep}
-					onChange={setCurrentStep}
-				>
-					<div className="mb-6">
-						<div className="flex border-b border-gray-200">
-							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
-								{steps.map((step, index) => (
-									<Tab
-										key={index}
-										className={({ selected }) =>
-											`w-full py-2.5 text-sm font-medium leading-5 
-											${
-												selected
-													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-											} ${
-												index < currentStep
-													? "text-green-500"
-													: ""
-											}`
-										}
-									>
-										<span className="flex items-center justify-center">
-											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
-												{index < currentStep
-													? "✓"
-													: index + 1}
-											</span>
-											{step.name}
+				<div className="mb-6">
+					<div className="flex border-b border-border">
+						{/* Render step headers as non-clickable */}
+						<div className="flex space-x-1 rounded-xl p-1 w-full">
+							{steps.map((step, index) => (
+								<div
+									key={index}
+									className={`w-full py-2.5 text-sm font-medium leading-5 
+						${
+							index === currentStep
+								? "border-b-2 border-blue-500 text-blue-600"
+								: "text-muted-foreground"
+						} ${index < currentStep ? "text-green-500" : ""}`}
+								>
+									<span className="flex items-center justify-center">
+										<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
+											{index < currentStep ? "✓" : index + 1}
 										</span>
-									</Tab>
-								))}
-							</Tab.List>
+										{step.name}
+									</span>
+								</div>
+							))}
 						</div>
 					</div>
+				</div>
 
-					<Tab.Panels>
-						{/* Step 1: Basic Info */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Team Basic Information</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<div className="flex items-start space-x-2">
-									<Label
-										className="whitespace-nowrap"
-										htmlFor="generateID"
-									>
-										Generate LEDA ID
-									</Label>
-									<Checkbox
-										checked={generateIDStatus}
-										onCheckedChange={(checked: boolean) =>
-											setGenerateIDStatus(checked)
-										}
-										className={checkboxWidth}
-										id="generateID"
-									/>
-								</div>
-								<FormField
-									control={form.control}
-									name="ledaId"
-									render={({ field }) => (
-										<FormItem>
-											<FormControl>
-												<Input
-													placeholder="LEDA ID #"
-													{...field}
-													disabled={generateIDStatus}
-													className={inputWidth}
-													type="number"
-													onChange={(e) => {
-														field.onChange(
-															e.target.value ===
-																""
-																? undefined
-																: parseFloat(
-																		e.target
-																			.value
-																  )
-														);
-													}}
-												/>
-											</FormControl>
-											<FormMessage />
-											{ledaIdExists && (
-												<p className="text-red-500 text-sm mt-1">
-													This LEDA ID is already in
-													use
-												</p>
-											)}
-										</FormItem>
+				{/* Step 1: Basic Info */}
+				{currentStep === 0 && (
+					<div className={formContainerStyle}>
+						<h1>Team Basic Information</h1>
+						<hr className="bg-muted mb-4"></hr>
+						<div className="flex items-start space-x-2">
+							<Label
+								className="whitespace-nowrap"
+								htmlFor="generateID"
+							>
+								Generate LEDA ID
+							</Label>
+							<Checkbox
+								checked={generateIDStatus}
+								onCheckedChange={(checked: boolean) =>
+									setGenerateIDStatus(checked)
+								}
+								className={checkboxWidth}
+								id="generateID"
+							/>
+						</div>
+						<FormField
+							control={form.control}
+							name="ledaId"
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<Input
+											placeholder="LEDA ID #"
+											{...field}
+											disabled={generateIDStatus}
+											className={inputWidth}
+											type="number"
+											onChange={(e) => {
+												field.onChange(
+													e.target.value ===
+														""
+														? undefined
+														: parseFloat(
+																e.target
+																	.value
+														  )
+												);
+											}}
+										/>
+									</FormControl>
+									<FormMessage />
+									{ledaIdExists && (
+										<p className="text-red-500 text-sm mt-1">
+											This LEDA ID is already in
+											use
+										</p>
 									)}
-								/>
-								<InputDefault
-									control={form.control}
-									name="teamName"
-									label="Team Name *"
-								/>
-							</div>
-						</Tab.Panel>
+								</FormItem>
+							)}
+						/>
+						<InputDefault
+							control={form.control}
+							name="teamName"
+							label="Team Name *"
+						/>
+					</div>
+				)}
 
-						{/* Step 2: Team Details */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Team Details</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<InputDefault
-									control={form.control}
-									name="establishedDate"
-									label="Established Date *"
-									type="date"
-								/>
-								<FormField
-									control={form.control}
-									name="memo"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Memo</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder="Additional Data Here..."
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
-						</Tab.Panel>
+				{/* Step 2: Team Details */}
+				{currentStep === 1 && (
+					<div className={formContainerStyle}>
+						<h1>Team Details</h1>
+						<hr className="bg-muted mb-4"></hr>
+						<InputDefault
+							control={form.control}
+							name="establishedDate"
+							label="Established Date *"
+							type="date"
+						/>
+						<FormField
+							control={form.control}
+							name="memo"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Memo</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder="Additional Data Here..."
+											{...field}
+											value={field.value ?? ""}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				)}
 
-						{/* Step 3: Team Members */}
-						<Tab.Panel>
-							<div className={formContainerStyle}>
-								<h1>Team Members</h1>
-								<hr className="bg-gray-300 mb-4"></hr>
-								<PlayerSelector
-									setMemberIdList={handleSetMemberIdList}
-								/>
-							</div>
-						</Tab.Panel>
-					</Tab.Panels>
-				</Tab.Group>
+				{/* Step 3: Team Members */}
+				{currentStep === 2 && (
+					<div className={formContainerStyle}>
+						<h1>Team Members</h1>
+						<hr className="bg-muted mb-4"></hr>
+						<PlayerSelector
+							setMemberIdList={handleSetMemberIdList}
+						/>
+					</div>
+				)}
 
 				<div className="flex justify-between">
-					<Button type="button" onClick={prevStep}>
+					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === 0 ? "Cancel" : "Back"}
 					</Button>
-					<Button type="button" onClick={nextStep}>
+					<Button variant="outline" type="button" onClick={nextStep} className="hover:bg-muted border-border text-foreground">
 						{currentStep === steps.length - 1 ? "Submit" : "Next"}
 					</Button>
 				</div>

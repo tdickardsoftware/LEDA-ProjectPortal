@@ -1,3 +1,13 @@
+/**
+ * NavMain component
+ *
+ * Renders the main sidebar navigation tree for the LEDA portal.  Each top-level
+ * item is a collapsible group (using Radix Collapsible) whose children are
+ * rendered recursively via `renderMenuItems`.  Active-route highlighting is
+ * applied by comparing the current pathname against each item's URL.  Items
+ * are gated by CASL abilities so users only see sections they can access.
+ * A user-management section is appended after the main items for admins.
+ */
 //
 // Use Client
 //
@@ -23,6 +33,10 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation"; // Import usePathname
+import { useUserAbilities } from "@/lib/use-user-abilities";
+import { Can } from "@casl/react";
+import NavUserManagement from "@/components/nav-user-management";
+import { Spinner } from "./ui/skeleton";
 
 //
 // Define types for the nested structure
@@ -39,7 +53,17 @@ type NavItem = {
 // Return all of the items for the main nav object
 //
 export function NavMain({ items }: { items: NavItem[] }) {
+	const { ability, loading } = useUserAbilities();
+	
 	const pathname = usePathname(); // Get the current pathname
+	
+	if (loading) {
+		return <Spinner />; // Or your loading component
+	}
+	// If no items are available (e.g., user cannot manage any section), render nothing
+	if (!items || items.length === 0) {
+		return null;
+	}
 
 	// Use NavItem[] as the type for menuItems parameter
 	const renderMenuItems = (menuItems: NavItem[]) => {
@@ -57,7 +81,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
 							<Link
 								href={item.url}
 								className={
-									currentPage ? "bg-gray-800 text-white" : ""
+									currentPage ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
 								}
 							>
 								{item.icon && <item.icon />}
@@ -89,6 +113,12 @@ export function NavMain({ items }: { items: NavItem[] }) {
 		<SidebarGroup>
 			<SidebarGroupLabel>Admin Tools</SidebarGroupLabel>
 			<SidebarMenu>{renderMenuItems(items)}</SidebarMenu>
+			<Can I="manage" a="Users" ability={ability}>
+				<SidebarGroupLabel>User Management</SidebarGroupLabel>
+				<SidebarMenu>
+					<NavUserManagement />
+				</SidebarMenu>
+			</Can>
 		</SidebarGroup>
 	);
 }

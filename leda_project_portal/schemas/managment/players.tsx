@@ -1,3 +1,8 @@
+/**
+ * Column schema for the Players data table (Management section).
+ * Includes sortable columns for LEDA ID, full name, phone number, and email.
+ * Sorting is triggered via the column header buttons.
+ */
 //
 // Use the client
 //
@@ -6,14 +11,14 @@
 // Imports
 //
 import { ColumnDef } from "@tanstack/react-table";
-import { Player } from "@/lib/definitions";
+import { PlayerDataTable } from "@/lib/definitions";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 //
 //Define the columns
 //
-export const columns: ColumnDef<Player>[] = [
+export const columns: ColumnDef<PlayerDataTable>[] = [
 	{
 		id: "select",
 		header: ({ table }) => (
@@ -69,7 +74,7 @@ export const columns: ColumnDef<Player>[] = [
 		},
 	},
 	{
-		accessorKey: "phoneNumberFormatted",
+		accessorKey: "phoneNumber",
 		header: ({ column }) => {
 			return (
 				<Button

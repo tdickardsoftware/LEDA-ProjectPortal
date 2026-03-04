@@ -1,3 +1,10 @@
+/**
+ * GenderSelector component
+ *
+ * Searchable combobox for selecting a gender (Male / Female / Other) within a
+ * React Hook Form context.  Uses a Command popover and writes the selected
+ * value back into the form field via the field's `onChange` handler.
+ */
 "use client";
 
 import React, { useState } from "react";
@@ -40,9 +47,9 @@ interface FormValues {
 
 // List of gender options
 const genders = [
-	{ value: "Male", label: "Male" },
-	{ value: "Female", label: "Female" },
-	{ value: "Other", label: "Other" },
+	{ value: "M", label: "Male" },
+	{ value: "F", label: "Female" },
+	{ value: "O", label: "Other" },
 ];
 
 export default function GenderSelector({ control, name }: GenderSelectorProps) {
@@ -73,6 +80,24 @@ interface GenderSelectorContentProps {
 	onChange?: (value: string) => void;
 }
 
+// Utility hook to track last input type (keyboard or mouse)
+function useLastInputType() {
+	const [lastInputType, setLastInputType] = React.useState<"keyboard" | "mouse" | null>(null);
+
+	React.useEffect(() => {
+		const handleKeyDown = () => setLastInputType("keyboard");
+		const handleMouseDown = () => setLastInputType("mouse");
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("mousedown", handleMouseDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("mousedown", handleMouseDown);
+		};
+	}, []);
+
+	return lastInputType;
+}
+
 const GenderSelectorContent: React.FC<GenderSelectorContentProps> = ({
 	value: propValue,
 	onChange,
@@ -81,7 +106,10 @@ const GenderSelectorContent: React.FC<GenderSelectorContentProps> = ({
 	const [localValue, setLocalValue] = useState(propValue || "");
 	const [open, setOpen] = useState(false);
 
-	// Use form context if available, otherwise use props
+	const justClosedRef = React.useRef(false);
+	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+	const lastInputType = useLastInputType();
+
 	const currentValue = formContext ? formContext.watch("gender") : localValue;
 
 	const handleValueChange = (newValue: string) => {
@@ -93,16 +121,33 @@ const GenderSelectorContent: React.FC<GenderSelectorContentProps> = ({
 		}
 	};
 
+	const handleFocus = React.useCallback(() => {
+		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
+			setOpen(true);
+		}
+		if (justClosedRef.current) {
+			justClosedRef.current = false;
+		}
+	}, [lastInputType, open]);
+
+	const handleSelect = (value: string) => {
+		handleValueChange(value);
+		setOpen(false);
+		justClosedRef.current = true;
+	};
+
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild>
 						<Button
+							ref={popoverTriggerRef}
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
 							className="w-[200px] justify-between"
+							onFocus={handleFocus}
 						>
 							{currentValue
 								? genders.find((g) => g.value === currentValue)
@@ -111,21 +156,22 @@ const GenderSelectorContent: React.FC<GenderSelectorContentProps> = ({
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-white">
+					<PopoverContent className="w-[200px] p-0 bg-background" tabIndex={0}>
 						<Command>
-							<CommandInput placeholder="Search gender..." />
+							<CommandInput placeholder="Search gender..." autoFocus />
 							<CommandEmpty>No gender found.</CommandEmpty>
 							<CommandGroup>
-								<CommandList>
+								<CommandList
+									className="max-h-60 overflow-y-auto"
+									tabIndex={0}
+									onWheel={e => e.stopPropagation()}
+								>
 									{genders.map((g) => (
 										<CommandItem
 											key={g.value}
 											value={g.value}
-											onSelect={() => {
-												handleValueChange(g.value);
-												setOpen(false);
-											}}
-											className="hover:bg-gray-200"
+											onSelect={() => handleSelect(g.value)}
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

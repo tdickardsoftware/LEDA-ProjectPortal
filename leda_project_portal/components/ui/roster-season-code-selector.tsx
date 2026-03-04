@@ -1,3 +1,12 @@
+/**
+ * RosterSeasonCodeSelector component
+ *
+ * Searchable combobox for selecting a season code that has roster data.
+ * Fetches only seasons with existing roster records from the roster API.
+ * When `useCurrentSeason` is true, automatically pre-selects the season
+ * flagged as current.  Fires `handleSelect` on selection and optionally
+ * calls `setDisabled` to unlock dependent controls after load.
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -17,6 +26,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { rosterRoute } from "@/lib/apiRoutes";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the parameters for the SeasonCodeSelector component
 interface SeasonCodeSelectorProps {
@@ -35,88 +45,68 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 	useCurrentSeason,
 	seasonCode,
 }) => {
-	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
-	// State to store the fetched season codes
-	const [seasonCodes, setSeasonCodes] = useState<
-		{ value: string; label: string }[]
-	>([]);
-	// State to store the selected season code
-	const [selectedSeasonCode, setSelectedSeasonCode] = useState<string | null>(
-		null
-	);
+	const [selectedSeasonCode, setSelectedSeasonCode] = useState<string | null>(null);
+
+	const { data: seasonCodes = [] } = useQuery({
+		queryKey: ["rosterSeasonCodes"],
+		queryFn: async () => {
+			const response = await fetch(
+				`${rosterRoute}/rostersWithData?getSeasonCodeInfo=true`
+			);
+			const data = await response.json();
+			return data.map((type: { seasonCode: string; desc: string; isCurrentSeason?: boolean }) => ({
+				value: type.seasonCode,
+				label: type.seasonCode + " - " + type.desc,
+				isCurrentSeason: type.isCurrentSeason,
+			}));
+		},
+	});
+
+	useEffect(() => {
+		if (seasonCodes.length > 0) {
+			if (useCurrentSeason) {
+				const current = seasonCodes.find((type: { value: string; label: string; isCurrentSeason?: boolean }) => type.isCurrentSeason);
+				if (current && current.value !== selectedSeasonCode) {
+					setSelectedSeasonCode(current.value);
+					handleSelect(current.value);
+				}
+			}
+			if (seasonCodes.find((type: { value: string; label: string; isCurrentSeason?: boolean }) => type.isCurrentSeason)) {
+				setDisabled?.(false);
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [seasonCodes, useCurrentSeason, setDisabled, handleSelect, selectedSeasonCode]);
 
 	const handleSelectSeasonCode = (value: string) => {
 		setSelectedSeasonCode(value);
-		handleSelect(value); // Update the parent component's state
+		handleSelect(value);
 		setOpen(false);
 	};
-
-	// Fetch season codes from the API endpoint
-	useEffect(() => {
-		async function loadSeasonCodes() {
-			try {
-				const response = await fetch(
-					`${rosterRoute}/rostersWithData?getSeasonCodeInfo=true`
-				);
-				const data = await response.json();
-				setSeasonCodes(
-					data.map((type: { seasonCode: string; desc: string }) => ({
-						value: type.seasonCode,
-						label: type.seasonCode + " - " + type.desc,
-					}))
-				);
-				if (useCurrentSeason) {
-					setSelectedSeasonCode(
-						data.find(
-							(type: { isCurrentSeason: boolean }) =>
-								type.isCurrentSeason
-						)?.seasonCode
-					);
-					handleSelect(
-						data.find(
-							(type: { isCurrentSeason: boolean }) =>
-								type.isCurrentSeason
-						)?.seasonCode
-					);
-				}
-				if (
-					data.find(
-						(type: { isCurrentSeason: boolean }) =>
-							type.isCurrentSeason
-					)
-				) {
-					setDisabled?.(false);
-				}
-			} catch (error) {
-				console.error("Failed to fetch season codes", error);
-			}
-		}
-		loadSeasonCodes();
-	}, [setDisabled, handleSelect, useCurrentSeason]);
 
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild className="bg-white">
+					<PopoverTrigger asChild className="bg-background">
 						<Button
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
 							className="w-[200px] justify-between"
-							disabled={disabled} // Disable the button if the prop is true
+							disabled={disabled}
 						>
-							{seasonCode // Use the seasonCode prop to display the selected season code label
+							{seasonCode
 								? seasonCodes.find(
-										(type) => type.value === seasonCode
+										(type: { value: string; label: string; isCurrentSeason?: boolean }) => type.value === seasonCode
 								  )?.label
 								: "Select a season code..."}
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="w-[200px] p-0 bg-white"
+						className="w-[200px] p-0 bg-background"
 						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
@@ -124,22 +114,19 @@ const SeasonCodeSelector: React.FC<SeasonCodeSelectorProps> = ({
 							<CommandEmpty>No season code found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList>
-									{seasonCodes.map((type) => (
+									{seasonCodes.map((type: { value: string; label: string; isCurrentSeason?: boolean }) => (
 										<CommandItem
 											key={type.value}
 											value={type.value}
 											onSelect={() => {
-												handleSelectSeasonCode(
-													type.value
-												);
+												handleSelectSeasonCode(type.value);
 											}}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(
 													"mr-2 h-4 w-4",
-													type.value ===
-														selectedSeasonCode
+													type.value === selectedSeasonCode
 														? "opacity-100"
 														: "opacity-0"
 												)}

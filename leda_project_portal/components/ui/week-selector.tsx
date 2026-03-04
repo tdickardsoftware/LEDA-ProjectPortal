@@ -1,5 +1,14 @@
+/**
+ * WeekSelector component
+ *
+ * Searchable combobox for selecting a week within a given season.
+ * Fetches the season's date map from the API and builds labelled week
+ * entries ("Week N - YYYY-MM-DD").  When `useFinishedWeeksOnly` is true,
+ * only weeks whose date is on or before today are shown.  Fires
+ * `handleSelect` with the selected week key on change.
+ */
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,12 +26,14 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { seasonRoute } from "@/lib/apiRoutes";
+import { useQuery } from "@tanstack/react-query";
 
 // Define the parameters for the SeasonCodeSelector component
 interface WeekSelectorProps {
 	handleSelect: (value: string) => void;
 	seasonCode: string;
 	disabled: boolean;
+	useFinishedWeeksOnly?: boolean; // <-- new prop
 }
 
 // SeasonCodeSelector component definition
@@ -30,56 +41,60 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 	handleSelect,
 	seasonCode,
 	disabled,
+	useFinishedWeeksOnly = false,
 }) => {
-	// State to manage the popover open/close status
 	const [open, setOpen] = useState(false);
-	// State to store the fetched season codes
-	const [seasonCodes, setSeasonCodes] = useState<
-		{ value: string; label: string }[]
-	>([]);
-	// State to store the selected season code
 	const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
 	const [selectedWeekLabel, setSelectedWeekLabel] =
 		useState<string>("Select a Week...");
 
+	const { data: seasonCodes = [] } = useQuery({
+		queryKey: ["weeks", seasonCode, useFinishedWeeksOnly],
+		queryFn: async () => {
+			if (!seasonCode) return [];
+			const response = await fetch(seasonRoute + `?seasonCode=${seasonCode}`);
+			const data = await response.json();
+			const dates = data.dates;
+			let formattedDates = Object.entries(dates).map(
+				([key, value]) => {
+					const weekNumber = key.replace("Date", "");
+					return {
+						value: key,
+						label: `Week ${weekNumber} - ${value}`,
+						weekNumber: Number(weekNumber),
+					};
+				}
+			);
+
+			if (useFinishedWeeksOnly) {
+				const finishedResp = await fetch(
+					`/api/activities/scoresheets?seasonCode=${seasonCode}&countOfFinishedWeeks=true`
+				);
+				const finishedData = await finishedResp.json();
+				const count = Number(
+					finishedData.count ||
+					finishedData.count_finished_weeks ||
+					Object.values(finishedData)[0]
+				);
+				formattedDates = formattedDates.filter(
+					(w) => w.weekNumber <= count
+				);
+			}
+			return formattedDates;
+		},
+		enabled: !!seasonCode,
+	});
+
 	const handleSelectWeek = (value: string, label: string) => {
+		// Keep local selection value for UI (e.g., 'Date3'), but send numeric '3' to parent
 		setSelectedWeek(value);
-		setSelectedWeekLabel(label); // Update the button's label
-		handleSelect(value); // Update the parent component's state
+		setSelectedWeekLabel(label);
+		const weekNum = value.match(/\d+/)?.[0] || value;
+		handleSelect(weekNum);
 		setOpen(false);
 	};
 
-	useEffect(() => {
-		async function loadSeasonCodes() {
-			if (!seasonCode) return; // Skip if no seasonCode is provided
-			try {
-				const response = await fetch(
-					seasonRoute + `?seasonCode=${seasonCode}`
-				);
-				const data = await response.json();
-				const dates = data.dates;
-
-				const formattedDates = Object.entries(dates).map(
-					([key, value]) => {
-						// Extract the week number from the key (e.g., "Date1" -> "1")
-						const weekNumber = key.replace("Date", "");
-						return {
-							value: key,
-							label: `Week ${weekNumber} - ${value}`,
-						};
-					}
-				);
-
-				setSeasonCodes(formattedDates);
-			} catch (error) {
-				console.error("Failed to fetch season codes", error);
-			}
-		}
-		loadSeasonCodes();
-	}, [seasonCode]);
-
-	useEffect(() => {
-		// Reset the selected week when the season code changes
+	React.useEffect(() => {
 		setSelectedWeek(null);
 		setSelectedWeekLabel("Select a Week...");
 	}, [seasonCode]);
@@ -88,7 +103,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 		<div className="flex flex-col gap-4">
 			<div className="w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild disabled={disabled}>
+					<PopoverTrigger asChild disabled={disabled} className="bg-background border-border">
 						<Button
 							variant="outline"
 							role="combobox"
@@ -102,7 +117,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent
-						className="w-[200px] p-0 bg-white"
+						className="w-[200px] p-0 bg-background border-border"
 						onWheel={(e) => e.stopPropagation()}
 					>
 						<Command>
@@ -120,7 +135,7 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 													type.label
 												);
 											}}
-											className="hover:bg-gray-200"
+											className="hover:bg-secondary"
 										>
 											<Check
 												className={cn(

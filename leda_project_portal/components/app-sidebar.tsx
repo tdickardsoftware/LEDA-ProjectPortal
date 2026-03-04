@@ -1,3 +1,13 @@
+/**
+ * AppSidebar component
+ *
+ * The primary application sidebar for the LEDA portal.  Renders the
+ * collapsible navigation tree (Management, Maintenance, Reports, Activities)
+ * via NavMain, a user-actions footer via NavUser, and conditionally shows
+ * an admin user-management section when the current user has the required
+ * abilities.  Navigation items and their sub-routes are defined in the local
+ * `data` constant.
+ */
 //
 // Use Client
 //
@@ -6,18 +16,7 @@
 // Imports
 //
 import * as React from "react";
-import {
-	Book,
-	FileText,
-	Frame,
-	LifeBuoy,
-	Map,
-	PieChart,
-	Send,
-	Wrench,
-	ListCheck,
-	Target,
-} from "lucide-react";
+import { Book, FileText, Frame, LifeBuoy, Map, PieChart, Send, Wrench, ListCheck } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -30,15 +29,11 @@ import {
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { useUserAbilities } from "@/lib/use-user-abilities";
 //
 // Define data for sidenav bar
 //
 const data = {
-	user: {
-		name: "Tyler Dickard",
-		email: "tdickardsoftware@gmail.com",
-		avatar: "/avatars/shadcn.jpg",
-	},
 	navMain: [
 		{
 			title: "Management",
@@ -110,131 +105,23 @@ const data = {
 				{
 					title: "Captains Meeting",
 					url: "/Portal/Reports/Captains-Meeting",
-					items: [
-						{
-							title: "Folder Labels",
-							url: "/Portal/Reports/Captains-Meeting/Folder-Labels",
-						},
-						{
-							title: "Schedules",
-							url: "/Portal/Reports/Captains-Meeting/Schedules",
-						},
-						{
-							title: "Team Report",
-							url: "/Portal/Reports/Captains-Meeting/Team-Report",
-						},
-					],
 				},
 				{
 					title: "League Play",
 					url: "/Portal/Reports/League-Play",
-					items: [
-						{
-							title: "Bar Affiliation Fee Not Paid",
-							url: "/Portal/Reports/League-Play/Bar-Affiliation-Fee-Not-Paid",
-						},
-						{
-							title: "Mentions - Best of Division",
-							url: "/Portal/Reports/League-Play/Mentions-Best-Of-Division",
-						},
-						{
-							title: "Mentions - For Plaques",
-							url: "/Portal/Reports/League-Play/Mentions-For-Plaques",
-						},
-						{
-							title: "Mentions - Weekly League",
-							url: "/Portal/Reports/League-Play/Mentions-Weekly-League",
-						},
-						{
-							title: "Players No Form",
-							url: "/Portal/Reports/League-Play/Players-No-Form",
-						},
-						{
-							title: "Players Not Paid",
-							url: "/Portal/Reports/League-Play/Players-Not-Paid",
-						},
-						{
-							title: "Team Roster Fee Not Paid",
-							url: "/Portal/Reports/League-Play/Team-Roster-Fee-Not-Paid",
-						},
-						{
-							title: "Ton 80's Weekly League",
-							url: "/Portal/Reports/League-Play/Ton-80-Weekly-League",
-						},
-						{
-							title: "Top Darter",
-							url: "/Portal/Reports/League-Play/Top-Darter",
-						},
-						{
-							title: "Weekly Scoresheets",
-							url: "/Portal/Reports/League-Play/Weekly-Scoresheets",
-						},
-					],
 				},
 				{
 					title: "Lists",
 					url: "/Portal/Reports/Lists",
-					items: [
-						{
-							title: "Captains",
-							url: "/Portal/Reports/Lists/Captains",
-						},
-						{
-							title: "Election List",
-							url: "/Portal/Reports/Lists/Election-List",
-						},
-						{
-							title: "Mailing Labels",
-							url: "/Portal/Reports/Lists/Mailing-Labels",
-						},
-						{
-							title: "Members",
-							url: "/Portal/Reports/Lists/Members",
-						},
-						{
-							title: "Places",
-							url: "/Portal/Reports/Lists/Places",
-						},
-						{
-							title: "Season Members",
-							url: "/Portal/Reports/Lists/Season-Members",
-						},
-						{
-							title: "Teams",
-							url: "/Portal/Reports/Lists/Teams",
-						},
-					],
 				},
 				{
 					title: "Trails",
 					url: "/Portal/Reports/Trails",
-					items: [
-						{
-							title: "Eligible for Trip",
-							url: "/Portal/Reports/Trails/Eligible-For-Trip",
-						},
-						{
-							title: "History of Wins",
-							url: "/Portal/Reports/Trails/History-Of-Wins",
-						},
-						{
-							title: "Membership List",
-							url: "/Portal/Reports/Trails/Membership-List",
-						},
-						{
-							title: "Points List",
-							url: "/Portal/Reports/Trails/Points-List",
-						},
-						{
-							title: "Save Points Letter",
-							url: "/Portal/Reports/Trails/Save-Points-Letter",
-						},
-					],
 				},
 			],
 		},
 		{
-			title: "Activites",
+			title: "Activities",
 			url: "/Portal/Activities",
 			icon: ListCheck,
 			items: [
@@ -295,6 +182,28 @@ const data = {
 // Return sidenav object
 //
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+	const { ability, loading } = useUserAbilities();
+	// Access sidebar collapsed/expanded state via data attributes for conditional rendering
+	// We'll render both images and toggle via CSS to avoid re-renders.
+
+	// Filter top-level groups based on manage permission
+	const filteredNav = React.useMemo(() => {
+		// While loading, show nothing to avoid flicker/leak
+		if (loading) return [] as typeof data.navMain;
+		return data.navMain.filter((group) => {
+			// Map group title to Subjects
+			const subject = (group.title === "Management"
+				? "Management"
+				: group.title === "Maintenance"
+				? "Maintenance"
+				: group.title === "Reports"
+				? "Reports"
+				: group.title === "Activities"
+				? "Activities"
+				: "all");
+			return ability.can("manage", subject);
+		});
+	}, [ability, loading]);
 	return (
 		<Sidebar collapsible="icon" {...props} className="w-auto max-w-[300px]">
 			<SidebarHeader>
@@ -302,15 +211,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg" asChild>
 							<Link href="/">
-								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-									<Target className="size-8" />
+								<div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden bg-sidebar-primary">
+									{/* Expanded state: show full JPG */}
+									{/* eslint-disable-next-line @next/next/no-img-element */}
+									<img
+										src="/LEDA_logo.jpg"
+										alt="LEDA"
+										className="h-full w-full object-cover group-data-[collapsible=icon]:hidden"
+									/>
+									{/* Collapsed state: show ICO for better look */}
+									{/* eslint-disable-next-line @next/next/no-img-element */}
+									<img
+										src="/leda-reports-logo.ico"
+										alt="LEDA"
+										className="hidden h-full w-full object-cover group-data-[collapsible=icon]:block"
+									/>
 								</div>
 								<div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
 									<span className="truncate font-semibold">
 										Lake Erie Dart Association
 									</span>
 									<span className="truncate text-xs">
-										portal
+										Portal
 									</span>
 								</div>
 							</Link>
@@ -319,10 +241,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent className="w-full overflow-hidden">
-				<NavMain items={data.navMain} />
+				<NavMain items={filteredNav} />
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={data.user} />
+				<NavUser />
 			</SidebarFooter>
 		</Sidebar>
 	);

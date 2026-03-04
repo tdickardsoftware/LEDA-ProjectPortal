@@ -1,58 +1,73 @@
-import { DataTable } from "@/components/datatable";
-import { DialogWithButton } from "@/components/dialog-with-button";
-import AlertDialogDelete from "@/components/alert-dialog-delete";
-import { playerRoute } from "@/lib/apiRoutes";
-import { fetchPlayers } from "@/lib/getData";
+/**
+ * Players management page — client-side server-paginated data table for managing
+ * player/member records. Supports add, edit, delete, and detail view navigation.
+ * Table state (pagination, sorting, search) is persisted across navigation.
+ */
+"use client";
 import { columns } from "@/schemas/managment/players";
-import { Metadata } from "next";
-import CustomLink from "@/components/ui/custom-link";
+import { usePlayersData } from "@/hooks/usePlayersData";
+import { Spinner } from "@/components/ui/skeleton";
+import { usePersistedDataTableState } from "@/hooks/usePersistedDataTableState";
+import { ServerSideDataTable } from "@/components/server-side-datatable";
+import { playerRoute } from "@/lib/apiRoutes";
 
-export const metadata: Metadata = {
-	title: "Players",
-};
+export default function Page() {
+	const { page, setPage, pageSize, setPageSize, search, setSearch, sorting, setSorting } = usePersistedDataTableState(
+		"datatable:/Portal/Management/Players"
+	);
 
-export const dynamic = "force-dynamic";
+	const { data, isLoading } = usePlayersData(page, pageSize, search, sorting);
 
-export default async function Page() {
-	return (
-		<>
+	// Show initial loading state
+	if (isLoading && !data) {
+		return (
 			<div className="container mx-auto py-10">
-				<DataTable
-					columns={columns}
-					data={await fetchPlayers()}
-					pageName="Players Page"
-					addDialog={
-						<DialogWithButton
-							form="PlayerAddInformationForm"
-							title="Add Player"
-							buttonName="Add Player +"
-						/>
-					}
-					deleteDialog={
-						<AlertDialogDelete
-							buttonName="Delete Player"
-							title="Delete Player"
-							apiEndpoint={playerRoute}
-						/>
-					}
-					editDialog={
-						<DialogWithButton
-							form="PlayerEditInformationForm"
-							title="Edit Player"
-							buttonName="Edit Player"
-						/>
-					}
-					viewLink={
-						<CustomLink
-							linkName="View Player"
-							parentPage="Players"
-						/>
-					}
-					apiEndpoint={playerRoute}
-					defaultSort="ledaId"
-					filter={true}
-				/>
+				<div className="flex items-center justify-center min-h-[400px]">
+					<Spinner />
+				</div>
 			</div>
-		</>
+		);
+	}
+
+	return (
+		<div className="container mx-auto py-10">
+			<ServerSideDataTable
+				columns={columns}
+				data={data?.data || []}
+				pageName="Players Page"
+				stateKey="datatable:/Portal/Management/Players"
+				queryKey={["players-datatable"]}
+				pageSize={pageSize}
+				onPageSizeChange={setPageSize}
+				addDialogConfig={{
+					form: "PlayerAddInformationForm",
+					title: "Add Player",
+					buttonName: "Add Player +"
+				}}
+				deleteDialogConfig={{
+					buttonName: "Delete Player",
+					title: "Delete Player",
+					apiEndpoint: playerRoute
+				}}
+				editDialogConfig={{
+					form: "PlayerEditInformationForm",
+					title: "Edit Player",
+					buttonName: "Edit Player"
+				}}
+				viewLinkConfig={{
+					linkName: "View Player",
+					parentPage: "Players"
+				}}
+				defaultSort="ledaId"
+				sorting={sorting}
+				onSortingChange={setSorting}
+				isLoading={isLoading}
+				totalPages={data?.pagination.totalPages || 1}
+				currentPage={page}
+				onPageChange={setPage}
+				onSearchChange={setSearch}
+				searchValue={search}
+			/>
+		</div>
 	);
 }

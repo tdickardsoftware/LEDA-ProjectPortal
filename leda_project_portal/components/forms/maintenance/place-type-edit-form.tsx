@@ -1,3 +1,11 @@
+/**
+ * PlaceTypeEditForm Component
+ *
+ * Edit form for an existing place type code. Fetches the full record by
+ * `placeTypeCode` from the API on mount and pre-populates the fields. The
+ * code field is disabled to prevent changing the primary key after creation.
+ * Submits a PUT request to update the description.
+ */
 "use client";
 
 import { z } from "zod";
@@ -19,6 +27,8 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { Textarea } from "@/components/ui/textarea";
 import { placeTypeRoute } from "@/lib/apiRoutes";
 import { PlaceType } from "@/lib/definitions";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 const placeTypeFormSchema = z.object({
 	placeTypeCode: z
@@ -28,8 +38,15 @@ const placeTypeFormSchema = z.object({
 });
 
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 
+/**
+ * PlaceTypeEditForm fetches a place type record and provides an edit interface.
+ *
+ * @param onClose - Callback to close the edit panel
+ * @param onRefresh - Callback to reload the parent data table
+ * @param rowData - Row data containing the placeTypeCode used to fetch details
+ */
 export default function PlaceTypeEditForm({
 	onClose,
 	onRefresh,
@@ -39,6 +56,7 @@ export default function PlaceTypeEditForm({
 	onRefresh: () => void;
 	rowData: PlaceType;
 }) {
+	// Local state to store the full place type record fetched from the API
 	const [formData, setFormData] = useState<PlaceType>({} as PlaceType);
 
 	const formRef = React.useRef<HTMLFormElement>(null);
@@ -55,7 +73,7 @@ export default function PlaceTypeEditForm({
 			if (!rowData || !rowData.placeTypeCode) {
 				return;
 			}
-			const response = await fetch(
+			const response = await fetchWithSession(
 				placeTypeRoute + `?placeTypeCode=${rowData.placeTypeCode}`,
 				{
 					method: "GET",
@@ -73,25 +91,20 @@ export default function PlaceTypeEditForm({
 			setFormData(data);
 			form.reset({
 				...data,
-			}); // Set form values to the retrieved data
+			});
 		};
 		fetchData();
 	}, [rowData, form]);
 
-	if (!rowData) {
-		return <div>No place type data available.</div>;
-	}
-
-	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
-		try {
-			const response = await fetch(placeTypeRoute, {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof placeTypeFormSchema>) => {
+			const response = await fetchWithSession(placeTypeRoute, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				const errorData = await response.json();
 				throw new Error(
@@ -99,24 +112,30 @@ export default function PlaceTypeEditForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully updated the form!");
-
-			// Reset form and state
 			form.reset();
-
-			console.log("Form updated successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place type API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form update error", error);
 			toast.error(
 				`Failed to update the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof placeTypeFormSchema>) {
+		mutation.mutate(values);
+	}
+
+	if (!rowData) {
+		return <div>No place type data available.</div>;
 	}
 
 	return (
@@ -160,10 +179,10 @@ export default function PlaceTypeEditForm({
 					</div>
 				</div>
 				<div className="flex justify-between">
-					<Button type="button" onClick={onClose}>
+					<Button variant="outline" type="button" onClick={onClose} className="hover:bg-muted border-border text-foreground">
 						Back
 					</Button>
-					<Button type="submit">Update</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Update</Button>
 				</div>
 			</form>
 		</Form>

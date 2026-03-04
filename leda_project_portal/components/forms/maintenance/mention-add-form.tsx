@@ -1,3 +1,11 @@
+/**
+ * MentionAddForm Component
+ *
+ * Form for creating a new mention type in the maintenance section.
+ * A mention is a named achievement (e.g., "High Score") with an associated
+ * point value, a basis code (e.g., per-player or per-team), and an optional
+ * description. Returns a 422 conflict error when the mention code already exists.
+ */
 "use client";
 
 // Import necessary libraries and components
@@ -20,21 +28,31 @@ import MentionBasisSelector from "@/components/ui/mention-basis-selector";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { mentionRoute } from "@/lib/apiRoutes";
+import { useMutation } from "@tanstack/react-query";
+import { fetchWithSession } from "@/lib/getData";
 
 // Define the schema for form validation using zod
 const mentionFormSchema = z.object({
 	mentionCode: z.string().min(1, { message: "Mention Code is required." }),
 	desc: z.string().optional(),
-	points: z.number().min(0, { message: "Points must be a positive number." }),
+	points: z.preprocess(
+		(val) => (val === "" || val === undefined || val === null ? 0 : val),
+		z.number().min(0, { message: "Points must be a positive number." })
+	),
 	mentionBasis: z.string().min(1, { message: "Mention Basis is required." }),
 });
 
 // Define styles for the form container and input width
 const formContainerStyle =
-	"p-4 shadow-lg bg-white rounded-lg border border-gray-300";
+	"p-4 shadow-lg bg-background rounded-lg border border-border";
 const inputWidth = "w-24";
 
-// Define the MentionAddForm component
+/**
+ * MentionAddForm creates a new mention type record.
+ *
+ * @param onClose - Callback to close the containing dialog
+ * @param onRefresh - Callback to reload the parent data table
+ */
 export default function MentionAddForm({
 	onClose,
 	onRefresh,
@@ -49,23 +67,21 @@ export default function MentionAddForm({
 			mentionCode: "",
 			desc: "",
 			mentionBasis: "",
-			points: undefined,
+			points: "" as any,
 		},
 	});
 
 	const [mentionCodeExists, setMentionCodeExists] = React.useState(false);
 
-	// Define the onSubmit function to handle form submission
-	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
-		try {
-			const response = await fetch(mentionRoute, {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof mentionFormSchema>) => {
+			const response = await fetchWithSession(mentionRoute, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(values),
 			});
-
 			if (!response.ok) {
 				if (response.status === 422) {
 					setMentionCodeExists(true);
@@ -76,24 +92,39 @@ export default function MentionAddForm({
 						`HTTP error! status: ${response.status}`
 				);
 			}
-
-			const results = await response.json();
+			return await response.json();
+		},
+		onSuccess: (results) => {
 			toast.success("Successfully submitted the form!");
-
-			// Reset form and state
 			form.reset();
-
 			console.log("Form submitted successfully!", results);
-			onClose(); // Close the form
-			onRefresh(); // Refresh the datatable with the place API route
-		} catch (error) {
+			onClose();
+			onRefresh();
+		},
+		onError: (error: unknown) => {
 			console.error("Form submission error", error);
 			toast.error(
 				`Failed to submit the form: ${
 					(error as Error).message || "Please try again."
 				}`
 			);
-		}
+		},
+	});
+
+	// Reset form and error state when component mounts to ensure clean state
+	React.useEffect(() => {
+		setMentionCodeExists(false);
+		form.reset({
+			mentionCode: "",
+			desc: "",
+			mentionBasis: "",
+			points: "" as any,
+		});
+	}, [form]);
+
+	async function onSubmit(values: z.infer<typeof mentionFormSchema>) {
+		setMentionCodeExists(false);
+		mutation.mutate(values);
 	}
 
 	// Render the form
@@ -130,7 +161,7 @@ export default function MentionAddForm({
 											onChange={(e) => {
 												field.onChange(
 													e.target.value === ""
-														? undefined
+														? ""
 														: parseFloat(
 																e.target.value
 														  )
@@ -172,7 +203,7 @@ export default function MentionAddForm({
 					</div>
 				</div>
 				<div className="flex justify-center">
-					<Button type="submit">Add</Button>
+					<Button variant="outline" type="submit" className="hover:bg-muted border-border text-foreground">Add</Button>
 				</div>
 			</form>
 		</Form>

@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+/**
+ * PlaceTeamHistoryContent
+ *
+ * Displays all teams that have been associated with a place across seasons.
+ * Data is fetched from the `/api/management/place/teamHistory` endpoint
+ * using TanStack Query keyed by the place's LEDA ID.
+ */
+
+import { useQuery } from "@tanstack/react-query";
 import { Place } from "@/lib/definitions";
 import {
 	Table,
@@ -23,29 +31,20 @@ export default function PlaceTeamHistoryContent({
 }: {
 	placeData: Place;
 }) {
-	const [teamHistory, setTeamHistory] = useState<TeamHistory[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		const fetchTeamHistory = async () => {
-			try {
-				setIsLoading(true);
-				const res = await fetch(
-					`/api/management/place/teamHistory?ledaId=${placeData.ledaId}`
-				);
-				if (!res.ok) throw new Error("Failed to fetch team history");
-				const data = await res.json();
-				setTeamHistory(data);
-				setError(null);
-			} catch (err) {
-				setError("Failed to load team history data" + err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		fetchTeamHistory();
-	}, [placeData.ledaId]);
+	const {
+		data: teamHistory = [],
+		isLoading,
+		error,
+	} = useQuery<TeamHistory[]>({
+		queryKey: ["placeTeamHistory", placeData.ledaId],
+		queryFn: async () => {
+			const res = await fetch(
+				`/api/management/place/teamHistory?ledaId=${placeData.ledaId}`
+			);
+			if (!res.ok) throw new Error("Failed to fetch team history");
+			return await res.json();
+		},
+	});
 
 	return (
 		<div className="container mx-auto p-6">
@@ -54,11 +53,13 @@ export default function PlaceTeamHistoryContent({
 				Place: #{placeData.ledaId} - {placeData.name}
 			</h2>
 			{isLoading ? (
-				<p className="text-gray-500 italic">Loading team history...</p>
+				<p className="text-muted-foreground italic">Loading team history...</p>
 			) : error ? (
-				<p className="text-red-500">{error}</p>
+				<p className="text-red-500">
+					{(error as Error).message || "Failed to load team history data"}
+				</p>
 			) : teamHistory.length === 0 ? (
-				<p className="text-gray-500">
+				<p className="text-muted-foreground">
 					No team history found for this place.
 				</p>
 			) : (
@@ -69,7 +70,6 @@ export default function PlaceTeamHistoryContent({
 								<TableHead>Season Code</TableHead>
 								<TableHead>Team ID</TableHead>
 								<TableHead>Team Name</TableHead>
-								<TableHead>Team Label</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -78,7 +78,6 @@ export default function PlaceTeamHistoryContent({
 									<TableCell>{team.seasonCode}</TableCell>
 									<TableCell>{team.teamId}</TableCell>
 									<TableCell>{team.teamName}</TableCell>
-									<TableCell>{team.teamLabel}</TableCell>
 								</TableRow>
 							))}
 						</TableBody>
