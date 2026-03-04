@@ -18,6 +18,9 @@ import {
 } from "@/lib/definitions";
 import { query } from "@/lib/dbTypeGet";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/scoresheets/playerPoints");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -26,6 +29,7 @@ export default async function handler(
 	const session = await requireApiSession(req, res);
 	if (!session) return;
 	if (req.method === "POST") {
+		log.info({ method: "POST" }, "Upsert player points");
 		try {
 			const data = req.body as PlayerPoints;
 			let originalTotalPoints = 0;
@@ -49,7 +53,7 @@ export default async function handler(
 					isUpdate = true;
 				}
 			} catch (error) {
-				console.error("Error checking for existing record:", error);
+				log.error({ err: error }, "Error checking for existing player points record");
 				// Continue processing despite this error
 			}
 
@@ -71,10 +75,7 @@ export default async function handler(
 						data.prevTotalPoints = 0;
 					}
 				} catch (error) {
-					console.error(
-						"Failed to fetch previous weekly player points:",
-						error
-					);
+					log.error({ err: error }, "Failed to fetch previous weekly player points");
 					res.status(500).json({
 						message:
 							"Failed to fetch previous weekly player points information",
@@ -123,10 +124,7 @@ export default async function handler(
 							newTotalPoints - originalTotalPoints
 						);
 					} catch (updateError) {
-						console.error(
-							"Error updating subsequent weeks:",
-							updateError
-						);
+						log.error({ err: updateError }, "Failed to update subsequent player weeks");
 						// Don't fail the whole request if just the propagation fails
 						// Consider returning a partial success message
 					}
@@ -134,7 +132,7 @@ export default async function handler(
 
 				res.status(201).json(result);
 			} catch (error) {
-				console.error("Failed to upsert weekly player points:", error);
+				log.error({ err: error }, "Failed to upsert weekly player points");
 				res.status(500).json({
 					message:
 						"Failed to upsert weekly player points information",
@@ -143,7 +141,7 @@ export default async function handler(
 				});
 			}
 		} catch (error) {
-			console.error("Unexpected error in POST handler:", error);
+			log.error({ err: error }, "Unexpected error in player points POST handler");
 			res.status(500).json({
 				message: "Unexpected error processing the request",
 				error: error instanceof Error ? error.message : String(error),
@@ -233,6 +231,7 @@ export default async function handler(
 			}
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }
@@ -297,7 +296,7 @@ async function updateSubsequentWeeks(
 			// Log the completed update
 		}
 	} catch (error) {
-		console.error("Error in updateSubsequentWeeks:", error);
+		log.error({ err: error }, "Failed to update subsequent player weeks");
 		throw new Error(
 			`Failed to update subsequent weeks: ${
 				error instanceof Error ? error.message : String(error)

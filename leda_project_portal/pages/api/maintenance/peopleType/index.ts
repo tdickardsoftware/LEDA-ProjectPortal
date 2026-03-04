@@ -5,6 +5,9 @@ import { PeopleType } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import { DatabaseError } from "pg";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/maintenance/peopleType");
 
 // Define the API route handler
 export default async function handler(
@@ -15,6 +18,7 @@ export default async function handler(
 	if (!session) return;
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch people type request");
 		if (req.query.peopleTypeCode) {
 			try {
 				const peopleTypeCode = req.query.peopleTypeCode;
@@ -22,8 +26,10 @@ export default async function handler(
 					`SELECT "peopleTypeCode", "desc" FROM maint.leda_maint_people_types WHERE "peopleTypeCode" = $1;`,
 					[peopleTypeCode as string]
 				);
+				log.info({ peopleTypeCode: req.query.peopleTypeCode }, "Fetched single people type");
 				res.status(200).json(result.rows[0]);
 			} catch (error) {
+				log.error({ err: error }, "Failed to fetch people type");
 				res.status(500).json({
 					message: "Failed to fetch people type ",
 					error,
@@ -36,9 +42,11 @@ export default async function handler(
 					'SELECT "peopleTypeCode", "desc" FROM maint.leda_maint_people_types ORDER BY "peopleTypeCode";'
 				);
 				// Respond with the query result
+				log.info({ count: result.rows.length }, "Fetched all people types");
 				res.status(200).json(result.rows);
 			} catch (error) {
 				// Handle any errors that occur during the query
+				log.error({ err: error }, "Failed to fetch people types");
 				res.status(500).json({
 					message: "Failed to fetch people type ",
 					error,
@@ -48,6 +56,7 @@ export default async function handler(
 	}
 	// Handle POST requests
 	else if (req.method === "POST") {
+		log.info({ method: "POST" }, "Create people type request");
 		try {
 			const results = req.body as PeopleType;
 
@@ -61,45 +70,53 @@ export default async function handler(
 			const result = await queryPost(query, values);
 
 			// Respond with the result of the insert operation
+			log.info({ peopleTypeCode: results.peopleTypeCode }, "Created people type");
 			res.status(201).json({ insert1: result });
 		} catch (error) {
 			if (error instanceof DatabaseError && error.code === "23505") {
+				log.warn({ err: error }, "Duplicate people type code");
 				res.status(422).json({
 					message: "People type code already exists",
 				});
 			} else {
+				log.error({ err: error }, "Failed to create people type");
 				res.status(500).json({
 					message: (error as Error).message || "Server error",
 				}); // Send error info in JSON
 			}
 		}
 	} else if (req.method === "DELETE") {
+		log.info({ method: "DELETE", peopleTypeCode: req.body?.peopleTypeCode }, "Delete people type request");
 		try {
 			const data = req.body as PeopleType;
 			const query = `DELETE FROM maint.leda_maint_people_types WHERE "peopleTypeCode" = $1;`;
 			const values = [data.peopleTypeCode];
 			const result = await queryPost(query, values);
+			log.info({ peopleTypeCode: data.peopleTypeCode }, "Deleted people type");
 			res.status(201).json({ delete1: result });
 		} catch (error) {
-			console.error("Error in PeopleTypeHandler:", error as Error);
+			log.error({ err: error }, "Failed to delete people type");
 			res.status(500).json({
 				message: (error as Error).message || "Server error",
 			});
 		}
 	} else if (req.method === "PUT") {
+		log.info({ method: "PUT", peopleTypeCode: req.body?.peopleTypeCode }, "Update people type request");
 		try {
 			const data = req.body as PeopleType;
 			const query = `UPDATE maint.leda_maint_people_types SET "desc" = $2 WHERE "peopleTypeCode" = $1;`;
 			const values = [data.peopleTypeCode, data.desc];
 			const result = await queryPost(query, values);
+			log.info({ peopleTypeCode: data.peopleTypeCode }, "Updated people type");
 			res.status(201).json({ update1: result });
 		} catch (error) {
-			console.error("Error in PeopleTypeHandler:", error as Error);
+			log.error({ err: error }, "Failed to update people type");
 			res.status(500).json({
 				message: (error as Error).message || "Server error",
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

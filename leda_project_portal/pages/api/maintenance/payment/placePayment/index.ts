@@ -13,6 +13,9 @@ import { query } from "@/lib/dbTypeGet";
 import { PaymentHistory } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/maintenance/payment/placePayment");
 
 // --- Helper Functions ---
 
@@ -97,6 +100,7 @@ export default async function handler(
 	const session = await requireApiSession(req, res);
 	if (!session) return;
 	if (req.method === "GET") {
+		log.info({ method: "GET", ledaId: req.query.ledaId }, "Fetch place payment history request");
 		if (req.query.ledaId) {
 			try {
 				const result = await query<
@@ -112,8 +116,10 @@ export default async function handler(
                      ORDER BY h."paymentNbr";`,
 					[req.query.ledaId as string]
 				);
+				log.info({ ledaId: req.query.ledaId, count: result.rows.length }, "Fetched place payment history by ledaId");
 				res.status(200).json(result.rows);
 			} catch (error) {
+				log.error({ err: error }, "Failed to fetch place payment history by ledaId");
 				res.status(500).json({
 					message: "Failed to fetch payment history for ledaId",
 					error,
@@ -132,8 +138,10 @@ export default async function handler(
                      JOIN maint.leda_maint_seasons s ON h."seasonCode" = s."seasonCode"
                      ORDER BY h."paymentNbr";`
 				);
+				log.info({ count: result.rows.length }, "Fetched all place payment history");
 				res.status(200).json(result.rows);
 			} catch (error) {
+				log.error({ err: error }, "Failed to fetch all place payment history");
 				res.status(500).json({
 					message: "Failed to fetch payment history",
 					error,
@@ -142,6 +150,7 @@ export default async function handler(
 		}
 		return;
 	} else if (req.method === "POST") {
+		log.info({ method: "POST", ledaId: req.body?.ledaId }, "Create place payment request");
 		try {
 			const data = req.body as PaymentHistory;
 			// Defensive: if amount is blank, treat it as $0.00.
@@ -320,12 +329,13 @@ export default async function handler(
 
 			if (queryAdd && values) {
 				const results = await queryPost(queryAdd, values);
+				log.info({ ledaId: req.body?.ledaId, type: req.body?.type }, "Upserted place payment");
 				res.status(201).json(results);
 			} else {
 				res.status(200).json({ message: "No operation performed." });
 			}
 		} catch (error) {
-			console.error("Error in POST handler:", error);
+			log.error({ err: error }, "Failed to upsert place payment history");
 			res.status(500).json({
 				message: "Failed to upsert payment history information",
 				error,
@@ -333,6 +343,7 @@ export default async function handler(
 		}
 		return;
 	} else if (req.method === "DELETE") {
+		log.info({ method: "DELETE", paymentNbr: req.body?.paymentNbr }, "Delete place payment request");
 		try {
 			const data = req.body as PaymentHistory;
 			const queryDel = `DELETE FROM maint.leda_maint_place_payment_history WHERE "paymentNbr" = $1;`;
@@ -359,7 +370,7 @@ export default async function handler(
 
 			res.status(200).json(results);
 		} catch (error) {
-			console.error("Error in DELETE handler:", error);
+			log.error({ err: error }, "Failed to delete place payment");
 			res.status(500).json({
 				message: "Failed to delete payment history information",
 				error,
@@ -367,6 +378,7 @@ export default async function handler(
 		}
 		return;
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.setHeader("Allow", ["GET", "POST", "DELETE"]);
 		res.status(405).end(`Method ${req.method} Not Allowed`);
 	}

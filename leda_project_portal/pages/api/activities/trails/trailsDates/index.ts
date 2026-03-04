@@ -4,6 +4,9 @@ import { query } from "@/lib/dbTypeGet";
 import { TrailsDate } from "@/lib/definitions";
 import { format } from "date-fns";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/trails/trailsDates");
 
 // Define the API route handler
 export default async function handler(
@@ -14,6 +17,7 @@ export default async function handler(
 	if (!session) return;
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch trails dates");
 		try {
 			// Execute the database query to fetch season code information
 			const result = await query<TrailsDate>(
@@ -35,6 +39,7 @@ export default async function handler(
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

@@ -8,6 +8,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/team/penaltyHistory");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -16,6 +19,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", ledaId: req.query.ledaId }, "Fetch team penalty history request");
 		if (req.query.ledaId) {
 			try {
 				// Fetch all penalty records for the given team
@@ -23,6 +27,7 @@ export default async function handler(
 					`SELECT "seasonCode", "weekNum", "team_id", penaltycode, points, notes, "teamlabel" FROM public.leda_team_penalty_history where "team_id" = $1`,
 					[req.query.ledaId as string]
 				);
+				log.info({ count: result.rows.length }, "Fetched team penalty history");
 				res.status(200).json(result.rows);
 			} catch (error) {
 				res.status(500).json({
@@ -36,6 +41,7 @@ export default async function handler(
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }

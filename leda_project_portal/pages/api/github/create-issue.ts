@@ -7,6 +7,9 @@
  */
 import { NextApiRequest, NextApiResponse } from "next";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/github/create-issue");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -16,9 +19,11 @@ export default async function handler(
 	if (!session) return;
 
 	if (req.method !== "POST") {
+		log.warn({ method: req.method }, "Method not allowed");
 		return res.status(405).json({ error: "Method not allowed" });
 	}
 
+	log.info({ method: "POST" }, "Create GitHub issue");
 	const { title, body, labels } = req.body;
 
 	if (!title || !body) {
@@ -29,7 +34,7 @@ export default async function handler(
 	const githubRepo = process.env.GITHUB_REPO; // e.g., "owner/repo"
 
 	if (!githubToken || !githubRepo) {
-		console.error("GitHub configuration missing");
+		log.error({ githubToken: !!githubToken, githubRepo: !!githubRepo }, "GitHub configuration missing");
 		return res.status(500).json({ 
 			error: "GitHub integration not configured" 
 		});
@@ -65,7 +70,7 @@ export default async function handler(
 			issueNumber: issue.number
 		});
 	} catch (error) {
-		console.error("Error creating GitHub issue:", error);
+		log.error({ err: error }, "Failed to create GitHub issue");
 		res.status(500).json({ 
 			error: (error as Error).message || "Failed to create issue" 
 		});

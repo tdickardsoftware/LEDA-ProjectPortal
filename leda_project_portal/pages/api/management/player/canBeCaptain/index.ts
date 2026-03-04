@@ -7,6 +7,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/player/canBeCaptain");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -15,6 +18,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", ledaId: req.query.ledaId }, "Fetch canBeCaptain status request");
 		if (req.query.ledaId) {
 			try {
 				// Check the cannotBeCaptain flag for the given player
@@ -35,6 +39,7 @@ export default async function handler(
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }

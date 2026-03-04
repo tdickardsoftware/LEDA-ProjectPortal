@@ -9,6 +9,9 @@ import { query } from "@/lib/dbTypeGet";
 import { RosterDivision } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/roster/rosterDivision");
 
 // Define the API route handler
 export default async function handler(
@@ -18,6 +21,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch roster by division");
 		try {
             if (req.query.seasonCode) {
 			// Execute the database query to fetch season code information
@@ -40,6 +44,7 @@ export default async function handler(
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 } 

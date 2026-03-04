@@ -2,6 +2,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { MentionPlaque } from "@/lib/definitions";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/maintenance/mention/mentionPlaque");
 
 // Define the API route handler
 export default async function handler(
@@ -10,6 +13,7 @@ export default async function handler(
 ) {
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch mention plaque report");
 		try {
             if (req.query.seasonCode && req.query.minimumMentions) {
 			// Execute the database query to fetch season code information
@@ -32,6 +36,7 @@ export default async function handler(
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

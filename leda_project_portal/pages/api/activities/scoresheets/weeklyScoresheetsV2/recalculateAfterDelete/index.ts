@@ -2,6 +2,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/scoresheets/weeklyScoresheetsV2/recalculateAfterDelete");
 import { TeamPoints, PlayerPoints } from "@/lib/definitions";
 
 /**
@@ -20,9 +23,11 @@ export default async function handler(
 	if (!session) return;
 
 	if (req.method !== "POST") {
+		log.warn({ method: req.method }, "Method not allowed");
 		return res.status(405).json({ message: "Method not allowed" });
 	}
 
+	log.info({ method: "POST" }, "Recalculate points after scoresheet delete");
 	const { seasonCode, weekNum, division, subdivision, homeTeamId, awayTeamId } =
 		req.body as {
 			seasonCode: string;
@@ -81,7 +86,7 @@ export default async function handler(
 			);
 		} catch (err) {
 			const msg = `Team points cascade failed for teamLedaId=${teamLedaId}: ${err instanceof Error ? err.message : String(err)}`;
-			console.error(msg);
+			log.error({ err, teamLedaId }, msg);
 			errors.push(msg);
 		}
 	}
@@ -134,7 +139,7 @@ export default async function handler(
 			}
 		} catch (err) {
 			const msg = `Player points cascade failed for teamLedaId=${teamLedaId}: ${err instanceof Error ? err.message : String(err)}`;
-			console.error(msg);
+			log.error({ err, teamLedaId }, msg);
 			errors.push(msg);
 		}
 	}

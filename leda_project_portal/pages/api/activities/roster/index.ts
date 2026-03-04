@@ -14,6 +14,9 @@ import { Roster } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/roster");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -22,6 +25,7 @@ export default async function handler(
 	const session = await requireApiSession(req, res);
 	if (!session) return;
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch roster");
 		if (req.query.seasonCode) {
 			try {
 				const seasonCode = req.query.seasonCode;
@@ -101,6 +105,7 @@ export default async function handler(
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method not allowed" });
 	}
 }

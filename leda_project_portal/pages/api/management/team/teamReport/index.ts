@@ -10,6 +10,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/team/teamReport");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -18,6 +21,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", seasonCode: req.query.seasonCode }, "Fetch team report request");
 		if (req.query.seasonCode) {
 			try {
 				// Fetch all teams and their place/division info for the season
@@ -37,6 +41,7 @@ export default async function handler(
                     }))
                 );
 
+                log.info({ count: resultRaw.length }, "Fetched team report");
                 res.status(200).json(resultRaw);
             } catch (error) {
                 res.status(500).json({
@@ -50,6 +55,7 @@ export default async function handler(
             });
         }
     } else {
+        log.warn({ method: req.method }, "Method not allowed");
         res.status(405).json({ message: "Method Not Allowed" });
 	}
 }

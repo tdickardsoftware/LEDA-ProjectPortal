@@ -9,6 +9,9 @@
 import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/roster/rosterUpserter");
 
 type RosterUpserter = {
 	sourceSeasonCode: string;
@@ -21,6 +24,7 @@ export default async function handler(
 	const session = await requireApiSession(req, res);
 	if (!session) return;
 	if (req.method === "POST") {
+		log.info({ method: "POST" }, "Upsert roster from source season");
 		const data = req.body as RosterUpserter;
 		try {
 			// Copy teamInformation from the source season into the target season,
@@ -43,6 +47,7 @@ export default async function handler(
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }

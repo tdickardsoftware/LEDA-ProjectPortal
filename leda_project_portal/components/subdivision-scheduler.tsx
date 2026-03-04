@@ -319,7 +319,6 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				const weekKey = `week${weekNum}`;
 				return [weekKey, date] as [string, string];
 			});
-			console.log('Game date entries mapped:', entries);
 			return entries;
 		}, [gameDates]);
 

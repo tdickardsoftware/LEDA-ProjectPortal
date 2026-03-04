@@ -15,6 +15,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/maintenance/mention/mentionHistory");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -24,6 +27,7 @@ export default async function handler(
 	if (!session) return;
 	// Handle POST requests
 	if (req.method === "POST") {
+		log.info({ method: "POST" }, "Create mention history entry");
 		try {
 			const data = req.body as MentionPlayerHistory;
 			const query = `INSERT INTO public.leda_player_mention_history("ledaId", "mentionCode", "mentionDesc", "mentionPoints", "seasonCode", "weekNum", notes, "creationDate", "mentionId", "count", "teamId") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`;
@@ -192,6 +196,7 @@ export default async function handler(
 			}
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({
 			message: "Method not allowed",
 		});

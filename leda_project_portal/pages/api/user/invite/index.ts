@@ -9,6 +9,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { requireApiSession } from "@/lib/require-session";
 import { client } from "@/lib/email";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/user/invite");
 
 /**
  * Derives the public base URL from the incoming request headers or
@@ -28,9 +31,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await requireApiSession(req, res);
   // Only POST is supported
   if (req.method !== "POST") {
+    log.warn({ method: req.method }, "Method not allowed");
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  log.info({ method: "POST" }, "Send user invitation email");
   try {
     const { email, token } = (req.body ?? {}) as { email?: string; token?: string };
     if (!email || !token) {
