@@ -3,6 +3,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PlaceOwner} from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/player/placeOwner");
 
 // Define the API route handler
 export default async function handler(
@@ -12,6 +15,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch place owners request");
 		try {
 			// Get search parameter, limit, and offset for pagination
 			const search = (req.query.search as string) || "";
@@ -42,14 +46,16 @@ export default async function handler(
 			
 			const result = await query<PlaceOwner>(sqlQuery, [...searchParams, limit, offset]);
 			// Respond with the query result
+			log.info({ count: result.rows.length }, "Fetched place owners");
 			res.status(200).json(result.rows);
 		} catch (error) {
 			// Handle any errors that occur during the query
-			console.error("Database query error:", error);
+			log.error({ err: error }, "Failed to fetch place owners");
 			res.status(500).json({ message: "Failed to fetch place owners ", error });
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

@@ -8,6 +8,7 @@ import { client } from "./lib/email";
 
 export const auth = betterAuth({
     database: pool,
+    baseURL: process.env.URL,
     rateLimit: {
         enabled: true,
         // Default window/max for general auth endpoints
@@ -54,7 +55,6 @@ export const auth = betterAuth({
                         },
                     ],
                 });
-                console.log("Password reset email sent successfully");
             } catch (error) {
                 console.error("Error sending password reset email:", error);
             } finally {
@@ -84,7 +84,6 @@ export const auth = betterAuth({
                         },
                     ],
                 });
-                console.log("Verification email sent successfully");
             } catch (error) {
                 console.error("Error sending verification email:", error);
             } finally {

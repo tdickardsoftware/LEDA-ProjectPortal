@@ -10,6 +10,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PlayerMemberInfo } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/player/batch");
 
 // Batch API endpoint for fetching multiple players at once
 export default async function handler(
@@ -19,9 +22,11 @@ export default async function handler(
 	await requireApiSession(req, res);
 
 	if (req.method !== "POST") {
+		log.warn({ method: req.method }, "Method not allowed");
 		return res.status(405).json({ error: "Method not allowed. Use POST." });
 	}
 
+	log.info({ method: "POST" }, "Batch fetch players request");
 	try {
 		const { playerIds } = req.body as { playerIds: Array<string | number> };
 
@@ -104,9 +109,10 @@ export default async function handler(
 			}
 		});
 
+		log.info({ count: Object.keys(playersMap).length }, "Batch players fetched");
 		return res.status(200).json(playersMap);
 	} catch (error) {
-		console.error("Batch player fetch error:", error);
+		log.error({ err: error }, "Failed to batch fetch players");
 		return res.status(500).json({
 			error: "Failed to fetch players",
 			details: error instanceof Error ? error.message : "Unknown error",

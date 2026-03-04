@@ -3,6 +3,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import {  MailingList } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/player/playerMailList");
 
 // Define the API route handler
 export default async function handler(
@@ -12,6 +15,7 @@ export default async function handler(
     await requireApiSession(req, res);
     // Handle POST requests
     if (req.method === "POST") {
+        log.info({ method: "POST" }, "Player mailing list request");
         // Check if this is a fetch request (has alreadySelected in body)
         if (req.body.alreadySelected !== undefined) {
             try {
@@ -31,7 +35,7 @@ export default async function handler(
                     return res.status(200).json(result.rows);
                 }
             } catch (error) {
-                console.error('Error fetching player mailing list:', error);
+                log.error({ err: error }, "Failed to fetch player mailing list");
                 return res.status(500).json({
                     message: "Failed to fetch player mailing labels",
                     error,
@@ -86,6 +90,7 @@ export default async function handler(
             }
         }
     } else if (req.method === "GET") {
+        log.info({ method: "GET", query: req.query }, "Fetch player mailing list request");
         if (req.query.availableOnly) {
             // Return only players that are NOT already in the mailing_labels table
             try {
@@ -107,7 +112,7 @@ export default async function handler(
                 `);
                 return res.status(200).json(result.rows);
             } catch (error) {
-                console.error('Error fetching available players:', error);
+                log.error({ err: error }, "Failed to fetch available players");
                 return res.status(500).json({
                     message: "Failed to fetch available players",
                     error,
@@ -143,6 +148,7 @@ export default async function handler(
         }
     } else {
         // Respond with a 405 status code for unsupported methods
+        log.warn({ method: req.method }, "Method not allowed");
         res.status(405).json({ error: "Method not allowed" });
     }
 }

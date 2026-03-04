@@ -4,6 +4,9 @@ import { query } from "@/lib/dbTypeGet";
 import { PlaceDataTable } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
 import { parseFieldSearch, buildSQLWhereClause, createColumnMapping } from "@/lib/search-parser";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/place/datatable");
 
 // Define column mappings for place data
 const placeColumnMappings = createColumnMapping([
@@ -21,6 +24,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch places datatable request");
 		try {
 			// Parse query parameters
 			const page = parseInt(req.query.page as string) || 1;
@@ -95,6 +99,7 @@ export default async function handler(
 			);
 
 			// Respond with paginated data and metadata
+			log.info({ page, pageSize, totalRecords }, "Fetched places datatable");
 			res.status(200).json({
 				data: result.rows,
 				pagination: {
@@ -106,11 +111,12 @@ export default async function handler(
 			});
 		} catch (error) {
 			// Handle any errors that occur during the query
-			console.error("Database query error:", error);
+			log.error({ err: error }, "Failed to fetch places datatable");
 			res.status(500).json({ message: "Failed to fetch places", error });
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

@@ -5,6 +5,9 @@ import { queryPost } from "@/lib/query";
 import getNextLedaId from "@/lib/getNextLedaId";
 import { DatabaseError } from "pg";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/player");
 
 /**
  * API handler for managing player information.
@@ -16,6 +19,7 @@ export default async function handler(
 ) {
 	await requireApiSession(req, res);
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch player request");
 		try {
 			if (req.query.ledaId) {
 				const ledaId = req.query.ledaId;
@@ -58,12 +62,15 @@ export default async function handler(
 					[ledaId as string]
 				);
 				if (result.rows.length === 0) {
+					log.warn({ ledaId }, "Player not found");
 					res.status(404).json({ message: "Player not found" });
 				} else {
+					log.info({ ledaId }, "Fetched single player");
 					res.status(200).json(result.rows[0]);
 				}
 			} else {
 				// Fetch player information from the database
+				log.info("Fetching all players");
 				const result = await query<Player>(`
 					SELECT 
 						"ledaId", 
@@ -75,10 +82,11 @@ export default async function handler(
 						'(' || SUBSTRING("otherNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("otherNumber" FROM 4 FOR 3) || '-' || SUBSTRING("otherNumber" FROM 7 FOR 4) AS "otherNumberFormatted" 
 					FROM public.leda_player_info ORDER BY "ledaId";
 				`);
+				log.info({ count: result.rows.length }, "Fetched all players");
 				res.status(200).json(result.rows);
 			}
 		} catch (error) {
-			console.error("Error in PlayerHandler:", error);
+			log.error({ err: error }, "Failed to fetch player information");
 			res.status(500).json({
 				message: "Failed to fetch player information",
 				error,
@@ -86,6 +94,7 @@ export default async function handler(
 		}
 		// Handle POST requests — create a new player and membership record
 	} else if (req.method === "POST") {
+		log.info({ method: "POST" }, "Create player request");
 		try {
 			const results = req.body as PlayerMemberInfo;
 
@@ -153,13 +162,16 @@ export default async function handler(
 			const result1 = await queryPost(query1, values1);
 			const result2 = await queryPost(query2, values2);
 
+			log.info({ ledaId: results.ledaId }, "Created player");
 			res.status(201).json({ insert1: result1, insert2: result2 });
 		} catch (error) {
 			if (error instanceof DatabaseError && error.code === "23505") {
+				log.warn({ err: error }, "Duplicate player ledaId");
 				res.status(422).json({
 					message: "A player with the same ledaId already exists",
 				});
 			} else {
+				log.error({ err: error }, "Failed to create player");
 				res.status(500).json({
 					message: (error as Error).message || "Server error",
 				});
@@ -167,6 +179,7 @@ export default async function handler(
 		}
 		// Handle DELETE requests — remove a player and their membership record
 	} else if (req.method === "DELETE") {
+		log.info({ method: "DELETE", ledaId: req.body?.ledaId }, "Delete player request");
 		try {
 			const data = req.body as Player;
 			const query1 = `DELETE FROM public.leda_player_info WHERE "ledaId" = $1`;
@@ -174,15 +187,17 @@ export default async function handler(
 			const values = [data.ledaId];
 			const result1 = await queryPost(query1, values);
 			const result2 = await queryPost(query2, values);
+			log.info({ ledaId: data.ledaId }, "Deleted player");
 			res.status(200).json({ "result1 ": result1, result2: result2 });
 		} catch (error) {
-			console.error("Error in PlayerHandler:", error);
+			log.error({ err: error }, "Failed to delete player");
 			res.status(500).json({
 				message: (error as Error).message || "Server error",
 			});
 		}
 		// Handle PUT requests — update player info and membership record
 	} else if (req.method === "PUT") {
+		log.info({ method: "PUT", ledaId: req.body?.ledaId }, "Update player request");
 		try {
 			const data = req.body as PlayerMemberInfo;
 			const fullName = `${data.firstName} ${data.middleInitial ? data.middleInitial + " " : ""}${
@@ -263,14 +278,16 @@ export default async function handler(
 			const result1 = await queryPost(query1, values1);
 			const result2 = await queryPost(query2, values2);
 
+			log.info({ ledaId: data.ledaId }, "Updated player");
 			res.status(200).json({ update1: result1, update2: result2 });
 		} catch (error) {
-			console.error("Error in PlayerHandler:", error);
+			log.error({ err: error }, "Failed to update player");
 			res.status(500).json({
 				message: (error as Error).message || "Server error",
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

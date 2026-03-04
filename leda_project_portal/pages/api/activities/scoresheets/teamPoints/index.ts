@@ -13,6 +13,9 @@ import { queryPost } from "@/lib/query";
 import { TeamPoints } from "@/lib/definitions";
 import { query } from "@/lib/dbTypeGet";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/scoresheets/teamPoints");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -21,6 +24,7 @@ export default async function handler(
 	const session = await requireApiSession(req, res);
 	if (!session) return;
 	if (req.method === "POST") {
+		log.info({ method: "POST" }, "Upsert team points request");
 		const data = req.body as TeamPoints;
 
 		// For weeks after week 1, look up the previous week's running total
@@ -179,6 +183,7 @@ export default async function handler(
 			}
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }
@@ -272,7 +277,7 @@ async function updateSubsequentWeeks(
 			newTotalPoints = updatedTotalPoints;
 		}
 	} catch (error) {
-		console.error("Error updating subsequent weeks:", error);
+		log.error({ err: error }, "Failed to update subsequent team weeks");
 		// We don't throw here to prevent breaking the main flow
 	}
 }

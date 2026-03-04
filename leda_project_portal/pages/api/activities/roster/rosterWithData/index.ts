@@ -7,6 +7,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/roster/rosterWithData");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -14,6 +17,7 @@ export default async function handler(
 ) {
 	await requireApiSession(req, res);
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch roster season codes");
 		try {
 			const result = await query(
 				`SELECT "seasonCode" FROM public.leda_roster_info WHERE "teamInformation" IS NOT NULL`
@@ -26,6 +30,7 @@ export default async function handler(
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }

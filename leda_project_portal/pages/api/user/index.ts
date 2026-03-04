@@ -13,6 +13,9 @@ import { query } from "@/lib/dbTypeGet";
 import { minimalUser } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
 import { defineAbilitesFor } from "@/lib/abilities";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/user");
 
 // Define the API route handler
 export default async function handler(
@@ -58,6 +61,7 @@ export default async function handler(
 	}
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET" }, "Fetch user list");
 		try {
 			// Execute the database query to fetch user information
 			const result = await query<minimalUser>(
@@ -119,5 +123,6 @@ export default async function handler(
 	}
 
 	// Respond with a 405 status code for unsupported methods
+	log.warn({ method: req.method }, "Method not allowed");
 	res.status(405).json({ error: "Method not allowed" });
 }

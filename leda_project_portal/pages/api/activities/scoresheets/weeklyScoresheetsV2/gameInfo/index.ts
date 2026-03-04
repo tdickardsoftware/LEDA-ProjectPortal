@@ -5,6 +5,9 @@ import { query } from "@/lib/dbTypeGet";
 import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
 import { WeeklyScoresheetsGameInfo} from "@/lib/definitions";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/scoresheets/weeklyScoresheetsV2/gameInfo");
 
 // Define the API route handler
 export default async function handler(
@@ -14,6 +17,7 @@ export default async function handler(
     await requireApiSession(req, res);
     // Handle Post Requests
     if (req.method === "POST") {
+        log.info({ method: "POST" }, "Upsert weekly scoresheet game info");
         // Cast data to expected type
         const data = req.body as WeeklyScoresheetsGameInfo;
         // Define the upsert query
@@ -100,6 +104,7 @@ export default async function handler(
             res.status(400).json({ error: "seasonCode, weekNum, division, subdivision, homeTeamId, and awayTeamId are required" });
         }
     } else {
+        log.warn({ method: req.method }, "Method not allowed");
         res.status(405).json({ error: "Method not allowed" });
     }
 }

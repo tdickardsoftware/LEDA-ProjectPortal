@@ -13,6 +13,9 @@ import { WeeklyScoresheet } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/scoresheets");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -21,6 +24,7 @@ export default async function handler(
 	const session = await requireApiSession(req, res);
 	if (!session) return;
 	if (req.method === "POST") {
+		log.info({ method: "POST" }, "Upsert weekly scoresheet request");
 		// Upsert the weekly scoresheet (scoresheetData and finishedScoresheet) for the given season and week
 		const data = req.body as WeeklyScoresheet;
 		try {
@@ -36,13 +40,10 @@ export default async function handler(
 				data.scoresheetData,
 				data.finishedScoresheet, // Save the finishedScoresheet status
 			];
-
-			// Log the query values for debugging
-
 			const result = await queryPost(query, values);
 			res.status(201).json(result);
 		} catch (error) {
-			console.error("Error in POST handler:", error);
+			log.error({ err: error }, "Failed to upsert weekly scoresheet");
 			res.status(500).json({
 				message: "Failed to upsert weekly scoresheet information",
 				error,
@@ -117,6 +118,7 @@ export default async function handler(
 			}
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }
