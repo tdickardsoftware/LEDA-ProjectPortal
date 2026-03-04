@@ -63,6 +63,7 @@
     "react-hook-form": "^7.53.2",
     "react-multi-date-picker": "^4.5.2",
     "react-pdf": "^9.2.1",
+    "resend": "^6.9.3",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.4",
     "tailwind-scrollbar": "^3.1.0",

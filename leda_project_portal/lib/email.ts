@@ -1,17 +1,9 @@
 /**
- * Shared SMTP client for sending transactional emails.
+ * Shared Resend client for sending transactional emails.
  *
- * Connection details are pulled from environment variables:
- * SMTP_USER, SMTP_PASS, SMTP_HOST, SMTP_PORT.
- * SSL is enabled; TLS is disabled (port 465 by default).
+ * Requires RESEND_API_KEY environment variable.
+ * The sender address is controlled by SMTP_USER.
  */
-import { SMTPClient } from 'emailjs';
+import { Resend } from 'resend';
 
-export const client = new SMTPClient({
-    user: process.env.SMTP_USER,
-    password: process.env.SMTP_PASS,
-    host: process.env.SMTP_HOST,
-    ssl: true,
-    tls: false,
-    port: Number(process.env.SMTP_PORT),
-});
+export const resend = new Resend(process.env.RESEND_API_KEY);
