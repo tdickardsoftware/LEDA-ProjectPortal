@@ -36,9 +36,6 @@ export default async function handler(
 				data.scoresheetData,
 				data.finishedScoresheet, // Save the finishedScoresheet status
 			];
-
-			// Log the query values for debugging
-
 			const result = await queryPost(query, values);
 			res.status(201).json(result);
 		} catch (error) {
