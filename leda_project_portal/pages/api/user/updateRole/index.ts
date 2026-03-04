@@ -10,6 +10,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import {  UserRole } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/user/updateRole");
 
 // Define the API route handler
 export default async function handler(
@@ -19,6 +22,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET" }, "Fetch users for role management");
 		try {
             if (req.query.username) {
 			// Execute the database query to fetch user role information
@@ -67,6 +71,7 @@ export default async function handler(
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

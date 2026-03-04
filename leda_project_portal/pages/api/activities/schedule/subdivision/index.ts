@@ -10,6 +10,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { ScheduleData } from "@/lib/schedule";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/schedule/subdivision");
 
 interface NormalizedScheduleRow {
 	seasonCode: string;
@@ -88,6 +91,7 @@ export default async function handler(
 	if (!session) return;
 
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch subdivision schedule");
 		const { seasonCode, division, subdivision } = req.query;
 
 
@@ -121,13 +125,14 @@ export default async function handler(
 				scheduleData,
 			});
 		} catch (error) {
-			console.error("Error fetching subdivision schedule:", error);
+			log.error({ err: error }, "Failed to fetch subdivision schedule");
 			res.status(500).json({
 				message: "Failed to fetch subdivision schedule",
 				error,
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }

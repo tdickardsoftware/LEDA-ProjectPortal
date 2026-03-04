@@ -5,6 +5,9 @@ import { query } from "@/lib/dbTypeGet";
 import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
 import { WeeklyScoresheetsTeamInfo } from "@/lib/definitions";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/scoresheets/weeklyScoresheetsV2/teamInfo");
 
 // Define the API route handler
 export default async function handler(
@@ -13,6 +16,7 @@ export default async function handler(
 ) {
     await requireApiSession(req, res);
     if (req.method === "POST") {
+        log.info({ method: "POST" }, "Upsert weekly scoresheet team info");
         // Accept either a single object or an array of objects
         const body = req.body;
         const rows: WeeklyScoresheetsTeamInfo[] = Array.isArray(body) ? body : [body];
@@ -102,6 +106,7 @@ export default async function handler(
             res.status(400).json({ error: "Missing required query parameters" });
         }
     } else {
+        log.warn({ method: req.method }, "Method not allowed");
         res.status(405).json({ error: "Method not allowed" });
     }
 }

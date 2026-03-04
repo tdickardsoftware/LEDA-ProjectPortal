@@ -10,6 +10,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { HistoryView, WeeklyScoresheetsScoresheetTeamInfo } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/roster/rosterTeamView");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -18,6 +21,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch roster team view");
 		if (req.query.seasonCode && req.query.division && req.query.subdivision && req.query.teamLetter) {
 			try {
 				// Fetch a specific team's info when all filter params are provided
@@ -52,6 +56,7 @@ export default async function handler(
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }

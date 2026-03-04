@@ -3,6 +3,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { ListsPlaces } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/place/placesReport");
 
 // Define the API route handler
 export default async function handler(
@@ -12,6 +15,7 @@ export default async function handler(
     await requireApiSession(req, res);
     // Handle GET requests
     if (req.method === "GET") {
+        log.info({ method: "GET", query: req.query }, "Fetch places report request");
         try {
             if (req.query.seasonCode) {
                 const result = await query<ListsPlaces>(
@@ -77,6 +81,7 @@ export default async function handler(
         }
     } else {
         // Respond with a 405 status code for unsupported methods
+        log.warn({ method: req.method }, "Method not allowed");
         res.status(405).json({ error: "Method not allowed" });
     }
 }

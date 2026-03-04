@@ -14,6 +14,9 @@ import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
 import { ScheduleData } from "@/lib/schedule";
 import { NextApiRequest, NextApiResponse } from "next";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/schedule");
 
 interface NormalizedScheduleRow {
 	seasonCode: string;
@@ -155,6 +158,7 @@ export default async function handler(
 	if (!session) return;
 
 	if (req.method === "POST") {
+		log.info({ method: "POST" }, "Save season schedule");
 		const data = req.body as { seasonCode: string; scheduleData: ScheduleData };
 		try {
 			// Delete existing schedule for this season
@@ -205,7 +209,7 @@ export default async function handler(
 
 			res.status(201).json({ message: "Schedule saved successfully" });
 		} catch (error) {
-			console.error("Error saving schedule:", error);
+			log.error({ err: error }, "Failed to save schedule");
 			res.status(500).json({
 				message: "Failed to upsert schedule information",
 				error,
@@ -243,7 +247,7 @@ export default async function handler(
 					});
 				}
 			} catch (error) {
-				console.error("Error fetching schedule:", error);
+				log.error({ err: error }, "Failed to fetch schedule");
 				res.status(500).json({
 					message: "Failed to fetch schedule information",
 					error,
@@ -253,6 +257,7 @@ export default async function handler(
 			res.status(400).json({ message: "Season code is required" });
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }

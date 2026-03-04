@@ -11,6 +11,9 @@ import { query } from "@/lib/dbTypeGet";
 import { PaymentHistory } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
 import { parseFieldSearch, buildSQLWhereClause, createColumnMapping } from "@/lib/search-parser";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/maintenance/payment/placePayment/datatable");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -20,6 +23,7 @@ export default async function handler(
 	if (!session) return;
 
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch place payment datatable request");
 		try {
 			const page = parseInt((req.query.page as string) || "1");
 			const pageSize = parseInt((req.query.pageSize as string) || "10");
@@ -132,6 +136,7 @@ export default async function handler(
 				[...searchParams, pageSize.toString(), offset.toString()]
 			);
 
+			log.info({ page, pageSize, totalRecords }, "Fetched place payment datatable");
 			res.status(200).json({
 				data: dataResult.rows,
 				pagination: {
@@ -142,13 +147,14 @@ export default async function handler(
 				},
 			});
 		} catch (error) {
-			console.error("Error fetching place payment history:", error);
+			log.error({ err: error }, "Failed to fetch place payment history");
 			res.status(500).json({
 				message: "Failed to fetch place payment history",
 				error,
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

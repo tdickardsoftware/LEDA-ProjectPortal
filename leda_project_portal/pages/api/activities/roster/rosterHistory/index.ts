@@ -8,6 +8,9 @@ import { query } from "@/lib/dbTypeGet";
 import { PlayerRosterHistory } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
 import { NextApiRequest, NextApiResponse } from "next";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/roster/rosterHistory");
 
 export default async function handler(
 	req: NextApiRequest,
@@ -16,6 +19,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch roster change history");
 		try {
 			if (req.query.ledaId) {
 				// Fetch all season roster entries for the given player, most recent first
@@ -32,6 +36,7 @@ export default async function handler(
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method Not Allowed" });
 	}
 }

@@ -1,6 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/place/batch");
 
 interface BatchPlaceResponse {
 	ledaId: string;
@@ -15,6 +18,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	
 	if (req.method === "POST") {
+		log.info({ method: "POST" }, "Batch fetch places request");
 		try {
 			const { placeIds } = req.body as { placeIds: string[] };
 			
@@ -67,15 +71,17 @@ export default async function handler(
 				}
 			});
 
+			log.info({ count: Object.keys(placesMap).length }, "Batch places fetched");
 			res.status(200).json(placesMap);
 		} catch (error) {
-			console.error("Batch place fetch error:", error);
+			log.error({ err: error }, "Failed to batch fetch places");
 			res.status(500).json({
 				error: "Failed to fetch places",
 				details: error instanceof Error ? error.message : "Unknown error",
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed. Use POST." });
 	}
 }

@@ -11,6 +11,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/scoresheets/teamPoints/batch");
 
 interface TeamPointsRow {
 	teamLedaId: string;
@@ -25,6 +28,7 @@ export default async function handler(
 	if (!session) return;
 
 	if (req.method === "POST") {
+		log.info({ method: "POST" }, "Batch fetch team points status");
 		const { seasonCode, weekNums, division, subdivision, teamIds } = req.body as {
 			seasonCode: string;
 			weekNums: (string | number)[];
@@ -91,6 +95,7 @@ export default async function handler(
 			});
 		}
 	} else {
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ message: "Method not allowed" });
 	}
 }

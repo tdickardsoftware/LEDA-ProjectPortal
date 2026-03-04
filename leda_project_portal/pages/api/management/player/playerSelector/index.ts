@@ -3,6 +3,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
 import { PlayerSelector } from "@/lib/definitions";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/management/player/playerSelector");
 
 // Define the API route handler
 export default async function handler(
@@ -12,6 +15,7 @@ export default async function handler(
 	await requireApiSession(req, res);
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch player selector request");
 		try {
 			const { search = "", limit = "50", offset = "0" } = req.query;
 			
@@ -42,6 +46,7 @@ export default async function handler(
 				params
 			);
 			// Respond with the query result
+			log.info({ count: result.rows.length }, "Fetched player selector");
 			res.status(200).json(result.rows);
 		} catch (error) {
 			// Handle any errors that occur during the query
@@ -52,6 +57,7 @@ export default async function handler(
 		}
 	} else {
 		// Respond with a 405 status code for unsupported methods
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }

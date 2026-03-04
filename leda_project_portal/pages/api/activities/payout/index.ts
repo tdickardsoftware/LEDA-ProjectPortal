@@ -11,6 +11,9 @@ import { query } from "@/lib/dbTypeGet";
 import { Payout } from "@/lib/definitions";
 import { queryPost } from "@/lib/query";
 import { requireApiSession } from "@/lib/require-session";
+import { createRouteLogger } from "@/lib/logger";
+
+const log = createRouteLogger("/api/activities/payout");
 
 // Define the API route handler
 export default async function handler(
@@ -21,6 +24,7 @@ export default async function handler(
 	if (!session) return;
 	// Handle GET requests
 	if (req.method === "GET") {
+		log.info({ method: "GET", query: req.query }, "Fetch payout data");
 		if (req.query.seasonCode) {
 			// Fetch payout JSON blob for the specified season
 			const result = await query<Payout>(
@@ -30,6 +34,7 @@ export default async function handler(
 			return res.status(200).json(result.rows);
 		}
 	} else if (req.method === "POST") {
+		log.info({ method: "POST" }, "Upsert payout data");
 		// Upsert payout data for the season
 		const body = req.body as Payout;
 		const query = `INSERT INTO public.leda_payouts ("seasonCode", "payoutsData") VALUES ($1, $2) ON CONFLICT ("seasonCode") DO UPDATE SET "payoutsData" = $2;`;
@@ -38,6 +43,7 @@ export default async function handler(
 		return res.status(201).json(result);
 	} else {
 		// Respond with a 405 status code for unsupported methods
+		log.warn({ method: req.method }, "Method not allowed");
 		res.status(405).json({ error: "Method not allowed" });
 	}
 }
