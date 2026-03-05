@@ -2,7 +2,8 @@ import { betterAuth } from "better-auth";
 import { username } from "better-auth/plugins"
 import { nextCookies } from "better-auth/next-js";
 import { pool } from "./lib/getPool";
-import { resend } from "./lib/email";
+import { client } from "./lib/email";
+// import { resend } from "./lib/email";
 
 
 
@@ -39,7 +40,7 @@ export const auth = betterAuth({
         revokeSessionsOnPasswordReset: true,
         sendResetPassword: async ({ user, url }) => {
             try {
-                await resend.emails.send({
+                await client.sendAsync({
                     from: `Office <${process.env.SMTP_USER}>`,
                     to: user.email,
                     subject: "Reset your password",
@@ -60,7 +61,7 @@ export const auth = betterAuth({
         sendOnSignUp: true,
         sendVerificationEmail: async ({ user, url }) => {
             try {
-                await resend.emails.send({
+                await client.sendAsync({
                     from: `Office <${process.env.SMTP_USER}>`,
                     to: user.email,
                     subject: "Verify your email",

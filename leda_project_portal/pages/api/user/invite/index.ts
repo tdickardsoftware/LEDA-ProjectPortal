@@ -8,7 +8,7 @@
  */
 import { NextApiRequest, NextApiResponse } from "next";
 import { requireApiSession } from "@/lib/require-session";
-import { resend } from "@/lib/email";
+import { client } from "@/lib/email";
 import { createRouteLogger } from "@/lib/logger";
 
 const log = createRouteLogger("/api/user/invite");
@@ -46,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const link = `${base}/sign-up/?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
 
     try {
-      await resend.emails.send({
+      await client.sendAsync({
         from: `"Account Management" <${process.env.SMTP_USER}>`,
         to: email,
         subject: "Create your account",
