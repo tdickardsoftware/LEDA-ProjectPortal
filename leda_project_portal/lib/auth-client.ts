@@ -10,7 +10,6 @@ import { inferAdditionalFields, usernameClient } from "better-auth/client/plugin
 import { createAuthClient } from "better-auth/client"
 
 export const authClient = createAuthClient({
-    baseURL:  window.location.origin || undefined,
     plugins: [
         usernameClient(),
         inferAdditionalFields({
