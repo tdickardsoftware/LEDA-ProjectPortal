@@ -7,9 +7,21 @@ import { client } from "./lib/email";
 
 
 
+// Build the trusted origins list from env vars.
+// BETTER_AUTH_TRUSTED_ORIGINS can be a comma-separated list of extra URLs
+// (e.g. Vercel preview deployment URLs) set in the Vercel environment variables.
+const extraOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS
+  ? process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
+  : [];
+
 export const auth = betterAuth({
     database: pool,
     baseURL: process.env.URL,
+    trustedOrigins: [
+        ...(process.env.URL ? [process.env.URL] : []),
+        ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
+        ...extraOrigins,
+    ],
     rateLimit: {
         enabled: true,
         // Default window/max for general auth endpoints
