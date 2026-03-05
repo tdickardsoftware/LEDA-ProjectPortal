@@ -42,7 +42,7 @@ export const auth = betterAuth({
         sendResetPassword: async ({ user, url }) => {
             try {
                 await client.sendAsync({
-                    from: `Office <${process.env.SMTP_USER}>`,
+                    from: `Account Management <${process.env.SMTP_USER}>`,
                     to: user.email,
                     subject: "Reset your password",
                     text: `Hello ${user.name || ""},\n\nClick the link below to reset your password:\n${url}`,
@@ -63,7 +63,7 @@ export const auth = betterAuth({
         sendVerificationEmail: async ({ user, url }) => {
             try {
                 await client.sendAsync({
-                    from: `Office <${process.env.SMTP_USER}>`,
+                    from: `Account Management <${process.env.SMTP_USER}>`,
                     to: user.email,
                     subject: "Verify your email",
                     text: `Hello ${user.name || ""},\n\nClick the link below to verify your email:\n${url}\n\nIf you didn't request this, you can ignore this email.`,
