@@ -7,7 +7,6 @@ import { client } from "./lib/email";
 
 export const auth = betterAuth({
     database: pool,
-    baseURL: process.env.URL,
     trustedOrigins: [
     "http://localhost:3000", 
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : [])
