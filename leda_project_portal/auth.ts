@@ -8,7 +8,10 @@ import { client } from "./lib/email";
 export const auth = betterAuth({
     database: pool,
     baseURL: process.env.URL,
-    trustedOrigins: [process.env.VERCEL_URL!],
+    trustedOrigins: [
+    "http://localhost:3000", 
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : [])
+  ],
     rateLimit: {
         enabled: true,
         // Default window/max for general auth endpoints
