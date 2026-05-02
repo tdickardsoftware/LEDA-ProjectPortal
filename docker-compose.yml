@@ -4,11 +4,118 @@ services:
     image: postgres:16-alpine
     tty: true
     stdin_open: true
+    # Bind to localhost only - accessible via SSH tunnel but not from internet
     ports:
-      - 5432:5432
+      - "127.0.0.1:5432:5432"
     volumes:
       - ~/apps/postgres:/var/lib/postgresql/data
     environment:
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_USER=admin
-      - POSTGRES_DB=leda_db
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ./leda_project_portal
+      dockerfile: Dockerfile
+    # Not exposed externally — Nginx proxies to it inside the Docker network
+    expose:
+      - 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - PGHOST=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_URL=${APP_URL}
+      - URL=${APP_URL}
+      - MAINTEANCE_MODE=${MAINTEANCE_MODE}
+      - DISABLE_AUTH=${DISABLE_AUTH}
+      - DISABLE_SIGN_UP=${DISABLE_SIGN_UP}
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-www:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - certbot-www:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    # Run manually to issue/renew certs — see README note below
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done"
+
+  # ─── Logging & Monitoring ────────────────────────────────────────────────────
+
+  # Dozzle: lightweight real-time Docker log viewer (http://your-vps-ip:8888)
+  # Bind to localhost only — tunnel via SSH to view: ssh -L 8888:localhost:8888 deploy@your.vps.ip
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    expose:
+      - 8080
+    environment:
+      - DOZZLE_LEVEL=info
+    restart: unless-stopped
+
+  # Loki: log aggregation backend
+  loki:
+    image: grafana/loki:3.4.3
+    expose:
+      - 3100
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+
+  # Promtail: ships Docker container logs to Loki
+  promtail:
+    image: grafana/promtail:3.4.3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  # Grafana: dashboard UI for viewing logs from Loki (http://your-vps-ip:3001)
+  # Bind to localhost only — tunnel via SSH: ssh -L 3001:localhost:3001 deploy@your.vps.ip
+  grafana:
+    image: grafana/grafana:11.6.1
+    expose:
+      - 3000
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      # Tell Grafana it is served under a sub-path
+      - GF_SERVER_ROOT_URL=${APP_URL}/monitoring/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+volumes:
+  certbot-www:
+  certbot-certs:
+  grafana-data:
