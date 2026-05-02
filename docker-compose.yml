@@ -4,9 +4,9 @@ services:
     image: postgres:16-alpine
     tty: true
     stdin_open: true
-    # Not exposed externally on a VPS — only reachable inside Docker network
-    expose:
-      - 5432
+    # Bind to localhost only - accessible via SSH tunnel but not from internet
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - ~/apps/postgres:/var/lib/postgresql/data
     environment:
