@@ -46,36 +46,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const link = `${base}/sign-up/?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
 
     try {
-      const message = await client.sendAsync({
-        text: `Hello,
-
-An administrator has invited you to create an account. Visit the link below to complete your registration:
-${link}
-
-If the link doesn't work, copy and paste this URL into your browser:
-${link}`,
+      await client.sendAsync({
         from: `"Account Management" <${process.env.SMTP_USER}>`,
         to: email,
         subject: "Create your account",
-        attachment: [
-          {
-            data: `
+        text: `Hello,\n\nAn administrator has invited you to create an account. Visit the link below to complete your registration:\n${link}\n\nIf the link doesn't work, copy and paste this URL into your browser:\n${link}`,
+        html: `
         <p>Hello,</p>
         <p>An administrator has invited you to create an account. Click the link below to complete your registration:</p>
         <p><a href="${link}" target="_blank" rel="noopener noreferrer">Create your account</a></p>
         <p>If the button doesn't work, copy and paste this URL into your browser:</p>
         <p><code>${link}</code></p>
       `,
-            alternative: true,
-          },
-        ],
       });
 
       return res.status(200).json({ ok: true });
     } catch (error) {
       return res.status(500).json({ error: String(error), details: String(error) });
-    } finally {
-      client.smtp.close();
     }
   } catch (error) {
     return res.status(500).json({ error: "Internal server error" });

@@ -3,12 +3,14 @@ import { username } from "better-auth/plugins"
 import { nextCookies } from "better-auth/next-js";
 import { pool } from "./lib/getPool";
 import { client } from "./lib/email";
-
-
+// import { resend } from "./lib/email";
 
 export const auth = betterAuth({
     database: pool,
-    baseURL: process.env.URL,
+    trustedOrigins: [
+    "http://localhost:3000", 
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : [])
+  ],
     rateLimit: {
         enabled: true,
         // Default window/max for general auth endpoints
@@ -40,25 +42,18 @@ export const auth = betterAuth({
         sendResetPassword: async ({ user, url }) => {
             try {
                 await client.sendAsync({
-                    text: `Hello ${user.name || ""},\n\nClick the link below to reset your password:\n${url}`,
-                    from: `Office <${process.env.SMTP_USER}>`,
+                    from: `Account Management <${process.env.SMTP_USER}>`,
                     to: user.email,
                     subject: "Reset your password",
-                    attachment: [
-                        {
-                            data: `
+                    text: `Hello ${user.name || ""},\n\nClick the link below to reset your password:\n${url}`,
+                    html: `
                         <p>Hello ${user.name || ""},</p>
                         <p>Click the link below to reset your password:</p>
                         <a href="${url}" target="_blank">${url}</a>
                     `,
-                            alternative: true,
-                        },
-                    ],
                 });
             } catch (error) {
                 console.error("Error sending password reset email:", error);
-            } finally {
-                client.smtp.close();
             }
         }
     },
@@ -68,26 +63,19 @@ export const auth = betterAuth({
         sendVerificationEmail: async ({ user, url }) => {
             try {
                 await client.sendAsync({
-                    text: `Hello ${user.name || ""},\n\nClick the link below to verify your email:\n${url}\n\nIf you didn't request this, you can ignore this email.`,
-                    from: `Office <${process.env.SMTP_USER}>`,
+                    from: `Account Management <${process.env.SMTP_USER}>`,
                     to: user.email,
                     subject: "Verify your email",
-                    attachment: [
-                        {
-                            data: `
+                    text: `Hello ${user.name || ""},\n\nClick the link below to verify your email:\n${url}\n\nIf you didn't request this, you can ignore this email.`,
+                    html: `
                         <p>Hello ${user.name || ""},</p>
                         <p>Click the link below to verify your email:</p>
                         <a href="${url}" target="_blank">${url}</a>
                         <p>If you didn't request this, you can ignore this email.</p>
                     `,
-                            alternative: true,
-                        },
-                    ],
                 });
             } catch (error) {
                 console.error("Error sending verification email:", error);
-            } finally {
-                client.smtp.close();
             }
         }
     },
