@@ -83,7 +83,7 @@ export default async function handler(
 				SELECT 
 					"ledaId", 
 					"fullName", 
-					CONCAT('(', SUBSTRING("phoneNumber", 1, 3), ')-', SUBSTRING("phoneNumber", 4, 3), '-', SUBSTRING("phoneNumber", 7, 4)) as "phoneNumber", 
+					CASE WHEN "phoneNumber" ~ '^[0-9]{10}$' THEN '(' || SUBSTRING("phoneNumber", 1, 3) || ')-' || SUBSTRING("phoneNumber", 4, 3) || '-' || SUBSTRING("phoneNumber", 7, 4) ELSE "phoneNumber" END as "phoneNumber", 
 					"email" 
 				FROM public.leda_player_info 
 				${searchCondition}
