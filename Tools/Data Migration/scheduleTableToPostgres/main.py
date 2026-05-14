@@ -98,6 +98,11 @@ def process_season_to_csv(season):
             for team_row in sub_rows:
                 team_letter = team_row['Team Letter']
                 team_id = team_row['Team ID Number']
+                
+                # Skip BYE team rows (teamId=0) - only real teams are emitted
+                if is_bye_team(team_id):
+                    continue
+                
                 team_name = get_team_name(team_id)
                 num_weeks = int(team_row['Number of Weeks'])
                 
@@ -110,8 +115,13 @@ def process_season_to_csv(season):
                     opp_row = next((r for r in sub_rows if str(r['Team Letter']).upper() == str(opp_letter).upper()), None)
                     opp_id = opp_row['Team ID Number'] if opp_row else "0"
                     
-                    # Determine if home (BYE team handling)
+                    # Normalize BYE team to consistent values
                     if is_bye_team(opp_id):
+                        opp_id = "0"
+                        opp_letter = "X"
+                    
+                    # Determine if home (BYE team handling)
+                    if opp_id == "0":
                         home = True
                     else:
                         home = is_home(team_letter, opp_letter)
@@ -126,8 +136,8 @@ def process_season_to_csv(season):
                         'teamId': str(team_id),
                         'teamName': team_name,
                         'teamLetter': team_letter,
-                        'oppTeamId': str(opp_id),
-                        'oppTeamLetter': str(opp_letter).upper(),
+                        'oppTeamId': opp_id,
+                        'oppTeamLetter': opp_letter if opp_id == "0" else str(opp_letter).upper(),
                         'matchDate': match_date,
                         'matchTime': '19:30',
                         'home': str(home)
