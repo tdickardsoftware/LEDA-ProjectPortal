@@ -33,7 +33,12 @@ const baseLogger = pino(
       }
     : {
         level: "info",
-        // Plain JSON — Vercel captures stdout and makes it searchable
+        // Emit level as a string label ("info", "warn", "error") instead of
+        // Pino's default numeric value so Loki LogQL filters work naturally:
+        //   {service="app"} | json | level="error"
+        formatters: {
+          level: (label) => ({ level: label }),
+        },
       }
 );
 
