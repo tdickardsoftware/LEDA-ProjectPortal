@@ -152,7 +152,7 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 	const gameDateEntries: [string, string][] = Object.entries(gameDates).map(([key, date]) => {
 		const match = key.match(/\d+/);
 		const weekNum = match ? match[0] : "1";
-		return [`week${weekNum}`, date];
+		return [`Week ${weekNum}`, date];
 	});
 
 	// Calculate dynamic column width based on number of teams
