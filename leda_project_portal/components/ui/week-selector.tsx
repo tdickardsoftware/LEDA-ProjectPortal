@@ -57,27 +57,21 @@ const WeekSelector: React.FC<WeekSelectorProps> = ({
 			const dates = data.dates;
 			let formattedDates = Object.entries(dates).map(
 				([key, value]) => {
-					const weekNumber = key.replace("Date", "");
+					const weekNumber = key.replace("Date", "").trim();
 					return {
 						value: key,
 						label: `Week ${weekNumber} - ${value}`,
 						weekNumber: Number(weekNumber),
+						date: value as string,
 					};
 				}
 			);
 
 			if (useFinishedWeeksOnly) {
-				const finishedResp = await fetch(
-					`/api/activities/scoresheets?seasonCode=${seasonCode}&countOfFinishedWeeks=true`
-				);
-				const finishedData = await finishedResp.json();
-				const count = Number(
-					finishedData.count ||
-					finishedData.count_finished_weeks ||
-					Object.values(finishedData)[0]
-				);
+				const today = new Date();
+				today.setHours(23, 59, 59, 999);
 				formattedDates = formattedDates.filter(
-					(w) => w.weekNumber <= count
+					(w) => new Date(w.date) <= today
 				);
 			}
 			return formattedDates;
