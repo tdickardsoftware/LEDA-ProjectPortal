@@ -152,7 +152,7 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 	const gameDateEntries: [string, string][] = Object.entries(gameDates).map(([key, date]) => {
 		const match = key.match(/\d+/);
 		const weekNum = match ? match[0] : "1";
-		return [`Week ${weekNum}`, date];
+		return [`week${weekNum}`, date];
 	});
 
 	// Calculate dynamic column width based on number of teams
@@ -296,7 +296,7 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 									{gameDateChunk.map(([gameTitle, date]) => (
 										<View key={gameTitle} style={styles.tableRow}>
 											<View style={[styles.tableColHeader, { width: "15%" }]}>
-												<Text>{gameTitle.replace(/(\d+)/, " $1")}</Text>
+												<Text>Week {gameTitle.match(/\d+/)?.[0] ?? ""}</Text>
 												<Text style={styles.gameDate}>{date}</Text>
 											</View>
 											{teamsArray.map(([teamLetter, teamData]) => {
