@@ -146,7 +146,14 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 	placesData,
 	seasonInfo,
 }) => {
-	const gameDateEntries = Object.entries(gameDates);
+	// Convert gameDates keys (e.g. "Date 1") to the "weekN" format used as
+	// matchesData keys in the schedule API, mirroring the conversion in
+	// subdivision-scheduler.tsx so lookups succeed instead of returning null.
+	const gameDateEntries: [string, string][] = Object.entries(gameDates).map(([key, date]) => {
+		const match = key.match(/\d+/);
+		const weekNum = match ? match[0] : "1";
+		return [`week${weekNum}`, date];
+	});
 
 	// Calculate dynamic column width based on number of teams
 	const getColumnWidth = (totalColumns: number) => {
