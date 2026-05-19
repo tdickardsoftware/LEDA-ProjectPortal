@@ -257,7 +257,7 @@ export function NavUser() {
 								<DropdownMenuSeparator />
 							</>
 						)}
-						{user.role === "Developer" && (
+						{(user.role === "Developer" || user.emulatedRole === null) && (
 							<DropdownMenuSub>
 								<DropdownMenuSubTrigger>
 									<Activity className="mr-2 size-4" />
