@@ -41,6 +41,7 @@ export async function requireApiSession(
     else if (path.startsWith("/api/maintenance")) subject = "Maintenance";
     else if (path.startsWith("/api/activities")) subject = "Activities";
     else if (path.startsWith("/api/reports")) subject = "Reports";
+    else if (path.startsWith("/api/github")) subject = "Management";
 
     const method = req.method || "GET";
     // CSRF check for unsafe methods
