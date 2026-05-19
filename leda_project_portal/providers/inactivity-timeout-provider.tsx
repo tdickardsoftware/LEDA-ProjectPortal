@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
@@ -23,11 +23,17 @@ export default function InactivityTimeoutProvider({
 }) {
     const router = useRouter();
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const { data: session } = authClient.useSession();
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    useEffect(() => {
+        authClient.getSession().then((result) => {
+            setIsLoggedIn(!!result.data?.session);
+        });
+    }, []);
 
     useEffect(() => {
         // Only set up the timeout when a session exists
-        if (!session) return;
+        if (!isLoggedIn) return;
 
         const resetTimer = () => {
             if (timerRef.current) clearTimeout(timerRef.current);
@@ -49,7 +55,7 @@ export default function InactivityTimeoutProvider({
                 window.removeEventListener(event, resetTimer)
             );
         };
-    }, [session, router]);
+    }, [isLoggedIn, router]);
 
     return <>{children}</>;
 }
