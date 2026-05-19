@@ -282,7 +282,7 @@ export function NavUser() {
 						<DropdownMenuLabel className="text-xs text-muted-foreground px-2">
 							Help
 						</DropdownMenuLabel>
-						<DropdownMenuItem onClick={() => setShowIssueDialog(true)}>
+						<DropdownMenuItem onClick={() => setTimeout(() => setShowIssueDialog(true), 0)}>
 							<Bug className="mr-2 size-4" />
 							<span>Found an Issue?</span>
 						</DropdownMenuItem>
