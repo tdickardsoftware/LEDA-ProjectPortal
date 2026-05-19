@@ -7,6 +7,7 @@ import "@/app/ui/globals.css";
 import { Metadata } from "next";
 import QueryProvider from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import InactivityTimeoutProvider from "@/providers/inactivity-timeout-provider";
 
 export const metadata: Metadata = {
 	title: {
@@ -38,7 +39,11 @@ export default function RootLayout({
 					storageKey="leda-portal-theme"
 					enableColorScheme
 				>
-					<QueryProvider>{children}</QueryProvider>
+					<QueryProvider>
+					<InactivityTimeoutProvider>
+						{children}
+					</InactivityTimeoutProvider>
+				</QueryProvider>
 				</ThemeProvider>
 			</body>
 		</html>
