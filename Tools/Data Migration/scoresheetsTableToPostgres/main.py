@@ -704,18 +704,18 @@ def main():
                 home_team_label = f"{division[0].upper()}{subdivision_num}{home_team_letter.upper()}"
                 away_team_label = f"{division[0].upper()}{subdivision_num}{away_team_letter.upper()}"
                 
-                # Add team info for home team (including BYE teams) - only if not already added
+                # Add team info for home team (skip BYE team) - only if not already added
                 home_key = (season, week_int, division, formatted_subdivision, home_team_id)
-                if home_key not in unique_team_info:
+                if home_key not in unique_team_info and home_team_id != '0':
                     unique_team_info[home_key] = (
                         season, week_int, division, formatted_subdivision, True, home_team_id, 
                         home_team_name, home_team_letter, away_team_id, 
                         penalties_json_for(home_team_id), home_penalty_pts, home_team_label
                     )
                 
-                # Add team info for away team (including BYE teams) - only if not already added
+                # Add team info for away team (skip BYE team) - only if not already added
                 away_key = (season, week_int, division, formatted_subdivision, away_team_id)
-                if away_key not in unique_team_info:
+                if away_key not in unique_team_info and away_team_id != '0':
                     unique_team_info[away_key] = (
                         season, week_int, division, formatted_subdivision, False, away_team_id,
                         away_team_name, away_team_letter, home_team_id,
@@ -754,14 +754,15 @@ def main():
                     player_values.append(
                         f"('{season}', {week_int}, '{division.replace("'", "''")}', '{formatted_subdivision.replace("'", "''")}', {pid}, {team_id}, '{stats_json}')"
                     )
-            
-        
+
+            # Collect player info for this matchup (must be inside the loop)
+            if home_rows:
+                aggregate_players(home_rows, True)
+            if away_rows:
+                aggregate_players(away_rows, False)
+
         # Convert unique team info dict to list
         team_info_values = list(unique_team_info.values())
-        if home_rows:
-            aggregate_players(home_rows, True)
-        if away_rows:
-            aggregate_players(away_rows, False)
 
         return (season, week_int, player_values, team_game_values, team_info_values)
 

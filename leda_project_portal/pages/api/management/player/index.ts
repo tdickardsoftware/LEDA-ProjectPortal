@@ -78,8 +78,8 @@ export default async function handler(
 						"lastName", "firstName", "middleInitial", "addressOne", "addressTwo", "city", "state", "zip", 
 						"phoneNumber", "otherNumber", "email", "gender", 
 						TO_CHAR("dateOfBirth", 'mm/dd/yyyy') as "dateOfBirth", 
-						'(' || SUBSTRING("phoneNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("phoneNumber" FROM 4 FOR 3) || '-' || SUBSTRING("phoneNumber" FROM 7 FOR 4) AS "phoneNumberFormatted", 
-						'(' || SUBSTRING("otherNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("otherNumber" FROM 4 FOR 3) || '-' || SUBSTRING("otherNumber" FROM 7 FOR 4) AS "otherNumberFormatted" 
+						CASE WHEN "phoneNumber" = 'UNKNOWN' THEN "phoneNumber" ELSE '(' || SUBSTRING("phoneNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("phoneNumber" FROM 4 FOR 3) || '-' || SUBSTRING("phoneNumber" FROM 7 FOR 4) END AS "phoneNumberFormatted", 
+						CASE WHEN "otherNumber" = 'UNKNOWN' THEN "otherNumber" ELSE '(' || SUBSTRING("otherNumber" FROM 1 FOR 3) || ')-' || SUBSTRING("otherNumber" FROM 4 FOR 3) || '-' || SUBSTRING("otherNumber" FROM 7 FOR 4) END AS "otherNumberFormatted" 
 					FROM public.leda_player_info ORDER BY "ledaId";
 				`);
 				log.info({ count: result.rows.length }, "Fetched all players");

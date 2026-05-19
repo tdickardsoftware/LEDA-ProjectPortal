@@ -271,9 +271,7 @@ async function updateSubsequentWeeks(
 
 			// Sanity check for unusual values
 			if (Math.abs(pointDifference) > 100 || newTotalPoints > 1000) {
-				console.warn(
-					`Potentially incorrect point calculation detected for Week ${week.weekNum}!`
-				);
+				log.warn({ weekNum: week.weekNum, pointDifference, newTotalPoints }, "Potentially incorrect point calculation detected");
 			}
 
 			// Update the database

@@ -23,6 +23,10 @@ tid_to_name = dict(zip(teams_df['ID Number'], teams_df['Team Name']))
 # Build teamId -> placeId lookup from roster header
 tid_to_placeid = dict(zip(roster_header_df['Team ID Number'], roster_header_df['Bar ID Number']))
 
+# Helper: check if a team is a BYE team
+def is_bye_team(team_id):
+    return str(team_id).strip() == '0' or str(team_id).strip() == ''
+
 def build_team_info(season_df):
     team_info = {}
     for division in season_df['Division'].unique():
@@ -34,6 +38,9 @@ def build_team_info(season_df):
             for _, row in tqdm(sub_df.iterrows(), total=sub_df.shape[0], desc=f"{division} Subdivision {subdiv}"):
                 letter = row['Team Letter']
                 tid = row['Team ID Number']
+                # Skip BYE teams
+                if is_bye_team(tid):
+                    continue
                 tname = tid_to_name.get(tid, "Unknown")
                 place_id = tid_to_placeid.get(tid, 0)
                 teams[letter] = {

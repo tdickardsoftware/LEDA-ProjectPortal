@@ -75,6 +75,7 @@ services:
       - 8080
     environment:
       - DOZZLE_LEVEL=info
+      - DOZZLE_BASE=/monitoring/dozzle
     restart: unless-stopped
 
   # Loki: log aggregation backend
@@ -104,6 +105,7 @@ services:
       - 3000
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
