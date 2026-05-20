@@ -680,7 +680,8 @@ export default function RostersContent({
 			placeId: string,
 			teamName: string,
 			division: string,
-			subdivision: string
+			subdivision: string,
+			teamLetter?: string,
 		) => {
 			// Prevent duplicates
 			if (selectedTeams.includes(teamId)) {
@@ -690,7 +691,7 @@ export default function RostersContent({
 
 			setSelectedTeams((prev) => [...prev, teamId]);
 
-			const teamLetter = String.fromCharCode(
+			const assignedLetter = teamLetter ?? String.fromCharCode(
 				65 +
 					Object.keys(
 						divisionsData[division]?.subdivisions[subdivision] || {}
@@ -705,7 +706,7 @@ export default function RostersContent({
 						...prev[division]?.subdivisions,
 						[subdivision]: {
 							...prev[division]?.subdivisions[subdivision],
-							[teamLetter]: { teamId, placeId, teamName },
+							[assignedLetter]: { teamId, placeId, teamName },
 						},
 					},
 				},
@@ -719,9 +720,10 @@ export default function RostersContent({
 	const handleAddTeam = useCallback(
 		(division: string, subdivision: string) => {
 			// Check if subdivision already has 8 teams
-			const teamCount = Object.keys(
+			const takenLetters = Object.keys(
 				divisionsData[division]?.subdivisions[subdivision] || {}
-			).length;
+			);
+			const teamCount = takenLetters.length;
 			const maxTeamsReached = teamCount >= 8;
 
 			return (
@@ -762,6 +764,7 @@ export default function RostersContent({
 							}
 							division={division}
 							subdivision={subdivision}
+							takenLetters={takenLetters}
 						/>
 					</DialogContent>
 				</Dialog>
