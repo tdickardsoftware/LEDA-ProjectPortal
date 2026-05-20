@@ -83,6 +83,9 @@ services:
     image: grafana/loki:3.4.3
     expose:
       - 3100
+    volumes:
+      - loki-data:/loki
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
     command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
 
@@ -121,3 +124,4 @@ volumes:
   certbot-www:
   certbot-certs:
   grafana-data:
+  loki-data:

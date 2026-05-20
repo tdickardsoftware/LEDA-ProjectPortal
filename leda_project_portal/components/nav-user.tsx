@@ -254,30 +254,30 @@ export function NavUser() {
 										))}
 									</DropdownMenuSubContent>
 								</DropdownMenuSub>
-								{user.role === "Developer" && (
-									<DropdownMenuSub>
-										<DropdownMenuSubTrigger>
-											<Activity className="mr-2 size-4" />
-											<span>Monitoring</span>
-										</DropdownMenuSubTrigger>
-										<DropdownMenuSubContent className="bg-background">
-											<DropdownMenuItem asChild>
-												<a href="/monitoring/grafana/" target="_blank" rel="noopener noreferrer" className="flex items-center">
-													<LayoutDashboard className="mr-2 size-4" />
-													Grafana
-												</a>
-											</DropdownMenuItem>
-											<DropdownMenuItem asChild>
-												<a href="/monitoring/dozzle/" target="_blank" rel="noopener noreferrer" className="flex items-center">
-													<ScrollText className="mr-2 size-4" />
-													Dozzle
-												</a>
-											</DropdownMenuItem>
-										</DropdownMenuSubContent>
-									</DropdownMenuSub>
-								)}
 								<DropdownMenuSeparator />
 							</>
+						)}
+						{(user.role === "Developer" || user.emulatedRole === null) && (
+							<DropdownMenuSub>
+								<DropdownMenuSubTrigger>
+									<Activity className="mr-2 size-4" />
+									<span>Monitoring</span>
+								</DropdownMenuSubTrigger>
+								<DropdownMenuSubContent className="bg-background">
+									<DropdownMenuItem asChild>
+										<a href="/monitoring/grafana/" target="_blank" rel="noopener noreferrer" className="flex items-center">
+											<LayoutDashboard className="mr-2 size-4" />
+											Grafana
+										</a>
+									</DropdownMenuItem>
+									<DropdownMenuItem asChild>
+										<a href="/monitoring/dozzle/" target="_blank" rel="noopener noreferrer" className="flex items-center">
+											<ScrollText className="mr-2 size-4" />
+											Dozzle
+										</a>
+									</DropdownMenuItem>
+								</DropdownMenuSubContent>
+							</DropdownMenuSub>
 						)}
 						<DropdownMenuLabel className="text-xs text-muted-foreground px-2">
 							Help
@@ -293,7 +293,7 @@ export function NavUser() {
 							</DropdownMenuSubTrigger>
 							<DropdownMenuSubContent className="bg-background">
 								<DropdownMenuItem className="flex flex-col items-start gap-1">
-									<span>Version: 1.0.0</span>
+									<span>Version: {process.env.NEXT_PUBLIC_VERSION_NUMBER}</span>
 									<span>Last Updated Date: {process.env.NEXT_PUBLIC_UPDATE_DATE}</span>
 									<span>Developer: Tyler Dickard</span>
 									<span>Repository: <a href="https://github.com/tdickardsoftware/LEDA-ProjectPortal" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">GitHub</a></span>

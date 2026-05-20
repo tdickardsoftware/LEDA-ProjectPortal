@@ -29,10 +29,9 @@ export const auth = betterAuth({
         },
     },
     session: {
-        // Shorter sessions with sliding refresh
-        // 2 days expiry, refresh window every 12 hours
-        expiresIn: 60 * 60 * 24 * 2,
-        updateAge: 60 * 60 * 12,
+        // 8-hour absolute session; refresh window every hour of activity
+        expiresIn: 60 * 60 * 8,
+        updateAge: 60 * 60 * 1,
         freshAge: 0, // disable fresh session checks (freshAge now calculates from createdAt in 1.6+)
     },
     emailAndPassword: {
