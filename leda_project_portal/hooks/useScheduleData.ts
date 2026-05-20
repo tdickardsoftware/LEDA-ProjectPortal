@@ -11,8 +11,7 @@ import {
 	ScheduleData, 
 	DivisionsData, 
 	RosterApiResponse, 
-	SeasonApiResponse, 
-	ScheduleApiResponse 
+	SeasonApiResponse
 } from '@/lib/schedule';
 import { rosterRoute, scheduleRoute, seasonRoute } from '@/lib/apiRoutes';
 import { fetchWithSession } from '@/lib/getData';

@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { MentionPlayerHistory } from "@/lib/definitions";
 import { X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,14 +56,12 @@ import {
 	saveTeamInfo,
 	deleteGameInfo,
 	deleteTeamInfo,
-	deletePlayerInfoForTeam,
 	createMentionHistory,
 	updateMentionHistory,
 	deleteMentionHistory,
 	deleteMentionsByMatchup,
 	recalculateAfterDelete,
-	weeklyScoresheetsV2PlayersRoute,
-	weeklyScoresheetsV2GameInfoRoute,
+	weeklyScoresheetsV2PlayersRoute
 } from "@/lib/weeklyScoresheetsApi";
 import MentionSelectorWrapper from "@/components/ui/mention-selector-wrapper";
 import PenaltyAccordion from "@/components/ui/penalty-accordion";
@@ -219,8 +218,23 @@ export default function WeeklyScoresheetsContent({
 	const queryClient = useQueryClient();
 
 	// React Query hooks
-	// Schedule data query
-// Removed legacy schedule query
+	// Check if a schedule exists for the selected season
+	const { data: scheduleCheckData, isLoading: scheduleCheckLoading } = useQuery({
+		queryKey: ["scheduleExists", seasonCode],
+		queryFn: async () => {
+			if (!seasonCode) return null;
+			const res = await fetchWithSession(
+				`/api/activities/schedule?seasonCode=${encodeURIComponent(seasonCode)}`,
+				{ method: "GET" }
+			);
+			if (res.status === 404) return null;
+			if (!res.ok) return null;
+			return res.json();
+		},
+		enabled: !!seasonCode,
+		staleTime: 1000 * 60 * 5,
+	});
+	const scheduleNotFound = !!seasonCode && !scheduleCheckLoading && scheduleCheckData === null;
 
 	// Removed legacy scoresheet query; V2 per-matchup flow only
 
@@ -1425,7 +1439,7 @@ const confirmPendingChangesPlaceholder = () => true;
 		});
 
 		try {
-			const result = await createMentionHistoryMutation.mutateAsync({
+			 await createMentionHistoryMutation.mutateAsync({
 				ledaId: playerId,
 				mentionId: newCounter.toString(),
 				mentionCode: mentionCode,
@@ -1535,6 +1549,7 @@ const confirmPendingChangesPlaceholder = () => true;
 				return;
 			}
 			const matchupsResponse = await res.json();
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			let raw: Record<string, any>;
 			try {
 				raw = typeof matchupsResponse.matchupData === "string" ? JSON.parse(matchupsResponse.matchupData) : matchupsResponse.matchupData;
@@ -1599,10 +1614,6 @@ const confirmPendingChangesPlaceholder = () => true;
 							}
 
 							const activeTeamId = resolvedActiveTeamId;
-							// Determine the final IDs to use when saving game info (BYE side = "0")
-							const finalHomeTeamId = homeIsBye ? "0" : activeTeamId;
-							const finalAwayTeamId = awayIsBye ? "0" : activeTeamId;
-
 							// Fetch existing V2 player records for the active team.
 							// If none are saved yet (204/404), fall back to the current roster
 							// members — the same failover used in handleMatchupSelection.
@@ -1769,13 +1780,13 @@ const FolderTabSkeleton = () => (
 							disabled={seasonSelected}
 							handleSelect={handleDateToDisplay}
 						/>
-						{!!selectedWeek && byeWeeksCompletedData?.allByeWeeksProcessed === false && (
+						{!!selectedWeek && (
 							<Button
 								onClick={processAllByeWeeks}
-								disabled={!seasonCode || !selectedWeek || isProcessingByeWeeks}
+								disabled={!seasonCode || !selectedWeek || isProcessingByeWeeks || allByeWeeksProcessed}
 								variant="outline"
 							>
-								{isProcessingByeWeeks ? "Processing..." : "Process All Bye Weeks"}
+								{isProcessingByeWeeks ? "Processing..." : allByeWeeksProcessed ? "Bye Weeks Processed" : "Process All Bye Weeks"}
 							</Button>
 						)}
 					</div>
@@ -1788,13 +1799,32 @@ const FolderTabSkeleton = () => (
 				/>
 			</div>
 			<div className="flex flex-1 overflow-hidden">
-				<SideNav
-					key={`${seasonCode}-${selectedWeek}`}
-					seasonCode={seasonCode}
-					weekNum={selectedWeek}
-					handleMatchupSelection={handleMatchupSelection}
-					refreshToken={sidenavRefreshToken}
-				/>
+				{scheduleNotFound ? (
+					<div className="flex flex-1 items-center justify-center">
+						<div className="rounded-md border border-yellow-500 bg-yellow-500/10 p-6 text-sm max-w-md text-center">
+							<p className="font-semibold text-yellow-600 dark:text-yellow-400">
+								No schedule found for this season
+							</p>
+							<p className="mt-1 text-muted-foreground">
+								A schedule must be created before scoresheets can be filled out.{" "}
+								<Link
+									href="/Portal/Activities/Scheduling"
+									className="underline text-primary hover:text-primary/80"
+								>
+									Create a schedule here
+								</Link>
+							</p>
+						</div>
+					</div>
+				) : (
+					<>
+					<SideNav
+						key={`${seasonCode}-${selectedWeek}`}
+						seasonCode={seasonCode}
+						weekNum={selectedWeek}
+						handleMatchupSelection={handleMatchupSelection}
+						refreshToken={sidenavRefreshToken}
+					/>
 				<div className="flex-1 p-4 overflow-auto">
 					{!matchSelected ? (
 						<div className="flex h-full items-center justify-center">
@@ -2335,6 +2365,8 @@ const FolderTabSkeleton = () => (
 						</div>
 					)}
 				</div>
+				</>
+				)}
 			</div>
 
 			{/* Add Mention Dialog */}
