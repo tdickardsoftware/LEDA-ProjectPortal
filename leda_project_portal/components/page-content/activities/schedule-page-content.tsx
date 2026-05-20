@@ -13,6 +13,7 @@
  */
 
 import { useCallback, memo } from "react";
+import Link from "next/link";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import {
 	Accordion,
@@ -118,6 +119,7 @@ export default function ScheduleContent() {
 		setEnableSaveButton,
 		handleSeasonCodeSelect,
 		handleSaveData,
+		rosterNotFound,
 	} = useScheduleData();
 
 	const handleSetEnableSaveButton = useCallback(
@@ -183,9 +185,26 @@ export default function ScheduleContent() {
 					</div>
 				</FolderTabMed>
 			</div>
-			{Object.keys(divisionsData).length > 0 && (
-				<div className="w-full mt-4">
-					{Object.keys(divisionsData).map((division, index) => (
+			<div className="w-full mt-4">
+				{rosterNotFound ? (
+					<div className="flex items-center justify-center py-16">
+						<div className="rounded-md border border-yellow-500 bg-yellow-500/10 p-6 text-sm max-w-md text-center">
+							<p className="font-semibold text-yellow-600 dark:text-yellow-400">
+								No roster found for this season
+							</p>
+							<p className="mt-1 text-muted-foreground">
+								A roster must be created before scheduling can begin.{" "}
+								<Link
+									href="/Portal/Activities/Rosters"
+									className="underline text-primary hover:text-primary/80"
+								>
+									Create a roster here
+								</Link>
+							</p>
+						</div>
+					</div>
+				) : (
+					Object.keys(divisionsData).map((division, index) => (
 						<DivisionAccordion
 							key={division}
 							division={division}
@@ -194,10 +213,12 @@ export default function ScheduleContent() {
 							gameDates={gameDates}
 							matchData={matchData}
 							handleSetEnableSaveButton={handleSetEnableSaveButton}
-							handleFetchUpdatedData={handleFetchUpdatedData}						seasonCode={seasonCode}						/>
-					))}
-				</div>
-			)}
+							handleFetchUpdatedData={handleFetchUpdatedData}
+							seasonCode={seasonCode}
+						/>
+					))
+				)}
+			</div>
 		</div>
 	);
 }
