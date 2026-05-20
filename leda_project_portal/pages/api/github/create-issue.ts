@@ -54,6 +54,7 @@ export default async function handler(
 					title,
 					body: `**Reported by:** ${session.user.name} (${session.user.email})\n\n${body}`,
 					labels: labels || ["bug"],
+					assignees: ["tdickardsoftware"],
 				}),
 			}
 		);
