@@ -179,7 +179,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 									{teams.map((type: { value: string; label: string; name: string }) => (
 										<CommandItem
 											key={type.value}
-											value={type.value}
+											value={type.label}
 											onSelect={() => handleSelect(type)}
 											className="hover:bg-secondary"
 										>
