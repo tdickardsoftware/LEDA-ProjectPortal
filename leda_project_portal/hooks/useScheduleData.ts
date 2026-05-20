@@ -11,18 +11,18 @@ import {
 	ScheduleData, 
 	DivisionsData, 
 	RosterApiResponse, 
-	SeasonApiResponse, 
-	ScheduleApiResponse 
+	SeasonApiResponse
 } from '@/lib/schedule';
 import { rosterRoute, scheduleRoute, seasonRoute } from '@/lib/apiRoutes';
 import { fetchWithSession } from '@/lib/getData';
 
 // Helper fetchers
-const fetchRoster = async (seasonCode: string) => {
+const fetchRoster = async (seasonCode: string): Promise<RosterApiResponse | null> => {
 	const res = await fetch(`${rosterRoute}?seasonCode=${seasonCode}`, {
 		method: 'GET',
 		headers: { 'Content-Type': 'application/json' },
 	});
+	if (res.status === 404) return null;
 	if (!res.ok) throw new Error('Failed to fetch roster');
 	return res.json() as Promise<RosterApiResponse>;
 };
@@ -35,18 +35,6 @@ const fetchGameDates = async (seasonCode: string) => {
 	if (!res.ok) throw new Error('Failed to fetch game dates');
 	return res.json() as Promise<SeasonApiResponse>;
 };
-
-// NOTE: This function is no longer used - subdivisions fetch their own data
-// Keeping it for backward compatibility if needed
-const fetchSchedule = async (seasonCode: string) => {
-	const res = await fetch(`${scheduleRoute}?seasonCode=${seasonCode}`, {
-		method: 'GET',
-		headers: { 'Content-Type': 'application/json' },
-	});
-	if (!res.ok) throw new Error('Failed to fetch schedule');
-	return res.json() as Promise<ScheduleApiResponse>;
-};
-
 /**
  * Manages all state and server interactions for the schedule builder.
  * Returns roster divisions, game dates, match data, a save handler,
@@ -164,6 +152,8 @@ export function useScheduleData() {
 		saveMutation.mutate({ seasonCode, scheduleData: updatedMatchData });
 	}, [seasonCode, saveMutation]);
 
+	const rosterNotFound = !!seasonCode && !rosterLoading && rosterData === null;
+
 	return {
 		seasonCode,
 		divisionsData,
@@ -178,7 +168,6 @@ export function useScheduleData() {
 		setEnableSaveButton,
 		handleSeasonCodeSelect,
 		handleSaveData,
-		// Optionally expose errors if needed:
-		// errors: { rosterError, gameDatesError, scheduleError }
+		rosterNotFound,
 	};
 }

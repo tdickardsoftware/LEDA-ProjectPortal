@@ -284,45 +284,48 @@ export default function RostersContent({
 		enabled: !!seasonCode,
 	});
 
-	// Handle rosterData changes (mimics onSuccess)
-	useEffect(() => {
-		if (rosterData !== undefined) {
-			const data = rosterData;
-			if (data) {
-				const fetchedData = deepCloneOrEmptyObject<RosterData>(data.teamInformation);
-				const divisions = Object.keys(fetchedData);
-				const teamIds = extractTeamIds(fetchedData);
-
-				setSelectedDivisions(divisions);
-				setSelectedTeams(teamIds);
-				setDivisionsData(fetchedData);
-				setInitialData(fetchedData);
-				setUpdate(true);
-				setHasChanges(false);
-				setDisabled(false);
-				setIsRosterInitialized(true);
-			} else {
-				setInitialData({});
-				setDivisionsData({});
-				setSelectedTeams([]);
-				setSelectedDivisions([]);
-				setUpdate(false);
-				setHasChanges(false);
-				setDisabled(false);
-				setIsRosterInitialized(true);
-			}
-		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [rosterData]);
-
-	// When changing seasons (or toggling to current season), ensure we don't render stale/half-initialized state.
+	// Handle rosterData changes and season transitions in a single effect to avoid
+	// the two-effect ordering bug: when switching to a season with cached data, both
+	// effects previously fired in the same render cycle with the seasonCode effect
+	// always winning last and setting isRosterInitialized(false) permanently.
 	useEffect(() => {
 		if (!seasonCode) {
 			setIsRosterInitialized(true);
 			return;
 		}
-		setIsRosterInitialized(false);
-	}, [seasonCode]);
+
+		if (rosterData === undefined) {
+			// Data not yet available for this season — show spinner until it arrives.
+			setIsRosterInitialized(false);
+			return;
+		}
+
+		const data = rosterData;
+		if (data) {
+			const fetchedData = deepCloneOrEmptyObject<RosterData>(data.teamInformation);
+			const divisions = Object.keys(fetchedData);
+			const teamIds = extractTeamIds(fetchedData);
+
+			setSelectedDivisions(divisions);
+			setSelectedTeams(teamIds);
+			setDivisionsData(fetchedData);
+			setInitialData(fetchedData);
+			setUpdate(true);
+			setHasChanges(false);
+			setDisabled(false);
+			setIsRosterInitialized(true);
+		} else {
+			setInitialData({});
+			setDivisionsData({});
+			setSelectedTeams([]);
+			setSelectedDivisions([]);
+			setUpdate(false);
+			setHasChanges(false);
+			setDisabled(false);
+			setIsRosterInitialized(true);
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [rosterData, seasonCode]);
 	
 	// Mutations
 	const updateRosterMutation = useMutation({
