@@ -106,10 +106,26 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 	const { watch, setValue } = useFormContext<FormValues>();
 	const teamLedaId = watch("teamLedaId");
 	const [open, setOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [debouncedSearch, setDebouncedSearch] = useState("");
 
 	const justClosedRef = React.useRef(false);
 	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
 	const lastInputType = useLastInputType();
+
+	// Debounce search input to avoid filtering on every keystroke
+	React.useEffect(() => {
+		const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+		return () => clearTimeout(timer);
+	}, [searchQuery]);
+
+	// Reset search when dropdown closes
+	React.useEffect(() => {
+		if (!open) {
+			setSearchQuery("");
+			setDebouncedSearch("");
+		}
+	}, [open]);
 
 	const { data: teams = [] } = useQuery({
 		queryKey: ["teams", selectedTeams],
@@ -128,6 +144,14 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 				}));
 		},
 	});
+
+	const filteredTeams = React.useMemo(() => {
+		if (!debouncedSearch) return teams;
+		const lower = debouncedSearch.toLowerCase();
+		return teams.filter((type: { value: string; label: string; name: string }) =>
+			type.label.toLowerCase().includes(lower)
+		);
+	}, [teams, debouncedSearch]);
 
 	const handleFocus = React.useCallback(() => {
 		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
@@ -167,8 +191,12 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 						</Button>
 					</PopoverTrigger>
 					<PopoverContent className="w-[200px] p-0 bg-background">
-						<Command>
-							<CommandInput placeholder="Search member type..." />
+						<Command shouldFilter={false}>
+							<CommandInput
+								placeholder="Search teams..."
+								value={searchQuery}
+								onValueChange={setSearchQuery}
+							/>
 							<CommandEmpty>No teams found.</CommandEmpty>
 							<CommandGroup>
 								<CommandList
@@ -176,7 +204,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 									tabIndex={0}
 									onWheel={e => e.stopPropagation()}
 								>
-									{teams.map((type: { value: string; label: string; name: string }) => (
+								{filteredTeams.map((type: { value: string; label: string; name: string }) => (
 										<CommandItem
 											key={type.value}
 											value={type.label}
