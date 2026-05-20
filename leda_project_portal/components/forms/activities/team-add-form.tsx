@@ -12,16 +12,31 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { useEffect } from "react";
 import TeamSelector from "@/components/ui/team-selector";
 import PlaceSelector from "@/components/ui/place-selector";
+
+const ALL_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
 // Define the schema for form validation using zod
 const divisionFormSchema = z.object({
 	teamLedaId: z.string().min(1, { message: "Team is Required" }),
 	placeId: z.string().min(1, { message: "Place is Required" }),
 	teamName: z.string().min(1, { message: "Team Name is Required" }),
+	autoAssign: z.boolean(),
+	teamLetter: z.string().optional(),
+}).refine(data => data.autoAssign || (data.teamLetter && data.teamLetter.length > 0), {
+	message: "Please select a team letter",
+	path: ["teamLetter"],
 });
 
 // Define styles for the form container
@@ -43,6 +58,7 @@ export default function TeamAddForm({
 	setOpen,
 	division,
 	subdivision,
+	takenLetters,
 }: {
 	selectedTeams: string[];
 	handleSelectTeam: (
@@ -50,12 +66,15 @@ export default function TeamAddForm({
 		placeId: string,
 		teamName: string,
 		division: string,
-		subdivision: string
+		subdivision: string,
+		teamLetter?: string,
 	) => void;
 	setOpen: (value: boolean) => void;
 	division: string;
 	subdivision: string;
+	takenLetters: string[];
 }) {
+	const availableLetters = ALL_LETTERS.filter(l => !takenLetters.includes(l));
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
 		resolver: zodResolver(divisionFormSchema),
@@ -63,8 +82,12 @@ export default function TeamAddForm({
 			teamLedaId: "",
 			placeId: "",
 			teamName: "",
+			autoAssign: true,
+			teamLetter: "",
 		},
 	});
+
+	const autoAssign = form.watch("autoAssign");
 
 	// Reset form when component mounts to ensure clean state when dialog reopens
 	useEffect(() => {
@@ -72,6 +95,8 @@ export default function TeamAddForm({
 			teamLedaId: "",
 			placeId: "",
 			teamName: "",
+			autoAssign: true,
+			teamLetter: "",
 		});
 	}, [form]);
 
@@ -82,7 +107,8 @@ export default function TeamAddForm({
 			values.placeId,
 			values.teamName,
 			division,
-			subdivision
+			subdivision,
+			values.autoAssign ? undefined : values.teamLetter,
 		);
 		setOpen(false);
 	}
@@ -107,6 +133,50 @@ export default function TeamAddForm({
 							label="Home Place *"
 							control={form.control}
 						/>
+						<FormField
+							control={form.control}
+							name="autoAssign"
+							render={({ field }) => (
+								<FormItem className="flex items-center gap-2 space-y-0 mt-4">
+									<FormControl>
+										<Checkbox
+											checked={field.value}
+											onCheckedChange={field.onChange}
+											className="h-5 w-5"
+										/>
+									</FormControl>
+									<FormLabel className="!mt-0 cursor-pointer">
+										Auto assign team letter
+									</FormLabel>
+								</FormItem>
+							)}
+						/>
+						{!autoAssign && (
+							<FormField
+								control={form.control}
+								name="teamLetter"
+								render={({ field }) => (
+									<FormItem className="mt-3">
+										<FormLabel>Team Letter *</FormLabel>
+										<Select onValueChange={field.onChange} value={field.value}>
+											<FormControl>
+												<SelectTrigger>
+													<SelectValue placeholder="Select a letter" />
+												</SelectTrigger>
+											</FormControl>
+											<SelectContent className="bg-background">
+												{availableLetters.map(letter => (
+													<SelectItem key={letter} value={letter}>
+														{letter}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						)}
 					</div>
 				</div>
 				<div className="flex justify-center">
