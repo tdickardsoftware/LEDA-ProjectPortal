@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import SeasonCodeSelector from "@/components/ui/roster-season-code-selector";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import SidenavPageLayout from "@/components/sidenav-page-layout";
 import WeekSelector from "@/components/ui/week-selector";
 import FolderTab, { FolderTabMed } from "@/components/ui/folder-tab";
 import { Player } from "@/lib/definitions";
@@ -1748,58 +1748,68 @@ const FolderTabSkeleton = () => (
 
 	// Render — season/week selectors, sidenav, and the per-matchup scoresheet editor
 	return (
-		<div className="flex flex-col h-full">
-			{prevWeekIncomplete && (
-				<div className="flex items-center gap-2 mb-6 px-3 py-2 rounded-md border border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-sm font-medium">
-					<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-						<path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-					</svg>
-					Warning: Week {prevWeekNum} scoresheets have not been marked as completed.
-				</div>
-			)}
-			<FolderTabMed title="Season Information" className="w-fit">
-				<div className="flex gap-4">
-					<SeasonCodeSelector
-						disabled={currentSeason}
-						handleSelect={handleSeasonCodeSelect}
-						useCurrentSeason={currentSeason}
-						seasonCode={seasonCode || ""}
+		<SidenavPageLayout
+			header={
+				<>
+					{prevWeekIncomplete && (
+						<div className="flex items-center gap-2 mb-6 px-3 py-2 rounded-md border border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-sm font-medium">
+							<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+								<path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+							</svg>
+							Warning: Week {prevWeekNum} scoresheets have not been marked as completed.
+						</div>
+					)}
+					<FolderTabMed title="Season Information" className="w-fit">
+						<div className="flex gap-4">
+							<SeasonCodeSelector
+								disabled={currentSeason}
+								handleSelect={handleSeasonCodeSelect}
+								useCurrentSeason={currentSeason}
+								seasonCode={seasonCode || ""}
+							/>
+							<div className="flex items-center gap-4">
+								<Label>Current Season?</Label>
+								<Checkbox
+									checked={currentSeason}
+									onCheckedChange={() =>
+										setCurrentSeason(!currentSeason)
+									}
+								/>
+							</div>
+							<div className="flex gap-4 items-center">
+								<WeekSelector
+									seasonCode={seasonCode}
+									disabled={seasonSelected}
+									handleSelect={handleDateToDisplay}
+								/>
+								{!!selectedWeek && (
+									<Button
+										onClick={processAllByeWeeks}
+										disabled={!seasonCode || !selectedWeek || isProcessingByeWeeks || allByeWeeksProcessed}
+										variant="outline"
+									>
+										{isProcessingByeWeeks ? "Processing..." : allByeWeeksProcessed ? "Bye Weeks Processed" : "Process All Bye Weeks"}
+									</Button>
+								)}
+							</div>
+						</div>
+					</FolderTabMed>
+				</>
+			}
+			sidenav={
+				scheduleNotFound ? null : (
+					<SideNav
+						key={`${seasonCode}-${selectedWeek}`}
+						seasonCode={seasonCode}
+						weekNum={selectedWeek}
+						handleMatchupSelection={handleMatchupSelection}
+						refreshToken={sidenavRefreshToken}
 					/>
-					<div className="flex items-center gap-4">
-						<Label>Current Season?</Label>
-						<Checkbox
-							checked={currentSeason}
-							onCheckedChange={() =>
-								setCurrentSeason(!currentSeason)
-							}
-						/>
-					</div>
-					<div className="flex gap-4 items-center">
-						<WeekSelector
-							seasonCode={seasonCode}
-							disabled={seasonSelected}
-							handleSelect={handleDateToDisplay}
-						/>
-						{!!selectedWeek && (
-							<Button
-								onClick={processAllByeWeeks}
-								disabled={!seasonCode || !selectedWeek || isProcessingByeWeeks || allByeWeeksProcessed}
-								variant="outline"
-							>
-								{isProcessingByeWeeks ? "Processing..." : allByeWeeksProcessed ? "Bye Weeks Processed" : "Process All Bye Weeks"}
-							</Button>
-						)}
-					</div>
-				</div>
-			</FolderTabMed>
-			<div className="mt-4">
-				<Separator
-					orientation="horizontal"
-					className="bg-muted w-100"
-				/>
-			</div>
-			<div className="flex flex-1 overflow-hidden">
-				{scheduleNotFound ? (
+				)
+			}
+			showContent={!scheduleNotFound && matchSelected}
+			emptyContent={
+				scheduleNotFound ? (
 					<div className="flex flex-1 items-center justify-center">
 						<div className="rounded-md border border-yellow-500 bg-yellow-500/10 p-6 text-sm max-w-md text-center">
 							<p className="font-semibold text-yellow-600 dark:text-yellow-400">
@@ -1817,22 +1827,14 @@ const FolderTabSkeleton = () => (
 						</div>
 					</div>
 				) : (
-					<>
-					<SideNav
-						key={`${seasonCode}-${selectedWeek}`}
-						seasonCode={seasonCode}
-						weekNum={selectedWeek}
-						handleMatchupSelection={handleMatchupSelection}
-						refreshToken={sidenavRefreshToken}
-					/>
-				<div className="flex-1 p-4 overflow-auto">
-					{!matchSelected ? (
-						<div className="flex h-full items-center justify-center">
-							<p className="text-muted-foreground text-center">
-								Select a matchup...
-							</p>
-						</div>
-					) : (
+					<div className="flex h-full items-center justify-center">
+						<p className="text-muted-foreground text-center">
+							Select a matchup...
+						</p>
+					</div>
+				)
+			}
+		>
 						<div className="flex h-full items-start justify-start gap-2 flex-col">
 							<div className="flex flex-col gap-4 w-full">
 								<div className="text-2xl font-semibold">
@@ -2363,12 +2365,6 @@ const FolderTabSkeleton = () => (
 								)}
 							</div>
 						</div>
-					)}
-				</div>
-				</>
-				)}
-			</div>
-
 			{/* Add Mention Dialog */}
 			<Dialog
 				open={mentionDialogOpen}
@@ -2595,6 +2591,6 @@ const FolderTabSkeleton = () => (
 					)}
 				</DialogContent>
 			</Dialog>
-		</div>
+		</SidenavPageLayout>
 	);
 }
