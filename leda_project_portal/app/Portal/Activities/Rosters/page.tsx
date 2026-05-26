@@ -10,7 +10,10 @@ export const metadata: Metadata = {
 	title: "Rosters",
 };
 
-export default function Page() {
+type SearchParamsProps = Promise<{ divisionName?: string; subdivisionName?: string }>;
+
+export default async function Page(props: { searchParams: SearchParamsProps }) {
+	const searchParams = await props.searchParams;
 	return (
 		<main>
 			<div className="mb-6 py-2 ">
@@ -20,7 +23,10 @@ export default function Page() {
 				</p>
 				<Separator />
 			</div>
-			<RostersContent />
+			<RostersContent
+				initialDivisionName={searchParams.divisionName}
+				initialSubdivisionName={searchParams.subdivisionName}
+			/>
 		</main>
 	);
 }

@@ -14,7 +14,9 @@
  * re-ordering teams within a subdivision using `@dnd-kit/sortable`.
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import SidenavPageLayout from "@/components/sidenav-page-layout";
+import DivisionTreeSidenav, { DivisionTreeDivision } from "@/components/division-tree-sidenav";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,17 +27,11 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import DivisionAddForm from "@/components/forms/activities/division-add-form";
-import {
-	Accordion,
-	AccordionItem,
-	AccordionTrigger,
-	AccordionContent,
-} from "@/components/ui/accordion";
+
 import TeamAddForm from "@/components/forms/activities/team-add-form";
 import { X } from "lucide-react";
 import {
 	AlertDialog,
-	AlertDialogTrigger,
 	AlertDialogContent,
 	AlertDialogHeader,
 	AlertDialogTitle,
@@ -56,6 +52,7 @@ import {
 	useQueryClient 
 } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
+import Link from "next/link";
 
 async function safeReadJson<T>(response: Response): Promise<T | null> {
 	// Avoid "Unexpected end of JSON input" when backend returns 200 with an empty body.
@@ -235,9 +232,14 @@ const updateSchedule = async ({
 
 export default function RostersContent({
 	renderSeasonCode,
+	initialDivisionName,
+	initialSubdivisionName,
 }: {
 	renderSeasonCode?: string;
+	initialDivisionName?: string;
+	initialSubdivisionName?: string;
 }) {
+	const hasAppliedInitialSelection = useRef(false);
 	// State variables
 	const [seasonCode, setSeasonCode] = useState<string | null>(renderSeasonCode || null);
 	const [selectedDivisions, setSelectedDivisions] = useState<string[]>([]);
@@ -265,6 +267,10 @@ export default function RostersContent({
 	const [initialData, setInitialData] = useState<RosterData>({});
 	const [update, setUpdate] = useState(false);
 	const [deleteRosterAlertOpen, setDeleteRosterAlertOpen] = useState(false);
+	const [selectedSubdivision, setSelectedSubdivision] = useState<{
+		divisionName: string;
+		subdivisionName: string;
+	} | null>(null);
 	const [currentSeason, setCurrentSeason] = useState(
 		renderSeasonCode ? false : true
 	);
@@ -408,6 +414,35 @@ export default function RostersContent({
 			setSeasonCode(renderSeasonCode);
 		}
 	}, [renderSeasonCode, seasonCode]); 
+
+	// Reset selected subdivision when season changes
+	useEffect(() => {
+		setSelectedSubdivision(null);
+	}, [seasonCode]);
+
+	// Clear selected subdivision if it gets deleted
+	useEffect(() => {
+		if (!selectedSubdivision) return;
+		const exists =
+			divisionsData[selectedSubdivision.divisionName]?.subdivisions[
+				selectedSubdivision.subdivisionName
+			];
+		if (!exists) setSelectedSubdivision(null);
+	}, [divisionsData, selectedSubdivision]);
+
+	// Restore the subdivision that was open before navigating to a team detail
+	useEffect(() => {
+		if (
+			!hasAppliedInitialSelection.current &&
+			isRosterInitialized &&
+			initialDivisionName &&
+			initialSubdivisionName &&
+			divisionsData[initialDivisionName]?.subdivisions[initialSubdivisionName]
+		) {
+			hasAppliedInitialSelection.current = true;
+			setSelectedSubdivision({ divisionName: initialDivisionName, subdivisionName: initialSubdivisionName });
+		}
+	}, [isRosterInitialized, divisionsData, initialDivisionName, initialSubdivisionName]);
 
 	// Extract all team IDs from divisions data
 	const extractTeamIds = useCallback((data: RosterData): string[] => {
@@ -1026,442 +1061,199 @@ export default function RostersContent({
 	}, [seasonCode, deleteRosterMutation]);
 
 	// Determine if we're in a loading state from any mutation
-	const isLoading = (seasonCode ? (rosterLoading || rosterFetching || !isRosterInitialized) : false) ||
-		updateRosterMutation.isPending || 
-		saveRosterMutation.isPending || 
+	const isLoading =
+		(seasonCode ? (rosterLoading || rosterFetching || !isRosterInitialized) : false) ||
+		updateRosterMutation.isPending ||
+		saveRosterMutation.isPending ||
 		deleteRosterMutation.isPending;
 
-	return (
-		<div className="flex flex-col max-w-[65vw]">
-			{isLoading ? (
-				<Spinner />
-			) : (
-				<>
-					<div className="flex justify-between">
-						<FolderTabMed title="Season Code">
-							<div className="flex gap-4">
-								<SeasonCodeSelector
-									disabled={currentSeason}
-									handleSelect={handleSeasonCodeSelect}
-									setDisabled={setDisabled}
-									useCurrentSeason={currentSeason}
-									seasonCode={seasonCode || ""}
-								/>
-								<div className="flex items-center gap-4">
-									<Label>Current Season?</Label>
-									<Checkbox
-										checked={currentSeason}
-										onCheckedChange={() =>
-											setCurrentSeason(!currentSeason)
-										}
-									/>
-								</div>
-							</div>
-						</FolderTabMed>
-						<FolderTabMed title="Roster Actions">
-							<div className="flex gap-4">
-								{handleAddDivision()}
-								{update && (
-									<Button
-										variant="outline"
-										className="hover:bg-muted border-border text-foreground"
-										onClick={() =>
-											setDeleteRosterAlertOpen(true)
-										}
-									>
-										Delete Roster
-									</Button>
-								)}
-								{handleCopyRoster()}
-							</div>
-						</FolderTabMed>
-					</div>
-
-					{/* Delete Roster Alert Dialog */}
-					<AlertDialog
-						open={deleteRosterAlertOpen}
-						onOpenChange={setDeleteRosterAlertOpen}
+	const divisionTreeItems = useMemo<DivisionTreeDivision[]>(() => {
+		return Object.keys(divisionsData).map((divisionName) => ({
+			name: divisionName,
+			actions: (
+				<Button
+					variant="ghost"
+					size="icon"
+					className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+					onClick={() => { confirmRemoveDivision(divisionName); setDivisionAlertOpen(true); }}
+				>
+					<X className="h-3 w-3" />
+				</Button>
+			),
+			footer: (
+				<Button
+					variant="ghost"
+					size="sm"
+					className="w-full justify-start text-muted-foreground hover:text-foreground"
+					disabled={disabled}
+					onClick={() => handleAddSubdivision(divisionName)}
+				>
+					+ Add Subdivision
+				</Button>
+			),
+			subdivisions: Object.keys(
+				divisionsData[divisionName]?.subdivisions || {}
+			).map((subdivisionName) => ({
+				name: subdivisionName,
+				actions: (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+						onClick={() => { confirmRemoveSubdivision(divisionName, subdivisionName); setSubdivisionAlertOpen(true); }}
 					>
-						<AlertDialogTrigger asChild>
-							<div></div>
-						</AlertDialogTrigger>
-						<AlertDialogContent className="bg-background text-foreground">
-							<AlertDialogHeader>
-								<AlertDialogTitle>
-									Confirm Deletion
-								</AlertDialogTitle>
-								<AlertDialogDescription>
-									Are you sure you want to delete this roster?
-								</AlertDialogDescription>
-							</AlertDialogHeader>
-							<AlertDialogFooter>
-								<Button
-									onClick={() =>
-										setDeleteRosterAlertOpen(false)
-									}
-								>
-									Cancel
+						<X className="h-3 w-3" />
+					</Button>
+				),
+			})),
+		}));
+	}, [divisionsData, disabled, confirmRemoveDivision, confirmRemoveSubdivision, handleAddSubdivision]);
+
+	return (
+		<SidenavPageLayout
+			header={
+				<div className="flex justify-between flex-wrap gap-4">
+					<FolderTabMed title="Season Code">
+						<div className="flex gap-4">
+							<SeasonCodeSelector
+								disabled={currentSeason}
+								handleSelect={handleSeasonCodeSelect}
+								setDisabled={setDisabled}
+								useCurrentSeason={currentSeason}
+								seasonCode={seasonCode || ""}
+							/>
+							<div className="flex items-center gap-4">
+								<Label>Current Season?</Label>
+								<Checkbox checked={currentSeason} onCheckedChange={() => setCurrentSeason(!currentSeason)} />
+							</div>
+						</div>
+					</FolderTabMed>
+					<FolderTabMed title="Roster Actions">
+						<div className="flex gap-4 flex-wrap">
+							{handleAddDivision()}
+							{update && (
+								<Button variant="outline" className="hover:bg-muted border-border text-foreground" onClick={() => setDeleteRosterAlertOpen(true)}>
+									Delete Roster
 								</Button>
-								<Button
-									onClick={() => {
-										handleDeleteRoster();
-										setDeleteRosterAlertOpen(false);
-									}}
-									variant="destructive"
-								>
-									Delete
+							)}
+							{handleCopyRoster()}
+							{!update && (
+								<Button variant="outline" disabled={!hasChanges || isLoading} onClick={handleSaveRoster}>
+									Save Roster
 								</Button>
-							</AlertDialogFooter>
-						</AlertDialogContent>
-					</AlertDialog>
-
-					{/* Divisions Accordion */}
-					{Object.keys(divisionsData).length > 0 &&
-						Object.keys(divisionsData).map((division, index) => (
-							<Accordion
-								key={index}
-								type="single"
-								collapsible
-								className="w-full mt-4"
-								defaultValue={`divisions-${index}`}
-							>
-								<AccordionItem value={`divisions`}>
-									<div className="flex justify-between items-center">
-										<AccordionTrigger>
-											{division}
-										</AccordionTrigger>
-										<AlertDialog
-											open={divisionAlertOpen}
-											onOpenChange={setDivisionAlertOpen}
-										>
-											<AlertDialogTrigger asChild>
-												<div
-													onClick={() => {
-														confirmRemoveDivision(
-															division
-														);
-														setDivisionAlertOpen(
-															true
-														);
-													}}
-													className="cursor-pointer"
-												>
-													<X className="text-red-500" />
-												</div>
-											</AlertDialogTrigger>
-											<AlertDialogContent className="bg-background text-foreground">
-												<AlertDialogHeader>
-													<AlertDialogTitle>
-														Confirm Deletion
-													</AlertDialogTitle>
-													<AlertDialogDescription>
-														Are you sure you want to
-														delete this division?
-													</AlertDialogDescription>
-												</AlertDialogHeader>
-												<AlertDialogFooter>
-													<Button
-														onClick={() =>
-															setDivisionAlertOpen(
-																false
-															)
-														}
-													>
-														Cancel
-													</Button>
-													<Button
-														onClick={() => {
-															handleConfirmRemoveDivision();
-															setDivisionAlertOpen(
-																false
-															);
-														}}
-														variant="destructive"
-													>
-														Delete
-													</Button>
-												</AlertDialogFooter>
-											</AlertDialogContent>
-										</AlertDialog>
-									</div>
-									<AccordionContent>
-										<div className="flex justify-end">
-											<Button
-												onClick={() =>
-													handleAddSubdivision(
-														division
-													)
-												}
-												variant={"outline"}
-											>
-												Add Subdivision
-											</Button>
-										</div>
-										<Separator
-											orientation="horizontal"
-											className="my-2 bg-muted"
-										/>
-
-										{/* Subdivisions Accordion */}
-										{Object.keys(
-											divisionsData[division]
-												?.subdivisions || {}
-										).map((subdivision, subIndex) => (
-											<Accordion
-												key={subIndex}
-												type="single"
-												collapsible
-												className="w-full mt-2"
-												defaultValue={`subdivisions-${subIndex}`}
-											>
-												<AccordionItem
-													value={`subdivisions-${subIndex}`}
-													className="border-b border-border"
-												>
-													<div className="flex justify-between items-center">
-														<AccordionTrigger>
-															{subdivision}
-														</AccordionTrigger>
-														<AlertDialog
-															open={
-																subdivisionAlertOpen
-															}
-															onOpenChange={
-																setSubdivisionAlertOpen
-															}
-														>
-															<AlertDialogTrigger
-																asChild
-															>
-																<div
-																	onClick={() => {
-																		confirmRemoveSubdivision(
-																			division,
-																			subdivision
-																		);
-																		setSubdivisionAlertOpen(
-																			true
-																		);
-																	}}
-																	className="cursor-pointer"
-																>
-																	<X className="text-red-500" />
-																</div>
-															</AlertDialogTrigger>
-															<AlertDialogContent className="bg-background text-foreground">
-																<AlertDialogHeader>
-																	<AlertDialogTitle>
-																		Confirm
-																		Deletion
-																	</AlertDialogTitle>
-																	<AlertDialogDescription>
-																		Are you
-																		sure you
-																		want to
-																		delete
-																		this
-																		subdivision?
-																	</AlertDialogDescription>
-																</AlertDialogHeader>
-																<AlertDialogFooter>
-																	<Button
-																		onClick={() =>
-																			setSubdivisionAlertOpen(
-																				false
-																			)
-																		}
-																	>
-																		Cancel
-																	</Button>
-																	<Button
-																		onClick={() => {
-																			handleConfirmRemoveSubdivision();
-																			setSubdivisionAlertOpen(
-																				false
-																			);
-																		}}
-																		variant="destructive"
-																	>
-																		Delete
-																	</Button>
-																</AlertDialogFooter>
-															</AlertDialogContent>
-														</AlertDialog>
-													</div>
-													<AccordionContent>
-														<div className="flex justify-end">
-															{handleAddTeam(
-																division,
-																subdivision
-															)}
-														</div>
-
-														{/* Teams List */}
-														<ul>
-															{Object.keys(
-																divisionsData[
-																	division
-																]?.subdivisions[
-																	subdivision
-																] || {}
-															).map(
-																(
-																	team,
-																	teamIndex
-																) => (
-																	<li
-																		key={
-																			teamIndex
-																		}
-																	>
-																		<div className="flex justify-start items-center">
-																			{
-																				team
-																			}{" "}
-																			-{" "}
-																			{
-																				divisionsData[
-																					division
-																				]
-																					?.subdivisions[
-																					subdivision
-																				][
-																					team
-																				]
-																					?.teamName
-																			}
-																			<AlertDialog
-																				open={
-																					teamAlertOpen
-																				}
-																				onOpenChange={
-																					setTeamAlertOpen
-																				}
-																			>
-																				<AlertDialogTrigger
-																					asChild
-																				>
-																					<div
-																						onClick={() => {
-																							confirmRemoveTeam(
-																								division,
-																								subdivision,
-																								team,
-																								divisionsData[
-																									division
-																								]
-																									?.subdivisions[
-																									subdivision
-																								][
-																									team
-																								]
-																									?.teamId
-																							);
-																							setTeamAlertOpen(
-																								true
-																							);
-																						}}
-																						className="cursor-pointer"
-																					>
-																						<X className="text-red-500" />
-																					</div>
-																				</AlertDialogTrigger>
-																				<AlertDialogContent className="bg-background text-foreground">
-																					<AlertDialogHeader>
-																						<AlertDialogTitle>
-																							Confirm
-																							Deletion
-																						</AlertDialogTitle>
-																						<AlertDialogDescription>
-																							Are
-																							you
-																							sure
-																							you
-																							want
-																							to
-																							delete
-																							this
-																							team?
-																						</AlertDialogDescription>
-																					</AlertDialogHeader>
-																					<AlertDialogFooter>
-																						<Button
-																							onClick={() =>
-																								setTeamAlertOpen(
-																									false
-																								)
-																							}
-																						>
-																							Cancel
-																						</Button>
-																						<Button
-																							onClick={() => {
-																								handleConfirmRemoveTeam();
-																								setTeamAlertOpen(
-																									false
-																								);
-																							}}
-																							variant="destructive"
-																						>
-																							Delete
-																						</Button>
-																					</AlertDialogFooter>
-																				</AlertDialogContent>
-																			</AlertDialog>
-																		</div>
-																	</li>
-																)
-															)}
-														</ul>
-													</AccordionContent>
-												</AccordionItem>
-											</Accordion>
-										))}
-									</AccordionContent>
-								</AccordionItem>
-							</Accordion>
+							)}
+							{update && (
+								<>
+									<Button variant="outline" className="hover:bg-muted border-border text-foreground" disabled={!hasChanges || isLoading} onClick={handleUpdateRoster}>
+										Update Roster
+									</Button>
+									<Button variant="outline" className="hover:bg-muted border-border text-foreground" disabled={!hasChanges || isLoading} onClick={() => { setDivisionsData(JSON.parse(JSON.stringify(initialData))); setHasChanges(false); }}>
+										Reset Changes
+									</Button>
+								</>
+							)}
+						</div>
+					</FolderTabMed>
+				</div>
+			}
+			sidenav={
+				<DivisionTreeSidenav
+					divisions={divisionTreeItems}
+					onSubdivisionSelect={(divisionName, subdivisionName) => setSelectedSubdivision({ divisionName, subdivisionName })}
+					selectedSubdivision={selectedSubdivision}
+					emptyMessage="Add a division to get started."
+				/>
+			}
+			showContent={!isLoading && !!selectedSubdivision}
+			emptyContent={
+				isLoading ? (
+					<Spinner />
+				) : Object.keys(divisionsData).length === 0 ? (
+					<p className="text-muted-foreground">No roster found for this season. Add a division to get started.</p>
+				) : (
+					<p className="text-muted-foreground">Select a subdivision from the left to manage its teams.</p>
+				)
+			}
+		>
+			{/* Controlled alert dialogs */}
+			<AlertDialog open={deleteRosterAlertOpen} onOpenChange={setDeleteRosterAlertOpen}>
+				<AlertDialogContent className="bg-background text-foreground">
+					<AlertDialogHeader><AlertDialogTitle>Confirm Deletion</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete this roster?</AlertDialogDescription></AlertDialogHeader>
+					<AlertDialogFooter>
+						<Button onClick={() => setDeleteRosterAlertOpen(false)}>Cancel</Button>
+						<Button onClick={() => { handleDeleteRoster(); setDeleteRosterAlertOpen(false); }} variant="destructive">Delete</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+			<AlertDialog open={divisionAlertOpen} onOpenChange={setDivisionAlertOpen}>
+				<AlertDialogContent className="bg-background text-foreground">
+					<AlertDialogHeader><AlertDialogTitle>Confirm Deletion</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete this division?</AlertDialogDescription></AlertDialogHeader>
+					<AlertDialogFooter>
+						<Button onClick={() => setDivisionAlertOpen(false)}>Cancel</Button>
+						<Button onClick={() => { handleConfirmRemoveDivision(); setDivisionAlertOpen(false); }} variant="destructive">Delete</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+			<AlertDialog open={subdivisionAlertOpen} onOpenChange={setSubdivisionAlertOpen}>
+				<AlertDialogContent className="bg-background text-foreground">
+					<AlertDialogHeader><AlertDialogTitle>Confirm Deletion</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete this subdivision?</AlertDialogDescription></AlertDialogHeader>
+					<AlertDialogFooter>
+						<Button onClick={() => setSubdivisionAlertOpen(false)}>Cancel</Button>
+						<Button onClick={() => { handleConfirmRemoveSubdivision(); setSubdivisionAlertOpen(false); }} variant="destructive">Delete</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+			<AlertDialog open={teamAlertOpen} onOpenChange={setTeamAlertOpen}>
+				<AlertDialogContent className="bg-background text-foreground">
+					<AlertDialogHeader><AlertDialogTitle>Confirm Deletion</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete this team?</AlertDialogDescription></AlertDialogHeader>
+					<AlertDialogFooter>
+						<Button onClick={() => setTeamAlertOpen(false)}>Cancel</Button>
+						<Button onClick={() => { handleConfirmRemoveTeam(); setTeamAlertOpen(false); }} variant="destructive">Delete</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+			{selectedSubdivision && (
+				<div>
+					<div className="mb-4">
+						{handleAddTeam(selectedSubdivision.divisionName, selectedSubdivision.subdivisionName)}
+					</div>
+					<ul className="space-y-1">
+						{Object.keys(
+							divisionsData[selectedSubdivision.divisionName]
+								?.subdivisions[selectedSubdivision.subdivisionName] || {}
+						).map((team, teamIndex) => (
+							<li key={teamIndex}>
+								<div className="flex items-center gap-2 py-1 w-fit">
+									<span className="font-medium">{team}</span>
+									<span className="text-muted-foreground">-</span>
+									<Link
+										href={`/Portal/Management/Teams/${divisionsData[selectedSubdivision.divisionName]?.subdivisions[selectedSubdivision.subdivisionName][team]?.teamId}?from=roster&divisionName=${encodeURIComponent(selectedSubdivision.divisionName)}&subdivisionName=${encodeURIComponent(selectedSubdivision.subdivisionName)}`}
+										className="hover:underline cursor-pointer"
+									>
+										{divisionsData[selectedSubdivision.divisionName]?.subdivisions[selectedSubdivision.subdivisionName][team]?.teamName}
+									</Link>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+										onClick={() => {
+											confirmRemoveTeam(
+												selectedSubdivision.divisionName,
+												selectedSubdivision.subdivisionName,
+												team,
+												divisionsData[selectedSubdivision.divisionName]?.subdivisions[selectedSubdivision.subdivisionName][team]?.teamId
+											);
+											setTeamAlertOpen(true);
+										}}
+									>
+										<X className="h-3 w-3" />
+									</Button>
+								</div>
+							</li>
 						))}
-
-					{/* Action Buttons */}
-					{!update && (
-						<div className="flex justify-center">
-							<Button
-								className="mt-4"
-								variant="outline"
-								disabled={!hasChanges || isLoading}
-								onClick={handleSaveRoster}
-							>
-								Save Roster
-							</Button>
-						</div>
-					)}
-					{update && (
-						<div className="flex justify-center gap-4">
-							<Button
-								className="hover:bg-muted border-border text-foreground mt-4"
-								variant="outline"
-								disabled={!hasChanges || isLoading}
-								onClick={handleUpdateRoster}
-							>
-								Update Roster
-							</Button>
-							<Button
-								className="hover:bg-muted border-border text-foreground mt-4"
-								variant="outline"
-								disabled={!hasChanges || isLoading}
-								onClick={() => {
-									setDivisionsData(
-										JSON.parse(JSON.stringify(initialData))
-									);
-									setHasChanges(false);
-								}}
-							>
-								Reset Changes
-							</Button>
-						</div>
-					)}
-				</>
+					</ul>
+				</div>
 			)}
-		</div>
+		</SidenavPageLayout>
 	);
 }
