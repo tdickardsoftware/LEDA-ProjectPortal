@@ -7,14 +7,12 @@
  *   Division  ▸  Subdivision  ▸  (optional) Leaf items
  *
  * Uses the same Collapsible + Button pattern as the weekly scoresheet sidenav
- * (as opposed to the shadcn Accordion used on the schedule page) so the visual
- * style is consistent across tools.
+ * so the visual style is consistent across tools.
  *
  * Two selection modes are supported:
  *
  *  1. **Leaf-item mode** — when a subdivision contains `items`, each item is a
- *     selectable button.  Pass `onItemSelect` and optionally `selectedItemKey`
- *     (a unique key string across all items in the tree).
+ *     selectable button.  Pass `onItemSelect` and optionally `selectedItemKey`.
  *
  *  2. **Subdivision mode** — when a subdivision has no `items`, the subdivision
  *     row itself is the selectable unit.  Pass `onSubdivisionSelect` and
@@ -38,74 +36,47 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface DivisionTreeItem {
-	/** Unique key for this item across the entire tree. */
 	key: string;
-	/** Display label — accepts a string or any React node. */
 	label: ReactNode;
-	/** When true the item is rendered but cannot be clicked. */
 	disabled?: boolean;
-	/**
-	 * Optional icon rendered to the right of the label.
-	 * Typically a CheckCircle or AlertTriangle icon indicating status.
-	 */
 	statusIcon?: ReactNode;
 }
 
 export interface DivisionTreeSubdivision {
 	name: string;
-	/**
-	 * Leaf items inside this subdivision.
-	 * When omitted (or empty), the subdivision row itself becomes selectable.
-	 */
 	items?: DivisionTreeItem[];
+	/** Optional node rendered to the right of the subdivision label (e.g. a delete button). */
+	actions?: ReactNode;
 }
 
 export interface DivisionTreeDivision {
 	name: string;
 	subdivisions: DivisionTreeSubdivision[];
+	/** Optional node rendered to the right of the division label (e.g. a delete button). */
+	actions?: ReactNode;
+	/** Optional node rendered at the bottom of the subdivision list (e.g. an "Add Subdivision" button). */
+	footer?: ReactNode;
 }
 
 export interface DivisionTreeSidenavProps {
 	divisions: DivisionTreeDivision[];
-
-	// --- Leaf-item mode ---
-	/** Called when a leaf item is clicked. */
 	onItemSelect?: (
 		divisionName: string,
 		subdivisionName: string,
 		itemKey: string
 	) => void;
-	/** Key of the currently selected leaf item (controls disabled/highlight state). */
 	selectedItemKey?: string | null;
-
-	// --- Subdivision mode ---
-	/** Called when a subdivision row (with no items) is clicked. */
 	onSubdivisionSelect?: (
 		divisionName: string,
 		subdivisionName: string
 	) => void;
-	/** Currently selected subdivision (controls disabled/highlight state). */
 	selectedSubdivision?: {
 		divisionName: string;
 		subdivisionName: string;
 	} | null;
-
-	// --- Behaviour ---
-	/**
-	 * When true, the entire tree collapses after a selection is made.
-	 * Defaults to false.
-	 */
 	collapseOnSelection?: boolean;
-	/**
-	 * Incrementing this number resets all expanded/selected visual state
-	 * (useful when season or week changes upstream).
-	 */
 	resetToken?: number;
-
-	// --- Presentation ---
-	/** Placeholder text shown when `divisions` is empty or undefined. */
 	emptyMessage?: string;
-	/** Width class applied to the outer wrapper. Defaults to "w-64". */
 	widthClass?: string;
 }
 
@@ -124,14 +95,9 @@ export default function DivisionTreeSidenav({
 	emptyMessage = "No data available.",
 	widthClass = "w-64",
 }: DivisionTreeSidenavProps) {
-	const [openDivisions, setOpenDivisions] = useState<Record<string, boolean>>(
-		{}
-	);
-	const [openSubdivisions, setOpenSubdivisions] = useState<
-		Record<string, boolean>
-	>({});
+	const [openDivisions, setOpenDivisions] = useState<Record<string, boolean>>({});
+	const [openSubdivisions, setOpenSubdivisions] = useState<Record<string, boolean>>({});
 
-	// Reset open/selected state whenever the caller increments resetToken
 	useEffect(() => {
 		setOpenDivisions({});
 		setOpenSubdivisions({});
@@ -151,7 +117,6 @@ export default function DivisionTreeSidenav({
 		setOpenSubdivisions({});
 	};
 
-	// Empty / loading state
 	if (!divisions || divisions.length === 0) {
 		return (
 			<div
@@ -173,91 +138,105 @@ export default function DivisionTreeSidenav({
 							onOpenChange={() => toggleDivision(division.name)}
 							className="border-b border-border pb-2"
 						>
-							<CollapsibleTrigger asChild>
-								<Button
-									variant="ghost"
-									className="w-full justify-between font-medium text-lg p-2 h-auto"
-								>
-									{division.name}
-									{openDivisions[division.name] ? (
-										<ChevronDown className="h-4 w-4" />
-									) : (
-										<ChevronRight className="h-4 w-4" />
-									)}
-								</Button>
-							</CollapsibleTrigger>
+							<div className="flex items-center w-full">
+								<CollapsibleTrigger asChild>
+									<Button
+										variant="ghost"
+										className="flex-1 justify-between font-medium text-lg p-2 h-auto"
+									>
+										{division.name}
+										{openDivisions[division.name] ? (
+											<ChevronDown className="h-4 w-4" />
+										) : (
+											<ChevronRight className="h-4 w-4" />
+										)}
+									</Button>
+								</CollapsibleTrigger>
+								{division.actions && (
+									<div
+										onClick={(e) => e.stopPropagation()}
+										className="shrink-0 pl-1"
+									>
+										{division.actions}
+									</div>
+								)}
+							</div>
 
 							<CollapsibleContent className="ml-4 mt-1 space-y-1">
 								{division.subdivisions.map((subdivision) => {
 									const subdivKey = `${division.name}-${subdivision.name}`;
-									const hasItems =
-										subdivision.items && subdivision.items.length > 0;
+									const hasItems = subdivision.items && subdivision.items.length > 0;
 
-									// -------------------------------------------------------
-									// Subdivision mode — no leaf items, subdivision is the unit
-									// -------------------------------------------------------
 									if (!hasItems) {
 										const isSelected =
 											selectedSubdivision?.divisionName === division.name &&
-											selectedSubdivision?.subdivisionName ===
-												subdivision.name;
-
+											selectedSubdivision?.subdivisionName === subdivision.name;
 										return (
-											<Button
-												key={subdivKey}
-												variant="ghost"
-												className={`w-full justify-start text-base p-1 h-auto ${
-													isSelected
-														? "bg-secondary cursor-not-allowed opacity-75"
-														: "hover:bg-muted"
-												}`}
-												disabled={isSelected}
-												aria-disabled={isSelected}
-												onClick={() => {
-													if (isSelected) return;
-													onSubdivisionSelect?.(
-														division.name,
-														subdivision.name
-													);
-													if (collapseOnSelection) collapseAll();
-												}}
-											>
-												{subdivision.name}
-											</Button>
+											<div key={subdivKey} className="flex items-center">
+												<Button
+													variant="ghost"
+													className={`flex-1 justify-start text-base p-1 h-auto ${
+														isSelected
+															? "bg-secondary cursor-not-allowed opacity-75"
+															: "hover:bg-muted"
+													}`}
+													disabled={isSelected}
+													aria-disabled={isSelected}
+													onClick={() => {
+														if (isSelected) return;
+														onSubdivisionSelect?.(division.name, subdivision.name);
+														if (collapseOnSelection) collapseAll();
+													}}
+												>
+													{subdivision.name}
+												</Button>
+												{subdivision.actions && (
+													<div
+														onClick={(e) => e.stopPropagation()}
+														className="shrink-0 pl-1"
+													>
+														{subdivision.actions}
+													</div>
+												)}
+											</div>
 										);
 									}
 
-									// -------------------------------------------------------
-									// Leaf-item mode — subdivision is a collapsible group
-									// -------------------------------------------------------
 									return (
 										<Collapsible
 											key={subdivKey}
 											open={!!openSubdivisions[subdivKey]}
-											onOpenChange={() =>
-												toggleSubdivision(division.name, subdivision.name)
-											}
+											onOpenChange={() => toggleSubdivision(division.name, subdivision.name)}
 											className="pb-1"
 										>
-											<CollapsibleTrigger asChild>
-												<Button
-													variant="ghost"
-													className="w-full justify-between text-base p-1 h-auto"
-												>
-													{subdivision.name}
-													{openSubdivisions[subdivKey] ? (
-														<ChevronDown className="h-3 w-3" />
-													) : (
-														<ChevronRight className="h-3 w-3" />
-													)}
-												</Button>
-											</CollapsibleTrigger>
+											<div className="flex items-center w-full">
+												<CollapsibleTrigger asChild>
+													<Button
+														variant="ghost"
+														className="flex-1 justify-between text-base p-1 h-auto"
+													>
+														{subdivision.name}
+														{openSubdivisions[subdivKey] ? (
+															<ChevronDown className="h-3 w-3" />
+														) : (
+															<ChevronRight className="h-3 w-3" />
+														)}
+													</Button>
+												</CollapsibleTrigger>
+												{subdivision.actions && (
+													<div
+														onClick={(e) => e.stopPropagation()}
+														className="shrink-0 pl-1"
+													>
+														{subdivision.actions}
+													</div>
+												)}
+											</div>
 
 											<CollapsibleContent className="ml-4 mt-1 space-y-1">
 												{subdivision.items!.map((item) => {
 													const isSelected = selectedItemKey === item.key;
 													const isDisabled = isSelected || !!item.disabled;
-
 													return (
 														<Button
 															key={item.key}
@@ -271,11 +250,7 @@ export default function DivisionTreeSidenav({
 															aria-disabled={isDisabled}
 															onClick={() => {
 																if (isDisabled) return;
-																onItemSelect?.(
-																	division.name,
-																	subdivision.name,
-																	item.key
-																);
+																onItemSelect?.(division.name, subdivision.name, item.key);
 																if (collapseOnSelection) collapseAll();
 															}}
 														>
@@ -290,6 +265,11 @@ export default function DivisionTreeSidenav({
 										</Collapsible>
 									);
 								})}
+								{division.footer && (
+									<div className="mt-2 pt-2 border-t border-border/40">
+										{division.footer}
+									</div>
+								)}
 							</CollapsibleContent>
 						</Collapsible>
 					))}

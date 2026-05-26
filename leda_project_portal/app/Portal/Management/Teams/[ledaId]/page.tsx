@@ -13,6 +13,7 @@ import { Spinner } from "@/components/ui/skeleton";
 export const dynamic = "force-dynamic";
 
 type PageProps = Promise<{ ledaId: string }>;
+type SearchParamsProps = Promise<{ from?: string; divisionName?: string; subdivisionName?: string }>;
 
 interface TeamMember {
 	fullName: string;
@@ -22,7 +23,7 @@ interface TeamMember {
 	badStanding: boolean;
 }
 
-async function TeamData({ ledaId }: { ledaId: string }) {
+async function TeamData({ ledaId, backHref }: { ledaId: string; backHref: string }) {
 	const teamData = await fetchTeam(ledaId);
 	if (!teamData) {
 		notFound();
@@ -47,16 +48,21 @@ async function TeamData({ ledaId }: { ledaId: string }) {
 	// Execute the function to get the actual member details
 	const memberDetails = await fetchMemberDetails();
 
-	return <TeamPageContent teamData={teamData} memberDetails={memberDetails} />;
+	return <TeamPageContent teamData={teamData} memberDetails={memberDetails} backHref={backHref} />;
 }
 
-export default async function Page(props: { params: PageProps }) {
-	const params = await props.params;
+export default async function Page(props: { params: PageProps; searchParams: SearchParamsProps }) {
+	const [params, searchParams] = await Promise.all([props.params, props.searchParams]);
 	const ledaId = params.ledaId;
+
+	let backHref = "/Portal/Management/Teams";
+	if (searchParams.from === "roster" && searchParams.divisionName && searchParams.subdivisionName) {
+		backHref = `/Portal/Activities/Rosters?divisionName=${encodeURIComponent(searchParams.divisionName)}&subdivisionName=${encodeURIComponent(searchParams.subdivisionName)}`;
+	}
 
 	return (
 		<Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Spinner /></div>}>
-			<TeamData ledaId={ledaId} />
+			<TeamData ledaId={ledaId} backHref={backHref} />
 		</Suspense>
 	);
 }
