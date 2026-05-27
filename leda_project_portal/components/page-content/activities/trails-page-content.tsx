@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/accordion";
 import { Pencil, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SaveStatusIndicator, SaveStatus } from "@/components/ui/save-status-indicator";
 import TrailsDateEditForm from "@/components/forms/activities/trails-date-edit-form";
 import { Spinner } from "@/components/ui/skeleton";
 import TrailsDateAddForm from "@/components/forms/activities/trails-date-add-form";
@@ -141,13 +142,25 @@ export default function TrailsPageContent() {
 				body: JSON.stringify(value),
 			});
 		},
-		onSuccess: async (_, variables) => {
-			await queryClient.invalidateQueries({ queryKey: ['trailsDateData', variables.trailsDate] });
-			const result = await getData(variables.trailsDate);
-			if (result.length === 0) {
-				window.location.reload();
+		onMutate: async (value) => {
+			// Cancel any in-flight refetches so they don't overwrite the optimistic update.
+			await queryClient.cancelQueries({ queryKey: ['trailsDateData', trailsDate] });
+			const previous = queryClient.getQueryData<TrailsDateData[]>(['trailsDateData', trailsDate]);
+			const next = (previous ?? []).filter((item) => String(item.ledaId) !== String(value.ledaId));
+			queryClient.setQueryData<TrailsDateData[]>(['trailsDateData', trailsDate], next);
+			return { previous };
+		},
+		onSuccess: async () => {
+			// refetchQueries forces an immediate re-fetch (ignores staleTime),
+			// ensuring the list is in sync with the server after deletion.
+			await queryClient.refetchQueries({ queryKey: ['trailsDateData', trailsDate] });
+		},
+		onError: (_, value, context) => {
+			// Roll back the optimistic removal if the server request failed.
+			if (context?.previous) {
+				queryClient.setQueryData<TrailsDateData[]>(['trailsDateData', trailsDate], context.previous);
 			}
-		}
+		},
 	});
 
 	const addTrailsDateMutation = useMutation({
@@ -278,6 +291,7 @@ export default function TrailsPageContent() {
 	// Description: this function handles deleting a player from the trails date data and saving it to the db
 	//
 	const handleDelete = (value: TrailsDateData) => {
+		if (!window.confirm(`Are you sure you want to remove ${value.fullName} from this trails date?`)) return;
 		deletePlayerMutation.mutate(value);
 	};
 	//
@@ -291,6 +305,14 @@ export default function TrailsPageContent() {
 	const disabledTrailsDates = data
 		.map((item) => parse(item.trailsDate, "MM-dd-yyyy", new Date()))
 		.filter((d) => !isNaN(d.getTime()));
+
+	// Derive save status from mutation states for the player add/delete actions.
+	// Trails mutations fire immediately on each action so no debounce is needed.
+	const saveStatus: SaveStatus =
+		addPlayerMutation.isPending || deletePlayerMutation.isPending ? 'saving' :
+		addPlayerMutation.isError || deletePlayerMutation.isError ? 'error' :
+		addPlayerMutation.isSuccess || deletePlayerMutation.isSuccess ? 'saved' :
+		'idle';
 
 	return (
 		<div className="flex gap-20 w-fit">
@@ -314,9 +336,12 @@ export default function TrailsPageContent() {
 				{trailsDate && (
 					<>
 						<CardHeader>
-							<CardTitle className="text-lg font-semibold">
-								Data for a Selected Trails Date
-							</CardTitle>
+							<div className="flex items-center justify-between">
+								<CardTitle className="text-lg font-semibold">
+									Data for a Selected Trails Date
+								</CardTitle>
+								<SaveStatusIndicator status={saveStatus} />
+							</div>
 							<h1 className="font-semibold">{trailsDate}</h1>
 						</CardHeader>
 						<CardContent>

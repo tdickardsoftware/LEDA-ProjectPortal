@@ -14,11 +14,12 @@
  * penalties, and point calculations across multiple teams and players.
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { MentionPlayerHistory } from "@/lib/definitions";
 import { X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SaveStatusIndicator, SaveStatus } from "@/components/ui/save-status-indicator";
 import SeasonCodeSelector from "@/components/ui/roster-season-code-selector";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,7 +43,7 @@ import { DialogDescription } from "@radix-ui/react-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 // Import React Query hooks
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchWithSession } from "@/lib/getData";
+import { fetchWithSession, fetchTeam } from "@/lib/getData";
 import {
 	fetchRosterTeamId,
 	fetchTeamMembers,
@@ -115,6 +116,10 @@ export default function WeeklyScoresheetsContent({
 	// API operation state
 	const [selectedWeek, setSelectedWeek] = useState<string>("");
 	const [isDataChanged, setIsDataChanged] = useState<boolean>(false);
+	const [changeToken, setChangeToken] = useState<number>(0);
+	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const saveMatchupRef = useRef<(markComplete?: boolean) => Promise<void>>(async () => {});
 
 	// Manual completion and reset snapshot state
 	const [isMatchupCompleted, setIsMatchupCompleted] = useState<boolean>(false);
@@ -543,6 +548,7 @@ export default function WeeklyScoresheetsContent({
 	// Event handlers — mark data as changed; used to prompt save-on-navigate
 	const handleDataChange = () => {
 		setIsDataChanged(true);
+		setChangeToken(prev => prev + 1);
 	};
 
 	// Week selector: normalises the incoming 'DateN' key to a plain integer string
@@ -619,6 +625,7 @@ const confirmPendingChangesPlaceholder = () => true;
 	const saveMatchup = useCallback(async (markComplete: boolean = false) => {
 		if (!seasonCode || !selectedWeek || !selectedDivision || !selectedSubdivision) return;
 		if (!selectedHomeTeamId || !selectedAwayTeamId) return;
+		setSaveStatus('saving');
 		try {
 			const tasks: Promise<unknown>[] = [];
 			const last = lastSavedSnapshot;
@@ -774,6 +781,7 @@ const confirmPendingChangesPlaceholder = () => true;
 			await Promise.all(tasks);
 
 			setIsDataChanged(false);
+			setSaveStatus('saved');
 			if (markComplete) setIsMatchupCompleted(true);
 			const newSnap = {
 				Home: { teamGameData: JSON.parse(JSON.stringify(homeTeamGameData)), wins: [...homeWins], points: [...homePoints], penalties: JSON.parse(JSON.stringify(homePenalties)) },
@@ -789,6 +797,7 @@ const confirmPendingChangesPlaceholder = () => true;
 			setSidenavRefreshToken(prev => prev + 1);
 		} catch (err) {
 			console.error("Error saving matchup", err);
+			setSaveStatus('error');
 		}
 	}, [seasonCode, selectedWeek, selectedDivision, selectedSubdivision, selectedHomeTeamId, selectedAwayTeamId, homeTeamName, awayTeamName, selectedHomeLetter, selectedAwayLetter, homePenalties, awayPenalties, homeWins, homePoints, awayPoints, calculatePoints, saveTeamInfoMutation, saveGameInfoMutation, homeTeamGameData, awayTeamGameData, savePlayerPointsMutation, saveWeeklyTeamPointsMutation, saveWeeklyPlayerPointsMutation, originalMatchupSnapshot, lastSavedSnapshot, queryClient]);
 		
@@ -859,6 +868,22 @@ const confirmPendingChangesPlaceholder = () => true;
 	};
 
 	// removed legacy saveMatchup implementation
+
+	// Keep saveMatchupRef in sync so the autosave effect always calls the latest version
+	useEffect(() => { saveMatchupRef.current = saveMatchup; }, [saveMatchup]);
+
+	// Autosave: debounce 1.5s after every user data change. Only auto-saves without
+	// markComplete; "Save & Mark Complete" always requires a manual click.
+	useEffect(() => {
+		if (!isDataChanged || !matchSelected) return;
+		setSaveStatus('pending');
+		if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		debounceTimer.current = setTimeout(() => {
+			saveMatchupRef.current(false);
+		}, 1500);
+		return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [changeToken, matchSelected]);
 
 	// Now that saveMatchup exists, define confirmPendingChanges depending on it
 	const confirmPendingChanges = useCallback((): boolean => {
@@ -963,13 +988,15 @@ const confirmPendingChangesPlaceholder = () => true;
 					setAwayPoints(Array(11).fill("0"));
 					setIsMatchupCompleted(false);
 
-					// Fetch roster members for player list
-					const [homeMembers, awayMembers] = await Promise.all([
+					// Fetch roster members and real team names in parallel
+					const [homeMembers, awayMembers, homeTeamData, awayTeamData] = await Promise.all([
 						fetchTeamMembers(homeTeamId),
 						fetchTeamMembers(awayTeamId),
+						fetchTeam(homeTeamId),
+						fetchTeam(awayTeamId),
 					]);
-					setHomeTeamName(`Team ${homeLetter}`);
-					setAwayTeamName(`Team ${awayLetter}`);
+					setHomeTeamName(homeTeamData?.teamName || `Team ${homeLetter}`);
+					setAwayTeamName(awayTeamData?.teamName || `Team ${awayLetter}`);
 					setHomeTeamMemberIds(homeMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
 					setAwayTeamMemberIds(awayMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
 				} else {
@@ -987,14 +1014,15 @@ const confirmPendingChangesPlaceholder = () => true;
 				setHomePenalties(teamRows[0]?.penalties || {});
 				setAwayPenalties(teamRows[1]?.penalties || {});
 
-				// Set team names from saved data
-				setHomeTeamName(teamRows[0]?.teamName || `Team ${homeLetter}`);
-				setAwayTeamName(teamRows[1]?.teamName || `Team ${awayLetter}`);
-				// Fetch current roster members for player list
-				const [homeMembers, awayMembers] = await Promise.all([
+				// Fetch current roster members and real team names in parallel
+				const [homeMembers, awayMembers, homeTeamData, awayTeamData] = await Promise.all([
 					fetchTeamMembers(homeTeamId),
 					fetchTeamMembers(awayTeamId),
+					fetchTeam(homeTeamId),
+					fetchTeam(awayTeamId),
 				]);
+				setHomeTeamName(homeTeamData?.teamName || teamRows[0]?.teamName || `Team ${homeLetter}`);
+				setAwayTeamName(awayTeamData?.teamName || teamRows[1]?.teamName || `Team ${awayLetter}`);
 				setHomeTeamMemberIds(homeMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
 				setAwayTeamMemberIds(awayMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
 
@@ -2256,21 +2284,30 @@ const FolderTabSkeleton = () => (
 									)}
 								</FolderTab>
 
-								{/* Action Buttons: Save, Save & Complete, Reset Changes, Delete */}
+								{/* Action Buttons: Save, Mark Complete, Save & Complete, Reset Changes, Delete */}
 								<div className="flex flex-wrap gap-3 justify-center mt-6">
+									<SaveStatusIndicator status={saveStatus} />
 									<Button
-										onClick={() => saveMatchup(false)}
-										className={(isDataChanged ? "animate-pulse" : "")}
+										onClick={() => { if (debounceTimer.current) clearTimeout(debounceTimer.current); saveMatchup(false); }}
 										disabled={isSaving || !isDataChanged}
+										variant="outline"
+										className="border-border text-foreground hover:bg-muted"
 									>
-										{isSaving ? "Saving..." : "Save"}
+										{isSaving ? "Saving..." : "Save Now"}
 									</Button>
 									<Button
-										onClick={() => saveMatchup(true)}
+										onClick={() => { if (debounceTimer.current) clearTimeout(debounceTimer.current); saveMatchup(true); }}
 										className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white"
-										disabled={isSaving || !isDataChanged}
+										disabled={isSaving || isMatchupCompleted}
 									>
-										Save & Mark Complete
+										Mark Complete
+									</Button>
+									<Button
+										onClick={() => { if (debounceTimer.current) clearTimeout(debounceTimer.current); saveMatchup(true); }}
+										className="bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-800 dark:hover:bg-emerald-900 text-white"
+										disabled={isSaving}
+									>
+										Save &amp; Mark Complete
 									</Button>
 									<Button
 										onClick={() => {
@@ -2282,7 +2319,7 @@ const FolderTabSkeleton = () => (
 											setAwayPoints([...originalMatchupSnapshot.Away.points]);
 											setIsDataChanged(false);
 										}}
-										className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white"
+										className="bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white"
 										disabled={isSaving || !originalMatchupSnapshot}
 									>
 										Reset Changes

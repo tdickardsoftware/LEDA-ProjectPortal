@@ -30,6 +30,7 @@ import DivisionAddForm from "@/components/forms/activities/division-add-form";
 
 import TeamAddForm from "@/components/forms/activities/team-add-form";
 import { X } from "lucide-react";
+import { SaveStatusIndicator, SaveStatus } from "@/components/ui/save-status-indicator";
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -275,7 +276,9 @@ export default function RostersContent({
 		renderSeasonCode ? false : true
 	);
 	const [isRosterInitialized, setIsRosterInitialized] = useState(false);
-	
+	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 	// Setup QueryClient
 	const queryClient = useQueryClient();
 	
@@ -336,9 +339,12 @@ export default function RostersContent({
 	// Mutations
 	const updateRosterMutation = useMutation({
 		mutationFn: updateRoster,
-		onSuccess: async () => {
-			setInitialData(JSON.parse(JSON.stringify(divisionsData)));
+		onSuccess: async (_, variables) => {
+			// Use variables.data (the snapshot that was actually saved) rather than
+			// the closure value of divisionsData which may have newer in-progress edits.
+			setInitialData(JSON.parse(JSON.stringify(variables.data)));
 			setHasChanges(false);
+			setSaveStatus('saved');
 			toast.success("Roster updated successfully");
 			
 			// Update the schedule if there's a successful roster update
@@ -348,7 +354,7 @@ export default function RostersContent({
 					if (scheduleData) {
 						const potentialChanges = generateScheduleData(
 							scheduleData.scheduleData,
-							divisionsData
+							variables.data
 						);
 						
 						await updateSchedule({
@@ -361,11 +367,13 @@ export default function RostersContent({
 				}
 			}
 			
-			// Invalidate queries to refresh data
-			queryClient.invalidateQueries({ queryKey: ['roster', seasonCode] });
+			// Do NOT invalidate the query here — that would trigger a refetch which
+			// overwrites divisionsData via the rosterData effect, losing any edits the
+			// user made while the autosave was in-flight.
 		},
 		onError: (error) => {
 			console.error("Failed to update roster:", error);
+			setSaveStatus('error');
 			toast.error("Failed to update roster");
 		}
 	});
@@ -468,6 +476,21 @@ export default function RostersContent({
 	useEffect(() => {
 		setHasChanges(checkHasChanges());
 	}, [divisionsData, initialData, checkHasChanges]);
+
+	// Autosave: only for existing rosters (update === true), 1.5s debounce after each change.
+	// New rosters still require the manual "Save Roster" button (which triggers a page reload).
+	useEffect(() => {
+		if (!isRosterInitialized || !update || !hasChanges) return;
+		setSaveStatus('pending');
+		if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		debounceTimer.current = setTimeout(() => {
+			if (!seasonCode) return;
+			setSaveStatus('saving');
+			updateRosterMutation.mutate({ seasonCode, data: divisionsData });
+		}, 1500);
+		return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [divisionsData]);
 
 	// Handle season code selection
 	const handleSeasonCodeSelect = useCallback(
@@ -1061,8 +1084,10 @@ export default function RostersContent({
 	}, [seasonCode, deleteRosterMutation]);
 
 	// Determine if we're in a loading state from any mutation
+	const isDataLoading =
+		seasonCode ? (rosterLoading || rosterFetching || !isRosterInitialized) : false;
 	const isLoading =
-		(seasonCode ? (rosterLoading || rosterFetching || !isRosterInitialized) : false) ||
+		isDataLoading ||
 		updateRosterMutation.isPending ||
 		saveRosterMutation.isPending ||
 		deleteRosterMutation.isPending;
@@ -1129,7 +1154,7 @@ export default function RostersContent({
 						</div>
 					</FolderTabMed>
 					<FolderTabMed title="Roster Actions">
-						<div className="flex gap-4 flex-wrap">
+						<div className="flex gap-4 flex-wrap items-center">
 							{handleAddDivision()}
 							{update && (
 								<Button variant="outline" className="hover:bg-muted border-border text-foreground" onClick={() => setDeleteRosterAlertOpen(true)}>
@@ -1137,6 +1162,7 @@ export default function RostersContent({
 								</Button>
 							)}
 							{handleCopyRoster()}
+							<SaveStatusIndicator status={saveStatus} />
 							{!update && (
 								<Button variant="outline" disabled={!hasChanges || isLoading} onClick={handleSaveRoster}>
 									Save Roster
@@ -1144,8 +1170,8 @@ export default function RostersContent({
 							)}
 							{update && (
 								<>
-									<Button variant="outline" className="hover:bg-muted border-border text-foreground" disabled={!hasChanges || isLoading} onClick={handleUpdateRoster}>
-										Update Roster
+									<Button variant="outline" className="hover:bg-muted border-border text-foreground" disabled={!hasChanges || isLoading} onClick={() => { if (debounceTimer.current) clearTimeout(debounceTimer.current); handleUpdateRoster(); }}>
+										Save Now
 									</Button>
 									<Button variant="outline" className="hover:bg-muted border-border text-foreground" disabled={!hasChanges || isLoading} onClick={() => { setDivisionsData(JSON.parse(JSON.stringify(initialData))); setHasChanges(false); }}>
 										Reset Changes
@@ -1164,7 +1190,7 @@ export default function RostersContent({
 					emptyMessage="Add a division to get started."
 				/>
 			}
-			showContent={!isLoading && !!selectedSubdivision}
+			showContent={!isDataLoading && !!selectedSubdivision}
 			emptyContent={
 				isLoading ? (
 					<Spinner />
