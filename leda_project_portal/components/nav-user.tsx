@@ -47,9 +47,18 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 import {
 	SidebarMenu,
 	SidebarMenuButton,
@@ -69,11 +78,12 @@ export function NavUser() {
 	const { isMobile } = useSidebar();
 	const { user, emulateRole } = useUserAbilities();
 	const router = useRouter();
-	const { theme, setTheme } = useTheme();
+	const { theme, setTheme, resolvedTheme } = useTheme();
 	const queryClient = useQueryClient();
 	const [showIssueDialog, setShowIssueDialog] = useState(false);
 	const [issueSubject, setIssueSubject] = useState("");
 	const [issueDescription, setIssueDescription] = useState("");
+	const [issueType, setIssueType] = useState<"triage" | "enhancement">("triage");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	async function handleLogout() {
@@ -147,7 +157,7 @@ export function NavUser() {
 				body: JSON.stringify({
 					title: issueSubject,
 					body: issueDescription,
-					labels: ["bug"],
+					type: issueType,
 				}),
 			});
 
@@ -160,6 +170,7 @@ export function NavUser() {
 			setShowIssueDialog(false);
 			setIssueSubject("");
 			setIssueDescription("");
+			setIssueType("triage");
 		} catch (error) {
 			console.error("Error submitting issue:", error);
 			toast.error(`Failed to submit issue: ${(error as Error).message}`);
@@ -381,15 +392,30 @@ export function NavUser() {
 								onChange={(e) => setIssueSubject(e.target.value)}
 							/>
 						</div>
+						{user.role === "Developer" && (
 						<div className="space-y-2">
-							<Label htmlFor="issue-description">Description *</Label>
-							<Textarea
-								id="issue-description"
-								placeholder="Detailed description of the issue, steps to reproduce, etc."
+							<Label>Issue Type</Label>
+							<Select value={issueType} onValueChange={(v) => setIssueType(v as "triage" | "enhancement")}>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="triage">Triage</SelectItem>
+									<SelectItem value="enhancement">Enhancement</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+					)}
+						<div className="space-y-2">
+							<Label>Description *</Label>
+						<div data-color-mode={resolvedTheme === "dark" ? "dark" : "light"}>
+							<MDEditor
 								value={issueDescription}
-								onChange={(e) => setIssueDescription(e.target.value)}
-								className="min-h-[150px]"
+								onChange={(val) => setIssueDescription(val ?? "")}
+								height={220}
+								preview="edit"
 							/>
+						</div>
 						</div>
 					</div>
 					<AlertDialogFooter>

@@ -4,6 +4,7 @@
  * and the React Query provider for client-side data fetching.
  */
 import "@/app/ui/globals.css";
+import "@uiw/react-md-editor/markdown-editor.css";
 import { Metadata } from "next";
 import QueryProvider from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
