@@ -5,7 +5,7 @@
  * Each subdivision fetches its own match data independently (lazy loading)
  * rather than loading the entire schedule upfront.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
 	ScheduleData, 
@@ -15,6 +15,8 @@ import {
 } from '@/lib/schedule';
 import { rosterRoute, scheduleRoute, seasonRoute } from '@/lib/apiRoutes';
 import { fetchWithSession } from '@/lib/getData';
+import { SaveStatus } from '@/components/ui/save-status-indicator';
+export type { SaveStatus };
 
 // Helper fetchers
 const fetchRoster = async (seasonCode: string): Promise<RosterApiResponse | null> => {
@@ -45,6 +47,8 @@ export function useScheduleData() {
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
 	const [updatedMatchData, setUpdatedMatchData] = useState<ScheduleData>({});
 	const [enableSaveButton, setEnableSaveButton] = useState<boolean>(false);
+	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const queryClient = useQueryClient();
 
@@ -122,6 +126,7 @@ export function useScheduleData() {
 	// Save mutation
 	const saveMutation = useMutation({
 		mutationFn: async (data: { seasonCode: string, scheduleData: ScheduleData }) => {
+			setSaveStatus('saving');
 			const processedMatchData = ensureSubdivisionIsolation(data.scheduleData);
 			await fetchWithSession(scheduleRoute, {
 				method: 'POST',
@@ -135,20 +140,41 @@ export function useScheduleData() {
 		},
 		onSuccess: () => {
 			setEnableSaveButton(false);
+			setSaveStatus('saved');
 			queryClient.invalidateQueries({ queryKey: ['schedule', seasonCode] });
 		},
 		onError: (error) => {
 			console.error('Error saving schedule data:', error);
+			setSaveStatus('error');
 		}
 	});
+
+	// Autosave: debounce saves 1.5s after the last change.
+	// The manual "Save Changes" button skips the debounce and saves immediately.
+	useEffect(() => {
+		if (!seasonCode || Object.keys(updatedMatchData).length === 0) return;
+
+		setSaveStatus('pending');
+		if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		debounceTimer.current = setTimeout(() => {
+			saveMutation.mutate({ seasonCode, scheduleData: updatedMatchData });
+		}, 1500);
+
+		return () => {
+			if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		};
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [updatedMatchData]);
 
 	const handleSeasonCodeSelect = useCallback((value: string) => {
 		if (value === seasonCode) return;
 		setSeasonCode(value);
 	}, [seasonCode]);
 
+	// Manual save: cancels any pending debounce and saves immediately.
 	const handleSaveData = useCallback(async (updatedMatchData: ScheduleData) => {
 		if (!seasonCode) return;
+		if (debounceTimer.current) clearTimeout(debounceTimer.current);
 		saveMutation.mutate({ seasonCode, scheduleData: updatedMatchData });
 	}, [seasonCode, saveMutation]);
 
@@ -166,6 +192,7 @@ export function useScheduleData() {
 		setUpdatedMatchData,
 		enableSaveButton,
 		setEnableSaveButton,
+		saveStatus,
 		handleSeasonCodeSelect,
 		handleSaveData,
 		rosterNotFound,

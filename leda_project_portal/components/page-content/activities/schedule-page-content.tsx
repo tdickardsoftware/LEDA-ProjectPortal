@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SubdivisionScheduler } from "@/components/subdivision-scheduler";
 import { Button } from "@/components/ui/button";
+import { SaveStatusIndicator } from "@/components/ui/save-status-indicator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import { useScheduleData } from "@/hooks/useScheduleData";
 import { ScheduleData } from "@/lib/schedule";
@@ -37,6 +38,7 @@ export default function ScheduleContent() {
 		setUpdatedMatchData,
 		enableSaveButton,
 		setEnableSaveButton,
+		saveStatus,
 		handleSeasonCodeSelect,
 		handleSaveData,
 		rosterNotFound,
@@ -122,14 +124,15 @@ export default function ScheduleContent() {
 						</div>
 					</FolderTabMed>
 					<FolderTabMed title="Manage Schedule">
-						<div className="p-4 flex justify-center">
+						<div className="p-4 flex items-center gap-3">
+							<SaveStatusIndicator status={saveStatus} />
 							<Button
 								onClick={handleSaveClick}
 								variant="outline"
 								className="hover:bg-muted border-border text-foreground"
-								disabled={!enableSaveButton}
+								disabled={!enableSaveButton || saveStatus === 'saving'}
 							>
-								Save Changes
+								Save Now
 							</Button>
 						</div>
 					</FolderTabMed>

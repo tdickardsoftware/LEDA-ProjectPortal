@@ -20,7 +20,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
 	rosterRoute,
 	scoresheetCountRoute,
@@ -29,6 +29,7 @@ import {
 } from "@/lib/apiRoutes";
 import { Spinner } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { SaveStatusIndicator, SaveStatus } from "@/components/ui/save-status-indicator";
 import {
 	Accordion,
 	AccordionItem,
@@ -173,6 +174,8 @@ export default function PayoutsContent() {
 	const [originalPayoutsData, setOriginalPayoutsData] = useState<PayoutsData>(
 		{}
 	); // Store original data for comparison
+	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// --- TanStack Query: Fetch payouts data ---
 	const {
@@ -359,10 +362,12 @@ export default function PayoutsContent() {
 			return result;
 		},
 		onSuccess: () => {
+			setSaveStatus('saved');
 			toast.success("Payouts data saved successfully");
 			queryClient.invalidateQueries({ queryKey: ["payouts", seasonCode] });
 		},
 		onError: (error: unknown) => {
+			setSaveStatus('error');
 			const errorMessage =
 				error instanceof Error
 					? error.message
@@ -374,9 +379,25 @@ export default function PayoutsContent() {
 	});
 
 	const handleSavePayoutsData = async () => {
+		if (debounceTimer.current) clearTimeout(debounceTimer.current);
 		savePayoutsMutation.mutate({ seasonCode, payoutsData });
 		setOriginalPayoutsData(deepCopy(payoutsData));
 	};
+
+	// Autosave: debounce 1.5s after any change to payoutsData.
+	useEffect(() => {
+		if (!seasonCode || Object.keys(payoutsData).length === 0) return;
+		if (JSON.stringify(payoutsData) === JSON.stringify(originalPayoutsData)) return;
+		setSaveStatus('pending');
+		if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		debounceTimer.current = setTimeout(() => {
+			setSaveStatus('saving');
+			savePayoutsMutation.mutate({ seasonCode, payoutsData });
+			setOriginalPayoutsData(deepCopy(payoutsData));
+		}, 1500);
+		return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [payoutsData]);
 
 	// --- TanStack Query: Calculate payouts (team points) ---
 	const calculatePayoutsMutation = useMutation({
@@ -1333,16 +1354,17 @@ export default function PayoutsContent() {
 								</AccordionItem>
 							</Accordion>
 						))}
-					<div className="flex justify-center gap-4 mt-6">
+					<div className="flex justify-center items-center gap-4 mt-6">
+						<SaveStatusIndicator status={saveStatus} />
 						<Button
 							variant="outline"
 							className="hover:bg-muted border-border text-foreground"
 							onClick={() => {
 								handleSavePayoutsData();
 							}}
-							disabled={!hasPayoutsDataChanged()} // Disable button if data hasn't changed
+							disabled={!hasPayoutsDataChanged() || saveStatus === 'saving'}
 						>
-							Save Payout Data
+							Save Now
 						</Button>
 						<Button
 							variant="outline"
