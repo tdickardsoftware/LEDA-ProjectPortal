@@ -161,11 +161,24 @@ export default async function handler(
 		log.info({ method: "POST" }, "Save season schedule");
 		const data = req.body as { seasonCode: string; scheduleData: ScheduleData };
 		try {
-			// Delete existing schedule for this season
-			await queryPost(
-				`DELETE FROM public.leda_schedule WHERE "seasonCode" = $1`,
-				[data.seasonCode]
-			);
+			// Delete only the specific subdivision(s) being saved, not the entire season.
+			// This prevents overwriting other subdivisions that have already been saved.
+			const subdivisionPairs: string[][] = [];
+			for (const [division, subdivisions] of Object.entries(data.scheduleData)) {
+				for (const subdivision of Object.keys(subdivisions)) {
+					subdivisionPairs.push([division, subdivision]);
+				}
+			}
+
+			if (subdivisionPairs.length > 0) {
+				const conditions = subdivisionPairs
+					.map((_, i) => `(division = $${i * 2 + 2} AND subdivision = $${i * 2 + 3})`)
+					.join(" OR ");
+				await queryPost(
+					`DELETE FROM public.leda_schedule WHERE "seasonCode" = $1 AND (${conditions})`,
+					[data.seasonCode, ...subdivisionPairs.flat()]
+				);
+			}
 
 			// Transform nested structure to normalized rows
 			const rows = transformToNormalizedRows(data.seasonCode, data.scheduleData);
