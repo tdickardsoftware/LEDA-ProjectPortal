@@ -291,8 +291,40 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 		viewMode = false,
 		seasonCode,
 	}) => {
-		const [localMatchData, setLocalMatchData] = useState<ScheduleData>(matchData);
-		const [initialMatchData, setInitialMatchData] = useState<ScheduleData>(matchData);
+		const buildFullStructure = useCallback(
+			(sourceData?: ScheduleData): ScheduleData => {
+				const fullStructure: ScheduleData = {
+					[division]: {
+						[subdivision]: Object.fromEntries(
+							Object.entries(teams).map(([letter, team]) => [
+								letter,
+								{ teamName: team.teamName, teamId: team.teamId, matchesData: {} },
+							])
+						),
+					},
+				};
+
+				const sourceSubdivision = sourceData?.[division]?.[subdivision];
+				if (sourceSubdivision) {
+					for (const [letter, teamData] of Object.entries(sourceSubdivision)) {
+						if (fullStructure[division][subdivision][letter]) {
+							fullStructure[division][subdivision][letter].matchesData = teamData.matchesData;
+						}
+					}
+				}
+
+				return fullStructure;
+			},
+			[division, subdivision, teams]
+		);
+
+		const hasDraftForSubdivision = !!matchData[division]?.[subdivision];
+		const [localMatchData, setLocalMatchData] = useState<ScheduleData>(() =>
+			hasDraftForSubdivision ? buildFullStructure(matchData) : buildFullStructure()
+		);
+		const [initialMatchData, setInitialMatchData] = useState<ScheduleData>(() =>
+			buildFullStructure()
+		);
 		const [isLoadingMatchups, setIsLoadingMatchups] = useState(true);
 		const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 		const [deletingMatchup, setDeletingMatchup] = useState<DeleteMatchupState | null>(
@@ -310,6 +342,10 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 
 		// Memoized values
 		const teamEntries = useMemo(() => Object.entries(teams), [teams]);
+		const displayTeamEntries = useMemo(
+			() => teamEntries.filter(([, teamData]) => teamData.teamId !== "0"),
+			[teamEntries]
+		);
 		const gameDateEntries = useMemo(() => {
 			// Convert gameDates to match "weekN" format used in matchesData
 			const entries = Object.entries(gameDates).map(([key, date]) => {
@@ -322,9 +358,23 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 			return entries;
 		}, [gameDates]);
 
+		useEffect(() => {
+			if (!hasDraftForSubdivision) {
+				return;
+			}
+
+			setLocalMatchData(buildFullStructure(matchData));
+			setIsLoadingMatchups(false);
+		}, [buildFullStructure, hasDraftForSubdivision, matchData]);
+
 		// Fetch matchup data for this subdivision when component mounts
 		useEffect(() => {
 			if (!seasonCode) {
+				setIsLoadingMatchups(false);
+				return;
+			}
+
+			if (hasDraftForSubdivision) {
 				setIsLoadingMatchups(false);
 				return;
 			}
@@ -339,34 +389,19 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 						{
 							method: 'GET',
 							headers: { 'Content-Type': 'application/json' },
+							cache: 'no-store',
 						}
 					);
 
 					if (res.ok && !cancelled) {
 						const data = await res.json();
-
-						// Build a full structure containing all teams from the teams prop,
-						// then overlay any matchups returned by the API.
-						const fullStructure: ScheduleData = {
-							[division]: {
-								[subdivision]: Object.fromEntries(
-									Object.entries(teams).map(([letter, team]) => [
-										letter,
-										{ teamName: team.teamName, teamId: team.teamId, matchesData: {} },
-									])
-								),
-							},
-						};
-
-						// Overlay fetched matchesData for teams that have matchups
-						const fetchedSubdiv = data.scheduleData?.[division]?.[subdivision];
-						if (fetchedSubdiv) {
-							for (const [letter, teamData] of Object.entries(fetchedSubdiv as ScheduleData[string][string])) {
-								if (fullStructure[division][subdivision][letter]) {
-									fullStructure[division][subdivision][letter].matchesData = teamData.matchesData;
-								}
-							}
-						}
+						console.log("[Schedule] Server subdivision data", {
+							seasonCode,
+							division,
+							subdivision,
+							data,
+						});
+						const fullStructure = buildFullStructure(data.scheduleData);
 
 						setLocalMatchData(fullStructure);
 						setInitialMatchData(fullStructure);
@@ -387,7 +422,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 			return () => {
 				cancelled = true;
 			};
-		}, [seasonCode, division, subdivision, teams]);
+		}, [seasonCode, hasDraftForSubdivision, division, subdivision, buildFullStructure]);
 
 		// Batch fetch points status for all teams and all weeks in a single call
 		useEffect(() => {
@@ -866,27 +901,24 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 					<Table className="table-auto">
 						<TableHeader>
 							<TableRow className="bg-muted/50">
-								<TableHead className="font-semibold border-r border-border text-left py-4 px-6">
-									Team Name
+								<TableHead className="font-semibold border-r border-border text-left py-4 px-6 min-w-36">
+									Week
 								</TableHead>
-								{gameDateEntries.map(([gameTitle, date], index) => {
-									// Extract week number and display as "Date X"
-									const weekMatch = gameTitle.match(/\d+/);
-									const dateNum = weekMatch ? weekMatch[0] : '1';
+								{displayTeamEntries.map(([teamLetter, teamData], index) => {
 									return (
 										<TableHead
-											key={gameTitle}
+											key={teamLetter}
 											className={`whitespace-nowrap text-center py-4 px-6 ${
-												index < gameDateEntries.length - 1
+												index < displayTeamEntries.length - 1
 													? "border-r border-border"
 													: ""
 											}`}
 										>
 											<div className="font-medium text-sm">
-												Date {dateNum}
+												{teamLetter}
 											</div>
 											<div className="text-xs text-muted-foreground mt-1">
-												{date}
+												{teamData.teamName}
 											</div>
 										</TableHead>
 									);
@@ -894,32 +926,30 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{teamEntries
-								.filter(([, teamData]) => teamData.teamId !== "0")
-								.map(([key, teamData], rowIndex) => (
+							{gameDateEntries.map(([gameTitle, date], rowIndex) => (
 								<TableRow
-									key={key}
+									key={gameTitle}
 									className={
 										rowIndex % 2 === 0
 											? "bg-background"
 											: "bg-muted/20"
 									}
 								>
-									<TableCell className="font-medium w-fit border-r border-border text-center">
-										<div>{key}</div>
-										<div>{teamData.teamName}</div>
+									<TableCell className="font-medium border-r border-border text-left min-w-36">
+										<div>Date {(gameTitle.match(/\d+/)?.[0] ?? "1")}</div>
+										<div className="text-xs text-muted-foreground mt-1">{date}</div>
 									</TableCell>
-									{gameDateEntries.map(([gameTitle], index) => {
-										const matchup = getTeamMatchup(key, gameTitle);
+									{displayTeamEntries.map(([teamLetter, teamData], index) => {
+										const matchup = getTeamMatchup(teamLetter, gameTitle);
 										const weekMatch = gameTitle.match(/\d+/);
 										const weekNum = weekMatch ? weekMatch[0] : "1";
 										const statusKey = `${teamData.teamId}-${weekNum}`;
 										const matchupHasPoints = pointsStatusMap[statusKey] ?? false;
 										return (
 											<TableCell
-												key={`${key}-${gameTitle}`}
+												key={`${teamLetter}-${gameTitle}`}
 												className={`whitespace-nowrap py-4 px-6 ${
-													index < gameDateEntries.length - 1
+													index < displayTeamEntries.length - 1
 														? "border-r border-border"
 														: ""
 												}`}
@@ -932,9 +962,9 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 															teams={teams}
 															getPlaceNameById={getPlaceNameById}
 															onEdit={() =>
-																handleEditMatchupClick(key, gameTitle, matchup)
+																handleEditMatchupClick(teamLetter, gameTitle, matchup)
 															}
-															onDelete={() => handleDeleteMatchup(key, gameTitle)}
+															onDelete={() => handleDeleteMatchup(teamLetter, gameTitle)}
 															viewMode={viewMode}
 															hasPointsLogged={matchupHasPoints}
 														/>
@@ -947,7 +977,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 															teamEntries={teamEntries}
 															handleAddMatchup={handleAddMatchup}
 															teamData={teamData}
-															teamLetter={key}
+															teamLetter={teamLetter}
 															gameTitle={gameTitle}
 															gameDateEntries={gameDateEntries}
 															getTeamsWithMatchups={getTeamsWithMatchups}

@@ -37,7 +37,7 @@ export default function CustomLink({
     href = href.replace("**REPLACE**", parentPage);
     return (
         <Button disabled={disabled} variant={"outline"} className="hover:bg-muted border-border text-foreground">
-			<Link href={href} className={className} prefetch={true} onClick={onClick}>{linkName}</Link>
+			<Link href={href} className={className} onClick={onClick}>{linkName}</Link>
         </Button>
     )
 }

@@ -16,4 +16,10 @@ export const pool = new Pool({
 		process.env.POSTGRES_SSL === "true"
 			? { rejectUnauthorized: true }
 			: false,
+	// Prevent stale connections from causing indefinite hangs after days of uptime.
+	// Idle connections are silently dropped by the OS/NAT after ~hours; these
+	// settings ensure the pool detects and replaces them promptly.
+	max: 10,
+	idleTimeoutMillis: 30_000,      // release idle connections after 30s
+	connectionTimeoutMillis: 5_000, // fail fast if a connection can't be acquired
 });

@@ -5,7 +5,7 @@
  * Each subdivision fetches its own match data independently (lazy loading)
  * rather than loading the entire schedule upfront.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
 	ScheduleData, 
@@ -15,6 +15,8 @@ import {
 } from '@/lib/schedule';
 import { rosterRoute, scheduleRoute, seasonRoute } from '@/lib/apiRoutes';
 import { fetchWithSession } from '@/lib/getData';
+import { SaveStatus } from '@/components/ui/save-status-indicator';
+export type { SaveStatus };
 
 // Helper fetchers
 const fetchRoster = async (seasonCode: string): Promise<RosterApiResponse | null> => {
@@ -45,6 +47,8 @@ export function useScheduleData() {
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
 	const [updatedMatchData, setUpdatedMatchData] = useState<ScheduleData>({});
 	const [enableSaveButton, setEnableSaveButton] = useState<boolean>(false);
+	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+	const [requiresManualSave, setRequiresManualSave] = useState<boolean>(false);
 
 	const queryClient = useQueryClient();
 
@@ -122,8 +126,9 @@ export function useScheduleData() {
 	// Save mutation
 	const saveMutation = useMutation({
 		mutationFn: async (data: { seasonCode: string, scheduleData: ScheduleData }) => {
+			setSaveStatus('saving');
 			const processedMatchData = ensureSubdivisionIsolation(data.scheduleData);
-			await fetchWithSession(scheduleRoute, {
+			const response = await fetchWithSession(scheduleRoute, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -131,26 +136,69 @@ export function useScheduleData() {
 					scheduleData: processedMatchData,
 				}),
 			});
+			if (!response.ok) {
+				const errorBody = await response.json().catch(() => ({}));
+				throw new Error(errorBody?.message ?? `Save failed with status ${response.status}`);
+			}
 			return processedMatchData;
 		},
 		onSuccess: () => {
+			setUpdatedMatchData({});
 			setEnableSaveButton(false);
+			setRequiresManualSave(false);
+			setSaveStatus('saved');
 			queryClient.invalidateQueries({ queryKey: ['schedule', seasonCode] });
 		},
 		onError: (error) => {
 			console.error('Error saving schedule data:', error);
+			setSaveStatus('error');
 		}
 	});
 
 	const handleSeasonCodeSelect = useCallback((value: string) => {
 		if (value === seasonCode) return;
 		setSeasonCode(value);
+		setUpdatedMatchData({});
+		setEnableSaveButton(false);
+		setRequiresManualSave(false);
+		setSaveStatus('idle');
 	}, [seasonCode]);
 
+	const stageScheduleData = useCallback((
+		nextMatchData: ScheduleData,
+		options?: { requiresManualSave?: boolean }
+	) => {
+		const hasChanges = Object.keys(nextMatchData).length > 0;
+		const nextRequiresManualSave = hasChanges && options?.requiresManualSave === true;
+
+		setUpdatedMatchData(nextMatchData);
+		setEnableSaveButton(hasChanges);
+		setRequiresManualSave(nextRequiresManualSave);
+		setSaveStatus(hasChanges && !nextRequiresManualSave ? 'pending' : 'idle');
+	}, []);
+
 	const handleSaveData = useCallback(async (updatedMatchData: ScheduleData) => {
-		if (!seasonCode) return;
-		saveMutation.mutate({ seasonCode, scheduleData: updatedMatchData });
+		if (!seasonCode || Object.keys(updatedMatchData).length === 0) return;
+		await saveMutation.mutateAsync({ seasonCode, scheduleData: updatedMatchData });
 	}, [seasonCode, saveMutation]);
+
+	useEffect(() => {
+		if (requiresManualSave) {
+			return;
+		}
+
+		if (!seasonCode || Object.keys(updatedMatchData).length === 0) {
+			return;
+		}
+
+		const timeoutId = window.setTimeout(() => {
+			void handleSaveData(updatedMatchData);
+		}, 1500);
+
+		return () => {
+			window.clearTimeout(timeoutId);
+		};
+	}, [handleSaveData, requiresManualSave, seasonCode, updatedMatchData]);
 
 	const rosterNotFound = !!seasonCode && !rosterLoading && rosterData === null;
 
@@ -163,9 +211,11 @@ export function useScheduleData() {
 		gameDates,
 		matchData,
 		updatedMatchData,
-		setUpdatedMatchData,
+		stageScheduleData,
 		enableSaveButton,
 		setEnableSaveButton,
+		requiresManualSave,
+		saveStatus,
 		handleSeasonCodeSelect,
 		handleSaveData,
 		rosterNotFound,

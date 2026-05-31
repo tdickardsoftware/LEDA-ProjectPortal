@@ -68,6 +68,7 @@ import { useQuery } from "@tanstack/react-query";
 export default function TeamPageContent({
 	teamData,
 	memberDetails,
+	backHref = "/Portal/Management/Teams",
 }: {
 	teamData: Team;
 	memberDetails: {
@@ -77,6 +78,7 @@ export default function TeamPageContent({
 		cannotBeCaptain: boolean;
 		badStanding: boolean;
 	}[];
+	backHref?: string;
 }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [showPaymentPopover, setShowPaymentPopover] = useState(false);
@@ -432,7 +434,7 @@ export default function TeamPageContent({
 						className="hover:bg-muted border-border text-foreground"
 						asChild
 					>
-						<Link href="/Portal/Management/Teams" prefetch={true}>
+						<Link href={backHref} prefetch={true}>
 							Go Back
 						</Link>
 					</Button>

@@ -109,6 +109,7 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({
 }) => {
 	const formContext = useFormContext<FormValues>();
 	const currentValue = formContext ? formContext.watch("ledaId") : "";
+	const currentFullName = formContext ? formContext.watch("fullName") : "";
 	const [open, setOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = React.useState("");
 	const [debouncedSearch, setDebouncedSearch] = React.useState("");
@@ -230,8 +231,9 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({
 	};
 
 	const displayValue = currentValue
-		? allPlayers.find((type) => Number(type.value) === currentValue)?.label || 
-		  `${currentValue}` // Fallback to just showing the ID if not found in list
+		? currentFullName
+			? `${currentValue} - ${currentFullName}`
+			: `${currentValue}`
 		: "Select a player...";
 
 	return (

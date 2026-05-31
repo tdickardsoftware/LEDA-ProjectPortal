@@ -24,11 +24,13 @@ export default async function handler(
 	}
 
 	log.info({ method: "POST" }, "Create GitHub issue");
-	const { title, body, labels } = req.body;
+	const { title, body, type } = req.body;
 
 	if (!title || !body) {
 		return res.status(400).json({ error: "Title and body are required" });
 	}
+
+	const labels = type === "enhancement" ? ["enhancement"] : ["bug"];
 
 	const githubToken = process.env.GITHUB_PT;
 	const githubRepo = process.env.GITHUB_REPO; // e.g., "owner/repo"
@@ -53,7 +55,7 @@ export default async function handler(
 				body: JSON.stringify({
 					title,
 					body: `**Reported by:** ${session.user.name} (${session.user.email})\n\n${body}`,
-					labels: labels || ["bug"],
+					labels,
 					assignees: ["tdickardsoftware"],
 				}),
 			}
@@ -65,8 +67,9 @@ export default async function handler(
 		}
 
 		const issue = await response.json();
-		res.status(201).json({ 
-			success: true, 
+
+		res.status(201).json({
+			success: true,
 			issueUrl: issue.html_url,
 			issueNumber: issue.number
 		});

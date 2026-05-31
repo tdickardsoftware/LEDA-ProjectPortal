@@ -7,6 +7,7 @@
  */
 import { QueryResult, QueryResultRow } from "pg";
 import { pool } from "./getPool";
+import { withRetry } from "./retry";
 
 /**
  * Executes a parameterised SQL query and returns a typed `QueryResult<T>`.
@@ -18,9 +19,14 @@ export async function query<T extends QueryResultRow>(
 	text: string,
 	params?: (string | number | boolean | null)[]
 ): Promise<QueryResult<T>> {
-	const client = await pool.connect();
-	// Execute the query and return the result casted as the type
-	const results = await client.query<T>(text, params);
-	client.release();
-	return results;
+	return withRetry(async () => {
+		const client = await pool.connect();
+		try {
+			// Execute the query and return the result casted as the type
+			const results = await client.query<T>(text, params);
+			return results;
+		} finally {
+			client.release();
+		}
+	});
 }
