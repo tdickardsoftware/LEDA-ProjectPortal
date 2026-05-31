@@ -425,10 +425,9 @@ export default function GenerateScheduleDialog({
 															—
 														</span>
 													) : p.warning ? (
-														<TriangleAlert
-															className="h-4 w-4 text-yellow-500 mx-auto"
-															title={p.warning}
-														/>
+																<span title={p.warning} className="inline-flex">
+																	<TriangleAlert className="h-4 w-4 text-yellow-500 mx-auto" />
+																</span>
 													) : (
 														<CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
 													)}
