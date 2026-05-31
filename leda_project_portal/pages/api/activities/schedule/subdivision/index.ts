@@ -90,6 +90,11 @@ export default async function handler(
 	const session = await requireApiSession(req, res);
 	if (!session) return;
 
+	res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+	res.setHeader("Pragma", "no-cache");
+	res.setHeader("Expires", "0");
+	res.setHeader("Surrogate-Control", "no-store");
+
 	if (req.method === "GET") {
 		log.info({ method: "GET", query: req.query }, "Fetch subdivision schedule");
 		const { seasonCode, division, subdivision } = req.query;
