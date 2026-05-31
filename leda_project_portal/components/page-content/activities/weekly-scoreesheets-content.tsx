@@ -1831,6 +1831,7 @@ const FolderTabSkeleton = () => (
 						seasonCode={seasonCode}
 						weekNum={selectedWeek}
 						handleMatchupSelection={handleMatchupSelection}
+						collapseOnSelection={false}
 						refreshToken={sidenavRefreshToken}
 					/>
 				)
