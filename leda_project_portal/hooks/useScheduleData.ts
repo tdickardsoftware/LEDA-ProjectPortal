@@ -5,7 +5,7 @@
  * Each subdivision fetches its own match data independently (lazy loading)
  * rather than loading the entire schedule upfront.
  */
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
 	ScheduleData, 
@@ -48,7 +48,7 @@ export function useScheduleData() {
 	const [updatedMatchData, setUpdatedMatchData] = useState<ScheduleData>({});
 	const [enableSaveButton, setEnableSaveButton] = useState<boolean>(false);
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const [requiresManualSave, setRequiresManualSave] = useState<boolean>(false);
 
 	const queryClient = useQueryClient();
 
@@ -128,7 +128,7 @@ export function useScheduleData() {
 		mutationFn: async (data: { seasonCode: string, scheduleData: ScheduleData }) => {
 			setSaveStatus('saving');
 			const processedMatchData = ensureSubdivisionIsolation(data.scheduleData);
-			await fetchWithSession(scheduleRoute, {
+			const response = await fetchWithSession(scheduleRoute, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -136,10 +136,16 @@ export function useScheduleData() {
 					scheduleData: processedMatchData,
 				}),
 			});
+			if (!response.ok) {
+				const errorBody = await response.json().catch(() => ({}));
+				throw new Error(errorBody?.message ?? `Save failed with status ${response.status}`);
+			}
 			return processedMatchData;
 		},
 		onSuccess: () => {
+			setUpdatedMatchData({});
 			setEnableSaveButton(false);
+			setRequiresManualSave(false);
 			setSaveStatus('saved');
 			queryClient.invalidateQueries({ queryKey: ['schedule', seasonCode] });
 		},
@@ -149,34 +155,50 @@ export function useScheduleData() {
 		}
 	});
 
-	// Autosave: debounce saves 1.5s after the last change.
-	// The manual "Save Changes" button skips the debounce and saves immediately.
-	useEffect(() => {
-		if (!seasonCode || Object.keys(updatedMatchData).length === 0) return;
-
-		setSaveStatus('pending');
-		if (debounceTimer.current) clearTimeout(debounceTimer.current);
-		debounceTimer.current = setTimeout(() => {
-			saveMutation.mutate({ seasonCode, scheduleData: updatedMatchData });
-		}, 1500);
-
-		return () => {
-			if (debounceTimer.current) clearTimeout(debounceTimer.current);
-		};
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [updatedMatchData]);
-
 	const handleSeasonCodeSelect = useCallback((value: string) => {
 		if (value === seasonCode) return;
 		setSeasonCode(value);
+		setUpdatedMatchData({});
+		setEnableSaveButton(false);
+		setRequiresManualSave(false);
+		setSaveStatus('idle');
 	}, [seasonCode]);
 
-	// Manual save: cancels any pending debounce and saves immediately.
+	const stageScheduleData = useCallback((
+		nextMatchData: ScheduleData,
+		options?: { requiresManualSave?: boolean }
+	) => {
+		const hasChanges = Object.keys(nextMatchData).length > 0;
+		const nextRequiresManualSave = hasChanges && options?.requiresManualSave === true;
+
+		setUpdatedMatchData(nextMatchData);
+		setEnableSaveButton(hasChanges);
+		setRequiresManualSave(nextRequiresManualSave);
+		setSaveStatus(hasChanges && !nextRequiresManualSave ? 'pending' : 'idle');
+	}, []);
+
 	const handleSaveData = useCallback(async (updatedMatchData: ScheduleData) => {
-		if (!seasonCode) return;
-		if (debounceTimer.current) clearTimeout(debounceTimer.current);
-		saveMutation.mutate({ seasonCode, scheduleData: updatedMatchData });
+		if (!seasonCode || Object.keys(updatedMatchData).length === 0) return;
+		await saveMutation.mutateAsync({ seasonCode, scheduleData: updatedMatchData });
 	}, [seasonCode, saveMutation]);
+
+	useEffect(() => {
+		if (requiresManualSave) {
+			return;
+		}
+
+		if (!seasonCode || Object.keys(updatedMatchData).length === 0) {
+			return;
+		}
+
+		const timeoutId = window.setTimeout(() => {
+			void handleSaveData(updatedMatchData);
+		}, 1500);
+
+		return () => {
+			window.clearTimeout(timeoutId);
+		};
+	}, [handleSaveData, requiresManualSave, seasonCode, updatedMatchData]);
 
 	const rosterNotFound = !!seasonCode && !rosterLoading && rosterData === null;
 
@@ -189,9 +211,10 @@ export function useScheduleData() {
 		gameDates,
 		matchData,
 		updatedMatchData,
-		setUpdatedMatchData,
+		stageScheduleData,
 		enableSaveButton,
 		setEnableSaveButton,
+		requiresManualSave,
 		saveStatus,
 		handleSeasonCodeSelect,
 		handleSaveData,

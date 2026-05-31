@@ -157,6 +157,11 @@ export default async function handler(
 	const session = await requireApiSession(req, res);
 	if (!session) return;
 
+	res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+	res.setHeader("Pragma", "no-cache");
+	res.setHeader("Expires", "0");
+	res.setHeader("Surrogate-Control", "no-store");
+
 	if (req.method === "POST") {
 		log.info({ method: "POST" }, "Save season schedule");
 		const data = req.body as { seasonCode: string; scheduleData: ScheduleData };

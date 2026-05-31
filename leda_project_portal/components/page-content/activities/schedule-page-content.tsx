@@ -24,6 +24,7 @@ import { useScheduleData } from "@/hooks/useScheduleData";
 import { ScheduleData } from "@/lib/schedule";
 import SidenavPageLayout from "@/components/sidenav-page-layout";
 import DivisionTreeSidenav, { DivisionTreeDivision } from "@/components/division-tree-sidenav";
+import GenerateScheduleDialog from "@/components/generate-schedule-dialog";
 
 export default function ScheduleContent() {
 	const {
@@ -33,11 +34,11 @@ export default function ScheduleContent() {
 		currentSeason,
 		setCurrentSeason,
 		gameDates,
-		matchData,
 		updatedMatchData,
-		setUpdatedMatchData,
+		stageScheduleData,
 		enableSaveButton,
 		setEnableSaveButton,
+		requiresManualSave,
 		saveStatus,
 		handleSeasonCodeSelect,
 		handleSaveData,
@@ -63,14 +64,58 @@ export default function ScheduleContent() {
 
 	const handleFetchUpdatedData = useCallback(
 		(data: ScheduleData) => {
-			setUpdatedMatchData(data);
+			stageScheduleData(data, { requiresManualSave });
 		},
-		[setUpdatedMatchData]
+		[requiresManualSave, stageScheduleData]
 	);
 
 	const handleSaveClick = useCallback(() => {
 		handleSaveData(updatedMatchData);
 	}, [handleSaveData, updatedMatchData]);
+
+	const handleSubdivisionSelect = useCallback(
+		async (divisionName: string, subdivisionName: string) => {
+			if (
+				selectedSubdivision?.divisionName === divisionName &&
+				selectedSubdivision?.subdivisionName === subdivisionName
+			) {
+				return;
+			}
+
+			if (!selectedSubdivision) {
+				setSelectedSubdivision({ divisionName, subdivisionName });
+				return;
+			}
+
+			if (!requiresManualSave || Object.keys(updatedMatchData).length === 0) {
+				setSelectedSubdivision({ divisionName, subdivisionName });
+				return;
+			}
+
+			const shouldSaveBeforeSwitch = window.confirm(
+				"Autosave is off. Save the current schedule before switching subdivisions? Press Cancel to stay on the current subdivision."
+			);
+
+			if (!shouldSaveBeforeSwitch) {
+				return;
+			}
+
+			try {
+				await handleSaveData(updatedMatchData);
+				setSelectedSubdivision({ divisionName, subdivisionName });
+			} catch (error) {
+				console.error("Failed to save schedule before switching subdivisions:", error);
+			}
+		},
+		[handleSaveData, requiresManualSave, selectedSubdivision, updatedMatchData]
+	);
+
+	const handleGenerate = useCallback(
+		(data: ScheduleData) => {
+			stageScheduleData(data, { requiresManualSave: true });
+		},
+		[stageScheduleData]
+	);
 
 	const handleCurrentSeasonChange = useCallback(
 		(checked: boolean | "indeterminate") => {
@@ -124,8 +169,14 @@ export default function ScheduleContent() {
 						</div>
 					</FolderTabMed>
 					<FolderTabMed title="Manage Schedule">
-						<div className="p-4 flex items-center gap-3">
-							<SaveStatusIndicator status={saveStatus} />
+						<div className="p-4 flex items-center gap-3">						<GenerateScheduleDialog
+							divisionsData={divisionsData}
+							gameDates={gameDates}
+							currentSubdivision={selectedSubdivision}
+							seasonCode={seasonCode}
+							disabled={!seasonCode || rosterNotFound}
+							onGenerate={handleGenerate}
+							/>							<SaveStatusIndicator status={saveStatus} />
 							<Button
 								onClick={handleSaveClick}
 								variant="outline"
@@ -143,9 +194,7 @@ export default function ScheduleContent() {
 					<DivisionTreeSidenav
 						key={seasonCode ?? "no-season"}
 						divisions={divisionTreeItems}
-						onSubdivisionSelect={(divisionName, subdivisionName) =>
-							setSelectedSubdivision({ divisionName, subdivisionName })
-						}
+						onSubdivisionSelect={handleSubdivisionSelect}
 						selectedSubdivision={selectedSubdivision}
 						emptyMessage="Select a season to view the schedule..."
 					/>
@@ -182,11 +231,12 @@ export default function ScheduleContent() {
 			{selectedSubdivision && selectedTeams &&
 				Object.keys(selectedTeams).length > 0 && (
 					<SubdivisionScheduler
+						key={`${selectedSubdivision.divisionName}-${selectedSubdivision.subdivisionName}`}
 						division={selectedSubdivision.divisionName}
 						subdivision={selectedSubdivision.subdivisionName}
 						teams={selectedTeams}
 						gameDates={gameDates}
-						matchData={matchData}
+						matchData={updatedMatchData}
 						setEnabledSaveButton={handleSetEnableSaveButton}
 						handleSaveData={handleFetchUpdatedData}
 						seasonCode={seasonCode}
