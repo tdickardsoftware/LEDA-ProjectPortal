@@ -29,7 +29,15 @@ import {
 import DivisionAddForm from "@/components/forms/activities/division-add-form";
 
 import TeamAddForm from "@/components/forms/activities/team-add-form";
-import { X } from "lucide-react";
+import { X, Pencil, GripVertical } from "lucide-react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import {
+	Form,
+} from "@/components/ui/form";
+import TeamSelector from "@/components/ui/team-selector";
+import PlaceSelector from "@/components/ui/place-selector";
 import { SaveStatusIndicator, SaveStatus } from "@/components/ui/save-status-indicator";
 import {
 	AlertDialog,
@@ -231,6 +239,67 @@ const updateSchedule = async ({
 	}
 };
 
+// Schema and component for editing an existing roster team entry
+const rosterTeamEditSchema = z.object({
+	teamLedaId: z.string().min(1, { message: "Team is Required" }),
+	placeId: z.string().min(1, { message: "Place is Required" }),
+	teamName: z.string().min(1),
+});
+
+function RosterTeamEditForm({
+	teamToEdit,
+	selectedTeams,
+	onSave,
+	onClose,
+}: {
+	teamToEdit: { teamId: string; placeId: string; teamName: string };
+	selectedTeams: string[];
+	onSave: (teamId: string, placeId: string, teamName: string) => void;
+	onClose: () => void;
+}) {
+	const form = useForm<z.infer<typeof rosterTeamEditSchema>>({
+		resolver: zodResolver(rosterTeamEditSchema),
+		defaultValues: {
+			teamLedaId: teamToEdit.teamId,
+			placeId: teamToEdit.placeId,
+			teamName: teamToEdit.teamName,
+		},
+	});
+
+	// Exclude all selected teams except the one currently being edited
+	const filteredSelectedTeams = selectedTeams.filter((id) => id !== teamToEdit.teamId);
+
+	function onSubmit(values: z.infer<typeof rosterTeamEditSchema>) {
+		onSave(values.teamLedaId, values.placeId, values.teamName);
+	}
+
+	return (
+		<Form {...form}>
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 min-w-[260px]">
+				<TeamSelector
+					name="teamLedaId"
+					label="Team *"
+					control={form.control}
+					selectedTeams={filteredSelectedTeams}
+				/>
+				<PlaceSelector
+					name="placeId"
+					label="Home Place *"
+					control={form.control}
+				/>
+				<div className="flex justify-end gap-2">
+					<Button variant="outline" type="button" onClick={onClose}>
+						Cancel
+					</Button>
+					<Button variant="outline" type="submit">
+						Save Changes
+					</Button>
+				</div>
+			</form>
+		</Form>
+	);
+}
+
 export default function RostersContent({
 	renderSeasonCode,
 	initialDivisionName,
@@ -264,6 +333,16 @@ export default function RostersContent({
 	const [divisionAlertOpen, setDivisionAlertOpen] = useState(false);
 	const [subdivisionAlertOpen, setSubdivisionAlertOpen] = useState(false);
 	const [teamAlertOpen, setTeamAlertOpen] = useState(false);
+	const [teamToEdit, setTeamToEdit] = useState<{
+		division: string;
+		subdivision: string;
+		teamLetter: string;
+		teamId: string;
+		placeId: string;
+		teamName: string;
+	} | null>(null);
+	const [editTeamOpen, setEditTeamOpen] = useState(false);
+	const [draggedTeamLetter, setDraggedTeamLetter] = useState<string | null>(null);
 	const [hasChanges, setHasChanges] = useState(false);
 	const [initialData, setInitialData] = useState<RosterData>({});
 	const [update, setUpdate] = useState(false);
@@ -1019,6 +1098,56 @@ export default function RostersContent({
 		[]
 	);
 
+	// Handle editing a team's teamId/placeId in place (same letter position)
+	const handleEditTeamInRoster = useCallback(
+		(newTeamId: string, newPlaceId: string, newTeamName: string) => {
+			if (!teamToEdit) return;
+			const { division, subdivision, teamLetter, teamId: oldTeamId } = teamToEdit;
+
+			setDivisionsData((prev) => {
+				const newData = JSON.parse(JSON.stringify(prev));
+				newData[division].subdivisions[subdivision][teamLetter] = {
+					teamId: newTeamId,
+					placeId: newPlaceId,
+					teamName: newTeamName,
+				};
+				return newData;
+			});
+
+			setSelectedTeams((prev) => [
+				...prev.filter((id) => id !== oldTeamId),
+				newTeamId,
+			]);
+
+			setTeamToEdit(null);
+			setEditTeamOpen(false);
+			setTimeout(() => setHasChanges(true), 0);
+		},
+		[teamToEdit]
+	);
+
+	// Swap two teams' letter positions via drag-and-drop
+	const handleTeamLetterSwap = useCallback(
+		(targetLetter: string) => {
+			if (!draggedTeamLetter || !selectedSubdivision || draggedTeamLetter === targetLetter) {
+				setDraggedTeamLetter(null);
+				return;
+			}
+			const { divisionName, subdivisionName } = selectedSubdivision;
+			setDivisionsData((prev) => {
+				const newData = JSON.parse(JSON.stringify(prev));
+				const sub = newData[divisionName].subdivisions[subdivisionName];
+				const temp = sub[draggedTeamLetter];
+				sub[draggedTeamLetter] = sub[targetLetter];
+				sub[targetLetter] = temp;
+				return newData;
+			});
+			setDraggedTeamLetter(null);
+			setTimeout(() => setHasChanges(true), 0);
+		},
+		[draggedTeamLetter, selectedSubdivision]
+	);
+
 	// Confirm removal of a division
 	const confirmRemoveDivision = useCallback((division: string) => {
 		setDivisionToDelete(division);
@@ -1238,26 +1367,72 @@ export default function RostersContent({
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+			{/* Edit Team Dialog */}
+			<Dialog open={editTeamOpen} onOpenChange={(open) => { setEditTeamOpen(open); if (!open) setTeamToEdit(null); }}>
+				<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
+					<DialogHeader>
+						<DialogTitle>Edit Team</DialogTitle>
+					</DialogHeader>
+					{teamToEdit && (
+						<RosterTeamEditForm
+							teamToEdit={teamToEdit}
+							selectedTeams={selectedTeams}
+							onSave={handleEditTeamInRoster}
+							onClose={() => { setEditTeamOpen(false); setTeamToEdit(null); }}
+						/>
+					)}
+				</DialogContent>
+			</Dialog>
 			{selectedSubdivision && (
 				<div>
 					<div className="mb-4">
 						{handleAddTeam(selectedSubdivision.divisionName, selectedSubdivision.subdivisionName)}
 					</div>
-					<ul className="space-y-1">
+					<ul className="space-y-2">
 						{Object.keys(
 							divisionsData[selectedSubdivision.divisionName]
 								?.subdivisions[selectedSubdivision.subdivisionName] || {}
 						).map((team, teamIndex) => (
-							<li key={teamIndex}>
-								<div className="flex items-center gap-2 py-1 w-fit">
-									<span className="font-medium">{team}</span>
-									<span className="text-muted-foreground">-</span>
+							<li key={teamIndex} className="flex items-center gap-3">
+								{/* Static letter label */}
+								<span className="font-semibold w-5 text-center shrink-0">{team}</span>
+								{/* Draggable team card */}
+								<div
+									draggable
+									onDragStart={() => setDraggedTeamLetter(team)}
+									onDragOver={(e) => e.preventDefault()}
+									onDrop={() => handleTeamLetterSwap(team)}
+									onDragEnd={() => setDraggedTeamLetter(null)}
+									className={`flex items-center gap-2 px-2 py-1 rounded border border-border bg-background cursor-grab active:cursor-grabbing transition-opacity ${
+										draggedTeamLetter === team ? "opacity-40" : "opacity-100"
+									}`}
+								>
+									<GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
 									<Link
 										href={`/Portal/Management/Teams/${divisionsData[selectedSubdivision.divisionName]?.subdivisions[selectedSubdivision.subdivisionName][team]?.teamId}?from=roster&divisionName=${encodeURIComponent(selectedSubdivision.divisionName)}&subdivisionName=${encodeURIComponent(selectedSubdivision.subdivisionName)}`}
-										className="hover:underline cursor-pointer"
+										className="hover:underline cursor-pointer text-sm"
 									>
 										{divisionsData[selectedSubdivision.divisionName]?.subdivisions[selectedSubdivision.subdivisionName][team]?.teamName}
 									</Link>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
+										onClick={() => {
+											const entry = divisionsData[selectedSubdivision.divisionName]?.subdivisions[selectedSubdivision.subdivisionName][team];
+											setTeamToEdit({
+												division: selectedSubdivision.divisionName,
+												subdivision: selectedSubdivision.subdivisionName,
+												teamLetter: team,
+												teamId: entry?.teamId,
+												placeId: entry?.placeId,
+												teamName: entry?.teamName,
+											});
+											setEditTeamOpen(true);
+										}}
+									>
+										<Pencil className="h-3 w-3" />
+									</Button>
 									<Button
 										variant="ghost"
 										size="icon"
