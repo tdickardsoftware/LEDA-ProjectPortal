@@ -43,6 +43,7 @@ export default async function handler(
 						m."lifetimeMemberReason",
 						p."lastName",
 						p."firstName",
+						p."nickname",
 						p."middleInitial",
 						p."addressOne",
 						p."addressTwo",
@@ -106,18 +107,22 @@ export default async function handler(
 			// Insert player information into the database
 			const query1 = `
                 INSERT INTO public.leda_player_info(
-                    "ledaId", "lastName", "firstName", "middleInitial", "addressOne", "addressTwo", "city", "state", "zip", 
+                    "ledaId", "lastName", "firstName", "nickname", "middleInitial", "addressOne", "addressTwo", "city", "state", "zip", 
                     "phoneNumber", "otherNumber", "email", "gender", "dateOfBirth", "fullName"
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             `;
 
-			const fullName = `${results.firstName} ${results.middleInitial ? results.middleInitial + " " : ""}${
-				results.lastName
-			}`.trim();
+			const fullName = [
+				results.firstName,
+				results.nickname ? `"${results.nickname}"` : null,
+				results.middleInitial || null,
+				results.lastName,
+			].filter(Boolean).join(" ");
 			const values1 = [
 				results.ledaId,
 				results.lastName,
 				results.firstName,
+				results.nickname || null,
 				results.middleInitial,
 				results.addressOne,
 				results.addressTwo,
@@ -200,31 +205,36 @@ export default async function handler(
 		log.info({ method: "PUT", ledaId: req.body?.ledaId }, "Update player request");
 		try {
 			const data = req.body as PlayerMemberInfo;
-			const fullName = `${data.firstName} ${data.middleInitial ? data.middleInitial + " " : ""}${
-				data.lastName
-			}`.trim();
+			const fullName = [
+				data.firstName,
+				data.nickname ? `"${data.nickname}"` : null,
+				data.middleInitial || null,
+				data.lastName,
+			].filter(Boolean).join(" ");
 			const query1 = `
 				UPDATE public.leda_player_info
 				SET 
 					"lastName" = $1,
 					"firstName" = $2,
-					"middleInitial" = $3,
-					"addressOne" = $4,
-					"addressTwo" = $5,
-					city = $6,
-					state = $7,
-					zip = $8,
-					"phoneNumber" = $9,
-					"otherNumber" = $10,
-					email = $11,
-					gender = $12,
-					"dateOfBirth" = $13,
-					"fullName" = $15
-				WHERE "ledaId" = $14
+					"nickname" = $3,
+					"middleInitial" = $4,
+					"addressOne" = $5,
+					"addressTwo" = $6,
+					city = $7,
+					state = $8,
+					zip = $9,
+					"phoneNumber" = $10,
+					"otherNumber" = $11,
+					email = $12,
+					gender = $13,
+					"dateOfBirth" = $14,
+					"fullName" = $16
+				WHERE "ledaId" = $15
 			`;
 			const values1 = [
 				data.lastName,
 				data.firstName,
+				data.nickname || null,
 				data.middleInitial,
 				data.addressOne,
 				data.addressTwo,
