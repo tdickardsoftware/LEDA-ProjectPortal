@@ -67,6 +67,10 @@ import {
 import MentionSelectorWrapper from "@/components/ui/mention-selector-wrapper";
 import PenaltyAccordion from "@/components/ui/penalty-accordion";
 import TeamPlayerTable from "@/components/ui/team-player-table";
+import type { DisplayPlayer } from "@/components/ui/team-player-table";
+import TempPlayerAddForm from "@/components/forms/management/temp-player-add-form";
+import { TempPlayer } from "@/lib/definitions";
+import { tempPlayerRoute } from "@/lib/apiRoutes";
 
 
 
@@ -162,6 +166,12 @@ export default function WeeklyScoresheetsContent({
 	const [awayTeamName, setAwayTeamName] = useState<string>("");
 	const [homeTeamMemberIds, setHomeTeamMemberIds] = useState<string[]>([]);
 	const [awayTeamMemberIds, setAwayTeamMemberIds] = useState<string[]>([]);
+
+	// Temp player state — persists only for the current matchup selection
+	const [homeTempPlayers, setHomeTempPlayers] = useState<TempPlayer[]>([]);
+	const [awayTempPlayers, setAwayTempPlayers] = useState<TempPlayer[]>([]);
+	const [addTempDialogOpen, setAddTempDialogOpen] = useState(false);
+	const [addTempTeam, setAddTempTeam] = useState<"home" | "away">("home");
 
 	// Penalty management state
 	const [homePenaltyDialogOpen, setHomePenaltyDialogOpen] =
@@ -427,6 +437,48 @@ export default function WeeklyScoresheetsContent({
 		refetchOnWindowFocus: false,
 	retry: false,
 });
+
+	// Fetch all temp players (used to resolve IDs in saved scoresheets)
+	const { data: allTempPlayers = [] } = useQuery<TempPlayer[]>({
+		queryKey: ["tempPlayers"],
+		queryFn: async () => {
+			const res = await fetchWithSession(tempPlayerRoute, { method: "GET" });
+			if (!res.ok) return [];
+			return res.json();
+		},
+		staleTime: 1000 * 60 * 5,
+		enabled: matchSelected,
+	});
+
+	// After game stats hydrate, detect any saved tempIds and add them to local temp player state
+	useEffect(() => {
+		if (!homeHydrated || homeTeamMemberIds.length === 0) return;
+		const unknownIds = Object.keys(homeTeamGameData).filter(
+			(id) => !homeTeamMemberIds.includes(id)
+		);
+		if (unknownIds.length === 0) return;
+		const found = allTempPlayers.filter((t) => unknownIds.includes(String(t.tempId)));
+		if (found.length === 0) return;
+		setHomeTempPlayers((prev) => {
+			const existingIds = new Set(prev.map((t) => t.tempId));
+			return [...prev, ...found.filter((t) => !existingIds.has(t.tempId))];
+		});
+	}, [homeHydrated, homeTeamGameData, homeTeamMemberIds, allTempPlayers]);
+
+	useEffect(() => {
+		if (!awayHydrated || awayTeamMemberIds.length === 0) return;
+		const unknownIds = Object.keys(awayTeamGameData).filter(
+			(id) => !awayTeamMemberIds.includes(id)
+		);
+		if (unknownIds.length === 0) return;
+		const found = allTempPlayers.filter((t) => unknownIds.includes(String(t.tempId)));
+		if (found.length === 0) return;
+		setAwayTempPlayers((prev) => {
+			const existingIds = new Set(prev.map((t) => t.tempId));
+			return [...prev, ...found.filter((t) => !existingIds.has(t.tempId))];
+		});
+	}, [awayHydrated, awayTeamGameData, awayTeamMemberIds, allTempPlayers]);
+
 // Local state for mentions by player (must be after player data queries)
 // Declare only once, after player data queries
 
@@ -512,6 +564,28 @@ export default function WeeklyScoresheetsContent({
 
 	const homeTeamPlayerInformation = homeTeamPlayerData as Player[] | undefined;
 	const awayTeamPlayerInformation = awayTeamPlayerData as Player[] | undefined;
+	const dedupeDisplayPlayers = (players: DisplayPlayer[]) =>
+		Array.from(
+			new Map(players.map((player) => [String(player.ledaId), player])).values()
+		);
+
+	// Merge regular roster players with temp players for display in the scoresheet
+	const homeDisplayPlayers: DisplayPlayer[] = dedupeDisplayPlayers([
+		...(homeTeamPlayerInformation ?? []).map((p) => ({ ledaId: p.ledaId, fullName: p.fullName })),
+		...homeTempPlayers.map((t) => ({
+			ledaId: t.tempId,
+			fullName: `${t.firstName}${t.middleInitial ? ` ${t.middleInitial}.` : ""} ${t.lastName}`,
+			isTemp: true as const,
+		})),
+	]);
+	const awayDisplayPlayers: DisplayPlayer[] = dedupeDisplayPlayers([
+		...(awayTeamPlayerInformation ?? []).map((p) => ({ ledaId: p.ledaId, fullName: p.fullName })),
+		...awayTempPlayers.map((t) => ({
+			ledaId: t.tempId,
+			fullName: `${t.firstName}${t.middleInitial ? ` ${t.middleInitial}.` : ""} ${t.lastName}`,
+			isTemp: true as const,
+		})),
+	]);
 
 	// Handle edit mode population
 	useEffect(() => {
@@ -952,6 +1026,8 @@ const confirmPendingChangesPlaceholder = () => true;
 			setOriginalMatchupSnapshot(null);
 			setLastSavedSnapshot(null);
 			setBaselineInitialized(false);
+			setHomeTempPlayers([]);
+			setAwayTempPlayers([]);
 
 			let homeTeamId = "";
 			let awayTeamId = "";
@@ -1982,8 +2058,15 @@ const FolderTabSkeleton = () => (
 													onRemove={handlePenaltyRemoval}
 												/>
 											</div>
+											<Button
+												variant="outline"
+												className="text-sm px-2 py-1 rounded-md border-border hover:bg-muted mb-2"
+												onClick={() => { setAddTempTeam("home"); setAddTempDialogOpen(true); }}
+											>
+												Add Temp Player
+											</Button>
 											<TeamPlayerTable
-												players={homeTeamPlayerInformation ?? []}
+												players={homeDisplayPlayers}
 												teamType="home"
 												teamId={selectedHomeTeamId}
 												gameData={homeTeamGameData}
@@ -2082,8 +2165,15 @@ const FolderTabSkeleton = () => (
 												onEdit={handlePenaltyEditing}
 												onRemove={handlePenaltyRemoval}
 											/>
+											<Button
+												variant="outline"
+												className="text-sm px-2 py-1 rounded-md border-border hover:bg-muted mb-2"
+												onClick={() => { setAddTempTeam("away"); setAddTempDialogOpen(true); }}
+											>
+												Add Temp Player
+											</Button>
 											<TeamPlayerTable
-												players={awayTeamPlayerInformation ?? []}
+												players={awayDisplayPlayers}
 												teamType="away"
 												teamId={selectedAwayTeamId}
 												gameData={awayTeamGameData}
@@ -2403,6 +2493,43 @@ const FolderTabSkeleton = () => (
 								)}
 							</div>
 						</div>
+			{/* Add Temp Player Dialog */}
+			<Dialog open={addTempDialogOpen} onOpenChange={setAddTempDialogOpen}>
+				<DialogContent className="w-fit bg-background">
+					<DialogHeader>
+						<DialogTitle>
+							Add Temp Player — {addTempTeam === "home" ? homeTeamName : awayTeamName}
+						</DialogTitle>
+						<DialogDescription>
+							Create a new temp player or select an existing one to add to this team.
+						</DialogDescription>
+					</DialogHeader>
+					<TempPlayerAddForm
+						onAdded={(tempPlayer) => {
+							if (addTempTeam === "home") {
+								setHomeTempPlayers((prev) => {
+									if (prev.some((t) => t.tempId === tempPlayer.tempId)) return prev;
+									return [...prev, tempPlayer];
+								});
+								setHomeTeamGameData((prev) => ({
+									...prev,
+									[String(tempPlayer.tempId)]: prev[String(tempPlayer.tempId)] ?? {},
+								}));
+							} else {
+								setAwayTempPlayers((prev) => {
+									if (prev.some((t) => t.tempId === tempPlayer.tempId)) return prev;
+									return [...prev, tempPlayer];
+								});
+								setAwayTeamGameData((prev) => ({
+									...prev,
+									[String(tempPlayer.tempId)]: prev[String(tempPlayer.tempId)] ?? {},
+								}));
+							}
+						}}
+						onClose={() => setAddTempDialogOpen(false)}
+					/>
+				</DialogContent>
+			</Dialog>
 			{/* Add Mention Dialog */}
 			<Dialog
 				open={mentionDialogOpen}
