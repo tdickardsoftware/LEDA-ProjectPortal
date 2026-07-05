@@ -17,6 +17,7 @@ export type Player = {
 	fullName: string;
 	lastName: string;
 	firstName: string;
+	nickname?: string;
 	middleInitial: string;
 	addressOne: string;
 	addressTwo: string;
@@ -205,6 +206,7 @@ export type PlayerMemberInfo = {
 	fullName?: string;
 	lastName: string;
 	firstName: string;
+	nickname?: string;
 	middleInitial?: string;
 	addressOne: string;
 	addressTwo?: string;

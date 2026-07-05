@@ -43,6 +43,7 @@ import { fetchWithSession } from "@/lib/getData";
 // Validation schema for all player fields — mirrors PlayerAddInformationForm
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
+	nickname: z.string().nullable().optional(),
 	middleInitial: z.string().nullable().optional(),
 	lastName: z.string().min(1, { message: "Last Name is Required" }),
 	addressOne: z.string().min(1, { message: "Address is Required" }),
@@ -136,6 +137,7 @@ export default function PlayerEditInformationForm({
 			name: "Personal Info",
 			fields: [
 				"firstName",
+				"nickname",
 				"middleInitial",
 				"lastName",
 				"gender",
@@ -187,6 +189,7 @@ export default function PlayerEditInformationForm({
 		mode: "onChange",
 		defaultValues: {
 			firstName: formData.firstName || "",
+			nickname: formData.nickname || "",
 			middleInitial: formData.middleInitial || "",
 			lastName: formData.lastName || "",
 			addressOne: formData.addressOne || "",
@@ -403,6 +406,11 @@ export default function PlayerEditInformationForm({
 										control={form.control}
 										name="firstName"
 										label="First Name *"
+									/>
+									<InputDefault
+										control={form.control}
+										name="nickname"
+										label="Nickname"
 									/>
 									<InputDefault
 										control={form.control}
