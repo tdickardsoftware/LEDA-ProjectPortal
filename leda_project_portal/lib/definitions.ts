@@ -236,6 +236,15 @@ export type PlayerMemberInfo = {
 	lifetimeMemberReason?: string;
 };
 //
+// Define type for temporary player records
+//
+export type TempPlayer = {
+	tempId: number;
+	firstName: string;
+	middleInitial?: string;
+	lastName: string;
+};
+//
 // Define type to identify the shape of our data from postgres for Trails Dates
 //
 export type TrailsDate = {

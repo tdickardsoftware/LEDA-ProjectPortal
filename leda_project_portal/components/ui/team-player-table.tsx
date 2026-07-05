@@ -6,6 +6,7 @@
  * Renders the game-participation grid for a single team (home or away).
  * Each row = one player; each column = one game (11 total).
  * Cells are toggled by clicking; a Mentions button opens the mention dialog.
+ * Temp players are shown with a "(Temp)" badge next to their name.
  */
 
 import { X } from "lucide-react";
@@ -18,11 +19,17 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Player } from "@/lib/definitions";
 import { TeamGameData } from "@/lib/weekly-scoresheet-definitions";
 
+// Minimal player shape required by this table — satisfied by both Player and TempPlayer display objects
+export interface DisplayPlayer {
+	ledaId: number;
+	fullName: string;
+	isTemp?: boolean;
+}
+
 interface TeamPlayerTableProps {
-	players: Player[];
+	players: DisplayPlayer[];
 	teamType: "home" | "away";
 	teamId: string;
 	gameData: TeamGameData;
@@ -61,6 +68,11 @@ export default function TeamPlayerTable({
 						<TableRow key={player.ledaId}>
 							<TableCell className="w-fit flex items-center gap-2">
 								<span>{player.fullName}</span>
+								{player.isTemp && (
+									<span className="text-xs text-amber-600 border border-amber-400 rounded px-1">
+										Temp
+									</span>
+								)}
 							</TableCell>
 							<TableCell>
 								<Button

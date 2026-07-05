@@ -35,7 +35,7 @@ import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
-import { playerRoute } from "@/lib/apiRoutes";
+import { playerRoute, tempPlayerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
@@ -109,13 +109,16 @@ const checkboxWidth = "h-5 w-5";
  *
  * @param onClose - Callback to close the containing dialog
  * @param onRefresh - Callback to reload the parent data table
+ * @param tempConversionData - When provided, pre-fills name fields and converts a temp player
  */
 export default function PlayerAddInformationForm({
 	onClose,
 	onRefresh,
+	tempConversionData,
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
+	tempConversionData?: { tempId: number; firstName: string; middleInitial?: string; lastName: string };
 }) {
 	// When true, ledaId is set to 0 so the server auto-assigns an ID
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
@@ -139,13 +142,13 @@ export default function PlayerAddInformationForm({
 			badStanding: false,
 			lifetimeMemberReason: "",
 			otherNumber: "",
-			middleInitial: "",
 			nickname: "",
 			addressTwo: "",
 			badStandingReason: "",
 			addressOne: "",
-			firstName: "",
-			lastName: "",
+			firstName: tempConversionData?.firstName ?? "",
+			middleInitial: tempConversionData?.middleInitial ?? "",
+			lastName: tempConversionData?.lastName ?? "",
 			city: "",
 			state: "OH",
 			zip: "",
@@ -175,13 +178,13 @@ export default function PlayerAddInformationForm({
 			badStanding: false,
 			lifetimeMemberReason: "",
 			otherNumber: "",
-			middleInitial: "",
+			middleInitial: tempConversionData?.middleInitial ?? "",
 			nickname: "",
 			addressTwo: "",
 			badStandingReason: "",
 			addressOne: "",
-			firstName: "",
-			lastName: "",
+			firstName: tempConversionData?.firstName ?? "",
+			lastName: tempConversionData?.lastName ?? "",
 			city: "",
 			state: "OH",
 			zip: "",
@@ -192,21 +195,28 @@ export default function PlayerAddInformationForm({
 			lastMembershipFeePayment: "UNPAID - New Player",
 			memberType: "",
 		});
-	}, [form]);
+	}, [form, tempConversionData]);
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
-			const submissionValues = generateIDStatus
-				? { ...values, ledaId: 0 }
-				: values;
-
-			const response = await fetchWithSession(playerRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(submissionValues),
-			});
+			let response: Response;
+			if (tempConversionData) {
+				// Convert temp player: always auto-assign the ledaId server-side
+				response = await fetchWithSession(tempPlayerRoute, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ action: "convert", tempId: tempConversionData.tempId, ...values }),
+				});
+			} else {
+				const submissionValues = generateIDStatus
+					? { ...values, ledaId: 0 }
+					: values;
+				response = await fetchWithSession(playerRoute, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(submissionValues),
+				});
+			}
 
 			if (!response.ok) {
 				if (response.status === 422) {
@@ -221,7 +231,7 @@ export default function PlayerAddInformationForm({
 			return await response.json();
 		},
 		onSuccess: () => {
-			toast.success("Successfully submitted the form!");
+			toast.success(tempConversionData ? "Player converted successfully!" : "Successfully submitted the form!");
 			form.reset();
 			setGenerateIDStatus(true);
 			setBadStandingStatus(false);
@@ -447,23 +457,25 @@ export default function PlayerAddInformationForm({
 				{currentStep === 2 && (
 					<div className={formContainerStyle}>
 						<h1>Membership Information</h1>
-						{/* Generate ID Checkbox */}
-						<div className="flex items-start space-x-2">
-							<Label
-								className="whitespace-nowrap"
-								htmlFor="generateID"
-							>
-								Generate LEDA ID
-							</Label>
-							<Checkbox
-								checked={generateIDStatus}
-								onCheckedChange={(checked: boolean) =>
-									setGenerateIDStatus(checked)
-								}
-								className={checkboxWidth}
-								id="generateID"
-							/>
-						</div>
+						{/* Generate ID Checkbox — hidden when converting a temp player */}
+						{!tempConversionData && (
+							<div className="flex items-start space-x-2">
+								<Label
+									className="whitespace-nowrap"
+									htmlFor="generateID"
+								>
+									Generate LEDA ID
+								</Label>
+								<Checkbox
+									checked={generateIDStatus}
+									onCheckedChange={(checked: boolean) =>
+										setGenerateIDStatus(checked)
+									}
+									className={checkboxWidth}
+									id="generateID"
+								/>
+							</div>
+						)}
 
 						<FormField
 							control={form.control}
