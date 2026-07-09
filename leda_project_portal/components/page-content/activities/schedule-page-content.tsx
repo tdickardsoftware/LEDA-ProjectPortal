@@ -34,6 +34,7 @@ export default function ScheduleContent() {
 		currentSeason,
 		setCurrentSeason,
 		gameDates,
+		seasonHasStarted,
 		updatedMatchData,
 		stageScheduleData,
 		enableSaveButton,
@@ -174,7 +175,7 @@ export default function ScheduleContent() {
 							gameDates={gameDates}
 							currentSubdivision={selectedSubdivision}
 							seasonCode={seasonCode}
-							disabled={!seasonCode || rosterNotFound}
+							disabled={!seasonCode || rosterNotFound || seasonHasStarted}
 							onGenerate={handleGenerate}
 							/>							<SaveStatusIndicator status={saveStatus} />
 							<Button

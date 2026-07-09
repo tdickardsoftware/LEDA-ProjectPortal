@@ -19,6 +19,31 @@ export default async function handler(
 	// Handle GET requests
 	if (req.method === "GET") {
 		log.info({ method: "GET", query: req.query }, "Fetch season request");
+		// Developer date override: read cookie only for Developer role.
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const sessionRole = ((session as any)?.data?.user?.role as string | undefined)
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			?? ((session as any)?.user?.role as string | undefined)
+			?? "User";
+		let serverTime = new Date();
+		if (sessionRole === "Developer") {
+			const cookieHeader = req.headers["cookie"] as string | undefined;
+			if (cookieHeader) {
+				for (const part of cookieHeader.split(/;\s*/)) {
+					const eqIdx = part.indexOf("=");
+					if (eqIdx === -1) continue;
+					const key = part.slice(0, eqIdx).trim();
+					if (key === "overrideDate") {
+						const val = decodeURIComponent(part.slice(eqIdx + 1));
+						if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+							const candidate = new Date(`${val}T12:00:00`);
+							if (!isNaN(candidate.getTime())) serverTime = candidate;
+						}
+						break;
+					}
+				}
+			}
+		}
 		if (req.query.seasonCode) {
 			try {
 				const seasonCode = req.query.seasonCode;
@@ -27,7 +52,12 @@ export default async function handler(
 					[seasonCode as string]
 				);
 				log.info({ seasonCode: req.query.seasonCode }, "Fetched single season");
-				res.status(200).json(result.rows[0]);
+					// Include the server's current date so clients can compare against it
+					// rather than relying on their own (potentially skewed) local clock.
+					res.status(200).json({
+						...result.rows[0],
+						serverTime: serverTime.toISOString(),
+					});
 			} catch (error) {
 				log.error({ err: error }, "Failed to fetch season by seasonCode");
 				res.status(500).json({
