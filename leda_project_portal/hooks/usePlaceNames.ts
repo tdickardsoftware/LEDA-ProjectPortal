@@ -11,12 +11,18 @@ import { fetchWithSession } from '@/lib/getData';
 
 /**
  * Accepts a map of teams keyed by letter and returns a place-name lookup,
- * a loading flag, and a `getPlaceNameById` helper.
+ * a loading flag, and a `getPlaceNameById` helper. Optionally accepts extra
+ * place IDs to resolve alongside the teams' venues (e.g. a season's backup
+ * location, which isn't necessarily any team's home place).
  */
-export function usePlaceNames(teams: Record<string, TeamData>) {
+export function usePlaceNames(teams: Record<string, TeamData>, extraPlaceIds: (string | null | undefined)[] = []) {
 	const uniquePlaceIds = useMemo(
-		() => [...new Set(Object.values(teams).map(team => team.placeId))],
-		[teams]
+		() => [...new Set([
+			...Object.values(teams).map(team => team.placeId),
+			...extraPlaceIds.filter((id): id is string => !!id),
+		])],
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[teams, ...extraPlaceIds]
 	);
 
 	const {

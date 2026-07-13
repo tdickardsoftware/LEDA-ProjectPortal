@@ -35,7 +35,7 @@ export default async function handler(
 			
 			// Execute the database query to fetch place information
 			const result = await query<PlaceSelector>(
-				`SELECT p."ledaId", p."name"
+				`SELECT p."ledaId", p."name", p."numberOfBoards"
 				 FROM public.leda_place_info p
 				 WHERE 1=1 ${searchCondition}
 				 ORDER BY p."ledaId"

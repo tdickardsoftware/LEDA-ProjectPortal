@@ -17,6 +17,7 @@ export type Player = {
 	fullName: string;
 	lastName: string;
 	firstName: string;
+	nickname?: string;
 	middleInitial: string;
 	addressOne: string;
 	addressTwo: string;
@@ -117,6 +118,7 @@ export type Place = {
 export type PlaceSelector = {
 	ledaId: number;
 	name: string;
+	numberOfBoards: number;
 };
 //
 // Define type to identify the shape of our data from postgres for place datatable
@@ -187,6 +189,7 @@ export type Season = {
 	fiscalYear: string;
 	dates: JSON;
 	isCurrentSeason: boolean;
+	backupPlaceId?: string | null;
 };
 //
 // Define type to identify the shape of our data from postgres for Seasons Datatable
@@ -205,6 +208,7 @@ export type PlayerMemberInfo = {
 	fullName?: string;
 	lastName: string;
 	firstName: string;
+	nickname?: string;
 	middleInitial?: string;
 	addressOne: string;
 	addressTwo?: string;
@@ -232,6 +236,15 @@ export type PlayerMemberInfo = {
 	cannotBeCaptain: boolean;
 	lifetimeMember: boolean;
 	lifetimeMemberReason?: string;
+};
+//
+// Define type for temporary player records
+//
+export type TempPlayer = {
+	tempId: number;
+	firstName: string;
+	middleInitial?: string;
+	lastName: string;
 };
 //
 // Define type to identify the shape of our data from postgres for Trails Dates

@@ -35,7 +35,7 @@ import React from "react";
 import PlayerTypeSelector from "@/components/ui/player-type-selector";
 import { InputDefault } from "@/components/ui/form-input-default";
 import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
-import { playerRoute } from "@/lib/apiRoutes";
+import { playerRoute, tempPlayerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
@@ -43,6 +43,7 @@ import { fetchWithSession } from "@/lib/getData";
 // Validation schema for all player fields across all form steps
 const playerInfoSchema = z.object({
 	firstName: z.string().min(1, { message: "First Name is Required" }),
+	nickname: z.string().nullable().optional(),
 	middleInitial: z.string().nullable().optional(),
 	lastName: z.string().min(1, { message: "Last Name is Required" }),
 	addressOne: z.string().min(1, { message: "Address is Required" }),
@@ -66,12 +67,9 @@ const playerInfoSchema = z.object({
 		),
 	email: z
 		.string()
-		.min(1, { message: "Email is Required" })
-		.refine(
-			(value) => value.toUpperCase() === "UNKNOWN" || validator.isEmail(value),
-			{ message: "Email is Invalid" }
-		)
-		.transform((value) => value.toUpperCase() === "UNKNOWN" ? "UNKNOWN" : value),
+		.nullable()
+		.optional(),
+	emailUnknown: z.boolean(),
 	gender: z.string().min(1, { message: "Gender is Required" }),
 	dateOfBirth: z.string().nullable().optional(),
 	// Membership Information
@@ -95,6 +93,14 @@ const playerInfoSchema = z.object({
 	cannotBeCaptain: z.boolean(),
 	lifetimeMember: z.boolean(),
 	lifetimeMemberReason: z.string().nullable().optional(),
+}).superRefine((data, ctx) => {
+	// Email is only required when the player's email isn't marked unknown
+	if (data.emailUnknown) return;
+	if (!data.email) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Required", path: ["email"] });
+	} else if (!validator.isEmail(data.email)) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Invalid", path: ["email"] });
+	}
 });
 
 // Shared style constants for the form layout
@@ -108,13 +114,16 @@ const checkboxWidth = "h-5 w-5";
  *
  * @param onClose - Callback to close the containing dialog
  * @param onRefresh - Callback to reload the parent data table
+ * @param tempConversionData - When provided, pre-fills name fields and converts a temp player
  */
 export default function PlayerAddInformationForm({
 	onClose,
 	onRefresh,
+	tempConversionData,
 }: {
 	onClose: () => void;
 	onRefresh: () => void;
+	tempConversionData?: { tempId: number; firstName: string; middleInitial?: string; lastName: string };
 }) {
 	// When true, ledaId is set to 0 so the server auto-assigns an ID
 	const [generateIDStatus, setGenerateIDStatus] = useState(true);
@@ -138,16 +147,18 @@ export default function PlayerAddInformationForm({
 			badStanding: false,
 			lifetimeMemberReason: "",
 			otherNumber: "",
-			middleInitial: "",
+			nickname: "",
 			addressTwo: "",
 			badStandingReason: "",
 			addressOne: "",
-			firstName: "",
-			lastName: "",
+			firstName: tempConversionData?.firstName ?? "",
+			middleInitial: tempConversionData?.middleInitial ?? "",
+			lastName: tempConversionData?.lastName ?? "",
 			city: "",
 			state: "OH",
 			zip: "",
 			email: "",
+			emailUnknown: false,
 			phoneNumber: "",
 			gender: "",
 			ledaId: undefined,
@@ -155,6 +166,8 @@ export default function PlayerAddInformationForm({
 			memberType: "",
 		},
 	});
+
+	const isEmailUnknown = form.watch("emailUnknown");
 
 	// Reset form and all state when component mounts to ensure clean state
 	React.useEffect(() => {
@@ -173,37 +186,46 @@ export default function PlayerAddInformationForm({
 			badStanding: false,
 			lifetimeMemberReason: "",
 			otherNumber: "",
-			middleInitial: "",
+			middleInitial: tempConversionData?.middleInitial ?? "",
+			nickname: "",
 			addressTwo: "",
 			badStandingReason: "",
 			addressOne: "",
-			firstName: "",
-			lastName: "",
+			firstName: tempConversionData?.firstName ?? "",
+			lastName: tempConversionData?.lastName ?? "",
 			city: "",
 			state: "OH",
 			zip: "",
 			email: "",
+			emailUnknown: false,
 			phoneNumber: "",
 			gender: "",
 			ledaId: undefined,
 			lastMembershipFeePayment: "UNPAID - New Player",
 			memberType: "",
 		});
-	}, [form]);
+	}, [form, tempConversionData]);
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
-			const submissionValues = generateIDStatus
-				? { ...values, ledaId: 0 }
-				: values;
-
-			const response = await fetchWithSession(playerRoute, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(submissionValues),
-			});
+			let response: Response;
+			if (tempConversionData) {
+				// Convert temp player: always auto-assign the ledaId server-side
+				response = await fetchWithSession(tempPlayerRoute, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ action: "convert", tempId: tempConversionData.tempId, ...values }),
+				});
+			} else {
+				const submissionValues = generateIDStatus
+					? { ...values, ledaId: 0 }
+					: values;
+				response = await fetchWithSession(playerRoute, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(submissionValues),
+				});
+			}
 
 			if (!response.ok) {
 				if (response.status === 422) {
@@ -218,7 +240,7 @@ export default function PlayerAddInformationForm({
 			return await response.json();
 		},
 		onSuccess: () => {
-			toast.success("Successfully submitted the form!");
+			toast.success(tempConversionData ? "Player converted successfully!" : "Successfully submitted the form!");
 			form.reset();
 			setGenerateIDStatus(true);
 			setBadStandingStatus(false);
@@ -243,6 +265,7 @@ export default function PlayerAddInformationForm({
 			name: "Personal Info",
 			fields: [
 				"firstName",
+				"nickname",
 				"middleInitial",
 				"lastName",
 				"gender",
@@ -314,7 +337,10 @@ export default function PlayerAddInformationForm({
 
 	function onSubmit(values: z.infer<typeof playerInfoSchema>) {
 		setLedaIdExists(false);
-		mutation.mutate(values);
+		mutation.mutate({
+			...values,
+			email: values.emailUnknown ? "UNKNOWN" : values.email,
+		});
 	}
 
 	return (
@@ -359,6 +385,11 @@ export default function PlayerAddInformationForm({
 								control={form.control}
 								name="firstName"
 								label="First Name *"
+							/>
+							<InputDefault
+								control={form.control}
+								name="nickname"
+								label="Nickname"
 							/>
 							<InputDefault
 								control={form.control}
@@ -418,8 +449,15 @@ export default function PlayerAddInformationForm({
 						<InputDefault
 							control={form.control}
 							name="email"
-							label="Email *"
+							label={isEmailUnknown ? "Email" : "Email *"}
 							type="email"
+							disabled={isEmailUnknown}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="emailUnknown"
+							label="Email Unknown"
+							className={checkboxWidth}
 						/>
 						<PhoneNumberInput
 							control={form.control}
@@ -438,23 +476,25 @@ export default function PlayerAddInformationForm({
 				{currentStep === 2 && (
 					<div className={formContainerStyle}>
 						<h1>Membership Information</h1>
-						{/* Generate ID Checkbox */}
-						<div className="flex items-start space-x-2">
-							<Label
-								className="whitespace-nowrap"
-								htmlFor="generateID"
-							>
-								Generate LEDA ID
-							</Label>
-							<Checkbox
-								checked={generateIDStatus}
-								onCheckedChange={(checked: boolean) =>
-									setGenerateIDStatus(checked)
-								}
-								className={checkboxWidth}
-								id="generateID"
-							/>
-						</div>
+						{/* Generate ID Checkbox — hidden when converting a temp player */}
+						{!tempConversionData && (
+							<div className="flex items-start space-x-2">
+								<Label
+									className="whitespace-nowrap"
+									htmlFor="generateID"
+								>
+									Generate LEDA ID
+								</Label>
+								<Checkbox
+									checked={generateIDStatus}
+									onCheckedChange={(checked: boolean) =>
+										setGenerateIDStatus(checked)
+									}
+									className={checkboxWidth}
+									id="generateID"
+								/>
+							</div>
+						)}
 
 						<FormField
 							control={form.control}

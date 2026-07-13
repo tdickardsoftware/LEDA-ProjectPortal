@@ -3,3 +3,5 @@
 
 # Keep the example template
 !.env.example
+.gitignore
+.github/

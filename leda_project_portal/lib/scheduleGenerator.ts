@@ -36,6 +36,13 @@ export interface GeneratorOptions {
 	 * The same seed produces the same schedule preview and generated data.
 	 */
 	shuffleSeed?: number;
+	/**
+	 * When true, uses the legacy LEDA recursive half-split pairing pattern with
+	 * pre-determined home/away assignments derived from historical data.
+	 * Supported for subdivisions with 2, 4, 6, or 8 effective team slots.
+	 * Falls back to the standard circle method for other team counts.
+	 */
+	sequentialPairing?: boolean;
 }
 
 export interface GenerationPreview {
@@ -89,6 +96,86 @@ function shuffleTeamLetters(teamLetters: string[], seed: number | undefined): st
 		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
 	}
 	return shuffled;
+}
+
+/**
+ * LEDA legacy pairing algorithm (recursive half-split).
+ *
+ * Returns rounds as [home, away] pairs — the first element is ALWAYS the home
+ * team for cycle 1 (the caller flips for cycle 2 via shouldFlipCycleHomeAway).
+ *
+ * Exact schedules for n=2, 4, 6, 8 are derived from historical LEDA database data.
+ * Odd team counts are padded with a BYE slot at the end before applying the
+ * even-team algorithm (e.g. 7 real teams → 8-team schedule with 1 BYE).
+ * Falls back to the standard circle method for other (larger) sizes.
+ */
+function buildPairingsLEDA(teamLetters: string[]): [string, string][][] {
+	const isOdd = teamLetters.length % 2 !== 0;
+	const teams = isOdd ? [...teamLetters, BYE_PLACEHOLDER] : [...teamLetters];
+	const n = teams.length;
+	const t = (i: number) => teams[i];
+
+	if (n === 2) {
+		// Single round; team 0 is home.
+		return [[[t(0), t(1)]]];
+	}
+
+	if (n === 4) {
+		// 3-round schedule derived from the n=8 recursive structure (L sub-group).
+		// W0: base pairs — 0H, 3H
+		// W1: sub-cross j=0 — 2H, 1H
+		// W2: sub-cross j=1 — all lower home
+		return [
+			[[t(0), t(1)], [t(3), t(2)]],
+			[[t(2), t(0)], [t(1), t(3)]],
+			[[t(0), t(3)], [t(1), t(2)]],
+		];
+	}
+
+	if (n === 6) {
+		// 5-round schedule derived from historical LEDA data (s01/Summer/sub4).
+		// Pairs ordered [home, away] for cycle 1.
+		return [
+			[[t(0), t(1)], [t(2), t(5)], [t(3), t(4)]],
+			[[t(2), t(0)], [t(4), t(1)], [t(5), t(3)]],
+			[[t(0), t(5)], [t(1), t(3)], [t(4), t(2)]],
+			[[t(3), t(0)], [t(1), t(2)], [t(5), t(4)]],
+			[[t(0), t(4)], [t(5), t(1)], [t(2), t(3)]],
+		];
+	}
+
+	if (n === 8) {
+		// 7-round schedule from the recursive half-split algorithm.
+		// L={0..3}, U={4..7}. Weeks 0-2 within-group; weeks 3-6 cross-group.
+		// Pairs ordered [home, away] for cycle 1 — verified against LEDA CSV data.
+		const half = 4;
+		const rounds: [string, string][][] = [
+			// W0: base pairs, homeFirst = [T, F, F, T] (0H, 3H, 5H, 6H)
+			[[t(0), t(1)], [t(3), t(2)], [t(5), t(4)], [t(6), t(7)]],
+			// W1: sub-cross j=0, homeFirst = [F, T, T, F] (2H, 1H, 4H, 7H)
+			[[t(2), t(0)], [t(1), t(3)], [t(4), t(6)], [t(7), t(5)]],
+			// W2: sub-cross j=1, all lower home (0H, 1H, 4H, 5H)
+			[[t(0), t(3)], [t(1), t(2)], [t(4), t(7)], [t(5), t(6)]],
+		];
+		// W3-W6: cross-group rounds.
+		// j even → upper group home; j odd → lower group home.
+		for (let j = 0; j < half; j++) {
+			const round: [string, string][] = [];
+			const lowerHome = j % 2 === 1;
+			for (let i = 0; i < half; i++) {
+				const lTeam = i;
+				const uTeam = (i + j) % half + half;
+				round.push(lowerHome ? [t(lTeam), t(uTeam)] : [t(uTeam), t(lTeam)]);
+			}
+			rounds.push(round);
+		}
+		return rounds;
+	}
+
+	// Fallback for larger subdivisions: use standard circle method.
+	// Note: home/away is NOT pre-determined in this path; the caller must
+	// use homeCount-based assignment for these cases.
+	return buildPairings(teams);
 }
 
 /**
@@ -161,8 +248,14 @@ function generateForSubdivision(
 	if (teamLetters.length < 2) return result; // Need at least 2 teams to schedule
 
 	const shuffledTeamLetters = shuffleTeamLetters(teamLetters, options.shuffleSeed);
+
+	// Determine whether to use the LEDA recursive algorithm.
+	// Only activate for effective sizes 2, 4, 6, 8 (odd counts get +1 BYE → even).
+	const effectiveN = teamLetters.length % 2 === 0 ? teamLetters.length : teamLetters.length + 1;
+	const useLEDA = !!options.sequentialPairing && effectiveN >= 2 && effectiveN <= 8;
+
 	const rounds = rotateRounds(
-		buildPairings(shuffledTeamLetters),
+		useLEDA ? buildPairingsLEDA(shuffledTeamLetters) : buildPairings(shuffledTeamLetters),
 		options.rotationOffset
 	);
 	const preservedWeekKeys = new Set<string>();
@@ -222,13 +315,18 @@ function generateForSubdivision(
 					continue;
 				}
 
-				// Assign home to the team with fewer home games; break ties by round parity
-				const isAHome =
-					homeCount[teamA] < homeCount[teamB] ||
-					(homeCount[teamA] === homeCount[teamB] && roundCursor % 2 === 1);
+				// When using the LEDA algorithm the pair is already ordered [home, away]
+				// (after the cycle-flip above, teamA is always the home side).
+				// Otherwise fall back to homeCount-based balancing.
+				const isAHome = useLEDA
+					? true
+					: homeCount[teamA] < homeCount[teamB] ||
+					  (homeCount[teamA] === homeCount[teamB] && roundCursor % 2 === 1);
 
-				if (isAHome) homeCount[teamA]++;
-				else homeCount[teamB]++;
+				if (!useLEDA) {
+					if (isAHome) homeCount[teamA]++;
+					else homeCount[teamB]++;
+				}
 
 				result[teamA].matchesData[weekKey] = {
 					matchDate: date,
@@ -336,7 +434,9 @@ export function generateSchedule(
 	} else {
 		// All divisions
 		for (const division of Object.keys(divisionsData)) {
-			for (const sub of Object.keys(divisionsData[division].subdivisions)) {
+			const divData = divisionsData[division];
+			if (!divData?.subdivisions) continue;
+			for (const sub of Object.keys(divData.subdivisions)) {
 				processSubdiv(division, sub);
 			}
 		}

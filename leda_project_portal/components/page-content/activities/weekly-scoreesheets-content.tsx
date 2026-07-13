@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import SideNav from "./weekly-scoresheet-sidenav";
+import MissingScoresheetsDialog from "./missing-scoresheets-dialog";
 import PenaltyAddForm from "@/components/forms/activities/weekly-scoresheet-add-penalty-form";
 import { TeamGameData } from "@/lib/weekly-scoresheet-definitions";
 import { DialogDescription } from "@radix-ui/react-dialog";
@@ -67,6 +68,10 @@ import {
 import MentionSelectorWrapper from "@/components/ui/mention-selector-wrapper";
 import PenaltyAccordion from "@/components/ui/penalty-accordion";
 import TeamPlayerTable from "@/components/ui/team-player-table";
+import type { DisplayPlayer } from "@/components/ui/team-player-table";
+import TempPlayerAddForm from "@/components/forms/management/temp-player-add-form";
+import { TempPlayer } from "@/lib/definitions";
+import { tempPlayerRoute } from "@/lib/apiRoutes";
 
 
 
@@ -153,6 +158,7 @@ export default function WeeklyScoresheetsContent({
 		completed: boolean;
 	};
 	const [lastSavedSnapshot, setLastSavedSnapshot] = useState<Snapshot | null>(null);
+	const [previousSavedSnapshot, setPreviousSavedSnapshot] = useState<Snapshot | null>(null);
 	const [baselineInitialized, setBaselineInitialized] = useState<boolean>(false);
 	const [homeHydrated, setHomeHydrated] = useState<boolean>(false);
 	const [awayHydrated, setAwayHydrated] = useState<boolean>(false);
@@ -162,6 +168,12 @@ export default function WeeklyScoresheetsContent({
 	const [awayTeamName, setAwayTeamName] = useState<string>("");
 	const [homeTeamMemberIds, setHomeTeamMemberIds] = useState<string[]>([]);
 	const [awayTeamMemberIds, setAwayTeamMemberIds] = useState<string[]>([]);
+
+	// Temp player state — persists only for the current matchup selection
+	const [homeTempPlayers, setHomeTempPlayers] = useState<TempPlayer[]>([]);
+	const [awayTempPlayers, setAwayTempPlayers] = useState<TempPlayer[]>([]);
+	const [addTempDialogOpen, setAddTempDialogOpen] = useState(false);
+	const [addTempTeam, setAddTempTeam] = useState<"home" | "away">("home");
 
 	// Penalty management state
 	const [homePenaltyDialogOpen, setHomePenaltyDialogOpen] =
@@ -427,6 +439,48 @@ export default function WeeklyScoresheetsContent({
 		refetchOnWindowFocus: false,
 	retry: false,
 });
+
+	// Fetch all temp players (used to resolve IDs in saved scoresheets)
+	const { data: allTempPlayers = [] } = useQuery<TempPlayer[]>({
+		queryKey: ["tempPlayers"],
+		queryFn: async () => {
+			const res = await fetchWithSession(tempPlayerRoute, { method: "GET" });
+			if (!res.ok) return [];
+			return res.json();
+		},
+		staleTime: 1000 * 60 * 5,
+		enabled: matchSelected,
+	});
+
+	// After game stats hydrate, detect any saved tempIds and add them to local temp player state
+	useEffect(() => {
+		if (!homeHydrated || homeTeamMemberIds.length === 0) return;
+		const unknownIds = Object.keys(homeTeamGameData).filter(
+			(id) => !homeTeamMemberIds.includes(id)
+		);
+		if (unknownIds.length === 0) return;
+		const found = allTempPlayers.filter((t) => unknownIds.includes(String(t.tempId)));
+		if (found.length === 0) return;
+		setHomeTempPlayers((prev) => {
+			const existingIds = new Set(prev.map((t) => t.tempId));
+			return [...prev, ...found.filter((t) => !existingIds.has(t.tempId))];
+		});
+	}, [homeHydrated, homeTeamGameData, homeTeamMemberIds, allTempPlayers]);
+
+	useEffect(() => {
+		if (!awayHydrated || awayTeamMemberIds.length === 0) return;
+		const unknownIds = Object.keys(awayTeamGameData).filter(
+			(id) => !awayTeamMemberIds.includes(id)
+		);
+		if (unknownIds.length === 0) return;
+		const found = allTempPlayers.filter((t) => unknownIds.includes(String(t.tempId)));
+		if (found.length === 0) return;
+		setAwayTempPlayers((prev) => {
+			const existingIds = new Set(prev.map((t) => t.tempId));
+			return [...prev, ...found.filter((t) => !existingIds.has(t.tempId))];
+		});
+	}, [awayHydrated, awayTeamGameData, awayTeamMemberIds, allTempPlayers]);
+
 // Local state for mentions by player (must be after player data queries)
 // Declare only once, after player data queries
 
@@ -512,6 +566,28 @@ export default function WeeklyScoresheetsContent({
 
 	const homeTeamPlayerInformation = homeTeamPlayerData as Player[] | undefined;
 	const awayTeamPlayerInformation = awayTeamPlayerData as Player[] | undefined;
+	const dedupeDisplayPlayers = (players: DisplayPlayer[]) =>
+		Array.from(
+			new Map(players.map((player) => [String(player.ledaId), player])).values()
+		);
+
+	// Merge regular roster players with temp players for display in the scoresheet
+	const homeDisplayPlayers: DisplayPlayer[] = dedupeDisplayPlayers([
+		...(homeTeamPlayerInformation ?? []).map((p) => ({ ledaId: p.ledaId, fullName: p.fullName })),
+		...homeTempPlayers.map((t) => ({
+			ledaId: t.tempId,
+			fullName: `${t.firstName}${t.middleInitial ? ` ${t.middleInitial}.` : ""} ${t.lastName}`,
+			isTemp: true as const,
+		})),
+	]);
+	const awayDisplayPlayers: DisplayPlayer[] = dedupeDisplayPlayers([
+		...(awayTeamPlayerInformation ?? []).map((p) => ({ ledaId: p.ledaId, fullName: p.fullName })),
+		...awayTempPlayers.map((t) => ({
+			ledaId: t.tempId,
+			fullName: `${t.firstName}${t.middleInitial ? ` ${t.middleInitial}.` : ""} ${t.lastName}`,
+			isTemp: true as const,
+		})),
+	]);
 
 	// Handle edit mode population
 	useEffect(() => {
@@ -622,6 +698,20 @@ const confirmPendingChangesPlaceholder = () => true;
 	// Save logic — persists only changed fields to the V2 scoresheet tables using
 	// shallow snapshot diffing (deepEqual) to avoid redundant writes
 	const deepEqual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+	const cloneSnapshot = (snapshot: Snapshot): Snapshot => ({
+		Home: {
+			teamGameData: JSON.parse(JSON.stringify(snapshot.Home.teamGameData)),
+			wins: [...snapshot.Home.wins],
+			points: [...snapshot.Home.points],
+			penalties: JSON.parse(JSON.stringify(snapshot.Home.penalties)),
+		},
+		Away: {
+			teamGameData: JSON.parse(JSON.stringify(snapshot.Away.teamGameData)),
+			points: [...snapshot.Away.points],
+			penalties: JSON.parse(JSON.stringify(snapshot.Away.penalties)),
+		},
+		completed: snapshot.completed,
+	});
 	const saveMatchup = useCallback(async (markComplete: boolean = false) => {
 		if (!seasonCode || !selectedWeek || !selectedDivision || !selectedSubdivision) return;
 		if (!selectedHomeTeamId || !selectedAwayTeamId) return;
@@ -734,8 +824,11 @@ const confirmPendingChangesPlaceholder = () => true;
 							gameStats: gameStats as Record<string, boolean>,
 						})
 					);
-					// Also upsert legacy cumulative player weekly points
-					const weeklyPoints = Object.values(gameStats).filter(Boolean).length; // assumption metric
+					// Top Darter Points: only Games 1-4 count toward weekly player points.
+					const weeklyPoints = [0, 1, 2, 3].reduce((sum, i) => {
+						const gameKey = `Game ${i + 1}`;
+						return sum + ((gameStats as Record<string, boolean>)[gameKey] ? 1 : 0);
+					}, 0);
 					tasks.push(
 						saveWeeklyPlayerPointsMutation.mutateAsync({
 							seasonCode,
@@ -763,7 +856,10 @@ const confirmPendingChangesPlaceholder = () => true;
 							gameStats: gameStats as Record<string, boolean>,
 						})
 					);
-					const weeklyPoints = Object.values(gameStats).filter(Boolean).length;
+					const weeklyPoints = [0, 1, 2, 3].reduce((sum, i) => {
+						const gameKey = `Game ${i + 1}`;
+						return sum + ((gameStats as Record<string, boolean>)[gameKey] ? 1 : 0);
+					}, 0);
 					tasks.push(
 						saveWeeklyPlayerPointsMutation.mutateAsync({
 							seasonCode,
@@ -788,6 +884,11 @@ const confirmPendingChangesPlaceholder = () => true;
 				Away: { teamGameData: JSON.parse(JSON.stringify(awayTeamGameData)), points: [...awayPoints], penalties: JSON.parse(JSON.stringify(awayPenalties)) },
 				completed: !!markComplete,
 			};
+			if (last) {
+				setPreviousSavedSnapshot(cloneSnapshot(last));
+			} else {
+				setPreviousSavedSnapshot(cloneSnapshot(newSnap));
+			}
 			setLastSavedSnapshot(newSnap);
 			if (!originalMatchupSnapshot) setOriginalMatchupSnapshot(newSnap);
 			// Refresh sidenav and completion indicators
@@ -926,6 +1027,7 @@ const confirmPendingChangesPlaceholder = () => true;
 		// reset baseline tracking for new matchup
 		setBaselineInitialized(false);
 		setLastSavedSnapshot(null);
+		setPreviousSavedSnapshot(null);
 		setHomeHydrated(false);
 		setAwayHydrated(false);
 		// reset team display state for new matchup
@@ -951,7 +1053,10 @@ const confirmPendingChangesPlaceholder = () => true;
 			setIsDataChanged(false);
 			setOriginalMatchupSnapshot(null);
 			setLastSavedSnapshot(null);
+			setPreviousSavedSnapshot(null);
 			setBaselineInitialized(false);
+			setHomeTempPlayers([]);
+			setAwayTempPlayers([]);
 
 			let homeTeamId = "";
 			let awayTeamId = "";
@@ -1117,6 +1222,7 @@ const confirmPendingChangesPlaceholder = () => true;
 		};
 		setOriginalMatchupSnapshot(snap);
 		setLastSavedSnapshot(snap);
+			setPreviousSavedSnapshot(snap);
 		setBaselineInitialized(true);
 	}, [matchSelected, baselineInitialized, homeHydrated, awayHydrated, homeTeamGameData, awayTeamGameData, homeWins, homePoints, awayPoints, homePenalties, awayPenalties, isMatchupCompleted]);
 
@@ -1148,6 +1254,7 @@ const confirmPendingChangesPlaceholder = () => true;
 		setAwayTeamName("");
 		setHomeTeamMemberIds([]);
 		setAwayTeamMemberIds([]);
+		setPreviousSavedSnapshot(null);
 	};
 
 	// Process mention history using React Query mutations
@@ -1819,6 +1926,13 @@ const FolderTabSkeleton = () => (
 										{isProcessingByeWeeks ? "Processing..." : allByeWeeksProcessed ? "Bye Weeks Processed" : "Process All Bye Weeks"}
 									</Button>
 								)}
+								{!!selectedWeek && (
+									<MissingScoresheetsDialog
+										seasonCode={seasonCode}
+										weekNum={selectedWeek}
+										handleMatchupSelection={handleMatchupSelection}
+									/>
+								)}
 							</div>
 						</div>
 					</FolderTabMed>
@@ -1906,7 +2020,8 @@ const FolderTabSkeleton = () => (
 												Team Letter:{" "}
 												{selectedHomeLetter}
 											</div>
-											<div>
+											<div className="mb-2">
+												<div className="flex flex-wrap items-center gap-2">
 												<Dialog
 													open={homePenaltyDialogOpen}
 													onOpenChange={(open) => {
@@ -1975,6 +2090,14 @@ const FolderTabSkeleton = () => (
 														/>
 													</DialogContent>
 												</Dialog>
+												<Button
+													variant="outline"
+													className="text-sm px-2 py-1 rounded-md border-border hover:bg-muted"
+													onClick={() => { setAddTempTeam("home"); setAddTempDialogOpen(true); }}
+												>
+													Add Temp Player
+												</Button>
+												</div>
 												<PenaltyAccordion
 													teamId={selectedHomeTeamId}
 													penalties={homePenalties}
@@ -1983,7 +2106,7 @@ const FolderTabSkeleton = () => (
 												/>
 											</div>
 											<TeamPlayerTable
-												players={homeTeamPlayerInformation ?? []}
+												players={homeDisplayPlayers}
 												teamType="home"
 												teamId={selectedHomeTeamId}
 												gameData={homeTeamGameData}
@@ -2010,80 +2133,62 @@ const FolderTabSkeleton = () => (
 												{selectedAwayLetter}
 											</div>
 
-											<Dialog
-												open={awayPenaltyDialogOpen}
-												onOpenChange={(open) => {
-													setAwayPenaltyDialogOpen(
-														open
-													);
-													if (!open) {
-														setPenaltyEditMode(
-															false
-														);
-														setCurrentEditingPenalty(
-															null
-														);
-													}
-												}}
-											>
-												<DialogTrigger asChild>
+											<div className="mb-2">
+												<div className="flex flex-wrap items-center gap-2">
+													<Dialog
+														open={awayPenaltyDialogOpen}
+														onOpenChange={(open) => {
+															setAwayPenaltyDialogOpen(open);
+															if (!open) {
+																setPenaltyEditMode(false);
+																setCurrentEditingPenalty(null);
+															}
+														}}
+													>
+														<DialogTrigger asChild>
+															<Button
+																variant="outline"
+																className="text-sm px-2 py-1 rounded-md border-border hover:bg-muted"
+																onClick={() =>
+																	handlePenaltyClick(selectedAwayTeamId, awayTeamName, false)
+																}
+															>
+																<span>Penalties</span>
+															</Button>
+														</DialogTrigger>
+														<DialogContent className="w-fit bg-background">
+															<DialogHeader>
+																<DialogTitle>
+																	{penaltyEditMode ? "Edit" : "Add"} Penalty - {selectedPenaltyTeamName}
+																</DialogTitle>
+															</DialogHeader>
+															<PenaltyAddForm
+																setOpen={setAwayPenaltyDialogOpen}
+																selectedTeamId={selectedPenaltyTeamId}
+																handlePenaltySubmit={handlePenaltySubmit}
+																isEditMode={penaltyEditMode}
+																initialPenalty={currentEditingPenalty}
+																updatePenalty={updatePenalty}
+															/>
+														</DialogContent>
+													</Dialog>
 													<Button
 														variant="outline"
 														className="text-sm px-2 py-1 rounded-md border-border hover:bg-muted"
-														onClick={() =>
-															handlePenaltyClick(
-																selectedAwayTeamId,
-																awayTeamName,
-																false
-															)
-														}
+														onClick={() => { setAddTempTeam("away"); setAddTempDialogOpen(true); }}
 													>
-														<span>Penalties</span>
+														Add Temp Player
 													</Button>
-												</DialogTrigger>
-												<DialogContent className="w-fit bg-background">
-													<DialogHeader>
-														<DialogTitle>
-															{penaltyEditMode
-																? "Edit"
-																: "Add"}{" "}
-															Penalty -{" "}
-															{
-																selectedPenaltyTeamName
-															}
-														</DialogTitle>
-													</DialogHeader>
-													<PenaltyAddForm
-														setOpen={
-															setAwayPenaltyDialogOpen
-														}
-														selectedTeamId={
-															selectedPenaltyTeamId
-														}
-														handlePenaltySubmit={
-															handlePenaltySubmit
-														}
-														isEditMode={
-															penaltyEditMode
-														}
-														initialPenalty={
-															currentEditingPenalty
-														}
-														updatePenalty={
-															updatePenalty
-														}
-													/>
-												</DialogContent>
-											</Dialog>
-
-											<PenaltyAccordion
-												teamId={selectedAwayTeamId}
-												penalties={awayPenalties}
-												onEdit={handlePenaltyEditing}
-												onRemove={handlePenaltyRemoval}
-											/>
+												</div>
+												<PenaltyAccordion
+													teamId={selectedAwayTeamId}
+													penalties={awayPenalties}
+													onEdit={handlePenaltyEditing}
+													onRemove={handlePenaltyRemoval}
+												/>
+											</div>
 											<TeamPlayerTable
-												players={awayTeamPlayerInformation ?? []}
+												players={awayDisplayPlayers}
 												teamType="away"
 												teamId={selectedAwayTeamId}
 												gameData={awayTeamGameData}
@@ -2312,16 +2417,32 @@ const FolderTabSkeleton = () => (
 									</Button>
 									<Button
 										onClick={() => {
-											if (!originalMatchupSnapshot) { window.alert("No snapshot to reset to yet."); return; }
-											setHomeTeamGameData(originalMatchupSnapshot.Home.teamGameData);
-											setAwayTeamGameData(originalMatchupSnapshot.Away.teamGameData);
-											setHomeWins([...originalMatchupSnapshot.Home.wins]);
-											setHomePoints([...originalMatchupSnapshot.Home.points]);
-											setAwayPoints([...originalMatchupSnapshot.Away.points]);
-											setIsDataChanged(false);
+											const resetSnapshot = previousSavedSnapshot || originalMatchupSnapshot;
+											if (!resetSnapshot) { window.alert("No snapshot to reset to yet."); return; }
+											const nextHomePenalties = JSON.parse(JSON.stringify(resetSnapshot.Home.penalties));
+											const nextAwayPenalties = JSON.parse(JSON.stringify(resetSnapshot.Away.penalties));
+											setHomeTeamGameData(JSON.parse(JSON.stringify(resetSnapshot.Home.teamGameData)));
+											setAwayTeamGameData(JSON.parse(JSON.stringify(resetSnapshot.Away.teamGameData)));
+											setHomeWins([...resetSnapshot.Home.wins]);
+											setHomePoints([...resetSnapshot.Home.points]);
+											setAwayPoints([...resetSnapshot.Away.points]);
+											setHomePenalties(nextHomePenalties);
+											setAwayPenalties(nextAwayPenalties);
+											setIsMatchupCompleted(
+												"completed" in resetSnapshot ? !!resetSnapshot.completed : isMatchupCompleted
+											);
+											setHomePenaltyCounter(
+												Math.max(0, ...Object.keys(nextHomePenalties).map((k) => parseInt(k, 10)).filter((n) => !isNaN(n)))
+											);
+											setAwayPenaltyCounter(
+												Math.max(0, ...Object.keys(nextAwayPenalties).map((k) => parseInt(k, 10)).filter((n) => !isNaN(n)))
+											);
+											// Mark dirty so autosave persists the restored snapshot.
+											setIsDataChanged(true);
+											setChangeToken((prev) => prev + 1);
 										}}
 										className="bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white"
-										disabled={isSaving || !originalMatchupSnapshot}
+										disabled={isSaving || (!previousSavedSnapshot && !originalMatchupSnapshot)}
 									>
 										Reset Changes
 									</Button>
@@ -2378,6 +2499,7 @@ const FolderTabSkeleton = () => (
 														setIsDataChanged(false);
 														setOriginalMatchupSnapshot(null);
 														setLastSavedSnapshot(null);
+														setPreviousSavedSnapshot(null);
 														setMatchupLoadToken(prev => prev + 1);
 														// Refresh sidenav and completion indicators
 														queryClient.invalidateQueries({ queryKey: ["v2-matchups", seasonCode, selectedWeek] });
@@ -2403,6 +2525,43 @@ const FolderTabSkeleton = () => (
 								)}
 							</div>
 						</div>
+			{/* Add Temp Player Dialog */}
+			<Dialog open={addTempDialogOpen} onOpenChange={setAddTempDialogOpen}>
+				<DialogContent className="w-fit bg-background">
+					<DialogHeader>
+						<DialogTitle>
+							Add Temp Player — {addTempTeam === "home" ? homeTeamName : awayTeamName}
+						</DialogTitle>
+						<DialogDescription>
+							Create a new temp player or select an existing one to add to this team.
+						</DialogDescription>
+					</DialogHeader>
+					<TempPlayerAddForm
+						onAdded={(tempPlayer) => {
+							if (addTempTeam === "home") {
+								setHomeTempPlayers((prev) => {
+									if (prev.some((t) => t.tempId === tempPlayer.tempId)) return prev;
+									return [...prev, tempPlayer];
+								});
+								setHomeTeamGameData((prev) => ({
+									...prev,
+									[String(tempPlayer.tempId)]: prev[String(tempPlayer.tempId)] ?? {},
+								}));
+							} else {
+								setAwayTempPlayers((prev) => {
+									if (prev.some((t) => t.tempId === tempPlayer.tempId)) return prev;
+									return [...prev, tempPlayer];
+								});
+								setAwayTeamGameData((prev) => ({
+									...prev,
+									[String(tempPlayer.tempId)]: prev[String(tempPlayer.tempId)] ?? {},
+								}));
+							}
+						}}
+						onClose={() => setAddTempDialogOpen(false)}
+					/>
+				</DialogContent>
+			</Dialog>
 			{/* Add Mention Dialog */}
 			<Dialog
 				open={mentionDialogOpen}

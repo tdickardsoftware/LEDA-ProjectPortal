@@ -72,6 +72,7 @@ export default function GenerateScheduleDialog({
 	const [skipFilled, setSkipFilled] = useState(false);
 	const [useDifferentLayout, setUseDifferentLayout] = useState(false);
 	const [variationSeed, setVariationSeed] = useState(1);
+	const [useSequentialPairing, setUseSequentialPairing] = useState(true);
 	const [isGenerating, setIsGenerating] = useState(false);
 
 	const divisionNames = useMemo(() => Object.keys(divisionsData), [divisionsData]);
@@ -122,7 +123,8 @@ export default function GenerateScheduleDialog({
 		skipFilledWeeks: skipFilled,
 		rotationOffset: useDifferentLayout ? variationSeed : 0,
 		shuffleSeed: useDifferentLayout ? variationSeed : undefined,
-	}), [matchTime, skipFilled, useDifferentLayout, variationSeed]);
+		sequentialPairing: useSequentialPairing || undefined,
+	}), [matchTime, skipFilled, useDifferentLayout, variationSeed, useSequentialPairing]);
 
 	// Resolved scope object consumed by the generator
 	const scope = useMemo<GenerateScope>(() => {
@@ -205,6 +207,7 @@ export default function GenerateScheduleDialog({
 				setSkipFilled(false);
 				setUseDifferentLayout(false);
 				setVariationSeed(1);
+				setUseSequentialPairing(true);
 			}
 			setOpen(val);
 		},
@@ -364,6 +367,18 @@ export default function GenerateScheduleDialog({
 							</span>
 						)}
 					</div>
+
+				{/* ── Sequential pairing (legacy LEDA pattern) ──────────── */}
+				<div className="flex items-center gap-3">
+					<Checkbox
+						id="sequential-pairing"
+						checked={useSequentialPairing}
+						onCheckedChange={(v) => setUseSequentialPairing(v === true)}
+					/>
+					<Label htmlFor="sequential-pairing" className="text-sm cursor-pointer">
+						Use legacy LEDA pairing pattern
+					</Label>
+				</div>
 
 					{/* ── Preview table ─────────────────────────────────────── */}
 					{preview.length > 0 && (

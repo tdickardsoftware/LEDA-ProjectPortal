@@ -5,7 +5,7 @@
  * Each subdivision fetches its own match data independently (lazy loading)
  * rather than loading the entire schedule upfront.
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
 	ScheduleData, 
@@ -115,6 +115,28 @@ export function useScheduleData() {
 	// Derived data
 	const divisionsData: DivisionsData = rosterData?.teamInformation || {};
 	const gameDates: Record<string, string> = gameDatesData?.dates || {};
+	const backupPlaceId: string | null = gameDatesData?.backupPlaceId ?? null;
+
+	// True when the server-side current date is on or after the first game date.
+	// The season API now returns serverTime so the client clock cannot be spoofed.
+	const seasonHasStarted = useMemo(() => {
+		const dateValues = Object.values(gameDates).filter(Boolean);
+		if (dateValues.length === 0) return false;
+
+		const timestamps = dateValues
+			.map(d => new Date(d).getTime())
+			.filter(t => !isNaN(t));
+		if (timestamps.length === 0) return false;
+
+		const firstGameMs = new Date(Math.min(...timestamps)).setHours(0, 0, 0, 0);
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const serverTime = (gameDatesData as any)?.serverTime as string | undefined;
+		const now = serverTime ? new Date(serverTime) : new Date();
+		const nowMs = now.setHours(0, 0, 0, 0);
+
+		return nowMs >= firstGameMs;
+	}, [gameDates, gameDatesData]);
 	
 	// Initialize empty match data structure
 	const matchData: ScheduleData = divisionsData && Object.keys(divisionsData).length > 0 
@@ -209,6 +231,7 @@ export function useScheduleData() {
 		currentSeason,
 		setCurrentSeason,
 		gameDates,
+		seasonHasStarted,
 		matchData,
 		updatedMatchData,
 		stageScheduleData,
@@ -219,5 +242,6 @@ export function useScheduleData() {
 		handleSeasonCodeSelect,
 		handleSaveData,
 		rosterNotFound,
+		backupPlaceId,
 	};
 }

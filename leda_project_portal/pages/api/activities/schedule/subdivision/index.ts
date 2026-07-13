@@ -26,6 +26,7 @@ interface NormalizedScheduleRow {
 	oppTeamLetter: string;
 	matchDateTime: string | Date;
 	home: boolean;
+	isBackupLocation: boolean;
 }
 
 // Transform normalized rows into nested schedule structure for a single subdivision
@@ -77,6 +78,7 @@ function transformSubdivisionToNested(rows: NormalizedScheduleRow[]): ScheduleDa
 			opposingTeamId: row.oppTeamId,
 			opposingTeamLetter: row.oppTeamLetter,
 			subdivisionId: `${row.division}-${row.subdivision}`,
+			isAtBackupLocation: row.isBackupLocation,
 		};
 	}
 
@@ -111,7 +113,7 @@ export default async function handler(
 			const result = await query<NormalizedScheduleRow>(
 				`SELECT "seasonCode", "weekNum", division, subdivision,
 				        "teamId", "teamName", "teamLetter",
-				        "oppTeamId", "oppTeamLetter", "matchDateTime", home
+				        "oppTeamId", "oppTeamLetter", "matchDateTime", home, "isBackupLocation"
 				 FROM public.leda_schedule
 				 WHERE "seasonCode" = $1 AND division = $2 AND subdivision = $3
 				 ORDER BY "weekNum", "teamLetter"`,
