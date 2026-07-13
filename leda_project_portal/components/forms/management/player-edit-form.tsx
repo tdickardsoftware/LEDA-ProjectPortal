@@ -67,12 +67,9 @@ const playerInfoSchema = z.object({
 		),
 	email: z
 		.string()
-		.min(1, { message: "Email is Required" })
-		.refine(
-			(value) => value.toUpperCase() === "UNKNOWN" || validator.isEmail(value),
-			{ message: "Email is Invalid" }
-		)
-		.transform((value) => value.toUpperCase() === "UNKNOWN" ? "UNKNOWN" : value),
+		.nullable()
+		.optional(),
+	emailUnknown: z.boolean(),
 	gender: z.string().min(1, { message: "Gender is Required" }),
 	dateOfBirth: z.string().nullable().optional(),
 	// Membership Information
@@ -93,6 +90,14 @@ const playerInfoSchema = z.object({
 	cannotBeCaptain: z.boolean(),
 	lifetimeMember: z.boolean(),
 	lifetimeMemberReason: z.string().nullable().optional(),
+}).superRefine((data, ctx) => {
+	// Email is only required when the player's email isn't marked unknown
+	if (data.emailUnknown) return;
+	if (!data.email) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Required", path: ["email"] });
+	} else if (!validator.isEmail(data.email)) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Invalid", path: ["email"] });
+	}
 });
 
 // Shared style constants for the form layout
@@ -199,7 +204,8 @@ export default function PlayerEditInformationForm({
 			zip: formData.zip || "",
 			phoneNumber: formData.phoneNumber || "",
 			otherNumber: formData.otherNumber || "",
-			email: formData.email || "",
+			email: (formData.email || "").toUpperCase() === "UNKNOWN" ? "" : formData.email || "",
+			emailUnknown: (formData.email || "").toUpperCase() === "UNKNOWN",
 			gender: formData.gender || "",
 			dateOfBirth: formData.dateOfBirth
 				? new Date(formData.dateOfBirth).toISOString().split("T")[0]
@@ -229,6 +235,7 @@ export default function PlayerEditInformationForm({
 
 	// True when any form field has been modified from its original value
 	const hasChanges = form.formState.isDirty;
+	const isEmailUnknown = form.watch("emailUnknown");
 
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof playerInfoSchema>) => {
@@ -237,7 +244,10 @@ export default function PlayerEditInformationForm({
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(values),
+				body: JSON.stringify({
+					...values,
+					email: values.emailUnknown ? "UNKNOWN" : values.email,
+				}),
 			});
 			if (!response.ok) {
 				const errorData = await response.json();
@@ -316,8 +326,11 @@ export default function PlayerEditInformationForm({
 			}
 			const data = await response.json();
 			setFormData(data);
+			const isUnknownEmail = (data.email || "").toUpperCase() === "UNKNOWN";
 			form.reset({
 				...data,
+				email: isUnknownEmail ? "" : data.email || "",
+				emailUnknown: isUnknownEmail,
 				ledaId: data.ledaId ? Number(data.ledaId) : undefined,
 				dateOfBirth: data.dateOfBirth
 					? new Date(data.dateOfBirth).toISOString().split("T")[0]
@@ -470,8 +483,15 @@ export default function PlayerEditInformationForm({
 								<InputDefault
 									control={form.control}
 									name="email"
-									label="Email *"
+									label={isEmailUnknown ? "Email" : "Email *"}
 									type="email"
+									disabled={isEmailUnknown}
+								/>
+								<CheckboxDefault
+									control={form.control}
+									name="emailUnknown"
+									label="Email Unknown"
+									className={checkboxWidth}
 								/>
 								<PhoneNumberInput
 									control={form.control}

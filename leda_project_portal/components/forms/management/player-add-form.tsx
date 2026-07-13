@@ -67,12 +67,9 @@ const playerInfoSchema = z.object({
 		),
 	email: z
 		.string()
-		.min(1, { message: "Email is Required" })
-		.refine(
-			(value) => value.toUpperCase() === "UNKNOWN" || validator.isEmail(value),
-			{ message: "Email is Invalid" }
-		)
-		.transform((value) => value.toUpperCase() === "UNKNOWN" ? "UNKNOWN" : value),
+		.nullable()
+		.optional(),
+	emailUnknown: z.boolean(),
 	gender: z.string().min(1, { message: "Gender is Required" }),
 	dateOfBirth: z.string().nullable().optional(),
 	// Membership Information
@@ -96,6 +93,14 @@ const playerInfoSchema = z.object({
 	cannotBeCaptain: z.boolean(),
 	lifetimeMember: z.boolean(),
 	lifetimeMemberReason: z.string().nullable().optional(),
+}).superRefine((data, ctx) => {
+	// Email is only required when the player's email isn't marked unknown
+	if (data.emailUnknown) return;
+	if (!data.email) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Required", path: ["email"] });
+	} else if (!validator.isEmail(data.email)) {
+		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Invalid", path: ["email"] });
+	}
 });
 
 // Shared style constants for the form layout
@@ -153,6 +158,7 @@ export default function PlayerAddInformationForm({
 			state: "OH",
 			zip: "",
 			email: "",
+			emailUnknown: false,
 			phoneNumber: "",
 			gender: "",
 			ledaId: undefined,
@@ -160,6 +166,8 @@ export default function PlayerAddInformationForm({
 			memberType: "",
 		},
 	});
+
+	const isEmailUnknown = form.watch("emailUnknown");
 
 	// Reset form and all state when component mounts to ensure clean state
 	React.useEffect(() => {
@@ -189,6 +197,7 @@ export default function PlayerAddInformationForm({
 			state: "OH",
 			zip: "",
 			email: "",
+			emailUnknown: false,
 			phoneNumber: "",
 			gender: "",
 			ledaId: undefined,
@@ -328,7 +337,10 @@ export default function PlayerAddInformationForm({
 
 	function onSubmit(values: z.infer<typeof playerInfoSchema>) {
 		setLedaIdExists(false);
-		mutation.mutate(values);
+		mutation.mutate({
+			...values,
+			email: values.emailUnknown ? "UNKNOWN" : values.email,
+		});
 	}
 
 	return (
@@ -437,8 +449,15 @@ export default function PlayerAddInformationForm({
 						<InputDefault
 							control={form.control}
 							name="email"
-							label="Email *"
+							label={isEmailUnknown ? "Email" : "Email *"}
 							type="email"
+							disabled={isEmailUnknown}
+						/>
+						<CheckboxDefault
+							control={form.control}
+							name="emailUnknown"
+							label="Email Unknown"
+							className={checkboxWidth}
 						/>
 						<PhoneNumberInput
 							control={form.control}
