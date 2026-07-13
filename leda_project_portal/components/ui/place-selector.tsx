@@ -314,11 +314,13 @@ const DivisionSelectorContent = ({
 												)}
 											/>
 											<span className="flex-1 truncate" title={type.label}>{type.label}</span>
+											{/*
 											<PlaceCapacityBadge
 												className="ml-2 shrink-0"
 												assigned={placeTeamCounts ? placeTeamCounts[type.value] ?? 0 : undefined}
 												capacity={type.numberOfBoards}
 											/>
+											*/}
 										</CommandItem>
 									))}
 									{isFetching && (
@@ -331,12 +333,14 @@ const DivisionSelectorContent = ({
 						</Command>
 					</PopoverContent>
 				</Popover>
+				{/*
 				{selectedPlace && (
 					<PlaceCapacityBadge
 						assigned={selectedCapacity}
 						capacity={selectedPlace.numberOfBoards}
 					/>
 				)}
+				*/}
 			</div>
 		</div>
 	);
