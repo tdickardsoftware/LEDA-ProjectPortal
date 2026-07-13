@@ -25,6 +25,9 @@ export interface MatchData {
 	opposingTeamId: string;
 	opposingTeamLetter: string;
 	subdivisionId?: string;
+	// True when this matchup is being played at the season's backup location
+	// instead of the home team's usual venue.
+	isAtBackupLocation?: boolean;
 }
 
 export interface TeamMatchData {

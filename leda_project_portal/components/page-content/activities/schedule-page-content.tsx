@@ -257,6 +257,7 @@ export default function ScheduleContent() {
 						setEnabledSaveButton={handleSetEnableSaveButton}
 						handleSaveData={handleFetchUpdatedData}
 						seasonCode={seasonCode}
+						backupPlaceId={backupPlaceId}
 					/>
 				)}
 		</SidenavPageLayout>

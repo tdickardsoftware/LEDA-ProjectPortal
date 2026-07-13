@@ -22,6 +22,7 @@ interface CaptainsMeetingScheduleReportProps {
 	seasonCode: string;
 	placesData: Record<string, string>;
 	seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
+	backupPlaceId?: string | null;
 }
 
 // Create styles
@@ -145,6 +146,7 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 	seasonCode,
 	placesData,
 	seasonInfo,
+	backupPlaceId,
 }) => {
 	// Convert gameDates keys (e.g. "Date 1") to the "weekN" format used as
 	// matchesData keys in the schedule API, mirroring the conversion in
@@ -198,9 +200,11 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 			);
 		}
 		
-		const locationPlaceId = matchup.home
-			? teamData.placeId
-			: teams[matchup.opposingTeamLetter]?.placeId || "";
+		const locationPlaceId = matchup.isAtBackupLocation && backupPlaceId
+			? backupPlaceId
+			: matchup.home
+				? teamData.placeId
+				: teams[matchup.opposingTeamLetter]?.placeId || "";
 		const placeName = placesData[locationPlaceId] || "TBD";
 		const formattedTime = convertTo12HourFormat(matchup.matchTime);
 

@@ -61,6 +61,8 @@ interface SubdivisionSchedulerProps {
 	handleSaveData: (updatedMatchData: ScheduleData) => void;
 	viewMode?: boolean;
 	seasonCode?: string | null;
+	// The season's backup schedule location, if one has been set on the Rosters page.
+	backupPlaceId?: string | null;
 }
 
 // Utility function for time conversion - memoized
@@ -81,6 +83,7 @@ interface MatchupDisplayProps {
 	teamData: TeamData;
 	teams: Record<string, TeamData>;
 	getPlaceNameById: (placeId: string) => string;
+	backupPlaceId?: string | null;
 	onEdit: () => void;
 	onDelete: () => void;
 	viewMode?: boolean;
@@ -89,7 +92,7 @@ interface MatchupDisplayProps {
 
 // Memoized matchup display component
 const MatchupDisplay = memo<MatchupDisplayProps>(
-	({ matchup, teamData, teams, getPlaceNameById, onEdit, onDelete, viewMode = false, hasPointsLogged = false }) => {
+	({ matchup, teamData, teams, getPlaceNameById, backupPlaceId, onEdit, onDelete, viewMode = false, hasPointsLogged = false }) => {
 		const isByeWeek = matchup.opposingTeamId === "0" || matchup.opposingTeamLetter === "BYE" || matchup.opposingTeamLetter === "X";
 
 		const getTeamNameById = useCallback(
@@ -102,10 +105,11 @@ const MatchupDisplay = memo<MatchupDisplayProps>(
 
 		const locationPlaceId = useMemo(() => {
 			if (isByeWeek) return "";
+			if (matchup.isAtBackupLocation && backupPlaceId) return backupPlaceId;
 			return matchup.home
 				? teamData.placeId
 				: teams[matchup.opposingTeamLetter]?.placeId || "";
-		}, [matchup.home, teamData.placeId, teams, matchup.opposingTeamLetter, isByeWeek]);
+		}, [matchup.home, matchup.isAtBackupLocation, teamData.placeId, teams, matchup.opposingTeamLetter, isByeWeek, backupPlaceId]);
 
 		const teamName = useMemo(() => {
 			if (isByeWeek) return "BYE";
@@ -232,17 +236,20 @@ interface AddMatchupDialogProps {
 		home?: boolean,
 		opposingTeamId?: string,
 		opposingTeamLetter?: string,
-		isByeWeek?: boolean
+		isByeWeek?: boolean,
+		isAtBackupLocation?: boolean
 	) => void;
 	teamData: TeamData;
 	teamLetter: string;
 	gameTitle: string;
 	gameDateEntries: [string, string][];
 	getTeamsWithMatchups: (gameTitle: string) => string[];
+	backupPlaceId?: string | null;
+	backupPlaceName?: string;
 }
 
 const AddMatchupDialog = memo<AddMatchupDialogProps>(
-	({ teamEntries, handleAddMatchup, teamData, teamLetter, gameTitle, gameDateEntries, getTeamsWithMatchups }) => {
+	({ teamEntries, handleAddMatchup, teamData, teamLetter, gameTitle, gameDateEntries, getTeamsWithMatchups, backupPlaceId, backupPlaceName }) => {
 		const [open, setOpen] = useState(false);
 		return (
 			<Dialog open={open} onOpenChange={setOpen}>
@@ -270,6 +277,8 @@ const AddMatchupDialog = memo<AddMatchupDialogProps>(
 						date={gameDateEntries.find(([title]) => title === gameTitle)?.[1] || ""}
 						selectedTeamLetter={teamLetter}
 						teamsWithMatchups={getTeamsWithMatchups(gameTitle)}
+						backupPlaceId={backupPlaceId}
+						backupPlaceName={backupPlaceName}
 					/>
 				</DialogContent>
 			</Dialog>
@@ -290,6 +299,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 		handleSaveData,
 		viewMode = false,
 		seasonCode,
+		backupPlaceId,
 	}) => {
 		const buildFullStructure = useCallback(
 			(sourceData?: ScheduleData): ScheduleData => {
@@ -338,7 +348,8 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 		const [pointsStatusMap, setPointsStatusMap] = useState<Record<string, boolean>>({});
 		const [isLoadingPointsStatus, setIsLoadingPointsStatus] = useState(false);
 
-		const { getPlaceNameById } = usePlaceNames(teams);
+		const { getPlaceNameById } = usePlaceNames(teams, [backupPlaceId]);
+		const backupPlaceName = backupPlaceId ? getPlaceNameById(backupPlaceId) : undefined;
 
 		// Memoized values
 		const teamEntries = useMemo(() => Object.entries(teams), [teams]);
@@ -586,7 +597,8 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				home?: boolean,
 				opposingTeamId?: string,
 				opposingTeamLetter?: string,
-				isByeWeek?: boolean
+				isByeWeek?: boolean,
+				isAtBackupLocation?: boolean
 			) => {
 				if (!opposingTeamId || !opposingTeamLetter) {
 					console.error("Missing opposing team information");
@@ -661,6 +673,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 						opposingTeamId,
 						opposingTeamLetter,
 						subdivisionId,
+						isAtBackupLocation: !!isAtBackupLocation,
 					};
 
 					opposingTeam.matchesData[gameTitle] = {
@@ -670,6 +683,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 						opposingTeamId: teamId,
 						opposingTeamLetter: selectedTeamLetter,
 						subdivisionId,
+						isAtBackupLocation: !!isAtBackupLocation,
 					};
 				}
 
@@ -743,7 +757,8 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				home: boolean,
 				opposingTeamId: string,
 				opposingTeamLetter: string,
-				isByeWeek?: boolean
+				isByeWeek?: boolean,
+				isAtBackupLocation?: boolean
 			) => {
 				const updatedMatchData = structuredClone(localMatchData);
 
@@ -818,6 +833,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 						opposingTeamId,
 						opposingTeamLetter,
 						subdivisionId,
+						isAtBackupLocation: !!isAtBackupLocation,
 					};
 
 					opposingTeam.matchesData[gameTitle] = {
@@ -827,6 +843,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 						opposingTeamId: teamId,
 						opposingTeamLetter: selectedTeamLetter,
 						subdivisionId,
+						isAtBackupLocation: !!isAtBackupLocation,
 					};
 				}
 
@@ -887,6 +904,8 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 								teamsWithMatchups={getTeamsWithMatchups(editingMatchup.gameTitle).filter(
 									(id) => id !== editingMatchup.matchData.opposingTeamId
 								)}
+								backupPlaceId={backupPlaceId}
+								backupPlaceName={backupPlaceName}
 							/>
 						)}
 					</DialogContent>
@@ -961,6 +980,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 															teamData={teamData}
 															teams={teams}
 															getPlaceNameById={getPlaceNameById}
+														backupPlaceId={backupPlaceId}
 															onEdit={() =>
 																handleEditMatchupClick(teamLetter, gameTitle, matchup)
 															}
@@ -981,6 +1001,8 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 															gameTitle={gameTitle}
 															gameDateEntries={gameDateEntries}
 															getTeamsWithMatchups={getTeamsWithMatchups}
+														backupPlaceId={backupPlaceId}
+														backupPlaceName={backupPlaceName}
 														/>
 													)}
 												</div>

@@ -31,7 +31,7 @@ import {
 	SeasonApiResponse, 
 	ScheduleApiResponse 
 } from '@/lib/schedule';
-import { rosterRoute, scheduleRoute, seasonRoute } from '@/lib/apiRoutes';
+import { rosterRoute, scheduleRoute, seasonRoute, placeRoute } from '@/lib/apiRoutes';
 import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
 
 interface CaptainsMeetingScheduleContentProps {
@@ -42,6 +42,7 @@ interface CaptainsMeetingScheduleContentProps {
 		gameDates: Record<string, string>;
 		placesData: Record<string, string>;
 		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
+		backupPlaceId?: string | null;
 	}) => void;
 }
 
@@ -51,6 +52,7 @@ interface DivisionAccordionProps {
 	divisionsData: DivisionsData;
 	gameDates: Record<string, string>;
 	matchData: ScheduleData;
+	backupPlaceId?: string | null;
 }
 
 const DivisionAccordion = memo<DivisionAccordionProps>(
@@ -60,6 +62,7 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 		divisionsData,
 		gameDates,
 		matchData,
+		backupPlaceId,
 	}) => (
 		<Accordion
 			key={index}
@@ -97,8 +100,7 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 												matchData={matchData}
 												setEnabledSaveButton={() => {}} // No-op for view mode
 												handleSaveData={() => {}} // No-op for view mode
-												viewMode={true}
-											/>
+												viewMode={true}											backupPlaceId={backupPlaceId}											/>
 										)}
 									</AccordionContent>
 								</AccordionItem>
@@ -223,6 +225,20 @@ export default function CaptainsMeetingScheduleContent({
 		isLoading: isSeasonInfoLoading 
 	} = useSeasonInfo(seasonCode);
 
+	// The backup location (if the season has one) may not be any team's home
+	// place, so seasonInfo alone won't have its name — resolve it separately.
+	const backupPlaceId = seasonData?.backupPlaceId ?? null;
+	const { data: backupPlace } = useQuery({
+		queryKey: ['place-resolve', backupPlaceId],
+		queryFn: async () => {
+			const response = await fetch(`${placeRoute}?ledaId=${backupPlaceId}`);
+			if (!response.ok) throw new Error('Failed to fetch backup place');
+			return response.json() as Promise<{ ledaId: number; name: string }>;
+		},
+		enabled: !!backupPlaceId,
+		staleTime: 5 * 60 * 1000,
+	});
+
 	const isLoading = isRosterLoading || isSeasonLoading || isScheduleLoading || isSeasonInfoLoading;
 	const hasError = rosterError || seasonError || scheduleError || seasonInfoError;
 
@@ -295,6 +311,10 @@ export default function CaptainsMeetingScheduleContent({
 						places[info.placeId.toString()] = info.placeName;
 					}
 				});
+				// Merge in the backup location's name, since it may not belong to any team
+				if (backupPlaceId && backupPlace?.name) {
+					places[backupPlaceId] = backupPlace.name;
+				}
 
 				// Notify parent component when data is ready
 				if (onDataReady) {
@@ -304,6 +324,7 @@ export default function CaptainsMeetingScheduleContent({
 						gameDates: gameDatesData,
 						placesData: places,
 						seasonInfo,
+						backupPlaceId,
 					});
 				}
 			}
@@ -319,6 +340,8 @@ export default function CaptainsMeetingScheduleContent({
 		seasonInfo, 
 		isLoading, 
 		hasError,
+		backupPlaceId,
+		backupPlace,
 		ensureSubdivisionIsolation, 
 		initializeEmptyMatchData, 
 		onDataReady
@@ -366,6 +389,7 @@ export default function CaptainsMeetingScheduleContent({
 							divisionsData={divisionsData}
 							gameDates={gameDates}
 							matchData={matchData}
+							backupPlaceId={seasonData?.backupPlaceId}
 						/>
 					))}
 				</div>

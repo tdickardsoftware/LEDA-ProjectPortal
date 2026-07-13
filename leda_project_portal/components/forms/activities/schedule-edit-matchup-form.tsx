@@ -35,6 +35,7 @@ const divisionFormSchema = z.object({
 	isByeWeek: z.boolean(),
 	opposingTeamId: z.string(),
 	teamId: z.string().min(1, { message: "Team ID is required." }),
+	isAtBackupLocation: z.boolean(),
 }).refine((data) => {
 	// If not a BYE week, require matchTime and opposingTeamId
 	if (!data.isByeWeek) {
@@ -64,6 +65,8 @@ const formContainerStyle =
  * @param hasPointsLogged - Whether points have already been entered for this matchup
  * @param isCheckingPoints - Whether the parent is still verifying logged points
  * @param teamsWithMatchups - Team IDs that already have matchups (excluded from selector)
+ * @param backupPlaceId - The season's backup location id, if one is set (enables the checkbox)
+ * @param backupPlaceName - Display name for the backup location, used in the checkbox label
  */
 export default function SchedulingEditMatchupForm({
 	teamEntries,
@@ -77,6 +80,8 @@ export default function SchedulingEditMatchupForm({
 	hasPointsLogged = false,
 	isCheckingPoints = false,
 	teamsWithMatchups = [],
+	backupPlaceId,
+	backupPlaceName,
 }: {
 	teamEntries: [
 		string,
@@ -91,7 +96,8 @@ export default function SchedulingEditMatchupForm({
 		home: boolean,
 		opposingTeamId: string,
 		opposingTeamLetter: string,
-		isByeWeek?: boolean
+		isByeWeek?: boolean,
+		isAtBackupLocation?: boolean
 	) => void;
 	setOpen: (value: boolean) => void;
 	teamId: string;
@@ -104,10 +110,13 @@ export default function SchedulingEditMatchupForm({
 		home: boolean;
 		opposingTeamId: string;
 		opposingTeamLetter: string;
+		isAtBackupLocation?: boolean;
 	};
 	hasPointsLogged?: boolean;
 	isCheckingPoints?: boolean;
 	teamsWithMatchups?: string[];
+	backupPlaceId?: string | null;
+	backupPlaceName?: string;
 }) {
 	// Initialize the form using react-hook-form and zodResolver
 	const form = useForm<z.infer<typeof divisionFormSchema>>({
@@ -118,6 +127,7 @@ export default function SchedulingEditMatchupForm({
 			isByeWeek: initialValues.opposingTeamId === "0" || initialValues.opposingTeamLetter === "BYE" || initialValues.opposingTeamLetter === "X",
 			opposingTeamId: initialValues.opposingTeamId || "",
 			teamId: teamId,
+			isAtBackupLocation: !!initialValues.isAtBackupLocation,
 		},
 	});
 
@@ -131,6 +141,7 @@ export default function SchedulingEditMatchupForm({
 			isByeWeek: initialValues.opposingTeamId === "0" || initialValues.opposingTeamLetter === "BYE" || initialValues.opposingTeamLetter === "X",
 			opposingTeamId: initialValues.opposingTeamId || "",
 			teamId: teamId,
+			isAtBackupLocation: !!initialValues.isAtBackupLocation,
 		});
 	}, [initialValues, teamId, form]);
 
@@ -147,7 +158,8 @@ export default function SchedulingEditMatchupForm({
 				values.home,
 				"0", // opposing team ID is 0 for BYE
 				"X", // opposing team letter is X for BYE week
-				true // isByeWeek flag
+				true, // isByeWeek flag
+				false // not at backup location
 			);
 		} else {
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -164,7 +176,8 @@ export default function SchedulingEditMatchupForm({
 				values.home,
 				values.opposingTeamId,
 				opposingTeamKey,
-				false // not a BYE week
+				false, // not a BYE week
+				values.isAtBackupLocation
 			);
 		}
 		setOpen(false);
@@ -240,6 +253,15 @@ export default function SchedulingEditMatchupForm({
 								selectedTeams={[teamId, ...teamsWithMatchups]}
 								teamEntries={teamEntries}
 								defaultId={initialValues.opposingTeamId}
+								disabled={hasPointsLogged || isCheckingPoints}
+							/>
+						)}
+						{!isByeWeek && backupPlaceId && (
+							<CheckboxDefault
+								control={form.control}
+								name="isAtBackupLocation"
+								label={`Playing at Backup Location${backupPlaceName ? ` (${backupPlaceName})` : ""}`}
+								className="h-5 w-5"
 								disabled={hasPointsLogged || isCheckingPoints}
 							/>
 						)}
