@@ -4,6 +4,11 @@
  * Searchable combobox for selecting a place within a React Hook Form context.
  * Fetches the place list from the places selector API endpoint via TanStack
  * Query and writes the chosen `placeId` into the bound form field.
+ *
+ * Optionally accepts `placeTeamCounts`, a map of placeId -> number of teams
+ * currently assigned to that place (e.g. within the roster being edited). When
+ * provided, each place option and the selected value show a `PlaceCapacityBadge`
+ * with "assigned/total boards" so callers can avoid over-booking a venue.
  */
 "use client";
 
@@ -25,7 +30,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { placeSelectorRoute } from "@/lib/apiRoutes";
+import { placeSelectorRoute, placeRoute } from "@/lib/apiRoutes";
 import {
 	FormControl,
 	FormField,
@@ -34,6 +39,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { useQuery } from "@tanstack/react-query";
+import { PlaceCapacityBadge } from "@/components/ui/place-capacity-badge";
 
 // Define the form values interface
 interface FormValues {
@@ -45,12 +51,16 @@ interface DivisionSelectorProps {
 	control: Control<any>;
 	name: string;
 	label: string;
+	// Map of placeId -> number of teams currently assigned to that place.
+	// When provided, a capacity badge (assigned/total boards) is shown per option.
+	placeTeamCounts?: Record<string, number>;
 }
 
 export default function PlaceSelector({
 	control,
 	name,
 	label,
+	placeTeamCounts,
 }: DivisionSelectorProps) {
 	return (
 		<FormProvider {...useFormContext()}>
@@ -61,7 +71,7 @@ export default function PlaceSelector({
 					<FormItem>
 						<FormLabel>{label}</FormLabel>
 						<FormControl>
-							<DivisionSelectorContent />
+							<DivisionSelectorContent placeTeamCounts={placeTeamCounts} />
 						</FormControl>
 						<FormMessage />
 					</FormItem>
@@ -89,15 +99,22 @@ function useLastInputType() {
 	return lastInputType;
 }
 
-const DivisionSelectorContent = () => {
+const DivisionSelectorContent = ({
+	placeTeamCounts,
+}: {
+	placeTeamCounts?: Record<string, number>;
+}) => {
 	const { watch, setValue } = useFormContext<FormValues>();
 	const placeId = watch("placeId");
 	const [open, setOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = React.useState("");
 	const [debouncedSearch, setDebouncedSearch] = React.useState("");
 	const [offset, setOffset] = React.useState(0);
-	const [allPlaces, setAllPlaces] = React.useState<{ value: string; label: string }[]>([]);
+	const [allPlaces, setAllPlaces] = React.useState<{ value: string; label: string; numberOfBoards: number }[]>([]);
 	const [hasMore, setHasMore] = React.useState(true);
+	// Caches the resolved place for the current `placeId` so its label and capacity
+	// badge stay visible after the popover closes (allPlaces is cleared on close).
+	const [selectedPlaceInfo, setSelectedPlaceInfo] = React.useState<{ value: string; label: string; numberOfBoards: number } | null>(null);
 
 	const justClosedRef = React.useRef(false);
 	const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
@@ -145,9 +162,10 @@ const DivisionSelectorContent = () => {
 				setHasMore(false);
 			}
 			
-			const mappedData = data.map((type: { ledaId: string; name: string }) => ({
+			const mappedData = data.map((type: { ledaId: string; name: string; numberOfBoards: number }) => ({
 				value: type.ledaId,
 				label: type.ledaId + " - " + type.name,
+				numberOfBoards: type.numberOfBoards,
 			}));
 			
 			return mappedData;
@@ -169,6 +187,40 @@ const DivisionSelectorContent = () => {
 			}
 		}
 	}, [places, offset, isFetching]);
+
+	// Resolve and cache the currently selected place whenever it shows up in a
+	// fetched batch (covers picking from the list while the dropdown is open).
+	React.useEffect(() => {
+		if (!placeId) return;
+		const match = allPlaces.find((type) => type.value === placeId);
+		if (match) setSelectedPlaceInfo(match);
+	}, [placeId, allPlaces]);
+
+	// Resolve the selected place's name/board count directly by id as soon as a
+	// placeId is present, so the label shows the real name (not just the raw id)
+	// as soon as the dialog loads, before the dropdown has ever been opened.
+	const { data: resolvedPlace } = useQuery({
+		queryKey: ["place-resolve", placeId],
+		queryFn: async () => {
+			const response = await fetch(`${placeRoute}?ledaId=${placeId}`);
+			if (!response.ok) {
+				throw new Error("Failed to fetch place");
+			}
+			return response.json() as Promise<{ ledaId: number; name: string; numberOfBoards: number }>;
+		},
+		enabled: !!placeId && selectedPlaceInfo?.value !== placeId,
+		staleTime: 1000 * 60 * 5,
+	});
+
+	React.useEffect(() => {
+		if (resolvedPlace?.ledaId != null && String(resolvedPlace.ledaId) === placeId) {
+			setSelectedPlaceInfo({
+				value: String(resolvedPlace.ledaId),
+				label: `${resolvedPlace.ledaId} - ${resolvedPlace.name}`,
+				numberOfBoards: resolvedPlace.numberOfBoards,
+			});
+		}
+	}, [resolvedPlace, placeId]);
 
 	// Handle scroll to load more
 	const handleScroll = React.useCallback(
@@ -197,19 +249,23 @@ const DivisionSelectorContent = () => {
 		}
 	}, [lastInputType, open]);
 
-	const handleSelect = (type: { value: string; label: string }) => {
+	const handleSelect = (type: { value: string; label: string; numberOfBoards: number }) => {
 		setValue("placeId", type.value);
+		setSelectedPlaceInfo(type);
 		setOpen(false);
 		justClosedRef.current = true;
 	};
 
-	const displayValue = placeId
-		? allPlaces.find((type) => type.value === placeId)?.label || placeId
-		: "Select a Place";
+	const selectedPlace = selectedPlaceInfo?.value === placeId ? selectedPlaceInfo : undefined;
+	const displayValue = selectedPlace?.label || placeId || "Select a Place";
+	const selectedCapacity =
+		selectedPlace && placeTeamCounts
+			? placeTeamCounts[selectedPlace.value] ?? 0
+			: undefined;
 
 	return (
-		<div className="flex flex-col gap-4">
-			<div className="w-auto">
+		<div className="flex flex-col gap-2">
+			<div className="flex items-center gap-2 w-auto">
 				<Popover open={open} onOpenChange={setOpen}>
 					<PopoverTrigger asChild>
 						<Button
@@ -217,14 +273,15 @@ const DivisionSelectorContent = () => {
 							variant="outline"
 							role="combobox"
 							aria-expanded={open}
-							className="w-[200px] justify-between"
+							className="w-[280px] justify-between"
 							onFocus={handleFocus}
+							title={displayValue}
 						>
-							{displayValue}
+							<span className="truncate">{displayValue}</span>
 							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0 bg-background">
+					<PopoverContent className="w-[340px] p-0 bg-background">
 						<Command shouldFilter={true}>
 							<CommandInput 
 								placeholder="Search places..." 
@@ -241,7 +298,7 @@ const DivisionSelectorContent = () => {
 									onScroll={handleScroll}
 									onWheel={handleWheel}
 								>
-									{allPlaces.map((type: { value: string; label: string }) => (
+									{allPlaces.map((type) => (
 										<CommandItem
 											key={type.value}
 											value={type.label}
@@ -256,7 +313,12 @@ const DivisionSelectorContent = () => {
 														: "opacity-0"
 												)}
 											/>
-											{type.label}
+											<span className="flex-1 truncate" title={type.label}>{type.label}</span>
+											<PlaceCapacityBadge
+												className="ml-2 shrink-0"
+												assigned={placeTeamCounts ? placeTeamCounts[type.value] ?? 0 : undefined}
+												capacity={type.numberOfBoards}
+											/>
 										</CommandItem>
 									))}
 									{isFetching && (
@@ -269,6 +331,12 @@ const DivisionSelectorContent = () => {
 						</Command>
 					</PopoverContent>
 				</Popover>
+				{selectedPlace && (
+					<PlaceCapacityBadge
+						assigned={selectedCapacity}
+						capacity={selectedPlace.numberOfBoards}
+					/>
+				)}
 			</div>
 		</div>
 	);

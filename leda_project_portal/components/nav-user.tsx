@@ -24,6 +24,7 @@ import {
 	Activity,
 	LayoutDashboard,
 	ScrollText,
+	CalendarClock,
 } from "lucide-react";
 
 import {
@@ -70,7 +71,7 @@ import { useUserAbilities } from "@/lib/use-user-abilities";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -85,6 +86,33 @@ export function NavUser() {
 	const [issueDescription, setIssueDescription] = useState("");
 	const [issueType, setIssueType] = useState<"triage" | "enhancement">("triage");
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [showDateOverrideDialog, setShowDateOverrideDialog] = useState(false);
+	const [overrideDateInput, setOverrideDateInput] = useState("");
+	const [activeDateOverride, setActiveDateOverride] = useState<string | null>(null);
+
+	// Load active date override from cookie on mount
+	useEffect(() => {
+		const value = `; ${document.cookie}`;
+		const parts = value.split(`; overrideDate=`);
+		if (parts.length === 2) {
+			const raw = parts.pop()?.split(';').shift() ?? "";
+			const decoded = decodeURIComponent(raw);
+			if (/^\d{4}-\d{2}-\d{2}$/.test(decoded)) setActiveDateOverride(decoded);
+		}
+	}, []);
+
+	function applyDateOverride(date: string) {
+		const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+		document.cookie = `overrideDate=${encodeURIComponent(date)}; Path=/; SameSite=Lax${secure}; Max-Age=2592000`; // 30 days
+		setActiveDateOverride(date);
+		queryClient.invalidateQueries();
+	}
+
+	function clearDateOverride() {
+		document.cookie = 'overrideDate=; Path=/; Max-Age=0';
+		setActiveDateOverride(null);
+		queryClient.invalidateQueries();
+	}
 
 	async function handleLogout() {
 		await authClient.signOut({
@@ -233,6 +261,11 @@ export function NavUser() {
 									<span className="truncate text-xs">
 										Role: {user.emulatedRole ? `${user.role} (emulating ${user.emulatedRole})` : user.role}
 									</span>
+									{activeDateOverride && (
+										<span className="truncate text-xs text-orange-500 font-semibold">
+											Date Override: {activeDateOverride}
+										</span>
+									)}
 								</div>
 							</div>
 						</DropdownMenuLabel>
@@ -264,8 +297,16 @@ export function NavUser() {
 											</DropdownMenuItem>
 										))}
 									</DropdownMenuSubContent>
-								</DropdownMenuSub>
-								<DropdownMenuSeparator />
+							</DropdownMenuSub>
+							{user.role === "Developer" && (
+								<DropdownMenuItem onClick={() => setTimeout(() => setShowDateOverrideDialog(true), 0)}>
+									<CalendarClock className="mr-2 size-4" />
+									<span>
+										Override Date{activeDateOverride ? ` (${activeDateOverride})` : ""}
+									</span>
+								</DropdownMenuItem>
+							)}
+							<DropdownMenuSeparator />
 							</>
 						)}
 						{(user.role === "Developer" || user.emulatedRole === null) && (
@@ -428,6 +469,61 @@ export function NavUser() {
 							disabled={isSubmitting}
 						>
 							{isSubmitting ? "Submitting..." : "Submit Issue"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+			<AlertDialog open={showDateOverrideDialog} onOpenChange={setShowDateOverrideDialog}>
+				<AlertDialogContent className="max-w-sm">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Override Server Date</AlertDialogTitle>
+						<AlertDialogDescription>
+							Set a fake &quot;today&quot; for testing season-started logic. The
+							server will return this date as the current time until you clear it.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<div className="space-y-3 py-2">
+						{activeDateOverride && (
+							<div className="flex items-center gap-2 rounded-md border border-orange-300 bg-orange-50 dark:bg-orange-950/20 px-3 py-2 text-sm">
+								<CalendarClock className="size-4 text-orange-500" />
+								<span className="flex-1 text-orange-700 dark:text-orange-400">
+									Active override: <strong>{activeDateOverride}</strong>
+								</span>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-6 px-2 text-xs"
+									onClick={() => { clearDateOverride(); setShowDateOverrideDialog(false); }}
+								>
+									Clear
+								</Button>
+							</div>
+						)}
+						<div className="space-y-1">
+							<Label htmlFor="override-date-input">New date</Label>
+							<Input
+								id="override-date-input"
+								type="date"
+								value={overrideDateInput}
+								onChange={(e) => setOverrideDateInput(e.target.value)}
+							/>
+						</div>
+					</div>
+					<AlertDialogFooter>
+						<AlertDialogCancel onClick={() => setOverrideDateInput("")}>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							disabled={!overrideDateInput}
+							onClick={(e) => {
+								e.preventDefault();
+								if (overrideDateInput) {
+									applyDateOverride(overrideDateInput);
+									setOverrideDateInput("");
+									setShowDateOverrideDialog(false);
+								}
+							}}
+						>
+							Apply Override
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

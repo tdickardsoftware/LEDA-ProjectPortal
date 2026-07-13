@@ -30,6 +30,7 @@ interface NormalizedScheduleRow {
 	oppTeamLetter: string;
 	matchDateTime: string | Date; // Can be string or Date object from PostgreSQL
 	home: boolean;
+	isBackupLocation: boolean;
 }
 
 // Transform normalized rows into nested schedule structure
@@ -85,6 +86,7 @@ function transformToNestedSchedule(rows: NormalizedScheduleRow[]): ScheduleData 
 			opposingTeamId: row.oppTeamId,
 			opposingTeamLetter: row.oppTeamLetter,
 			subdivisionId: `${row.division}-${row.subdivision}`,
+			isAtBackupLocation: row.isBackupLocation,
 		};
 	}
 
@@ -104,6 +106,7 @@ function transformToNormalizedRows(seasonCode: string, scheduleData: ScheduleDat
 	oppTeamLetter: string;
 	matchDateTime: string;
 	home: boolean;
+	isBackupLocation: boolean;
 }> {
 	const rows: Array<{
 		seasonCode: string;
@@ -117,6 +120,7 @@ function transformToNormalizedRows(seasonCode: string, scheduleData: ScheduleDat
 		oppTeamLetter: string;
 		matchDateTime: string;
 		home: boolean;
+		isBackupLocation: boolean;
 	}> = [];
 
 	for (const [division, subdivisions] of Object.entries(scheduleData)) {
@@ -141,6 +145,7 @@ function transformToNormalizedRows(seasonCode: string, scheduleData: ScheduleDat
 						oppTeamLetter: matchData.opposingTeamLetter,
 						matchDateTime,
 						home: matchData.home,
+						isBackupLocation: matchData.isAtBackupLocation === true,
 					});
 				}
 			}
@@ -195,9 +200,9 @@ export default async function handler(
 				const valueSets: string[] = [];
 				
 				rows.forEach((row, index) => {
-					const baseIndex = index * 11; // 11 columns per row
+					const baseIndex = index * 12; // 12 columns per row
 					valueSets.push(
-						`($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7}, $${baseIndex + 8}, $${baseIndex + 9}, $${baseIndex + 10}, $${baseIndex + 11})`
+						`($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7}, $${baseIndex + 8}, $${baseIndex + 9}, $${baseIndex + 10}, $${baseIndex + 11}, $${baseIndex + 12})`
 					);
 					valueParams.push(
 						row.seasonCode,
@@ -210,7 +215,8 @@ export default async function handler(
 						row.oppTeamId,
 						row.oppTeamLetter,
 						row.matchDateTime,
-						row.home
+						row.home,
+						row.isBackupLocation
 					);
 				});
 
@@ -218,7 +224,7 @@ export default async function handler(
 					INSERT INTO public.leda_schedule (
 						"seasonCode", "weekNum", division, subdivision,
 						"teamId", "teamName", "teamLetter",
-						"oppTeamId", "oppTeamLetter", "matchDateTime", home
+						"oppTeamId", "oppTeamLetter", "matchDateTime", home, "isBackupLocation"
 					) VALUES ${valueSets.join(', ')}
 				`;
 
@@ -244,7 +250,7 @@ export default async function handler(
 				const result = await query<NormalizedScheduleRow>(
 					`SELECT "seasonCode", "weekNum", division, subdivision,
 					        "teamId", "teamName", "teamLetter",
-					        "oppTeamId", "oppTeamLetter", "matchDateTime", home
+					        "oppTeamId", "oppTeamLetter", "matchDateTime", home, "isBackupLocation"
 					 FROM public.leda_schedule
 					 WHERE "seasonCode" = $1
 					 ORDER BY "weekNum", division, subdivision, "teamLetter"`,

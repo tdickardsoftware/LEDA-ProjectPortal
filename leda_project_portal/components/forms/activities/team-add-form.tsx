@@ -51,6 +51,9 @@ const formContainerStyle =
  * @param setOpen - Function to close the containing dialog
  * @param division - Division name that the team is being added to
  * @param subdivision - Subdivision name that the team is being added to
+ * @param placeTeamCounts - Optional map of placeId -> number of teams already
+ *   assigned to that place in the current roster, used to show a capacity
+ *   badge (assigned/total boards) in the place selector
  */
 export default function TeamAddForm({
 	selectedTeams,
@@ -59,6 +62,7 @@ export default function TeamAddForm({
 	division,
 	subdivision,
 	takenLetters,
+	placeTeamCounts,
 }: {
 	selectedTeams: string[];
 	handleSelectTeam: (
@@ -73,6 +77,7 @@ export default function TeamAddForm({
 	division: string;
 	subdivision: string;
 	takenLetters: string[];
+	placeTeamCounts?: Record<string, number>;
 }) {
 	const availableLetters = ALL_LETTERS.filter(l => !takenLetters.includes(l));
 	// Initialize the form using react-hook-form and zodResolver
@@ -132,6 +137,7 @@ export default function TeamAddForm({
 							name="placeId"
 							label="Home Place *"
 							control={form.control}
+							placeTeamCounts={placeTeamCounts}
 						/>
 						<FormField
 							control={form.control}

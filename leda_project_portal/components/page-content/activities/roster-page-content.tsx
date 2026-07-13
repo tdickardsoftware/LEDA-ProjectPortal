@@ -29,7 +29,7 @@ import {
 import DivisionAddForm from "@/components/forms/activities/division-add-form";
 
 import TeamAddForm from "@/components/forms/activities/team-add-form";
-import { X, Pencil, GripVertical } from "lucide-react";
+import { X, Pencil, GripVertical, TriangleAlert, CheckCircle2, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -48,13 +48,17 @@ import {
 	AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { rosterRoute, scheduleRoute } from "@/lib/apiRoutes";
+import { rosterRoute, scheduleRoute, seasonRoute, seasonBackupPlaceRoute } from "@/lib/apiRoutes";
+import { generateSchedule, type GeneratorOptions, type GenerationPreview } from "@/lib/scheduleGenerator";
+import { type DivisionsData } from "@/lib/schedule";
 import CopyRosterForm from "@/components/forms/activities/copy-roster-form";
 import { Spinner } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { FolderTabMed } from "@/components/ui/folder-tab";
+import PlaceSelectorWrapper from "@/components/ui/place-selector-wrapper";
+import PlaceDisplay from "@/components/ui/place-display";
 import { 
 	useQuery, 
 	useMutation, 
@@ -251,11 +255,13 @@ function RosterTeamEditForm({
 	selectedTeams,
 	onSave,
 	onClose,
+	placeTeamCounts,
 }: {
 	teamToEdit: { teamId: string; placeId: string; teamName: string };
 	selectedTeams: string[];
 	onSave: (teamId: string, placeId: string, teamName: string) => void;
 	onClose: () => void;
+	placeTeamCounts?: Record<string, number>;
 }) {
 	const form = useForm<z.infer<typeof rosterTeamEditSchema>>({
 		resolver: zodResolver(rosterTeamEditSchema),
@@ -286,6 +292,7 @@ function RosterTeamEditForm({
 					name="placeId"
 					label="Home Place *"
 					control={form.control}
+					placeTeamCounts={placeTeamCounts}
 				/>
 				<div className="flex justify-end gap-2">
 					<Button variant="outline" type="button" onClick={onClose}>
@@ -347,6 +354,7 @@ export default function RostersContent({
 	const [initialData, setInitialData] = useState<RosterData>({});
 	const [update, setUpdate] = useState(false);
 	const [deleteRosterAlertOpen, setDeleteRosterAlertOpen] = useState(false);
+	const [backupLocationDialogOpen, setBackupLocationDialogOpen] = useState(false);
 	const [selectedSubdivision, setSelectedSubdivision] = useState<{
 		divisionName: string;
 		subdivisionName: string;
@@ -356,6 +364,8 @@ export default function RostersContent({
 	);
 	const [isRosterInitialized, setIsRosterInitialized] = useState(false);
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+	const [generateScheduleAlertOpen, setGenerateScheduleAlertOpen] = useState(false);
+	const [schedulePreview, setSchedulePreview] = useState<GenerationPreview[]>([]);
 	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Setup QueryClient
@@ -371,6 +381,50 @@ export default function RostersContent({
 		queryFn: () => fetchRoster(seasonCode),
 		enabled: !!seasonCode,
 	});
+
+	// Fetch season data to get dates for schedule generation and season-started check
+	const { data: seasonData } = useQuery({
+		queryKey: ['season', seasonCode],
+		queryFn: async () => {
+			if (!seasonCode) return null;
+			const res = await fetchWithSession(`${seasonRoute}?seasonCode=${encodeURIComponent(seasonCode)}`, {
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			});
+			if (!res.ok) return null;
+			return res.json() as Promise<{ dates: Record<string, string>; seasonCode: string; serverTime: string; backupPlaceId?: string | null }>;
+		},
+		enabled: !!seasonCode,
+	});
+
+	// Updates the season's backup schedule location. Uses a narrow dedicated
+	// endpoint (rather than the general season PUT) so we don't need to know
+	// or resend the other season fields (desc/fiscalYear/isCurrentSeason).
+	const updateBackupPlaceMutation = useMutation({
+		mutationFn: async (data: { seasonCode: string; backupPlaceId: string }) => {
+			const response = await fetchWithSession(seasonBackupPlaceRoute, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data),
+			});
+			if (!response.ok) {
+				throw new Error('Failed to update backup location');
+			}
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['season', seasonCode] });
+			toast.success("Backup location updated");
+		},
+		onError: (error) => {
+			console.error("Failed to update backup location:", error);
+			toast.error("Failed to update backup location");
+		},
+	});
+
+	const handleBackupPlaceSelect = useCallback((placeId: string) => {
+		if (!seasonCode) return;
+		updateBackupPlaceMutation.mutate({ seasonCode, backupPlaceId: placeId });
+	}, [seasonCode, updateBackupPlaceMutation]);
 
 	// Handle rosterData changes and season transitions in a single effect to avoid
 	// the two-effect ordering bug: when switching to a season with cached data, both
@@ -494,6 +548,58 @@ export default function RostersContent({
 			toast.error("Failed to delete roster");
 		}
 	});
+
+	// Generates a full round-robin schedule from the current roster and saves it,
+	// overwriting any existing schedule for the season.
+	const generateScheduleMutation = useMutation({
+		mutationFn: async () => {
+			if (!seasonCode || !seasonData?.dates) throw new Error('No season dates available');
+
+			// Build sorted game date entries expected by the schedule generator
+			const gameDateEntries: [string, string][] = Object.entries(seasonData.dates as Record<string, string>)
+				.map(([key, date]) => {
+					const num = parseInt(key.match(/\d+/)?.[0] ?? "1", 10);
+					return { weekKey: `week${num}` as string, date, num };
+				})
+				.sort((a, b) => a.num - b.num)
+				.map(({ weekKey, date }) => [weekKey, date] as [string, string]);
+
+			const options: GeneratorOptions = {
+				defaultMatchTime: "19:30",
+				skipFilledWeeks: false,
+				sequentialPairing: true,
+			};
+
+// RosterData is structurally identical to DivisionsData (teamId, placeId, teamName)
+					const { data: generatedSchedule } = generateSchedule(
+						{ type: "all" },
+						divisionsData as unknown as DivisionsData,
+				gameDateEntries,
+				{},
+				options
+			);
+
+			const response = await fetchWithSession(scheduleRoute, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					seasonCode,
+					scheduleData: generatedSchedule,
+				}),
+			});
+
+			if (!response.ok) throw new Error('Failed to save generated schedule');
+		},
+		onSuccess: () => {
+			toast.success("Schedule generated and saved successfully");
+			setGenerateScheduleAlertOpen(false);
+		},
+		onError: (error) => {
+			console.error("Failed to generate schedule:", error);
+			toast.error("Failed to generate schedule");
+			setGenerateScheduleAlertOpen(false);
+		},
+	});
 	
 	// Use renderSeasonCode if provided
 	useEffect(() => {
@@ -545,6 +651,22 @@ export default function RostersContent({
 
 		return teamIds;
 	}, []);
+
+	// Count how many teams in the current roster are assigned to each place, so
+	// the PlaceSelector can show a "assigned/total boards" capacity badge.
+	const placeTeamCounts = useMemo(() => {
+		const counts: Record<string, number> = {};
+		Object.values(divisionsData).forEach((division) => {
+			Object.values(division.subdivisions).forEach((subdivision) => {
+				Object.values(subdivision).forEach((team) => {
+					if (team.placeId) {
+						counts[team.placeId] = (counts[team.placeId] || 0) + 1;
+					}
+				});
+			});
+		});
+		return counts;
+	}, [divisionsData]);
 
 	// Check if data has changed
 	const checkHasChanges = useCallback(() => {
@@ -902,12 +1024,13 @@ export default function RostersContent({
 							division={division}
 							subdivision={subdivision}
 							takenLetters={takenLetters}
+							placeTeamCounts={placeTeamCounts}
 						/>
 					</DialogContent>
 				</Dialog>
 			);
 		},
-		[teamOpen, disabled, selectedTeams, handleTeamSelect, divisionsData]
+		[teamOpen, disabled, selectedTeams, handleTeamSelect, divisionsData, placeTeamCounts]
 	);
 
 	// Render add division dialog
@@ -1219,7 +1342,45 @@ export default function RostersContent({
 		isDataLoading ||
 		updateRosterMutation.isPending ||
 		saveRosterMutation.isPending ||
-		deleteRosterMutation.isPending;
+		deleteRosterMutation.isPending ||
+		generateScheduleMutation.isPending;
+
+	// The generate-schedule button is blocked once the season's first game date has passed.
+	// Uses the server-supplied timestamp so a skewed client clock cannot bypass the guard.
+	const seasonHasStarted = useMemo(() => {
+		if (!seasonData) return false;
+
+		// `dates` may arrive as a parsed JS object or, in some environments, as a raw
+		// JSON string. Handle both so the check is never silently skipped.
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const rawDates = (seasonData as any).dates;
+		if (!rawDates) return false;
+
+		let datesMap: Record<string, string>;
+		if (typeof rawDates === 'string') {
+			try { datesMap = JSON.parse(rawDates); } catch { return false; }
+		} else {
+			datesMap = rawDates as Record<string, string>;
+		}
+
+		// Dates are stored as "M/D/YYYY" strings; new Date() parses that format correctly.
+		const timestamps = Object.values(datesMap)
+			.filter(Boolean)
+			.map(d => new Date(d).getTime())
+			.filter(t => !isNaN(t));
+
+		if (timestamps.length === 0) return false;
+
+		const firstGameMs = new Date(Math.min(...timestamps)).setHours(0, 0, 0, 0);
+
+		// Use the server-supplied time (prevents client-clock bypass). Zero out time
+		// so we compare calendar days only.
+		const nowMs = seasonData.serverTime
+			? new Date(seasonData.serverTime).setHours(0, 0, 0, 0)
+			: new Date().setHours(0, 0, 0, 0);
+
+		return nowMs >= firstGameMs;
+	}, [seasonData]);
 
 	const divisionTreeItems = useMemo<DivisionTreeDivision[]>(() => {
 		return Object.keys(divisionsData).map((divisionName) => ({
@@ -1267,8 +1428,8 @@ export default function RostersContent({
 		<SidenavPageLayout
 			header={
 				<div className="flex justify-between flex-wrap gap-4">
-					<FolderTabMed title="Season Code">
-						<div className="flex gap-4">
+					<FolderTabMed title="Roster Page Tools">
+						<div className="flex gap-4 flex-wrap items-center">
 							<SeasonCodeSelector
 								disabled={currentSeason}
 								handleSelect={handleSeasonCodeSelect}
@@ -1280,11 +1441,26 @@ export default function RostersContent({
 								<Label>Current Season?</Label>
 								<Checkbox checked={currentSeason} onCheckedChange={() => setCurrentSeason(!currentSeason)} />
 							</div>
-						</div>
-					</FolderTabMed>
-					<FolderTabMed title="Roster Actions">
-						<div className="flex gap-4 flex-wrap items-center">
 							{handleAddDivision()}
+							{seasonCode && (
+								<div className="flex flex-col rounded-md border border-border overflow-hidden">
+									<div className="px-3 py-2">
+										<PlaceDisplay
+											placeId={seasonData?.backupPlaceId}
+											emptyText="No backup location set"
+											showCapacity={false}
+										/>
+									</div>
+									<Separator />
+									<button
+										type="button"
+										onClick={() => setBackupLocationDialogOpen(true)}
+										className="px-3 py-1.5 text-sm text-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+									>
+										Edit Backup Location
+									</button>
+								</div>
+							)}
 							{update && (
 								<Button variant="outline" className="hover:bg-muted border-border text-foreground" onClick={() => setDeleteRosterAlertOpen(true)}>
 									Delete Roster
@@ -1305,6 +1481,47 @@ export default function RostersContent({
 									<Button variant="outline" className="hover:bg-muted border-border text-foreground" disabled={!hasChanges || isLoading} onClick={() => { setDivisionsData(JSON.parse(JSON.stringify(initialData))); setHasChanges(false); }}>
 										Reset Changes
 									</Button>
+									<Button
+										variant="outline"
+										className="hover:bg-muted border-border text-foreground"
+										disabled={isLoading || seasonHasStarted || !seasonData?.dates}
+										title={
+											isLoading ? "Loading…" :
+											seasonHasStarted ? "Cannot generate a schedule after the season has started" :
+											!seasonData?.dates ? "No game dates are configured for this season" :
+											""
+										}
+										onClick={() => {
+											console.log("[Roster] Generate Schedule clicked", { isLoading, seasonHasStarted, hasDates: !!seasonData?.dates });
+											if (seasonData?.dates) {
+												try {
+													const entries: [string, string][] = Object.entries(
+														seasonData.dates as Record<string, string>
+													)
+														.map(([key, date]) => {
+															const num = parseInt(key.match(/\d+/)?.[0] ?? "1", 10);
+															return { weekKey: `week${num}` as string, date, num };
+														})
+														.sort((a, b) => a.num - b.num)
+														.map(({ weekKey, date }) => [weekKey, date] as [string, string]);
+													const { preview: p } = generateSchedule(
+														{ type: "all" },
+														divisionsData as unknown as DivisionsData,
+														entries,
+														{},
+														{ defaultMatchTime: "19:30", skipFilledWeeks: false, sequentialPairing: true }
+													);
+													setSchedulePreview(p);
+												} catch (err) {
+													console.error("[Roster] Failed to compute schedule preview:", err);
+													setSchedulePreview([]);
+												}
+											}
+											setGenerateScheduleAlertOpen(true);
+										}}
+									>
+										Complete Roster &amp; Generate Schedule
+									</Button>
 								</>
 							)}
 						</div>
@@ -1319,18 +1536,27 @@ export default function RostersContent({
 					emptyMessage="Add a division to get started."
 				/>
 			}
-			showContent={!isDataLoading && !!selectedSubdivision}
-			emptyContent={
-				isLoading ? (
-					<Spinner />
-				) : Object.keys(divisionsData).length === 0 ? (
-					<p className="text-muted-foreground">No roster found for this season. Add a division to get started.</p>
-				) : (
-					<p className="text-muted-foreground">Select a subdivision from the left to manage its teams.</p>
-				)
-			}
 		>
 			{/* Controlled alert dialogs */}
+			<AlertDialog open={backupLocationDialogOpen} onOpenChange={setBackupLocationDialogOpen}>
+				<AlertDialogContent className="bg-background text-foreground">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Backup Location</AlertDialogTitle>
+						<AlertDialogDescription>
+							Choose a venue to use as the backup location for this entire season&apos;s schedule.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<PlaceSelectorWrapper
+						label="Place"
+						value={seasonData?.backupPlaceId}
+						onPlaceChange={handleBackupPlaceSelect}
+						placeTeamCounts={placeTeamCounts}
+					/>
+					<AlertDialogFooter>
+						<Button onClick={() => setBackupLocationDialogOpen(false)}>Done</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 			<AlertDialog open={deleteRosterAlertOpen} onOpenChange={setDeleteRosterAlertOpen}>
 				<AlertDialogContent className="bg-background text-foreground">
 					<AlertDialogHeader><AlertDialogTitle>Confirm Deletion</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete this roster?</AlertDialogDescription></AlertDialogHeader>
@@ -1367,6 +1593,97 @@ export default function RostersContent({
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+			<AlertDialog open={generateScheduleAlertOpen} onOpenChange={setGenerateScheduleAlertOpen}>
+				<AlertDialogContent className="bg-background text-foreground sm:max-w-2xl">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Complete Roster &amp; Generate Schedule</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will generate a complete round-robin schedule for every subdivision using the current roster. All match times will be set to 7:30 PM. Review the preview below before confirming.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+
+					{/* Schedule preview table */}
+					{schedulePreview.length > 0 && (
+						<div className="space-y-2 my-2">
+							<p className="text-sm font-medium">Preview</p>
+							<div className="rounded-md border border-border overflow-hidden">
+								<table className="w-full text-sm">
+									<thead>
+										<tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
+											<th className="text-left px-3 py-2 font-medium">Division</th>
+											<th className="text-left px-3 py-2 font-medium">Subdivision</th>
+											<th className="text-center px-3 py-2 font-medium">Teams</th>
+											<th className="text-center px-3 py-2 font-medium">Rounds / Cycle</th>
+											<th className="text-center px-3 py-2 font-medium">Weeks</th>
+											<th className="text-center px-3 py-2 font-medium">Status</th>
+										</tr>
+									</thead>
+									<tbody>
+										{schedulePreview.map((p, i) => (
+											<tr key={i} className="border-t border-border hover:bg-muted/30">
+												<td className="px-3 py-2">{p.division}</td>
+												<td className="px-3 py-2">{p.subdivision}</td>
+												<td className="px-3 py-2 text-center">{p.teamCount}</td>
+												<td className="px-3 py-2 text-center">{p.roundsPerCycle}</td>
+												<td className="px-3 py-2 text-center">{p.weeksAvailable}</td>
+												<td className="px-3 py-2 text-center">
+													{p.teamCount < 2 ? (
+														<span className="text-xs text-muted-foreground" title="Need at least 2 teams">—</span>
+													) : p.warning ? (
+														<span title={p.warning} className="inline-flex">
+															<TriangleAlert className="h-4 w-4 text-yellow-500 mx-auto" />
+														</span>
+													) : (
+														<CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
+													)}
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+
+							{/* Per-subdivision warnings */}
+							{schedulePreview.some((p) => !!p.warning) && (
+								<div className="space-y-1">
+									{schedulePreview.filter((p) => p.warning).map((p, i) => (
+										<p key={i} className="text-xs text-yellow-600 dark:text-yellow-400 flex items-start gap-1">
+											<TriangleAlert className="h-3 w-3 mt-0.5 shrink-0" />
+											<span>
+												<span className="font-medium">{p.division} › {p.subdivision}:</span>{" "}{p.warning}
+											</span>
+										</p>
+									))}
+								</div>
+							)}
+
+							<p className="text-xs text-muted-foreground">
+								Approximately{" "}
+								<span className="font-medium text-foreground">
+									{schedulePreview.reduce((sum, p) => sum + p.weeksAvailable * Math.floor(p.teamCount / 2), 0)}
+								</span>{" "}matchups will be created.
+							</p>
+						</div>
+					)}
+
+					{/* Overwrite warning */}
+					<div className="flex gap-2 rounded-md border border-yellow-500 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+						<AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+						<span>Any existing schedule for this season will be completely replaced. This action cannot be undone.</span>
+					</div>
+
+					<AlertDialogFooter>
+						<Button onClick={() => setGenerateScheduleAlertOpen(false)} disabled={generateScheduleMutation.isPending}>Cancel</Button>
+						<Button
+							onClick={() => generateScheduleMutation.mutate()}
+							variant="destructive"
+							disabled={generateScheduleMutation.isPending}
+						>
+							{generateScheduleMutation.isPending ? "Generating..." : "Generate Schedule"}
+						</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 			{/* Edit Team Dialog */}
 			<Dialog open={editTeamOpen} onOpenChange={(open) => { setEditTeamOpen(open); if (!open) setTeamToEdit(null); }}>
 				<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
@@ -1379,11 +1696,12 @@ export default function RostersContent({
 							selectedTeams={selectedTeams}
 							onSave={handleEditTeamInRoster}
 							onClose={() => { setEditTeamOpen(false); setTeamToEdit(null); }}
+							placeTeamCounts={placeTeamCounts}
 						/>
 					)}
 				</DialogContent>
 			</Dialog>
-			{selectedSubdivision && (
+			{!isDataLoading && selectedSubdivision ? (
 				<div>
 					<div className="mb-4">
 						{handleAddTeam(selectedSubdivision.divisionName, selectedSubdivision.subdivisionName)}
@@ -1454,6 +1772,12 @@ export default function RostersContent({
 						))}
 					</ul>
 				</div>
+			) : isLoading ? (
+				<Spinner />
+			) : Object.keys(divisionsData).length === 0 ? (
+				<p className="text-muted-foreground">No roster found for this season. Add a division to get started.</p>
+			) : (
+				<p className="text-muted-foreground">Select a subdivision from the left to manage its teams.</p>
 			)}
 		</SidenavPageLayout>
 	);
