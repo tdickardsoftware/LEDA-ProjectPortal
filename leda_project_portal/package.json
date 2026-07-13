@@ -1,6 +1,6 @@
 {
   "name": "leda_project_portal",
-  "version": "1.0.0.4",
+  "version": "1.0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
