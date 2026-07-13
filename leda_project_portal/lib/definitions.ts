@@ -118,6 +118,7 @@ export type Place = {
 export type PlaceSelector = {
 	ledaId: number;
 	name: string;
+	numberOfBoards: number;
 };
 //
 // Define type to identify the shape of our data from postgres for place datatable
@@ -188,6 +189,7 @@ export type Season = {
 	fiscalYear: string;
 	dates: JSON;
 	isCurrentSeason: boolean;
+	backupPlaceId?: string | null;
 };
 //
 // Define type to identify the shape of our data from postgres for Seasons Datatable

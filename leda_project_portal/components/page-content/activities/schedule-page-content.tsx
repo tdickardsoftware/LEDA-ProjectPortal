@@ -20,6 +20,7 @@ import { SubdivisionScheduler } from "@/components/subdivision-scheduler";
 import { Button } from "@/components/ui/button";
 import { SaveStatusIndicator } from "@/components/ui/save-status-indicator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
+import PlaceDisplay from "@/components/ui/place-display";
 import { useScheduleData } from "@/hooks/useScheduleData";
 import { ScheduleData } from "@/lib/schedule";
 import SidenavPageLayout from "@/components/sidenav-page-layout";
@@ -44,6 +45,7 @@ export default function ScheduleContent() {
 		handleSeasonCodeSelect,
 		handleSaveData,
 		rosterNotFound,
+		backupPlaceId,
 	} = useScheduleData();
 
 	const [selectedSubdivision, setSelectedSubdivision] = useState<{
@@ -150,7 +152,7 @@ export default function ScheduleContent() {
 	return (
 		<SidenavPageLayout
 			header={
-				<div className="flex justify-between">
+				<div className="flex justify-between flex-wrap gap-4">
 					<FolderTabMed title="Season Code">
 						<div className="flex gap-4">
 							<SeasonCodeSelector
@@ -167,6 +169,20 @@ export default function ScheduleContent() {
 									onCheckedChange={handleCurrentSeasonChange}
 								/>
 							</div>
+						</div>
+					</FolderTabMed>
+					<FolderTabMed title="Backup Location">
+						<div className="p-4">
+							{seasonCode ? (
+								<PlaceDisplay
+									placeId={backupPlaceId}
+									emptyText="No backup location set for this season. Set one on the Rosters page."
+								/>
+							) : (
+								<p className="text-sm text-muted-foreground">
+									Select a season to view its backup location.
+								</p>
+							)}
 						</div>
 					</FolderTabMed>
 					<FolderTabMed title="Manage Schedule">

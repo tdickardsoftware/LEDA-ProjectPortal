@@ -53,6 +53,8 @@ export const peopleTypeRoute = "/api/maintenance/peopleType";
 export const placeTypeRoute = "/api/maintenance/placeType";
 // Define route for season not on the serverside
 export const seasonRoute = "/api/maintenance/season";
+// Define route for updating just a season's backup schedule location
+export const seasonBackupPlaceRoute = "/api/maintenance/season/backupPlace";
 // Define route for season datatable not on the serverside
 export const seasonDataTableRoute = "/api/maintenance/season/datatable";
 // Define route for seasonCode not on the serverside

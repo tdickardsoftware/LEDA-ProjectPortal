@@ -214,6 +214,29 @@ const PlaceOwnerSelectContent: React.FC<PlaceOwnerSelectContentProps> = ({
 		e.stopPropagation();
 	}, []);
 
+	// Resolve the player's full name directly by id whenever a ledaId is present
+	// but no name has been supplied yet (e.g. a form pre-filled with only the id).
+	// This runs as soon as the value is set, independent of the dropdown being
+	// opened, so the trigger never gets stuck showing just the raw id.
+	const { data: resolvedPlayer } = useQuery({
+		queryKey: ["player-resolve", currentValue],
+		queryFn: async () => {
+			const response = await fetch(`${playerRoute}?ledaId=${currentValue}`);
+			if (!response.ok) {
+				throw new Error("Failed to fetch player");
+			}
+			return response.json() as Promise<{ ledaId: number; fullName: string }>;
+		},
+		enabled: !!currentValue && !currentFullName,
+		staleTime: 1000 * 60 * 5,
+	});
+
+	React.useEffect(() => {
+		if (resolvedPlayer?.fullName && !currentFullName) {
+			formContext.setValue("fullName", resolvedPlayer.fullName);
+		}
+	}, [resolvedPlayer, currentFullName, formContext]);
+
 	const handleFocus = React.useCallback(() => {
 		if (lastInputType === "keyboard" && !open && !justClosedRef.current) {
 			setOpen(true);

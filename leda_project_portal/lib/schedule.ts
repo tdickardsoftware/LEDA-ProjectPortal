@@ -66,6 +66,7 @@ export interface EditMatchupState {
 
 export interface SeasonApiResponse {
 	dates: Record<string, string>;
+	backupPlaceId?: string | null;
 }
 
 export interface RosterApiResponse {

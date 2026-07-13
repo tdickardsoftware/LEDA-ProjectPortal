@@ -115,6 +115,7 @@ export function useScheduleData() {
 	// Derived data
 	const divisionsData: DivisionsData = rosterData?.teamInformation || {};
 	const gameDates: Record<string, string> = gameDatesData?.dates || {};
+	const backupPlaceId: string | null = gameDatesData?.backupPlaceId ?? null;
 
 	// True when the server-side current date is on or after the first game date.
 	// The season API now returns serverTime so the client clock cannot be spoofed.
@@ -241,5 +242,6 @@ export function useScheduleData() {
 		handleSeasonCodeSelect,
 		handleSaveData,
 		rosterNotFound,
+		backupPlaceId,
 	};
 }

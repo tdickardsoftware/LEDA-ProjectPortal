@@ -48,7 +48,7 @@ export default async function handler(
 			try {
 				const seasonCode = req.query.seasonCode;
 				const result = await query<Season>(
-					`SELECT "seasonCode", "desc", "fiscalYear", "dates", "isCurrentSeason" FROM maint.leda_maint_seasons WHERE "seasonCode" = $1;`,
+					`SELECT "seasonCode", "desc", "fiscalYear", "dates", "isCurrentSeason", "backupPlaceId" FROM maint.leda_maint_seasons WHERE "seasonCode" = $1;`,
 					[seasonCode as string]
 				);
 				log.info({ seasonCode: req.query.seasonCode }, "Fetched single season");
@@ -69,7 +69,7 @@ export default async function handler(
 			try {
 				// Execute the database query to fetch season information
 				const result = await query<Season>(
-					'SELECT "seasonCode", "desc", "fiscalYear", "dates", "isCurrentSeason" FROM maint.leda_maint_seasons ORDER BY "seasonCode";'
+					'SELECT "seasonCode", "desc", "fiscalYear", "dates", "isCurrentSeason", "backupPlaceId" FROM maint.leda_maint_seasons ORDER BY "seasonCode";'
 				);
 				// Respond with the query result
 				log.info({ count: result.rows.length }, "Fetched all seasons");

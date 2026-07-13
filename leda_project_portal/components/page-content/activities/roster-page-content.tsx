@@ -48,7 +48,7 @@ import {
 	AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { rosterRoute, scheduleRoute, seasonRoute } from "@/lib/apiRoutes";
+import { rosterRoute, scheduleRoute, seasonRoute, seasonBackupPlaceRoute } from "@/lib/apiRoutes";
 import { generateSchedule, type GeneratorOptions, type GenerationPreview } from "@/lib/scheduleGenerator";
 import { type DivisionsData } from "@/lib/schedule";
 import CopyRosterForm from "@/components/forms/activities/copy-roster-form";
@@ -57,6 +57,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { FolderTabMed } from "@/components/ui/folder-tab";
+import PlaceSelectorWrapper from "@/components/ui/place-selector-wrapper";
+import PlaceDisplay from "@/components/ui/place-display";
 import { 
 	useQuery, 
 	useMutation, 
@@ -253,11 +255,13 @@ function RosterTeamEditForm({
 	selectedTeams,
 	onSave,
 	onClose,
+	placeTeamCounts,
 }: {
 	teamToEdit: { teamId: string; placeId: string; teamName: string };
 	selectedTeams: string[];
 	onSave: (teamId: string, placeId: string, teamName: string) => void;
 	onClose: () => void;
+	placeTeamCounts?: Record<string, number>;
 }) {
 	const form = useForm<z.infer<typeof rosterTeamEditSchema>>({
 		resolver: zodResolver(rosterTeamEditSchema),
@@ -288,6 +292,7 @@ function RosterTeamEditForm({
 					name="placeId"
 					label="Home Place *"
 					control={form.control}
+					placeTeamCounts={placeTeamCounts}
 				/>
 				<div className="flex justify-end gap-2">
 					<Button variant="outline" type="button" onClick={onClose}>
@@ -349,6 +354,7 @@ export default function RostersContent({
 	const [initialData, setInitialData] = useState<RosterData>({});
 	const [update, setUpdate] = useState(false);
 	const [deleteRosterAlertOpen, setDeleteRosterAlertOpen] = useState(false);
+	const [backupLocationDialogOpen, setBackupLocationDialogOpen] = useState(false);
 	const [selectedSubdivision, setSelectedSubdivision] = useState<{
 		divisionName: string;
 		subdivisionName: string;
@@ -386,10 +392,39 @@ export default function RostersContent({
 				headers: { 'Content-Type': 'application/json' },
 			});
 			if (!res.ok) return null;
-			return res.json() as Promise<{ dates: Record<string, string>; seasonCode: string; serverTime: string }>;
+			return res.json() as Promise<{ dates: Record<string, string>; seasonCode: string; serverTime: string; backupPlaceId?: string | null }>;
 		},
 		enabled: !!seasonCode,
 	});
+
+	// Updates the season's backup schedule location. Uses a narrow dedicated
+	// endpoint (rather than the general season PUT) so we don't need to know
+	// or resend the other season fields (desc/fiscalYear/isCurrentSeason).
+	const updateBackupPlaceMutation = useMutation({
+		mutationFn: async (data: { seasonCode: string; backupPlaceId: string }) => {
+			const response = await fetchWithSession(seasonBackupPlaceRoute, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data),
+			});
+			if (!response.ok) {
+				throw new Error('Failed to update backup location');
+			}
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['season', seasonCode] });
+			toast.success("Backup location updated");
+		},
+		onError: (error) => {
+			console.error("Failed to update backup location:", error);
+			toast.error("Failed to update backup location");
+		},
+	});
+
+	const handleBackupPlaceSelect = useCallback((placeId: string) => {
+		if (!seasonCode) return;
+		updateBackupPlaceMutation.mutate({ seasonCode, backupPlaceId: placeId });
+	}, [seasonCode, updateBackupPlaceMutation]);
 
 	// Handle rosterData changes and season transitions in a single effect to avoid
 	// the two-effect ordering bug: when switching to a season with cached data, both
@@ -616,6 +651,22 @@ export default function RostersContent({
 
 		return teamIds;
 	}, []);
+
+	// Count how many teams in the current roster are assigned to each place, so
+	// the PlaceSelector can show a "assigned/total boards" capacity badge.
+	const placeTeamCounts = useMemo(() => {
+		const counts: Record<string, number> = {};
+		Object.values(divisionsData).forEach((division) => {
+			Object.values(division.subdivisions).forEach((subdivision) => {
+				Object.values(subdivision).forEach((team) => {
+					if (team.placeId) {
+						counts[team.placeId] = (counts[team.placeId] || 0) + 1;
+					}
+				});
+			});
+		});
+		return counts;
+	}, [divisionsData]);
 
 	// Check if data has changed
 	const checkHasChanges = useCallback(() => {
@@ -973,12 +1024,13 @@ export default function RostersContent({
 							division={division}
 							subdivision={subdivision}
 							takenLetters={takenLetters}
+							placeTeamCounts={placeTeamCounts}
 						/>
 					</DialogContent>
 				</Dialog>
 			);
 		},
-		[teamOpen, disabled, selectedTeams, handleTeamSelect, divisionsData]
+		[teamOpen, disabled, selectedTeams, handleTeamSelect, divisionsData, placeTeamCounts]
 	);
 
 	// Render add division dialog
@@ -1376,8 +1428,8 @@ export default function RostersContent({
 		<SidenavPageLayout
 			header={
 				<div className="flex justify-between flex-wrap gap-4">
-					<FolderTabMed title="Season Code">
-						<div className="flex gap-4">
+					<FolderTabMed title="Roster Page Tools">
+						<div className="flex gap-4 flex-wrap items-center">
 							<SeasonCodeSelector
 								disabled={currentSeason}
 								handleSelect={handleSeasonCodeSelect}
@@ -1389,11 +1441,26 @@ export default function RostersContent({
 								<Label>Current Season?</Label>
 								<Checkbox checked={currentSeason} onCheckedChange={() => setCurrentSeason(!currentSeason)} />
 							</div>
-						</div>
-					</FolderTabMed>
-					<FolderTabMed title="Roster Actions">
-						<div className="flex gap-4 flex-wrap items-center">
 							{handleAddDivision()}
+							{seasonCode && (
+								<div className="flex flex-col rounded-md border border-border overflow-hidden">
+									<div className="px-3 py-2">
+										<PlaceDisplay
+											placeId={seasonData?.backupPlaceId}
+											emptyText="No backup location set"
+											showCapacity={false}
+										/>
+									</div>
+									<Separator />
+									<button
+										type="button"
+										onClick={() => setBackupLocationDialogOpen(true)}
+										className="px-3 py-1.5 text-sm text-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+									>
+										Edit Backup Location
+									</button>
+								</div>
+							)}
 							{update && (
 								<Button variant="outline" className="hover:bg-muted border-border text-foreground" onClick={() => setDeleteRosterAlertOpen(true)}>
 									Delete Roster
@@ -1471,6 +1538,25 @@ export default function RostersContent({
 			}
 		>
 			{/* Controlled alert dialogs */}
+			<AlertDialog open={backupLocationDialogOpen} onOpenChange={setBackupLocationDialogOpen}>
+				<AlertDialogContent className="bg-background text-foreground">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Backup Location</AlertDialogTitle>
+						<AlertDialogDescription>
+							Choose a venue to use as the backup location for this entire season&apos;s schedule.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<PlaceSelectorWrapper
+						label="Place"
+						value={seasonData?.backupPlaceId}
+						onPlaceChange={handleBackupPlaceSelect}
+						placeTeamCounts={placeTeamCounts}
+					/>
+					<AlertDialogFooter>
+						<Button onClick={() => setBackupLocationDialogOpen(false)}>Done</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 			<AlertDialog open={deleteRosterAlertOpen} onOpenChange={setDeleteRosterAlertOpen}>
 				<AlertDialogContent className="bg-background text-foreground">
 					<AlertDialogHeader><AlertDialogTitle>Confirm Deletion</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete this roster?</AlertDialogDescription></AlertDialogHeader>
@@ -1610,6 +1696,7 @@ export default function RostersContent({
 							selectedTeams={selectedTeams}
 							onSave={handleEditTeamInRoster}
 							onClose={() => { setEditTeamOpen(false); setTeamToEdit(null); }}
+							placeTeamCounts={placeTeamCounts}
 						/>
 					)}
 				</DialogContent>
