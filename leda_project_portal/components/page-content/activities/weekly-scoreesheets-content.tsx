@@ -1086,12 +1086,6 @@ const confirmPendingChangesPlaceholder = () => true;
 					setSelectedAwayTeamId(awayTeamId);
 					setHomePenalties({});
 					setAwayPenalties({});
-					
-					// Initialize with blank game data since matchup doesn't exist
-					setHomeWins(Array(11).fill(false));
-					setHomePoints(Array(11).fill("0"));
-					setAwayPoints(Array(11).fill("0"));
-					setIsMatchupCompleted(false);
 
 					// Fetch roster members and real team names in parallel
 					const [homeMembers, awayMembers, homeTeamData, awayTeamData] = await Promise.all([
@@ -1104,6 +1098,42 @@ const confirmPendingChangesPlaceholder = () => true;
 					setAwayTeamName(awayTeamData?.teamName || `Team ${awayLetter}`);
 					setHomeTeamMemberIds(homeMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
 					setAwayTeamMemberIds(awayMembers.map((m: { ledaId: string }) => m.ledaId).filter(Boolean));
+
+					// A leda_weekly_scoresheets_team_info row may be missing even though
+					// game info (and its completed flag) was already saved for these teams,
+					// so always check gameInfo directly rather than assuming blank/incomplete.
+					const giRows = await fetchGameInfoV2({
+						seasonCode,
+						weekNum: selectedWeek,
+						division: divisionName,
+						subdivision: subdivisionName,
+						homeTeamId,
+						awayTeamId,
+					});
+
+					if (giRows === null) {
+						setHomeWins(Array(11).fill(false));
+						setHomePoints(Array(11).fill("0"));
+						setAwayPoints(Array(11).fill("0"));
+						setIsMatchupCompleted(false);
+					} else if (Array.isArray(giRows) && giRows.length > 0) {
+						const gi = giRows[0];
+						const gameInfo = gi?.gameInfo as Record<string, { homeWin: boolean; homePoints: string; awayPoints: string }> | undefined;
+						if (gameInfo) {
+							const newWins = Array(11).fill(false).map((_, i) => !!gameInfo[`Game ${i + 1}`]?.homeWin);
+							const newHomePoints = Array(11).fill("").map((_, i) => gameInfo[`Game ${i + 1}`]?.homePoints ?? "0");
+							const newAwayPoints = Array(11).fill("").map((_, i) => gameInfo[`Game ${i + 1}`]?.awayPoints ?? "0");
+							setHomeWins(newWins);
+							setHomePoints(newHomePoints);
+							setAwayPoints(newAwayPoints);
+						}
+						setIsMatchupCompleted(!!gi?.completed);
+					} else {
+						setHomeWins(Array(11).fill(false));
+						setHomePoints(Array(11).fill("0"));
+						setAwayPoints(Array(11).fill("0"));
+						setIsMatchupCompleted(false);
+					}
 				} else {
 					// Could not find team IDs in roster
 					setSelectedHomeTeamId("");
@@ -2500,6 +2530,11 @@ const FolderTabSkeleton = () => (
 														setOriginalMatchupSnapshot(null);
 														setLastSavedSnapshot(null);
 														setPreviousSavedSnapshot(null);
+														setHomeTempPlayers([]);
+														setAwayTempPlayers([]);
+														setHomePenaltyCounter(0);
+														setAwayPenaltyCounter(0);
+														setMentionCounters({});
 														setMatchupLoadToken(prev => prev + 1);
 														// Refresh sidenav and completion indicators
 														queryClient.invalidateQueries({ queryKey: ["v2-matchups", seasonCode, selectedWeek] });
