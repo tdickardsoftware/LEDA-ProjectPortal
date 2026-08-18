@@ -221,6 +221,8 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 					return;
 				}
 				if (!g.homeTeamId || !g.awayTeamId) {
+					let resolvedHomeId = "";
+					let resolvedAwayId = "";
 					try {
 						const teamInfoRes = await fetchWithSession(`/api/activities/scoresheets/weeklyScoresheetsV2/teamInfo?seasonCode=${encodeURIComponent(seasonCode)}&weekNum=${encodeURIComponent(weekNum)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}&teamLetter=${encodeURIComponent(g.homeTeamLetter)}`, { method: 'GET' });
 						if (teamInfoRes.status === 200) {
@@ -228,22 +230,41 @@ const SideNav = ({ seasonCode, weekNum, handleMatchupSelection, collapseOnSelect
 							const homeRow = rows[0];
 							const awayRow = rows[1];
 							if (homeRow && awayRow) {
-								const homeId = String(homeRow.teamId);
-								const awayId = String(awayRow.teamId);
-								// Store team IDs (including BYE matchups with teamId "0")
-								setData(prev => {
-									const clone: DivisionData = JSON.parse(JSON.stringify(prev));
-									const game = clone[divisionName][subdivisionName][gameNumber];
-									game.homeTeamId = homeId;
-									game.awayTeamId = awayId;
-									return clone;
-								});
-								g.homeTeamId = homeId; g.awayTeamId = awayId;
+								resolvedHomeId = String(homeRow.teamId);
+								resolvedAwayId = String(awayRow.teamId);
 							}
-						} else {
-							setCompletionMap(prev => ({ ...prev, [letterStatusKey]: false }));
 						}
-					} catch {
+					} catch { /* fall through to schedule-based resolution below */ }
+
+					// The leda_weekly_scoresheets_team_info row may be missing even though
+					// game info (and its completed flag) was already saved, so fall back to
+					// resolving team IDs from the schedule rather than assuming incomplete.
+					if (!resolvedHomeId || !resolvedAwayId) {
+						try {
+							const schedRes = await fetchWithSession(
+								`/api/activities/schedule/subdivision?seasonCode=${encodeURIComponent(seasonCode)}&division=${encodeURIComponent(divisionName)}&subdivision=${encodeURIComponent(subdivisionName)}`,
+								{ method: 'GET' }
+							);
+							if (schedRes.ok) {
+								const schedData = await schedRes.json();
+								const subdivData = schedData?.scheduleData?.[divisionName]?.[subdivisionName];
+								if (!resolvedHomeId && subdivData?.[g.homeTeamLetter]) resolvedHomeId = subdivData[g.homeTeamLetter].teamId || "";
+								if (!resolvedAwayId && subdivData?.[g.awayTeamLetter]) resolvedAwayId = subdivData[g.awayTeamLetter].teamId || "";
+							}
+						} catch { /* ignore */ }
+					}
+
+					if (resolvedHomeId && resolvedAwayId) {
+						// Store team IDs (including BYE matchups with teamId "0")
+						setData(prev => {
+							const clone: DivisionData = JSON.parse(JSON.stringify(prev));
+							const game = clone[divisionName][subdivisionName][gameNumber];
+							game.homeTeamId = resolvedHomeId;
+							game.awayTeamId = resolvedAwayId;
+							return clone;
+						});
+						g.homeTeamId = resolvedHomeId; g.awayTeamId = resolvedAwayId;
+					} else {
 						setCompletionMap(prev => ({ ...prev, [letterStatusKey]: false }));
 					}
 				}
