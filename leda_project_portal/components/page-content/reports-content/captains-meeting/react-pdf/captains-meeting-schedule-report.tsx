@@ -23,6 +23,8 @@ interface CaptainsMeetingScheduleReportProps {
 	placesData: Record<string, string>;
 	seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
 	backupPlaceId?: string | null;
+	// Compact (legacy) letter-grid layout by default; full matchup details when true.
+	detailedView?: boolean;
 }
 
 // Create styles
@@ -127,6 +129,30 @@ const styles = StyleSheet.create({
 		color: "#999999",
 		fontStyle: "italic",
 	},
+	tableColTeamInfo: {
+		width: "18%",
+		borderStyle: "solid",
+		borderWidth: 1,
+		borderColor: "#000000",
+		padding: 3,
+		textAlign: "left",
+		fontSize: 7,
+		justifyContent: "center",
+	},
+	tableColMatchup: {
+		borderStyle: "solid",
+		borderWidth: 1,
+		borderColor: "#000000",
+		padding: 1,
+		textAlign: "center",
+		fontSize: 8,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	matchupLetter: {
+		fontSize: 9,
+		fontWeight: "bold",
+	},
 });
 
 // Utility function for time conversion
@@ -147,6 +173,7 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 	placesData,
 	seasonInfo,
 	backupPlaceId,
+	detailedView = false,
 }) => {
 	// Convert gameDates keys (e.g. "Date 1") to the "weekN" format used as
 	// matchesData keys in the schedule API, mirroring the conversion in
@@ -160,6 +187,13 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 	// Calculate dynamic column width based on number of teams
 	const getColumnWidth = (totalColumns: number) => {
 		const remainingWidth = 85; // 85% for team columns
+		return `${remainingWidth / totalColumns}%`;
+	};
+
+	// Calculate dynamic week-column width for the compact (legacy) grid,
+	// where the leftmost 18% is reserved for the team info column.
+	const getWeekColumnWidth = (totalColumns: number) => {
+		const remainingWidth = 82;
 		return `${remainingWidth / totalColumns}%`;
 	};
 
@@ -219,6 +253,26 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 		);
 	};
 
+	// Render matchup cell content for the compact (legacy) letter-grid:
+	// home matchups show the opponent's letter uppercase, away matchups show
+	// the opponent's letter lowercase, and "X" (the BYE placeholder letter) shows "BYE".
+	const renderCompactMatchupContent = (matchup: MatchData | null) => {
+		if (!matchup) {
+			return <Text style={styles.byeText}>BYE</Text>;
+		}
+
+		const isBye = matchup.opposingTeamId === "0" || matchup.opposingTeamLetter.toUpperCase() === "X";
+		if (isBye) {
+			return <Text style={styles.byeText}>BYE</Text>;
+		}
+
+		const matchupCode = matchup.home
+			? matchup.opposingTeamLetter.toUpperCase()
+			: matchup.opposingTeamLetter.toLowerCase();
+
+		return <Text style={styles.matchupLetter}>{matchupCode}</Text>;
+	};
+
 	// Get season description from the season info array with safety check
 	const seasonDescription = seasonInfo && seasonInfo.length > 0 ? seasonInfo[0].desc : "Season " + seasonCode;
 
@@ -240,7 +294,10 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 						!teamData.teamName.toUpperCase().includes('BYE')
 					);
 					const columnWidth = getColumnWidth(teamsArray.length);
-					const gameDateChunks = chunkGameDates(gameDateEntries);
+					const gameDateChunks = chunkGameDates(gameDateEntries, detailedView ? 7 : 14);
+					const weekColumnWidth = getWeekColumnWidth(
+						gameDateChunks[0]?.length || gameDateEntries.length || 1
+					);
 					
 					return gameDateChunks.map((gameDateChunk, chunkIndex) => {
 						return (
@@ -258,67 +315,130 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 										Lake Erie Dart Association, Inc. - {seasonDescription}
 									</Text>
 								</View>
-								<View style={styles.table}>
-									{/* Header Row - Teams */}
-									<View style={styles.tableRow}>
-										<View style={[styles.tableColHeader, { width: "15%" }]}>
-											<Text>{division} - {subdivision}</Text>
+								{detailedView ? (
+									<View style={styles.table}>
+										{/* Header Row - Teams */}
+										<View style={styles.tableRow}>
+											<View style={[styles.tableColHeader, { width: "15%" }]}>
+												<Text>{division} - {subdivision}</Text>
+											</View>
+											{teamsArray.map(([teamLetter, teamData]) => {
+												const matchingSeasonInfo = seasonInfo.find(
+													info => info.teamId.toString() === teamData.teamId && 
+													info.division === division && 
+													info.subdivision === subdivision
+												);
+												
+												return (
+													<View key={teamLetter} style={[styles.tableColTeam, { width: columnWidth }]}>
+														<Text style={styles.teamName}>{teamLetter}</Text>
+														<Text>{teamData.teamName}</Text>
+														{matchingSeasonInfo && (
+															<View>
+																<Text>{matchingSeasonInfo.placeName}</Text>
+																<Text>{matchingSeasonInfo.addressFirstLine}</Text>
+																<Text>
+																	{matchingSeasonInfo.addressSecondLine}
+																	{matchingSeasonInfo.placePhoneNumber && ` - ${matchingSeasonInfo.placePhoneNumber}`}
+																</Text>
+																{matchingSeasonInfo.captainFullName !== "No Captain" && (
+																	<Text>
+																		{matchingSeasonInfo.captainFullName}
+																		{matchingSeasonInfo.captainPhoneNumber && ` - ${matchingSeasonInfo.captainPhoneNumber}`}
+																	</Text>
+																)}
+															</View>
+														)}
+													</View>
+												);
+											})}
 										</View>
+
+										{/* Data Rows - Game Dates */}
+										{gameDateChunk.map(([gameTitle, date]) => (
+											<View key={gameTitle} style={styles.tableRow}>
+												<View style={[styles.tableColHeader, { width: "15%" }]}>
+													<Text>Week {gameTitle.match(/\d+/)?.[0] ?? ""}</Text>
+													<Text style={styles.gameDate}>{date}</Text>
+												</View>
+												{teamsArray.map(([teamLetter, teamData]) => {
+													const matchup = getTeamMatchup(
+														division,
+														subdivision,
+														teamLetter,
+														gameTitle
+													);
+													return (
+														<View key={`${gameTitle}-${teamLetter}`} style={[styles.tableCol, { width: columnWidth }]}>
+															{renderMatchupContent(matchup, teamData, teams)}
+														</View>
+													);
+												})}
+											</View>
+										))}
+									</View>
+								) : (
+									<View style={styles.table}>
+										{/* Header Row - Weeks */}
+										<View style={styles.tableRow}>
+											<View style={styles.tableColTeamInfo}>
+												<Text style={styles.teamName}>{division} - {subdivision}</Text>
+											</View>
+											{gameDateChunk.map(([gameTitle, date]) => (
+												<View key={gameTitle} style={[styles.tableColHeader, { width: weekColumnWidth }]}>
+													<Text>Week {gameTitle.match(/\d+/)?.[0] ?? ""}</Text>
+													<Text style={styles.gameDate}>{date}</Text>
+												</View>
+											))}
+										</View>
+
+										{/* Data Rows - Teams */}
 										{teamsArray.map(([teamLetter, teamData]) => {
 											const matchingSeasonInfo = seasonInfo.find(
 												info => info.teamId.toString() === teamData.teamId && 
 												info.division === division && 
 												info.subdivision === subdivision
 											);
-											
+
 											return (
-												<View key={teamLetter} style={[styles.tableColTeam, { width: columnWidth }]}>
-													<Text style={styles.teamName}>{teamLetter}</Text>
-													<Text>{teamData.teamName}</Text>
-													{matchingSeasonInfo && (
-														<View>
-															<Text>{matchingSeasonInfo.placeName}</Text>
-															<Text>{matchingSeasonInfo.addressFirstLine}</Text>
-															<Text>
-																{matchingSeasonInfo.addressSecondLine}
-																{matchingSeasonInfo.placePhoneNumber && ` - ${matchingSeasonInfo.placePhoneNumber}`}
-															</Text>
-															{matchingSeasonInfo.captainFullName !== "No Captain" && (
+												<View key={teamLetter} style={styles.tableRow}>
+													<View style={styles.tableColTeamInfo}>
+														<Text style={styles.teamName}>{teamLetter} - {teamData.teamName}</Text>
+														{matchingSeasonInfo && (
+															<View>
+																<Text>{matchingSeasonInfo.placeName}</Text>
+																<Text>{matchingSeasonInfo.addressFirstLine}</Text>
 																<Text>
-																	{matchingSeasonInfo.captainFullName}
-																	{matchingSeasonInfo.captainPhoneNumber && ` - ${matchingSeasonInfo.captainPhoneNumber}`}
+																	{matchingSeasonInfo.addressSecondLine}
+																	{matchingSeasonInfo.placePhoneNumber && ` - ${matchingSeasonInfo.placePhoneNumber}`}
 																</Text>
-															)}
-														</View>
-													)}
+																{matchingSeasonInfo.captainFullName !== "No Captain" && (
+																	<Text>
+																		{matchingSeasonInfo.captainFullName}
+																		{matchingSeasonInfo.captainPhoneNumber && ` - ${matchingSeasonInfo.captainPhoneNumber}`}
+																	</Text>
+																)}
+															</View>
+														)}
+													</View>
+													{gameDateChunk.map(([gameTitle, date]) => {
+														const matchup = getTeamMatchup(
+															division,
+															subdivision,
+															teamLetter,
+															gameTitle
+														);
+														return (
+															<View key={`${gameTitle}-${teamLetter}`} style={[styles.tableColMatchup, { width: weekColumnWidth }]}>
+															{renderCompactMatchupContent(matchup)}
+															</View>
+														);
+													})}
 												</View>
 											);
 										})}
 									</View>
-
-									{/* Data Rows - Game Dates */}
-									{gameDateChunk.map(([gameTitle, date]) => (
-										<View key={gameTitle} style={styles.tableRow}>
-											<View style={[styles.tableColHeader, { width: "15%" }]}>
-												<Text>Week {gameTitle.match(/\d+/)?.[0] ?? ""}</Text>
-												<Text style={styles.gameDate}>{date}</Text>
-											</View>
-											{teamsArray.map(([teamLetter, teamData]) => {
-												const matchup = getTeamMatchup(
-													division,
-													subdivision,
-													teamLetter,
-													gameTitle
-												);
-												return (
-													<View key={`${gameTitle}-${teamLetter}`} style={[styles.tableCol, { width: columnWidth }]}>
-														{renderMatchupContent(matchup, teamData, teams)}
-													</View>
-												);
-											})}
-										</View>
-									))}
-								</View>
+								)}
 							</Page>
 						);
 					});
