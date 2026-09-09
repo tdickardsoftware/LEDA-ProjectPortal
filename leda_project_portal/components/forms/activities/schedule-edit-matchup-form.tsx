@@ -65,7 +65,7 @@ const formContainerStyle =
  * @param hasPointsLogged - Whether points have already been entered for this matchup
  * @param isCheckingPoints - Whether the parent is still verifying logged points
  * @param teamsWithMatchups - Team IDs that already have matchups (excluded from selector)
- * @param backupPlaceId - The season's backup location id, if one is set (enables the checkbox)
+ * @param backupPlaceId - The subdivision's backup location id, if one is set (enables the checkbox)
  * @param backupPlaceName - Display name for the backup location, used in the checkbox label
  */
 export default function SchedulingEditMatchupForm({

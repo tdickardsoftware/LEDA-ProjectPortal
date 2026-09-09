@@ -49,6 +49,9 @@ import {
 	EditMatchupState,
 } from "@/lib/schedule";
 import { usePlaceNames } from "@/hooks/usePlaceNames";
+import { useUserAbilities } from "@/lib/use-user-abilities";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/skeleton";
 
 interface SubdivisionSchedulerProps {
@@ -61,8 +64,6 @@ interface SubdivisionSchedulerProps {
 	handleSaveData: (updatedMatchData: ScheduleData) => void;
 	viewMode?: boolean;
 	seasonCode?: string | null;
-	// The season's backup schedule location, if one has been set on the Rosters page.
-	backupPlaceId?: string | null;
 }
 
 // Utility function for time conversion - memoized
@@ -299,7 +300,6 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 		handleSaveData,
 		viewMode = false,
 		seasonCode,
-		backupPlaceId,
 	}) => {
 		const buildFullStructure = useCallback(
 			(sourceData?: ScheduleData): ScheduleData => {
@@ -344,19 +344,26 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 		const [editingMatchup, setEditingMatchup] = useState<EditMatchupState | null>(null);
 		const [hasPointsLogged, setHasPointsLogged] = useState(false);
 		const [isCheckingPoints, setIsCheckingPoints] = useState(false);
+		// Developer-only escape hatch to edit matchups that already have points logged
+		const { user } = useUserAbilities();
+		const isDeveloper = user?.role === "Developer";
+		const [devBypassLock, setDevBypassLock] = useState(false);
 		// Map of "teamId-weekNum" -> boolean indicating if points are logged
 		const [pointsStatusMap, setPointsStatusMap] = useState<Record<string, boolean>>({});
 		const [isLoadingPointsStatus, setIsLoadingPointsStatus] = useState(false);
 
-		const { getPlaceNameById } = usePlaceNames(teams, [backupPlaceId]);
-		const backupPlaceName = backupPlaceId ? getPlaceNameById(backupPlaceId) : undefined;
-
-		// Memoized values
 		const teamEntries = useMemo(() => Object.entries(teams), [teams]);
 		const displayTeamEntries = useMemo(
 			() => teamEntries.filter(([, teamData]) => teamData.teamId !== "0"),
 			[teamEntries]
 		);
+		// The subdivision's backup schedule location, if one has been set on the Rosters page.
+		const backupPlaceId = useMemo(
+			() => teamEntries.find(([, teamData]) => teamData.teamId === "0")?.[1]?.placeId ?? null,
+			[teamEntries]
+		);
+		const { getPlaceNameById } = usePlaceNames(teams, [backupPlaceId]);
+		const backupPlaceName = backupPlaceId ? getPlaceNameById(backupPlaceId) : undefined;
 		const gameDateEntries = useMemo(() => {
 			// Convert gameDates to match "weekN" format used in matchesData
 			const entries = Object.entries(gameDates).map(([key, date]) => {
@@ -887,7 +894,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 						</DialogHeader>
 						{editingMatchup && (
 							<SchedulingEditMatchupForm
-								teamEntries={teamEntries}
+								teamEntries={displayTeamEntries}
 								handleEditMatchup={handleEditMatchup}
 								setOpen={setEditDialogOpen}
 								teamId={teams[editingMatchup.teamLetter].teamId}
@@ -899,7 +906,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 								}
 								selectedTeamLetter={editingMatchup.teamLetter}
 								initialValues={editingMatchup.matchData}
-								hasPointsLogged={hasPointsLogged}
+								hasPointsLogged={devBypassLock ? false : hasPointsLogged}
 								isCheckingPoints={isCheckingPoints}
 								teamsWithMatchups={getTeamsWithMatchups(editingMatchup.gameTitle).filter(
 									(id) => id !== editingMatchup.matchData.opposingTeamId
@@ -912,6 +919,18 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 				</Dialog>
 
 				<div className="overflow-auto relative">
+					{isDeveloper && !viewMode && (
+						<div className="flex items-center gap-2 mb-2">
+							<Checkbox
+								id={`dev-bypass-lock-${division}-${subdivision}`}
+								checked={devBypassLock}
+								onCheckedChange={(checked) => setDevBypassLock(checked === true)}
+							/>
+							<Label htmlFor={`dev-bypass-lock-${division}-${subdivision}`} className="text-xs text-amber-600">
+								Developer: edit matchups with points logged
+							</Label>
+						</div>
+					)}
 					{(isLoadingPointsStatus || isLoadingMatchups) && (
 						<div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
 							<Spinner />
@@ -986,7 +1005,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 															}
 															onDelete={() => handleDeleteMatchup(teamLetter, gameTitle)}
 															viewMode={viewMode}
-															hasPointsLogged={matchupHasPoints}
+															hasPointsLogged={devBypassLock ? false : matchupHasPoints}
 														/>
 													) : viewMode ? (
 														<div className="text-sm text-muted-foreground py-2">
@@ -994,7 +1013,7 @@ export const SubdivisionScheduler = memo<SubdivisionSchedulerProps>(
 														</div>
 													) : (
 														<AddMatchupDialog
-															teamEntries={teamEntries}
+															teamEntries={displayTeamEntries}
 															handleAddMatchup={handleAddMatchup}
 															teamData={teamData}
 															teamLetter={teamLetter}
