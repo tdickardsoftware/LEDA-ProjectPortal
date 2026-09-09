@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
 import { PDFDownloadLink } from "@react-pdf/renderer";
+import { RotateCcw } from "lucide-react";
 import ReportDisplay from "@/components/ui/report-display";
 import {
 	TrailsHistoryOfWins,
@@ -44,6 +45,8 @@ export default function TrailsReportLandingContent() {
 	const [selectedReport, setSelectedReport] = useState<string>("");
 	const [reportData, setReportData] = useState<unknown[]>([]);
 	const [dataFetched, setDataFetched] = useState<boolean>(false);
+	// Bumped by the "Regenerate PDF" button to force a fresh PDF build.
+	const [pdfRegenKey, setPdfRegenKey] = useState<number>(0);
 
 	// Event handlers
 	const handleReportSelect = (value: string) => {
@@ -173,7 +176,9 @@ export default function TrailsReportLandingContent() {
 		}
 
 		return (
+			<div className="flex items-center gap-2">
 			<PDFDownloadLink
+				key={`${selectedReport}-${reportData.length}-${pdfRegenKey}`}
 				document={document}
 				fileName={fileName}
 				className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
@@ -226,6 +231,15 @@ export default function TrailsReportLandingContent() {
 					</>
 				)}
 			</PDFDownloadLink>
+			<button
+				type="button"
+				onClick={() => setPdfRegenKey((k) => k + 1)}
+				title="Regenerate PDF"
+				className="inline-flex items-center justify-center rounded-md bg-secondary p-2 text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-colors"
+			>
+				<RotateCcw className="h-4 w-4" />
+			</button>
+			</div>
 		);
 	};
 

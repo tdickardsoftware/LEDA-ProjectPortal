@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
 import { PDFDownloadLink } from "@react-pdf/renderer";
+import { RotateCcw } from "lucide-react";
 import ReportDisplay from "@/components/ui/report-display";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
 import { Label } from "@/components/ui/label";
@@ -56,13 +57,16 @@ export default function CaptainsMeetingReportLandingContent() {
 	const [reportData, setReportData] = useState<unknown[]>([]);
 	const [dataFetched, setDataFetched] = useState<boolean>(false);
 	const [currentSeason, setCurrentSeason] = useState<boolean>(true);
+	// Bumped by the "Regenerate PDF" button to force a fresh PDF build.
+	const [pdfRegenKey, setPdfRegenKey] = useState<number>(0);
+	// Compact (legacy) letter-grid layout is the default; detailed shows full matchup info.
+	const [detailedScheduleView, setDetailedScheduleView] = useState<boolean>(false);
 	const [scheduleData, setScheduleData] = useState<{
 		divisionsData: DivisionsData;
 		matchData: ScheduleData;
 		gameDates: Record<string, string>;
 		placesData: Record<string, string>;
 		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
-		backupPlaceId?: string | null;
 	} | null>(null);
 
 	// TanStack Query hook
@@ -98,7 +102,6 @@ export default function CaptainsMeetingReportLandingContent() {
 		gameDates: Record<string, string>;
 		placesData: Record<string, string>;
 		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
-		backupPlaceId?: string | null;
 	}) => {
 		setScheduleData(data);
 		setDataFetched(true);
@@ -181,7 +184,9 @@ export default function CaptainsMeetingReportLandingContent() {
 					gameDates={scheduleData.gameDates}
 					seasonCode={seasonCode}
 					placesData={scheduleData.placesData}
-					seasonInfo={scheduleData.seasonInfo}					backupPlaceId={scheduleData.backupPlaceId}				/>
+					seasonInfo={scheduleData.seasonInfo}
+					detailedView={detailedScheduleView}
+				/>
 			);
 			fileName = `schedule-${seasonCode}-${new Date()
 				.toLocaleDateString("en-US", {
@@ -226,7 +231,9 @@ export default function CaptainsMeetingReportLandingContent() {
 		}
 
 		return (
+			<div className="flex items-center gap-2">
 			<PDFDownloadLink
+				key={`${selectedReport}-${seasonCode}-${detailedScheduleView}-${dataFetched}-${pdfRegenKey}`}
 				document={document}
 				fileName={fileName}
 				className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
@@ -279,6 +286,15 @@ export default function CaptainsMeetingReportLandingContent() {
 					</>
 				)}
 			</PDFDownloadLink>
+			<button
+				type="button"
+				onClick={() => setPdfRegenKey((k) => k + 1)}
+				title="Regenerate PDF"
+				className="inline-flex items-center justify-center rounded-md bg-secondary p-2 text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-colors"
+			>
+				<RotateCcw className="h-4 w-4" />
+			</button>
+			</div>
 		);
 	};
 
@@ -440,7 +456,21 @@ export default function CaptainsMeetingReportLandingContent() {
 				{((selectedReport.includes("schedule") && scheduleData && scheduleData.seasonInfo.length > 0) ||
 				  (selectedReport && !selectedReport.includes("schedule") && dataFetched && reportData && Array.isArray(reportData) && reportData.length > 0)) && (
 					<FolderTabMed title="Download PDF" className="w-fit">
-						{renderPDFDownload()}
+						<div className="flex flex-col gap-2">
+							{renderPDFDownload()}
+							{selectedReport.includes("schedule") && (
+								<div className="flex items-center gap-4">
+									<Label htmlFor="detailed-schedule-view-checkbox">Detailed View?</Label>
+									<Checkbox
+										id="detailed-schedule-view-checkbox"
+										checked={detailedScheduleView}
+										onCheckedChange={() =>
+											setDetailedScheduleView(!detailedScheduleView)
+										}
+									/>
+								</div>
+							)}
+						</div>
 					</FolderTabMed>
 				)}
 			</div>

@@ -15,7 +15,7 @@
  * (no editing controls shown).
  */
 
-import { useCallback, memo, useEffect, useState } from "react";
+import { useCallback, memo, useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
 	Accordion,
@@ -34,6 +34,9 @@ import {
 import { rosterRoute, scheduleRoute, seasonRoute, placeRoute } from '@/lib/apiRoutes';
 import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
 
+// Stable reference so the fallback doesn't change identity every render.
+const EMPTY_PLACE_NAMES: Record<string, string> = {};
+
 interface CaptainsMeetingScheduleContentProps {
 	seasonCode: string;
 	onDataReady?: (data: {
@@ -42,7 +45,6 @@ interface CaptainsMeetingScheduleContentProps {
 		gameDates: Record<string, string>;
 		placesData: Record<string, string>;
 		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
-		backupPlaceId?: string | null;
 	}) => void;
 }
 
@@ -52,7 +54,6 @@ interface DivisionAccordionProps {
 	divisionsData: DivisionsData;
 	gameDates: Record<string, string>;
 	matchData: ScheduleData;
-	backupPlaceId?: string | null;
 }
 
 const DivisionAccordion = memo<DivisionAccordionProps>(
@@ -62,7 +63,6 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 		divisionsData,
 		gameDates,
 		matchData,
-		backupPlaceId,
 	}) => (
 		<Accordion
 			key={index}
@@ -100,7 +100,8 @@ const DivisionAccordion = memo<DivisionAccordionProps>(
 												matchData={matchData}
 												setEnabledSaveButton={() => {}} // No-op for view mode
 												handleSaveData={() => {}} // No-op for view mode
-												viewMode={true}											backupPlaceId={backupPlaceId}											/>
+												viewMode={true}
+											/>
 										)}
 									</AccordionContent>
 								</AccordionItem>
@@ -225,17 +226,36 @@ export default function CaptainsMeetingScheduleContent({
 		isLoading: isSeasonInfoLoading 
 	} = useSeasonInfo(seasonCode);
 
-	// The backup location (if the season has one) may not be any team's home
-	// place, so seasonInfo alone won't have its name — resolve it separately.
-	const backupPlaceId = seasonData?.backupPlaceId ?? null;
-	const { data: backupPlace } = useQuery({
-		queryKey: ['place-resolve', backupPlaceId],
+	// Backup locations are assigned per-subdivision (a virtual team entry with
+	// teamId "0"). They may not be any team's home place, so seasonInfo alone
+	// won't have their names — resolve them separately via a batch lookup.
+	const backupPlaceIds = useMemo(() => {
+		const ids = new Set<string>();
+		const divisions = rosterData?.teamInformation || {};
+		Object.values(divisions).forEach((division) => {
+			Object.values(division.subdivisions).forEach((subdivision) => {
+				Object.values(subdivision).forEach((team) => {
+					if (team.teamId === "0" && team.placeId) {
+						ids.add(team.placeId);
+					}
+				});
+			});
+		});
+		return [...ids];
+	}, [rosterData]);
+
+	const { data: backupPlaceNames = EMPTY_PLACE_NAMES } = useQuery({
+		queryKey: ['batchPlaceNames', 'backup', backupPlaceIds],
 		queryFn: async () => {
-			const response = await fetch(`${placeRoute}?ledaId=${backupPlaceId}`);
-			if (!response.ok) throw new Error('Failed to fetch backup place');
-			return response.json() as Promise<{ ledaId: number; name: string }>;
+			const response = await fetch(`${placeRoute}/batch`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ placeIds: backupPlaceIds }),
+			});
+			if (!response.ok) throw new Error('Failed to fetch backup place names');
+			return response.json() as Promise<Record<string, string>>;
 		},
-		enabled: !!backupPlaceId,
+		enabled: backupPlaceIds.length > 0,
 		staleTime: 5 * 60 * 1000,
 	});
 
@@ -311,10 +331,10 @@ export default function CaptainsMeetingScheduleContent({
 						places[info.placeId.toString()] = info.placeName;
 					}
 				});
-				// Merge in the backup location's name, since it may not belong to any team
-				if (backupPlaceId && backupPlace?.name) {
-					places[backupPlaceId] = backupPlace.name;
-				}
+				// Merge in backup locations' names, since they may not belong to any team
+				Object.entries(backupPlaceNames).forEach(([placeId, name]) => {
+					places[placeId] = name;
+				});
 
 				// Notify parent component when data is ready
 				if (onDataReady) {
@@ -324,7 +344,6 @@ export default function CaptainsMeetingScheduleContent({
 						gameDates: gameDatesData,
 						placesData: places,
 						seasonInfo,
-						backupPlaceId,
 					});
 				}
 			}
@@ -340,8 +359,7 @@ export default function CaptainsMeetingScheduleContent({
 		seasonInfo, 
 		isLoading, 
 		hasError,
-		backupPlaceId,
-		backupPlace,
+		backupPlaceNames,
 		ensureSubdivisionIsolation, 
 		initializeEmptyMatchData, 
 		onDataReady
@@ -389,7 +407,6 @@ export default function CaptainsMeetingScheduleContent({
 							divisionsData={divisionsData}
 							gameDates={gameDates}
 							matchData={matchData}
-							backupPlaceId={seasonData?.backupPlaceId}
 						/>
 					))}
 				</div>

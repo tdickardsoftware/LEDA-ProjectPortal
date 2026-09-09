@@ -44,7 +44,7 @@ import ListsReportTeamsListSeasonReport from "./react-pdf/lists-report-teams-lis
 import MailingLabelsImportDialog from "./mailing-labels-import-dialog";
 import MailingLabelsAddDialog from "./mailing-labels-add-dialog";
 import { Button } from "@/components/ui/button";
-import { Import as ImportIcon } from "lucide-react";
+import { Import as ImportIcon, RotateCcw } from "lucide-react";
 import React from "react";
 import ListsReportMailingLabels from "./react-pdf/lists-report-mailing-labels";
 
@@ -155,6 +155,8 @@ export default function ListsReportLandingContent() {
 	const [sortByZip, setSortByZip] = useState(false);
 	const [sortByName, setSortByName] = useState(true);
 	const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+	// Bumped by the "Regenerate PDF" button to force a fresh PDF build.
+	const [pdfRegenKey, setPdfRegenKey] = useState<number>(0);
 	const queryClient = useQueryClient();
 
 	// TanStack Query hooks
@@ -917,6 +919,7 @@ export default function ListsReportLandingContent() {
 		// For mailing labels, use manual download for better performance
 		if (selectedReport.includes("mailingLabels")) {
 			return (
+				<div className="flex items-center gap-2">
 				<button
 					onClick={() => handleManualPDFDownload(document, fileName)}
 					disabled={isGeneratingPDF}
@@ -966,11 +969,23 @@ export default function ListsReportLandingContent() {
 						</>
 					)}
 				</button>
+				<button
+					type="button"
+					onClick={() => handleManualPDFDownload(document, fileName)}
+					disabled={isGeneratingPDF}
+					title="Regenerate PDF"
+					className="inline-flex items-center justify-center rounded-md bg-secondary p-2 text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+				>
+					<RotateCcw className="h-4 w-4" />
+				</button>
+				</div>
 			);
 		}
 
 		return (
+			<div className="flex items-center gap-2">
 			<PDFDownloadLink
+				key={`${selectedReport}-${seasonCode}-${fileName}-${pdfRegenKey}`}
 				document={document}
 				fileName={fileName}
 				className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
@@ -1023,6 +1038,15 @@ export default function ListsReportLandingContent() {
 					</>
 				)}
 			</PDFDownloadLink>
+			<button
+				type="button"
+				onClick={() => setPdfRegenKey((k) => k + 1)}
+				title="Regenerate PDF"
+				className="inline-flex items-center justify-center rounded-md bg-secondary p-2 text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-colors"
+			>
+				<RotateCcw className="h-4 w-4" />
+			</button>
+			</div>
 		);
 	};
 
