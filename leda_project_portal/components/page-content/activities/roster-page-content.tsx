@@ -1601,25 +1601,6 @@ export default function RostersContent({
 									</Button>
 								</>
 							)}
-							{seasonCode && (
-								<div className="flex flex-col rounded-md border border-border overflow-hidden">
-									<div className="px-3 py-2">
-										<PlaceDisplay
-											placeId={seasonData?.backupPlaceId}
-											emptyText="No backup location set"
-											showCapacity={false}
-										/>
-									</div>
-									<Separator />
-									<button
-										type="button"
-										onClick={() => setBackupLocationDialogOpen(true)}
-										className="px-3 py-1.5 text-sm text-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-									>
-										Edit Backup Location
-									</button>
-								</div>
-							)}
 						</div>
 					</FolderTabMed>
 				</div>
