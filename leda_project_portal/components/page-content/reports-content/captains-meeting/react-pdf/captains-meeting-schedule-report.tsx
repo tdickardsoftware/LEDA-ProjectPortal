@@ -22,7 +22,6 @@ interface CaptainsMeetingScheduleReportProps {
 	seasonCode: string;
 	placesData: Record<string, string>;
 	seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
-	backupPlaceId?: string | null;
 	// Compact (legacy) letter-grid layout by default; full matchup details when true.
 	detailedView?: boolean;
 }
@@ -172,7 +171,6 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 	seasonCode,
 	placesData,
 	seasonInfo,
-	backupPlaceId,
 	detailedView = false,
 }) => {
 	// Convert gameDates keys (e.g. "Date 1") to the "weekN" format used as
@@ -234,6 +232,7 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 			);
 		}
 		
+		const backupPlaceId = Object.values(teams).find((team) => team.teamId === "0")?.placeId;
 		const locationPlaceId = matchup.isAtBackupLocation && backupPlaceId
 			? backupPlaceId
 			: matchup.home
@@ -256,7 +255,9 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 	// Render matchup cell content for the compact (legacy) letter-grid:
 	// home matchups show the opponent's letter uppercase, away matchups show
 	// the opponent's letter lowercase, and "X" (the BYE placeholder letter) shows "BYE".
-	const renderCompactMatchupContent = (matchup: MatchData | null) => {
+	// When the matchup is played at the backup location, the backup entry's own
+	// letter is shown instead of the actual opponent's letter (still capitalized by home/away).
+	const renderCompactMatchupContent = (matchup: MatchData | null, backupLetter?: string) => {
 		if (!matchup) {
 			return <Text style={styles.byeText}>BYE</Text>;
 		}
@@ -266,9 +267,8 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 			return <Text style={styles.byeText}>BYE</Text>;
 		}
 
-		const matchupCode = matchup.home
-			? matchup.opposingTeamLetter.toUpperCase()
-			: matchup.opposingTeamLetter.toLowerCase();
+		const letter = matchup.isAtBackupLocation && backupLetter ? backupLetter : matchup.opposingTeamLetter;
+		const matchupCode = matchup.home ? letter.toUpperCase() : letter.toLowerCase();
 
 		return <Text style={styles.matchupLetter}>{matchupCode}</Text>;
 	};
@@ -289,11 +289,18 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 		<Document>
 			{Object.entries(divisionsData).map(([division, divisionData]) =>
 				Object.entries(divisionData.subdivisions).map(([subdivision, teams]) => {
-					// Filter out BYE teams
-					const teamsArray = Object.entries(teams).filter(([_, teamData]) => 
-						!teamData.teamName.toUpperCase().includes('BYE')
+					// Filter out BYE teams and the virtual backup-location entry
+					const teamsArray = Object.entries(teams).filter(([_, teamData]) =>
+						!teamData.teamName.toUpperCase().includes('BYE') && teamData.teamId !== "0"
 					);
-					const columnWidth = getColumnWidth(teamsArray.length);
+					// The virtual backup-location entry (teamId "0"), shown as a trailing
+					// info-only row/column with no matchups of its own.
+					const backupEntry = Object.entries(teams).find(([, teamData]) => teamData.teamId === "0");
+					const [backupLetter, backupTeamData] = backupEntry ?? [undefined, undefined];
+					const backupPlaceInfo = backupTeamData
+						? seasonInfo.find((info) => info.placeId.toString() === backupTeamData.placeId)
+						: undefined;
+					const columnWidth = getColumnWidth(teamsArray.length + (backupEntry ? 1 : 0));
 					const gameDateChunks = chunkGameDates(gameDateEntries, detailedView ? 7 : 14);
 					const weekColumnWidth = getWeekColumnWidth(
 						gameDateChunks[0]?.length || gameDateEntries.length || 1
@@ -352,6 +359,22 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 													</View>
 												);
 											})}
+											{backupEntry && backupTeamData && (
+												<View style={[styles.tableColTeam, { width: columnWidth }]}>
+													<Text style={styles.teamName}>{backupLetter}</Text>
+													<Text>{backupTeamData.teamName}</Text>
+													<Text>{placesData[backupTeamData.placeId] || ""}</Text>
+													{backupPlaceInfo && (
+														<View>
+															<Text>{backupPlaceInfo.addressFirstLine}</Text>
+															<Text>
+																{backupPlaceInfo.addressSecondLine}
+																{backupPlaceInfo.placePhoneNumber && ` - ${backupPlaceInfo.placePhoneNumber}`}
+															</Text>
+														</View>
+													)}
+												</View>
+											)}
 										</View>
 
 										{/* Data Rows - Game Dates */}
@@ -430,13 +453,32 @@ const CaptainsMeetingScheduleReport: React.FC<CaptainsMeetingScheduleReportProps
 														);
 														return (
 															<View key={`${gameTitle}-${teamLetter}`} style={[styles.tableColMatchup, { width: weekColumnWidth }]}>
-															{renderCompactMatchupContent(matchup)}
-															</View>
-														);
-													})}
-												</View>
-											);
-										})}
+														{renderCompactMatchupContent(matchup, backupLetter)}
+														</View>
+													);
+												})}
+											</View>
+										);
+									})}
+									{backupEntry && backupTeamData && (
+										<View style={styles.tableRow}>
+											<View style={styles.tableColTeamInfo}>
+												<Text style={styles.teamName}>{backupLetter} - {backupTeamData.teamName}</Text>
+												<Text>{placesData[backupTeamData.placeId] || ""}</Text>
+												{backupPlaceInfo && (
+													<View>
+														<Text>{backupPlaceInfo.addressFirstLine}</Text>
+														<Text>
+															{backupPlaceInfo.addressSecondLine}
+															{backupPlaceInfo.placePhoneNumber && ` - ${backupPlaceInfo.placePhoneNumber}`}
+														</Text>
+													</View>
+												)}
+											</View>
+											{/* Single spanning cell so the row's border closes cleanly instead of leaving the week columns open */}
+											<View style={[styles.tableColMatchup, { width: "82%" }]} />
+										</View>
+									)}
 									</View>
 								)}
 							</Page>

@@ -64,7 +64,6 @@ export default function CaptainsMeetingReportLandingContent() {
 		gameDates: Record<string, string>;
 		placesData: Record<string, string>;
 		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
-		backupPlaceId?: string | null;
 	} | null>(null);
 
 	// TanStack Query hook
@@ -100,7 +99,6 @@ export default function CaptainsMeetingReportLandingContent() {
 		gameDates: Record<string, string>;
 		placesData: Record<string, string>;
 		seasonInfo: CaptainsMtgSchedulePlaceCaptainSeasonInfo[];
-		backupPlaceId?: string | null;
 	}) => {
 		setScheduleData(data);
 		setDataFetched(true);
@@ -184,7 +182,6 @@ export default function CaptainsMeetingReportLandingContent() {
 					seasonCode={seasonCode}
 					placesData={scheduleData.placesData}
 					seasonInfo={scheduleData.seasonInfo}
-					backupPlaceId={scheduleData.backupPlaceId}
 					detailedView={detailedScheduleView}
 				/>
 			);

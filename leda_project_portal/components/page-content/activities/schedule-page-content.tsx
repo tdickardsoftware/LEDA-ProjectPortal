@@ -45,7 +45,6 @@ export default function ScheduleContent() {
 		handleSeasonCodeSelect,
 		handleSaveData,
 		rosterNotFound,
-		backupPlaceId,
 	} = useScheduleData();
 
 	const [selectedSubdivision, setSelectedSubdivision] = useState<{
@@ -149,6 +148,10 @@ export default function ScheduleContent() {
 			selectedSubdivision.subdivisionName
 		];
 
+	const backupPlaceId = selectedTeams
+		? Object.values(selectedTeams).find((team) => team.teamId === "0")?.placeId ?? null
+		: null;
+
 	return (
 		<SidenavPageLayout
 			header={
@@ -173,14 +176,14 @@ export default function ScheduleContent() {
 					</FolderTabMed>
 					<FolderTabMed title="Backup Location">
 						<div className="p-4">
-							{seasonCode ? (
+							{selectedSubdivision ? (
 								<PlaceDisplay
 									placeId={backupPlaceId}
-									emptyText="No backup location set for this season. Set one on the Rosters page."
+									emptyText="No backup location set for this subdivision. Set one on the Rosters page."
 								/>
 							) : (
 								<p className="text-sm text-muted-foreground">
-									Select a season to view its backup location.
+									Select a subdivision to view its backup location.
 								</p>
 							)}
 						</div>
@@ -257,7 +260,6 @@ export default function ScheduleContent() {
 						setEnabledSaveButton={handleSetEnableSaveButton}
 						handleSaveData={handleFetchUpdatedData}
 						seasonCode={seasonCode}
-						backupPlaceId={backupPlaceId}
 					/>
 				)}
 		</SidenavPageLayout>

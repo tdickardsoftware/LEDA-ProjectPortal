@@ -48,7 +48,7 @@ import {
 	AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { rosterRoute, scheduleRoute, seasonRoute, seasonBackupPlaceRoute } from "@/lib/apiRoutes";
+import { rosterRoute, scheduleRoute, seasonRoute } from "@/lib/apiRoutes";
 import { generateSchedule, type GeneratorOptions, type GenerationPreview } from "@/lib/scheduleGenerator";
 import { type DivisionsData } from "@/lib/schedule";
 import CopyRosterForm from "@/components/forms/activities/copy-roster-form";
@@ -324,6 +324,7 @@ export default function RostersContent({
 	const [disabled, setDisabled] = useState<boolean>(true);
 	const [divisionsData, setDivisionsData] = useState<RosterData>({});
 	const [teamOpen, setTeamOpen] = useState<{ [key: string]: boolean }>({});
+	const [backupOpen, setBackupOpen] = useState<{ [key: string]: boolean }>({});
 	const [open, setOpen] = useState(false);
 	const [copyOpen, setCopyOpen] = useState(false);
 	const [divisionToDelete, setDivisionToDelete] = useState<string | null>(null);
@@ -354,7 +355,6 @@ export default function RostersContent({
 	const [initialData, setInitialData] = useState<RosterData>({});
 	const [update, setUpdate] = useState(false);
 	const [deleteRosterAlertOpen, setDeleteRosterAlertOpen] = useState(false);
-	const [backupLocationDialogOpen, setBackupLocationDialogOpen] = useState(false);
 	const [selectedSubdivision, setSelectedSubdivision] = useState<{
 		divisionName: string;
 		subdivisionName: string;
@@ -392,39 +392,10 @@ export default function RostersContent({
 				headers: { 'Content-Type': 'application/json' },
 			});
 			if (!res.ok) return null;
-			return res.json() as Promise<{ dates: Record<string, string>; seasonCode: string; serverTime: string; backupPlaceId?: string | null }>;
+			return res.json() as Promise<{ dates: Record<string, string>; seasonCode: string; serverTime: string }>;
 		},
 		enabled: !!seasonCode,
 	});
-
-	// Updates the season's backup schedule location. Uses a narrow dedicated
-	// endpoint (rather than the general season PUT) so we don't need to know
-	// or resend the other season fields (desc/fiscalYear/isCurrentSeason).
-	const updateBackupPlaceMutation = useMutation({
-		mutationFn: async (data: { seasonCode: string; backupPlaceId: string }) => {
-			const response = await fetchWithSession(seasonBackupPlaceRoute, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(data),
-			});
-			if (!response.ok) {
-				throw new Error('Failed to update backup location');
-			}
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['season', seasonCode] });
-			toast.success("Backup location updated");
-		},
-		onError: (error) => {
-			console.error("Failed to update backup location:", error);
-			toast.error("Failed to update backup location");
-		},
-	});
-
-	const handleBackupPlaceSelect = useCallback((placeId: string) => {
-		if (!seasonCode) return;
-		updateBackupPlaceMutation.mutate({ seasonCode, backupPlaceId: placeId });
-	}, [seasonCode, updateBackupPlaceMutation]);
 
 	// Handle rosterData changes and season transitions in a single effect to avoid
 	// the two-effect ordering bug: when switching to a season with cached data, both
@@ -644,6 +615,7 @@ export default function RostersContent({
 		Object.values(data).forEach((division) => {
 			Object.values(division.subdivisions).forEach((subdivision) => {
 				Object.values(subdivision).forEach((team) => {
+					if (team.teamId === "0") return;
 					teamIds.push(team.teamId);
 				});
 			});
@@ -659,6 +631,7 @@ export default function RostersContent({
 		Object.values(divisionsData).forEach((division) => {
 			Object.values(division.subdivisions).forEach((subdivision) => {
 				Object.values(subdivision).forEach((team) => {
+					if (team.teamId === "0") return;
 					if (team.placeId) {
 						counts[team.placeId] = (counts[team.placeId] || 0) + 1;
 					}
@@ -950,12 +923,10 @@ export default function RostersContent({
 
 			setSelectedTeams((prev) => [...prev, teamId]);
 
-			const assignedLetter = teamLetter ?? String.fromCharCode(
-				65 +
-					Object.keys(
-						divisionsData[division]?.subdivisions[subdivision] || {}
-					).length
-			);
+			const realTeamCount = Object.values(
+				divisionsData[division]?.subdivisions[subdivision] || {}
+			).filter((team) => team.teamId !== "0").length;
+			const assignedLetter = teamLetter ?? String.fromCharCode(65 + realTeamCount);
 
 			setDivisionsData((prev) => ({
 				...prev,
@@ -982,7 +953,9 @@ export default function RostersContent({
 			const takenLetters = Object.keys(
 				divisionsData[division]?.subdivisions[subdivision] || {}
 			);
-			const teamCount = takenLetters.length;
+			const teamCount = Object.values(
+				divisionsData[division]?.subdivisions[subdivision] || {}
+			).filter((team) => team.teamId !== "0").length;
 			const maxTeamsReached = teamCount >= 8;
 
 			return (
@@ -1031,6 +1004,114 @@ export default function RostersContent({
 			);
 		},
 		[teamOpen, disabled, selectedTeams, handleTeamSelect, divisionsData, placeTeamCounts]
+	);
+
+	// Add a virtual "backup location" entry (teamId "0") to a subdivision,
+	// assigning it the next available team letter.
+	const handleAddBackupLocation = useCallback(
+		(division: string, subdivision: string, placeId: string) => {
+			const realTeamCount = Object.values(
+				divisionsData[division]?.subdivisions[subdivision] || {}
+			).filter((team) => team.teamId !== "0").length;
+			const nextLetter = String.fromCharCode(65 + realTeamCount);
+
+			setDivisionsData((prev) => ({
+				...prev,
+				[division]: {
+					...prev[division],
+					subdivisions: {
+						...prev[division]?.subdivisions,
+						[subdivision]: {
+							...prev[division]?.subdivisions[subdivision],
+							[nextLetter]: { teamId: "0", placeId, teamName: "Backup Location" },
+						},
+					},
+				},
+			}));
+			setHasChanges(true);
+		},
+		[divisionsData]
+	);
+
+	// Remove the virtual "backup location" entry from a subdivision.
+	const handleRemoveBackupLocation = useCallback(
+		(division: string, subdivision: string) => {
+			setDivisionsData((prev) => {
+				const subdivisionData = prev[division]?.subdivisions[subdivision] || {};
+				const backupLetter = Object.entries(subdivisionData).find(
+					([, team]) => team.teamId === "0"
+				)?.[0];
+				if (!backupLetter) return prev;
+
+				const updatedSubdivision = { ...subdivisionData };
+				delete updatedSubdivision[backupLetter];
+
+				return {
+					...prev,
+					[division]: {
+						...prev[division],
+						subdivisions: {
+							...prev[division]?.subdivisions,
+							[subdivision]: updatedSubdivision,
+						},
+					},
+				};
+			});
+			setHasChanges(true);
+		},
+		[]
+	);
+
+	// Render "Add Backup Location" button + dialog. Only shown when the
+	// subdivision has an odd number of real teams and doesn't already have a
+	// backup location assigned.
+	const handleAddBackupLocationButton = useCallback(
+		(division: string, subdivision: string) => {
+			const subdivisionData = divisionsData[division]?.subdivisions[subdivision] || {};
+			const realTeamCount = Object.values(subdivisionData).filter(
+				(team) => team.teamId !== "0"
+			).length;
+			const hasBackup = Object.values(subdivisionData).some(
+				(team) => team.teamId === "0"
+			);
+
+			if (realTeamCount % 2 === 0 || hasBackup) return null;
+
+			return (
+				<Dialog
+					open={backupOpen[`${division}-${subdivision}`] || false}
+					onOpenChange={(isOpen) =>
+						setBackupOpen((prev) => ({
+							...prev,
+							[`${division}-${subdivision}`]: isOpen,
+						}))
+					}
+				>
+					<DialogTrigger asChild>
+						<Button variant="outline" disabled={disabled}>
+							Add Backup Location
+						</Button>
+					</DialogTrigger>
+					<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">
+						<DialogHeader>
+							<DialogTitle>Add Backup Location</DialogTitle>
+						</DialogHeader>
+						<PlaceSelectorWrapper
+							label="Place"
+							onPlaceChange={(placeId) => {
+								handleAddBackupLocation(division, subdivision, placeId);
+								setBackupOpen((prev) => ({
+									...prev,
+									[`${division}-${subdivision}`]: false,
+								}));
+							}}
+							placeTeamCounts={placeTeamCounts}
+						/>
+					</DialogContent>
+				</Dialog>
+			);
+		},
+		[backupOpen, disabled, divisionsData, placeTeamCounts, handleAddBackupLocation]
 	);
 
 	// Render add division dialog
@@ -1198,12 +1279,27 @@ export default function RostersContent({
 					([letterA], [letterB]) => letterA.localeCompare(letterB)
 				);
 
+				// Separate real teams from an optional backup location entry
+				const realTeamEntries = teamEntries.filter(
+					([, teamInfo]) => (teamInfo as TeamInfo).teamId !== "0"
+				);
+				const backupEntry = teamEntries.find(
+					([, teamInfo]) => (teamInfo as TeamInfo).teamId === "0"
+				);
+
 				// Create a new object with updated letters
 				const updatedTeams: SubdivisionData = {};
-				teamEntries.forEach(([, /* unused */ teamInfo], index) => {
+				realTeamEntries.forEach(([, /* unused */ teamInfo], index) => {
 					const newLetter = String.fromCharCode(65 + index); // 'A' + index
 					updatedTeams[newLetter] = teamInfo as TeamInfo;
 				});
+
+				// Keep the backup location entry, re-lettered after the last real
+				// team, only if the remaining real team count is still odd.
+				if (backupEntry && realTeamEntries.length % 2 !== 0) {
+					const backupLetter = String.fromCharCode(65 + realTeamEntries.length);
+					updatedTeams[backupLetter] = backupEntry[1] as TeamInfo;
+				}
 
 				// Update the subdivision with reorganized teams
 				newData[division].subdivisions[subdivision] = updatedTeams;
@@ -1442,25 +1538,6 @@ export default function RostersContent({
 								<Checkbox checked={currentSeason} onCheckedChange={() => setCurrentSeason(!currentSeason)} />
 							</div>
 							{handleAddDivision()}
-							{seasonCode && (
-								<div className="flex flex-col rounded-md border border-border overflow-hidden">
-									<div className="px-3 py-2">
-										<PlaceDisplay
-											placeId={seasonData?.backupPlaceId}
-											emptyText="No backup location set"
-											showCapacity={false}
-										/>
-									</div>
-									<Separator />
-									<button
-										type="button"
-										onClick={() => setBackupLocationDialogOpen(true)}
-										className="px-3 py-1.5 text-sm text-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-									>
-										Edit Backup Location
-									</button>
-								</div>
-							)}
 							{update && (
 								<Button variant="outline" className="hover:bg-muted border-border text-foreground" onClick={() => setDeleteRosterAlertOpen(true)}>
 									Delete Roster
@@ -1538,25 +1615,6 @@ export default function RostersContent({
 			}
 		>
 			{/* Controlled alert dialogs */}
-			<AlertDialog open={backupLocationDialogOpen} onOpenChange={setBackupLocationDialogOpen}>
-				<AlertDialogContent className="bg-background text-foreground">
-					<AlertDialogHeader>
-						<AlertDialogTitle>Backup Location</AlertDialogTitle>
-						<AlertDialogDescription>
-							Choose a venue to use as the backup location for this entire season&apos;s schedule.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<PlaceSelectorWrapper
-						label="Place"
-						value={seasonData?.backupPlaceId}
-						onPlaceChange={handleBackupPlaceSelect}
-						placeTeamCounts={placeTeamCounts}
-					/>
-					<AlertDialogFooter>
-						<Button onClick={() => setBackupLocationDialogOpen(false)}>Done</Button>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
 			<AlertDialog open={deleteRosterAlertOpen} onOpenChange={setDeleteRosterAlertOpen}>
 				<AlertDialogContent className="bg-background text-foreground">
 					<AlertDialogHeader><AlertDialogTitle>Confirm Deletion</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete this roster?</AlertDialogDescription></AlertDialogHeader>
@@ -1703,14 +1761,42 @@ export default function RostersContent({
 			</Dialog>
 			{!isDataLoading && selectedSubdivision ? (
 				<div>
-					<div className="mb-4">
+					<div className="mb-4 flex gap-2">
 						{handleAddTeam(selectedSubdivision.divisionName, selectedSubdivision.subdivisionName)}
+						{handleAddBackupLocationButton(selectedSubdivision.divisionName, selectedSubdivision.subdivisionName)}
 					</div>
 					<ul className="space-y-2">
 						{Object.keys(
 							divisionsData[selectedSubdivision.divisionName]
 								?.subdivisions[selectedSubdivision.subdivisionName] || {}
-						).map((team, teamIndex) => (
+						).map((team, teamIndex) => {
+							const entry = divisionsData[selectedSubdivision.divisionName]?.subdivisions[selectedSubdivision.subdivisionName][team];
+
+							if (entry?.teamId === "0") {
+								return (
+									<li key={teamIndex} className="flex items-center gap-3">
+										<span className="font-semibold w-5 text-center shrink-0">{team}</span>
+										<div className="flex items-center gap-2 px-2 py-1 rounded border border-border bg-background">
+											<PlaceDisplay placeId={entry?.placeId} showCapacity={false} />
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+												onClick={() =>
+													handleRemoveBackupLocation(
+														selectedSubdivision.divisionName,
+														selectedSubdivision.subdivisionName
+													)
+												}
+											>
+												<X className="h-3 w-3" />
+											</Button>
+										</div>
+									</li>
+								);
+							}
+
+							return (
 							<li key={teamIndex} className="flex items-center gap-3">
 								{/* Static letter label */}
 								<span className="font-semibold w-5 text-center shrink-0">{team}</span>
@@ -1769,7 +1855,8 @@ export default function RostersContent({
 									</Button>
 								</div>
 							</li>
-						))}
+							);
+						})}
 					</ul>
 				</div>
 			) : isLoading ? (
