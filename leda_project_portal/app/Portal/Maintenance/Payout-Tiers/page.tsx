@@ -8,11 +8,13 @@ import { fetchPayoutTiers } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/payout_tiers";
 import { Metadata } from "next";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
 	title: "Payout Tiers",
 };
-
-export const dynamic = "force-dynamic";
 
 export default async function Page() {
 	 return (
