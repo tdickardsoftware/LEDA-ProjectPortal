@@ -30,13 +30,14 @@ export default async function handler(
 			const page = parseInt(req.query.page as string) || 1;
 			const pageSize = parseInt(req.query.pageSize as string) || 10;
 			const search = (req.query.search as string) || "";
+			const hideInactive = req.query.hideInactive === "true";
 			const sortBy = (req.query.sortBy as string) || "ledaId";
 			const sortDirRaw = ((req.query.sortDir as string) || "asc").toLowerCase();
 			const sortDir = sortDirRaw === "desc" ? "DESC" : "ASC";
 			const offset = (page - 1) * pageSize;
 
 			const orderByMap: Record<string, string> = {
-				ledaId: '"ledaId"',
+				ledaId: 'p."ledaId"',
 				fullName: `"fullName"`,
 				phoneNumber: '"phoneNumber"',
 				email: '"email"',
@@ -44,7 +45,7 @@ export default async function handler(
 			const orderBySql = orderByMap[sortBy] ?? orderByMap.ledaId;
 
 			// Build search condition
-			let searchCondition = "";
+			let searchClause = "";
 			let searchParams: any[] = [];
 			
 			if (search) {
@@ -54,24 +55,32 @@ export default async function handler(
 				if (parsedSearch.type === 'general') {
 					// General search across all fields
 					const searchTerm = `%${parsedSearch.query}%`;
-					searchCondition = `WHERE 
-						"fullName" ILIKE $1
+					searchClause = `"fullName" ILIKE $1
 						OR "email" ILIKE $1
 						OR "phoneNumber" ILIKE $1
-						OR CAST("ledaId" AS TEXT) ILIKE $1`;
+						OR CAST(p."ledaId" AS TEXT) ILIKE $1`;
 					searchParams = [searchTerm];
 				} else {
 					// Field-specific search
-					const { whereClause, params } = buildSQLWhereClause(parsedSearch, playerColumnMappings);
+					const { whereClause, params } = buildSQLWhereClause(parsedSearch, playerColumnMappings, "p");
 					if (whereClause) {
-						searchCondition = `WHERE ${whereClause}`;
+						searchClause = whereClause;
 						searchParams = params;
 					}
 				}
 			}
 
+			// Combine search and inactive-player filters into a single WHERE clause
+			const conditions: string[] = [];
+			if (searchClause) conditions.push(`(${searchClause})`);
+			if (hideInactive) conditions.push(`(m."inactiveDate" IS NULL OR m."inactiveDate" >= CURRENT_DATE)`);
+			const searchCondition = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+			// inactiveDate lives on leda_membership_info, so join it in for the hideInactive filter
+			const fromClause = `FROM public.leda_player_info p LEFT JOIN public.leda_membership_info m ON p."ledaId" = m."ledaId"`;
+
 			// Get total count
-			const countQuery = `SELECT COUNT(*) as total FROM public.leda_player_info ${searchCondition}`;
+			const countQuery = `SELECT COUNT(*) as total ${fromClause} ${searchCondition}`;
 			const countResult = await query<{ total: string }>(
 				countQuery,
 				searchParams
@@ -81,11 +90,11 @@ export default async function handler(
 			// Execute the database query to fetch paginated player information
 			const dataQuery = `
 				SELECT 
-					"ledaId", 
+					p."ledaId", 
 					"fullName", 
 					CASE WHEN "phoneNumber" ~ '^[0-9]{10}$' THEN '(' || SUBSTRING("phoneNumber", 1, 3) || ')-' || SUBSTRING("phoneNumber", 4, 3) || '-' || SUBSTRING("phoneNumber", 7, 4) ELSE "phoneNumber" END as "phoneNumber", 
 					"email" 
-				FROM public.leda_player_info 
+				${fromClause}
 				${searchCondition}
 				ORDER BY ${orderBySql} ${sortDir}
 				LIMIT $${searchParams.length + 1} OFFSET $${searchParams.length + 2}

@@ -26,16 +26,18 @@ export function usePlayersData(
 	page: number,
 	pageSize: number,
 	search: string,
-	sorting: SortingStateLike = []
+	sorting: SortingStateLike = [],
+	hideInactive: boolean = false
 ) {
 	return useQuery<PaginatedPlayersResponse>({
-		queryKey: ["players-datatable", page, pageSize, search, sorting],
+		queryKey: ["players-datatable", page, pageSize, search, sorting, hideInactive],
 		queryFn: async () => {
 			try {
 				const params = new URLSearchParams({
 					page: page.toString(),
 					pageSize: pageSize.toString(),
 					...(search && { search }),
+					...(hideInactive && { hideInactive: "true" }),
 				});
 
 				if (sorting[0]?.id) {

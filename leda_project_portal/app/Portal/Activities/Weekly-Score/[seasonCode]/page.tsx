@@ -12,7 +12,8 @@ import { Spinner } from "@/components/ui/skeleton";
 
 type PageProps = Promise<{ seasonCode: string }>;
 
-async function WeeklyScore({ seasonCode }: { seasonCode: string }) {
+async function WeeklyScore({ params }: { params: PageProps }) {
+	const { seasonCode } = await params;
 	const response = await fetchWithSession(
 		rosterRouteServer + `?seasonCode=${seasonCode}`,
 		{
@@ -28,13 +29,10 @@ async function WeeklyScore({ seasonCode }: { seasonCode: string }) {
 	return <WeeklyScoresheetsContent renderSeasonCode={seasonCode} />;
 }
 
-export default async function Page(props: { params: PageProps }) {
-	const params = await props.params;
-	const seasonCode = params.seasonCode;
-
+export default function Page(props: { params: PageProps }) {
 	return (
 		<Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Spinner /></div>}>
-			<WeeklyScore seasonCode={seasonCode} />
+			<WeeklyScore params={props.params} />
 		</Suspense>
 	);
 }
