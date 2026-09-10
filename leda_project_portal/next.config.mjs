@@ -5,7 +5,7 @@ const nextConfig = {
     cacheComponents: true,
     experimental: {
 	workerThreads: false,
-	cpus: 1
+	cpus: 2
     },	    
 };
 
