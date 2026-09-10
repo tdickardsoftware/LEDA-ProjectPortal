@@ -73,13 +73,18 @@ export default function PlaceTeamHistoryContent({
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{teamHistory.map((team, idx) => (
-								<TableRow key={idx}>
-									<TableCell>{team.seasonCode}</TableCell>
-									<TableCell>{team.teamId}</TableCell>
-									<TableCell>{team.teamName}</TableCell>
-								</TableRow>
-							))}
+							{teamHistory.map((team, idx) => {
+								const isBackup = Number(team.teamId) === 0;
+								return (
+									<TableRow key={idx}>
+										<TableCell>{team.seasonCode}</TableCell>
+										<TableCell>{isBackup ? "" : team.teamId}</TableCell>
+										<TableCell>
+											{isBackup ? "Backup Location" : team.teamName}
+										</TableCell>
+									</TableRow>
+								);
+							})}
 						</TableBody>
 					</Table>
 				</div>
