@@ -130,19 +130,6 @@ export default function Page() {
 			{/* Members tab */}
 			{activeTab === "members" && (
 				<>
-					<div className="flex items-center gap-2 mb-4">
-						<Checkbox
-							id="hideInactivePlayers"
-							checked={hideInactivePlayers}
-							onCheckedChange={(checked) => {
-								setHideInactivePlayers(checked === true);
-								setPage(1);
-							}}
-						/>
-						<Label htmlFor="hideInactivePlayers" className="cursor-pointer">
-							Hide inactive players
-						</Label>
-					</div>
 					<ServerSideDataTable
 						columns={columns}
 						data={data?.data || []}
@@ -151,6 +138,21 @@ export default function Page() {
 						queryKey={["players-datatable"]}
 						pageSize={pageSize}
 						onPageSizeChange={setPageSize}
+						extraControls={
+							<div className="flex items-center gap-2">
+								<Checkbox
+									id="hideInactivePlayers"
+									checked={hideInactivePlayers}
+									onCheckedChange={(checked) => {
+										setHideInactivePlayers(checked === true);
+										setPage(1);
+									}}
+								/>
+								<Label htmlFor="hideInactivePlayers" className="cursor-pointer">
+									Hide inactive players
+								</Label>
+							</div>
+						}
 						addDialogConfig={{
 							form: "PlayerAddInformationForm",
 							title: "Add Player",
