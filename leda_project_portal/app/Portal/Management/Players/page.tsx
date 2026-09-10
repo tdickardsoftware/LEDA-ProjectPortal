@@ -46,16 +46,19 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import PlayerAddInformationForm from "@/components/forms/management/player-add-form";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export default function Page() {
 	const [activeTab, setActiveTab] = useState<"members" | "temp">("members");
 	const [convertDialogOpen, setConvertDialogOpen] = useState(false);
 	const [selectedTempPlayer, setSelectedTempPlayer] = useState<TempPlayer | null>(null);
+	const [hideInactivePlayers, setHideInactivePlayers] = useState(false);
 
 	// ── Members tab state ─────────────────────────────────────────────────────
 	const { page, setPage, pageSize, setPageSize, search, setSearch, sorting, setSorting } =
 		usePersistedDataTableState("datatable:/Portal/Management/Players");
-	const { data, isLoading } = usePlayersData(page, pageSize, search, sorting);
+	const { data, isLoading } = usePlayersData(page, pageSize, search, sorting, hideInactivePlayers);
 
 	// ── Temp players tab state ────────────────────────────────────────────────
 	const queryClient = useQueryClient();
@@ -126,43 +129,58 @@ export default function Page() {
 
 			{/* Members tab */}
 			{activeTab === "members" && (
-				<ServerSideDataTable
-					columns={columns}
-					data={data?.data || []}
-					pageName="Players Page"
-					stateKey="datatable:/Portal/Management/Players"
-					queryKey={["players-datatable"]}
-					pageSize={pageSize}
-					onPageSizeChange={setPageSize}
-					addDialogConfig={{
-						form: "PlayerAddInformationForm",
-						title: "Add Player",
-						buttonName: "Add Player +",
-					}}
-					deleteDialogConfig={{
-						buttonName: "Delete Player",
-						title: "Delete Player",
-						apiEndpoint: playerRoute,
-					}}
-					editDialogConfig={{
-						form: "PlayerEditInformationForm",
-						title: "Edit Player",
-						buttonName: "Edit Player",
-					}}
-					viewLinkConfig={{
-						linkName: "View Player",
-						parentPage: "Players",
-					}}
-					defaultSort="ledaId"
-					sorting={sorting}
-					onSortingChange={setSorting}
-					isLoading={isLoading}
-					totalPages={data?.pagination.totalPages || 1}
-					currentPage={page}
-					onPageChange={setPage}
-					onSearchChange={setSearch}
-					searchValue={search}
-				/>
+				<>
+					<div className="flex items-center gap-2 mb-4">
+						<Checkbox
+							id="hideInactivePlayers"
+							checked={hideInactivePlayers}
+							onCheckedChange={(checked) => {
+								setHideInactivePlayers(checked === true);
+								setPage(1);
+							}}
+						/>
+						<Label htmlFor="hideInactivePlayers" className="cursor-pointer">
+							Hide inactive players
+						</Label>
+					</div>
+					<ServerSideDataTable
+						columns={columns}
+						data={data?.data || []}
+						pageName="Players Page"
+						stateKey="datatable:/Portal/Management/Players"
+						queryKey={["players-datatable"]}
+						pageSize={pageSize}
+						onPageSizeChange={setPageSize}
+						addDialogConfig={{
+							form: "PlayerAddInformationForm",
+							title: "Add Player",
+							buttonName: "Add Player +",
+						}}
+						deleteDialogConfig={{
+							buttonName: "Delete Player",
+							title: "Delete Player",
+							apiEndpoint: playerRoute,
+						}}
+						editDialogConfig={{
+							form: "PlayerEditInformationForm",
+							title: "Edit Player",
+							buttonName: "Edit Player",
+						}}
+						viewLinkConfig={{
+							linkName: "View Player",
+							parentPage: "Players",
+						}}
+						defaultSort="ledaId"
+						sorting={sorting}
+						onSortingChange={setSorting}
+						isLoading={isLoading}
+						totalPages={data?.pagination.totalPages || 1}
+						currentPage={page}
+						onPageChange={setPage}
+						onSearchChange={setSearch}
+						searchValue={search}
+					/>
+				</>
 			)}
 
 			{/* Temporary Players tab */}

@@ -21,7 +21,18 @@ interface TeamMember {
 	badStanding: boolean;
 }
 
-async function TeamData({ ledaId, backHref }: { ledaId: string; backHref: string }) {
+async function TeamData({ params, searchParams }: { params: PageProps; searchParams: SearchParamsProps }) {
+	const [{ ledaId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
+
+	let backHref = "/Portal/Management/Teams";
+	if (
+		resolvedSearchParams.from === "roster" &&
+		resolvedSearchParams.divisionName &&
+		resolvedSearchParams.subdivisionName
+	) {
+		backHref = `/Portal/Activities/Rosters?divisionName=${encodeURIComponent(resolvedSearchParams.divisionName)}&subdivisionName=${encodeURIComponent(resolvedSearchParams.subdivisionName)}`;
+	}
+
 	const teamData = await fetchTeam(ledaId);
 	if (!teamData) {
 		notFound();
@@ -49,18 +60,10 @@ async function TeamData({ ledaId, backHref }: { ledaId: string; backHref: string
 	return <TeamPageContent teamData={teamData} memberDetails={memberDetails} backHref={backHref} />;
 }
 
-export default async function Page(props: { params: PageProps; searchParams: SearchParamsProps }) {
-	const [params, searchParams] = await Promise.all([props.params, props.searchParams]);
-	const ledaId = params.ledaId;
-
-	let backHref = "/Portal/Management/Teams";
-	if (searchParams.from === "roster" && searchParams.divisionName && searchParams.subdivisionName) {
-		backHref = `/Portal/Activities/Rosters?divisionName=${encodeURIComponent(searchParams.divisionName)}&subdivisionName=${encodeURIComponent(searchParams.subdivisionName)}`;
-	}
-
+export default function Page(props: { params: PageProps; searchParams: SearchParamsProps }) {
 	return (
 		<Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Spinner /></div>}>
-			<TeamData ledaId={ledaId} backHref={backHref} />
+			<TeamData params={props.params} searchParams={props.searchParams} />
 		</Suspense>
 	);
 }
