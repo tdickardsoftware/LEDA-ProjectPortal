@@ -13,7 +13,7 @@
  * or uncontrolled mode (with direct value/onChange props).
  */
 import React, { useState } from "react";
-import { Control, FormProvider, useFormContext } from "react-hook-form";
+import { FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ interface FormValues {
 
 interface PenaltySelectorProps {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>; // Form control from React Hook Form
+	control: any; // Form control from React Hook Form
 	name: string; // Field name in the form
 	label: string; // Label text for the field
 	disabled?: boolean; // Optional disabled state
