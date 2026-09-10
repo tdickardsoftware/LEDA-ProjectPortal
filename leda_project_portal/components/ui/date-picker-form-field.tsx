@@ -8,7 +8,7 @@
  */
 "use client";
 
-import { Control } from "react-hook-form";
+
 import {
 	FormControl,
 	FormField,
@@ -45,7 +45,7 @@ export function DatePickerFormField({
 	enableMonthYearPicker = false,
 }: {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>;
+	control: any;
 	name: string;
 	label: string;
 	initialMonth?: Date;

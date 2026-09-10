@@ -10,7 +10,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Control, useFormContext, FormProvider } from "react-hook-form";
+import { useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,8 +43,7 @@ interface FormValues {
 }
 
 interface DivisionSelectorProps {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>;
+	control: any;
 	name: string;
 	label: string;
 	selectedDivisions: string[];

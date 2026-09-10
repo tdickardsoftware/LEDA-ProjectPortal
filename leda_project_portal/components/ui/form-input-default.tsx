@@ -21,13 +21,13 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Control, FormProvider, useFormContext } from "react-hook-form";
+import { FormProvider, useFormContext } from "react-hook-form";
 //
 // Define the parameters
 //
 interface InputDefaultProps {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>;
+	control: any;
 	name: string;
 	label: string;
 	placeholder?: string;

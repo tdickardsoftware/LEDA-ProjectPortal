@@ -8,7 +8,6 @@
  */
 import React from "react";
 import {
-	Control,
 	FormProvider,
 	useController,
 	useFormContext,
@@ -24,8 +23,7 @@ import {
 } from "@/components/ui/form";
 
 interface PhoneNumberInputProps {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>;
+	control: any;
 	name: string;
 	label: string;
 }

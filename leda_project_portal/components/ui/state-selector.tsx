@@ -9,7 +9,7 @@
 // Import necessary modules and components
 "use client";
 import * as React from "react";
-import { Control, FormProvider, useFormContext } from "react-hook-form";
+import { FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -92,7 +92,7 @@ const states = [
 interface StatePickerProps {
 	name: string;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>;
+	control: any;
 }
 
 // Define the parameters for the StatePickerContent component

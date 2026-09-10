@@ -6,7 +6,7 @@
  * and a `name` to bind directly into the surrounding form context.
  */
 import React from "react";
-import { Control, FormProvider, useFormContext } from "react-hook-form";
+import { FormProvider, useFormContext } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
 	FormItem,
@@ -18,7 +18,7 @@ import {
 
 interface CheckboxDefaultProps {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>;
+	control: any;
 	name: string;
 	label: string;
 	className?: string;

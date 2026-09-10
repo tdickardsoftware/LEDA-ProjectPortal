@@ -8,7 +8,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Control, FormProvider, useFormContext } from "react-hook-form";
+import { FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ import {
 
 interface GenderSelectorProps {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>;
+	control: any;
 	name: string;
 }
 
