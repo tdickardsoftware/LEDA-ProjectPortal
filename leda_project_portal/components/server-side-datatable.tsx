@@ -130,7 +130,6 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	);
 	const [searchQuery, setSearchQuery] = React.useState(searchValue);
 	const [rowSelection, setRowSelection] = React.useState({});
-	const [selectedRowCount, setSelectedRowCount] = React.useState(0);
 
 	const searchInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -468,9 +467,8 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	const queryClient = useQueryClient();
 	const router = useRouter();
 
-	React.useEffect(() => {
-		setSelectedRowCount(Object.keys(rowSelection).length);
-	}, [rowSelection]);
+	// Computed directly from rowSelection so it's never stale on the first render after a selection change
+	const selectedRowCount = Object.keys(rowSelection).length;
 
 	// Refresh handler
 	const handleRefresh = React.useCallback(() => {

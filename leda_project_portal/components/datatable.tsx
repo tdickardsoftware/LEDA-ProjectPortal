@@ -144,7 +144,6 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 	const [activeSearchQuery, setActiveSearchQuery] = React.useState(""); // State for executed search
 	const [tableData, setTableData] = React.useState(data); // State for table data
 	const [rowSelection, setRowSelection] = React.useState({}); // State for row selection
-	const [selectedRowCount, setSelectedRowCount] = React.useState(0); // New state for selected row count
 	const [isRefreshing, setIsRefreshing] = React.useState(false);
 	const [didRestorePageIndex, setDidRestorePageIndex] = React.useState(false);
 	const [pageSize, setPageSize] = React.useState<number>(10);
@@ -537,13 +536,14 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			.map((row) => row.original);
 	}, [rowSelection, table]);
 
-	// Update selectedRowCount whenever rowSelection changes
+	// Computed directly from rowSelection so it's never stale on the first render after a selection change
+	const selectedRowCount = Object.keys(rowSelection).length;
+
 	React.useEffect(() => {
-		setSelectedRowCount(Object.keys(rowSelection).length);
 		if (passValueToParent) {
 			passValueToParent(JSON.stringify(selectedRowsData)); // Send selected row data to parent
 		}
-	}, [rowSelection, passValueToParent, selectedRowsData]);
+	}, [passValueToParent, selectedRowsData]);
 	// Refresh the table data
 	const handleRefresh = async () => {
 		try {
