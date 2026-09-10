@@ -10,10 +10,6 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Spinner } from "@/components/ui/skeleton";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 type PageProps = Promise<{ ledaId: string }>;
 type SearchParamsProps = Promise<{ from?: string; divisionName?: string; subdivisionName?: string }>;
 

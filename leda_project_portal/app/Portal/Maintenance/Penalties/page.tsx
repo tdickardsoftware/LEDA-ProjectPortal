@@ -7,41 +7,45 @@ import { penaltyRoute } from "@/lib/apiRoutes";
 import { fetchPenalties } from "@/lib/getData";
 import { columns } from "@/schemas/maintenance/penalties";
 import { Metadata } from "next";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { Suspense } from "react";
+import { Spinner } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
 	title: "Penalties",
 };
 
-export default async function Page() {
-	 return (
-		 <>
-			 <div className="container mx-auto py-10">
-				 <DataTable
-					 columns={columns}
-					 data={await fetchPenalties()}
-					 pageName="Penalties Page"
-					 addDialogConfig={{
-						 form: "PenaltyAddForm",
-						 title: "Add Penalty",
-						 buttonName: "Add Penalty +"
-					 }}
-					 deleteDialogConfig={{
-						 buttonName: "Delete Penalty",
-						 title: "Delete Penalty",
-						 apiEndpoint: penaltyRoute
-					 }}
-					 editDialogConfig={{
-						 form: "PenaltyEditForm",
-						 title: "Edit Penalty",
-						 buttonName: "Edit Penalty"
-					 }}
-					 apiEndpoint={penaltyRoute}
-				 />
-			 </div>
-		 </>
-	 );
+async function PenaltiesTable() {
+	return (
+		<div className="container mx-auto py-10">
+			<DataTable
+				columns={columns}
+				data={await fetchPenalties()}
+				pageName="Penalties Page"
+				addDialogConfig={{
+					form: "PenaltyAddForm",
+					title: "Add Penalty",
+					buttonName: "Add Penalty +"
+				}}
+				deleteDialogConfig={{
+					buttonName: "Delete Penalty",
+					title: "Delete Penalty",
+					apiEndpoint: penaltyRoute
+				}}
+				editDialogConfig={{
+					form: "PenaltyEditForm",
+					title: "Edit Penalty",
+					buttonName: "Edit Penalty"
+				}}
+				apiEndpoint={penaltyRoute}
+			/>
+		</div>
+	);
+}
+
+export default function Page() {
+	return (
+		<Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Spinner /></div>}>
+			<PenaltiesTable />
+		</Suspense>
+	);
 }

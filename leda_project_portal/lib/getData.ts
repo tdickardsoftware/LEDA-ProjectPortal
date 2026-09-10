@@ -59,12 +59,16 @@ import {
 } from "@/lib/apiRoutes";
 import { useQuery } from "@tanstack/react-query";
 
-// Helper: allow Next.js redirect errors to bubble to the framework
+// Helper: let Next.js-internal errors (redirects, Cache Components prerender
+// bailouts) bubble to the framework instead of being logged as API failures
 function rethrowNextRedirect(error: unknown) {
-	// Next attaches a special digest to redirect errors
+	// Next attaches a special digest to these internal control-flow errors
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const digest = (error as any)?.digest as unknown;
-	if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
+	if (
+		typeof digest === "string" &&
+		(digest.startsWith("NEXT_REDIRECT") || digest === "HANGING_PROMISE_REJECTION")
+	) {
 		throw error;
 	}
 }

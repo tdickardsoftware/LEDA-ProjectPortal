@@ -7,17 +7,12 @@ import WeeklyScoresheetsContent from "@/components/page-content/activities/weekl
 import { rosterRouteServer } from "@/lib/apiRoutes";
 import { fetchWithSession } from "@/lib/getData";
 import { notFound } from "next/navigation";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { Suspense } from "react";
+import { Spinner } from "@/components/ui/skeleton";
 
 type PageProps = Promise<{ seasonCode: string }>;
 
-export default async function Page(props: { params: PageProps }) {
-	const params = await props.params;
-	const seasonCode = params.seasonCode;
-
+async function WeeklyScore({ seasonCode }: { seasonCode: string }) {
 	const response = await fetchWithSession(
 		rosterRouteServer + `?seasonCode=${seasonCode}`,
 		{
@@ -31,4 +26,15 @@ export default async function Page(props: { params: PageProps }) {
 		notFound();
 	}
 	return <WeeklyScoresheetsContent renderSeasonCode={seasonCode} />;
+}
+
+export default async function Page(props: { params: PageProps }) {
+	const params = await props.params;
+	const seasonCode = params.seasonCode;
+
+	return (
+		<Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Spinner /></div>}>
+			<WeeklyScore seasonCode={seasonCode} />
+		</Suspense>
+	);
 }
