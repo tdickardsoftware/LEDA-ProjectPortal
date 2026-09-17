@@ -38,6 +38,8 @@ interface ReportDisplayProps<T> {
 	onDataFetch?: (data: T[]) => void;
 	mailingLabelsImported?: boolean;
 	dataOverride?: T[];
+	// Bump this value (e.g. from a "Regenerate PDF" button) to force a refetch
+	refetchTrigger?: number;
 }
 
 export default function ReportDisplay<T extends Record<string, unknown>>({
@@ -47,6 +49,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	onDataFetch,
 	mailingLabelsImported,
 	dataOverride,
+	refetchTrigger,
 }: ReportDisplayProps<T>) {
 	const [sortColumn, setSortColumn] = useState<string | null>(null);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -84,6 +87,15 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 			refetch();
 		}
 	}, [mailingLabelsImported, refetch]);
+
+	// Refetch when refetchTrigger changes (e.g. "Regenerate PDF" button), skipping the initial mount
+	const previousRefetchTrigger = React.useRef(refetchTrigger);
+	useEffect(() => {
+		if (refetchTrigger !== undefined && refetchTrigger !== previousRefetchTrigger.current) {
+			previousRefetchTrigger.current = refetchTrigger;
+			refetch();
+		}
+	}, [refetchTrigger, refetch]);
 
 	// Call onDataFetch callback when data changes
 	useEffect(() => {

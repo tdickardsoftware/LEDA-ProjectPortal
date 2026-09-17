@@ -490,6 +490,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={leaguePlayBarAffiliationFeeNotPaidColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }
@@ -501,6 +502,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={mentionBestOfDivisionColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }
@@ -512,6 +514,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={mentionPlaqueColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }
@@ -523,6 +526,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={mentionLeaguePlayColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }
@@ -536,6 +540,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={ton80Columns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }
@@ -547,6 +552,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={playerNoFormColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }
@@ -558,6 +564,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={playerNotPaidColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }       
@@ -569,6 +576,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={teamFeeNotPaidColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }
@@ -580,6 +588,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={topDarterColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }
@@ -593,6 +602,7 @@ export default function LeaguePlayReportLandingContent() {
                     columns={weeklyScoresheetsColumns}
                     className="h-full"
                     onDataFetch={handleDataFetch}
+                    refetchTrigger={pdfRegenKey}
                 />
             );
         }

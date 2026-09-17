@@ -262,6 +262,8 @@ export type TrailsDateData = {
 	doublesPlace: number;
 	trailsPoints: number;
 	fullName: string;
+	// True when ledaId refers to a leda_temp_player_info record rather than a full member
+	isTemp?: boolean;
 };
 //
 // define type to identify te shape of our data from postgres for a Roster

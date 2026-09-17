@@ -262,6 +262,7 @@ export default function TrailsReportLandingContent() {
 					columns={historyOfWinsColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
+					refetchTrigger={pdfRegenKey}
 				/>
 			);
 		}
@@ -273,6 +274,7 @@ export default function TrailsReportLandingContent() {
 					columns={tripEligibleColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
+					refetchTrigger={pdfRegenKey}
 				/>
 			);
 		}
@@ -284,6 +286,7 @@ export default function TrailsReportLandingContent() {
 					columns={membershipHistoryColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
+					refetchTrigger={pdfRegenKey}
 				/>
 			);
 		}
@@ -295,6 +298,7 @@ export default function TrailsReportLandingContent() {
 					columns={pointsListColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
+					refetchTrigger={pdfRegenKey}
 				/>
 			);
 		}
@@ -306,6 +310,7 @@ export default function TrailsReportLandingContent() {
 					columns={savePointsLetterColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
+					refetchTrigger={pdfRegenKey}
 				/>
 			);
 		}

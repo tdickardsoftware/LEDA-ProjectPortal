@@ -18,8 +18,16 @@ export default async function handler(
 		log.info({ method: "GET", query: req.query }, "Fetch trails points list");
 		try {
 			// Execute the database query to fetch season code information
+			// LEFT JOIN temp player info so temp players (not yet in leda_player_info,
+			// which the view sources names from) still get a name instead of a blank one
 			const result = await query<TrailsPointsList>(
-				'SELECT "ledaId", "previousTotalPoints", "totalPoints", "changeBy", "trailsDate", "fullname", "paidDues" FROM public.leda_reports_trails_points_list;'
+				`SELECT v."ledaId", v."previousTotalPoints", v."totalPoints", v."changeBy", v."trailsDate",
+						CASE WHEN tp."tempId" IS NOT NULL THEN
+							CONCAT_WS(', ', tp."lastName", TRIM(CONCAT_WS(' ', tp."firstName", tp."middleInitial")))
+						ELSE v."fullname" END as "fullname",
+						v."paidDues"
+				 FROM public.leda_reports_trails_points_list v
+				 LEFT JOIN public.leda_temp_player_info tp ON v."ledaId" = tp."tempId";`
 			);
 			// Respond with the query result
 			res.status(200).json(result.rows);

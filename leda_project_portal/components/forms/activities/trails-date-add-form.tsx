@@ -25,8 +25,15 @@ import { toast } from "sonner";
 import React from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { TrailsDateData } from "@/lib/definitions";
+import { TrailsDateData, TempPlayer } from "@/lib/definitions";
 import PlayerSelect from "@/components/ui/single-player-select";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import TempPlayerAddForm from "@/components/forms/management/temp-player-add-form";
 
 // Validation schema — uses z.preprocess to coerce empty inputs to 0
 const TrailsDateDataFormSchema = z.object({
@@ -78,6 +85,8 @@ export default function TrailsDateAddForm({
 	index?: number;
 }) {
 	const formRef = React.useRef<HTMLFormElement>(null);
+	const [tempDialogOpen, setTempDialogOpen] = React.useState(false);
+	const [selectedTempPlayer, setSelectedTempPlayer] = React.useState<TempPlayer | null>(null);
 	const form = useForm<z.infer<typeof TrailsDateDataFormSchema>>({
 		resolver: zodResolver(TrailsDateDataFormSchema),
 		defaultValues: {
@@ -100,7 +109,28 @@ export default function TrailsDateAddForm({
 			ledaId: editData?.ledaId || undefined,
 			fullName: editData?.fullName || "",
 		});
+		setSelectedTempPlayer(null);
 	}, [form, editData]);
+
+	const handleTempPlayerAdded = (player: TempPlayer) => {
+		if (trailsDateData.some((t) => Number(t.ledaId) === Number(player.tempId))) {
+			toast.error("This temp player has already been added to this date.");
+			return;
+		}
+		setSelectedTempPlayer(player);
+		form.setValue("ledaId", player.tempId);
+		form.setValue(
+			"fullName",
+			`${player.firstName}${player.middleInitial ? ` ${player.middleInitial}.` : ""} ${player.lastName}`
+		);
+		setTempDialogOpen(false);
+	};
+
+	const handleClearTempPlayer = () => {
+		setSelectedTempPlayer(null);
+		form.setValue("ledaId", undefined as unknown as number);
+		form.setValue("fullName", "");
+	};
 
 	async function onSubmit(values: z.infer<typeof TrailsDateDataFormSchema>) {
 		try {
@@ -139,12 +169,43 @@ export default function TrailsDateAddForm({
 					{/* Place Type Information Section */}
 					<div className={formContainerStyle}>
 						{!editData && (
-							<PlayerSelect
-								control={form.control}
-								name="ledaId"
-								label="Player *"
-								trailsDateData={trailsDateData}
-							/>
+							<div className="space-y-2 mb-2">
+								{selectedTempPlayer ? (
+									<div className="flex items-center justify-between rounded-md border border-border p-2">
+										<span className="text-sm">
+											Temp Player: {selectedTempPlayer.firstName}
+											{selectedTempPlayer.middleInitial ? ` ${selectedTempPlayer.middleInitial}.` : ""}{" "}
+											{selectedTempPlayer.lastName}
+										</span>
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={handleClearTempPlayer}
+										>
+											Clear
+										</Button>
+									</div>
+								) : (
+									<>
+										<PlayerSelect
+											control={form.control}
+											name="ledaId"
+											label="Player *"
+											trailsDateData={trailsDateData}
+										/>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											className="hover:bg-muted border-border text-foreground"
+											onClick={() => setTempDialogOpen(true)}
+										>
+											Add Temp Player
+										</Button>
+									</>
+								)}
+							</div>
 						)}
 						<FormField
 							control={form.control}
@@ -262,6 +323,17 @@ export default function TrailsDateAddForm({
 					)}
 				</div>
 			</form>
+			<Dialog open={tempDialogOpen} onOpenChange={setTempDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Add Temporary Player</DialogTitle>
+					</DialogHeader>
+					<TempPlayerAddForm
+						onAdded={handleTempPlayerAdded}
+						onClose={() => setTempDialogOpen(false)}
+					/>
+				</DialogContent>
+			</Dialog>
 		</Form>
 	);
 }
