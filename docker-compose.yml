@@ -42,6 +42,12 @@ services:
       - MAINTEANCE_MODE=${MAINTEANCE_MODE}
       - DISABLE_AUTH=${DISABLE_AUTH}
       - DISABLE_SIGN_UP=${DISABLE_SIGN_UP}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   nginx:
     image: nginx:alpine
@@ -53,8 +59,15 @@ services:
       - certbot-www:/var/www/certbot:ro
       - certbot-certs:/etc/letsencrypt:ro
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   certbot:
     image: certbot/certbot:latest
@@ -94,6 +107,12 @@ services:
       - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
     command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # Promtail: ships Docker container logs to Loki
   promtail:
@@ -103,8 +122,15 @@ services:
       - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
     command: -config.file=/etc/promtail/config.yml
     depends_on:
-      - loki
+      loki:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:9080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # Grafana: dashboard UI for viewing logs from Loki (http://your-vps-ip:3001)
   # Bind to localhost only — tunnel via SSH: ssh -L 3001:localhost:3001 deploy@your.vps.ip
@@ -123,8 +149,15 @@ services:
       - GF_SERVER_ROOT_URL=${APP_URL}/monitoring/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
     depends_on:
-      - loki
+      loki:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
 volumes:
   certbot-www:
