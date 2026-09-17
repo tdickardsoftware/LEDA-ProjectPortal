@@ -21,12 +21,19 @@ export default async function handler(
 		try {
 			if (req.query.trailsDate) {
 				const trailsDate = req.query.trailsDate;
-				// Execute the database query to fetch season code information
+				// LEFT JOIN both member and temp-player tables so temp player entries
+				// (not yet present in leda_player_info) still resolve a display name
 				const result = await query<TrailsDateData>(
 					`SELECT th.*, 
-							CONCAT(COALESCE(pi."firstName", ''), ' ', COALESCE(pi."middleInitial", ''), ' ', COALESCE(pi."lastName", '')) as "fullName"
+							CASE WHEN pi."ledaId" IS NOT NULL THEN
+								CONCAT(COALESCE(pi."firstName", ''), ' ', COALESCE(pi."middleInitial", ''), ' ', COALESCE(pi."lastName", ''))
+							ELSE
+								CONCAT(COALESCE(tp."firstName", ''), ' ', COALESCE(tp."middleInitial", ''), ' ', COALESCE(tp."lastName", ''))
+							END as "fullName",
+							(pi."ledaId" IS NULL) as "isTemp"
 					 FROM public.leda_trails_history th
-					 JOIN public.leda_player_info pi ON th."ledaId" = pi."ledaId"
+					 LEFT JOIN public.leda_player_info pi ON th."ledaId" = pi."ledaId"
+					 LEFT JOIN public.leda_temp_player_info tp ON th."ledaId" = tp."tempId"
 					 WHERE th."trailsDate" = $1 order by "ledaId" asc;`,
 					[trailsDate as string]
 				);

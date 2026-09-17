@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Lists"
+    title: "Lists Reports"
 }
 
 export default function Page() {

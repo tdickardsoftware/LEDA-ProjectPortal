@@ -6,10 +6,18 @@
  *           at least max(leda_player_info.ledaId) + 10000 and also strictly
  *           greater than any existing tempId.
  * DELETE — Deletes a temporary player by ?tempId=.
- * PUT    — Converts a temporary player to a full member when body.action === "convert".
+ * PUT    — body.action === "convert": converts a temporary player to a full member.
  *           Creates entries in leda_player_info and leda_membership_info, re-keys
- *           all saved scoresheet rows, player-point rows, and mention-history rows
- *           from the old tempId to the new ledaId, then removes the temp record.
+ *           all saved scoresheet rows, player-point rows, mention-history rows, and
+ *           trails history/audit rows from the old tempId to the new ledaId, then
+ *           removes the temp record.
+ *          body.action === "link": links a temp player to an existing member
+ *           (body.ledaId). Re-keys the same tables onto the existing ledaId instead
+ *           of creating a new one; any row that would duplicate one the real member
+ *           already has is dropped in favor of the real member's row. Trails points
+ *           are merged rather than re-keyed: the temp player's running total is
+ *           discarded and a fresh audit row is appended for each surviving trails
+ *           date on top of whatever total the target member already had.
  */
 import { NextApiRequest, NextApiResponse } from "next";
 import { query } from "@/lib/dbTypeGet";
@@ -20,6 +28,157 @@ import { PlayerMemberInfo } from "@/lib/definitions";
 import { DatabaseError } from "pg";
 
 const log = createRouteLogger("/api/management/player/temp");
+
+// Re-keys every row for `tempId` in `table` onto `newLedaId`. If a row would collide
+// with one the target already has (unique constraint on ledaIdColumn + matchColumns),
+// the temp duplicate is dropped instead of failing, since the real row is authoritative.
+async function migrateTempRows(
+	table: string,
+	ledaIdColumn: string,
+	matchColumns: string[],
+	tempId: number | string,
+	newLedaId: number | string
+): Promise<{ migrated: number; duplicatesDropped: number }> {
+	const rows = (
+		await query<Record<string, unknown>>(
+			`SELECT * FROM public.${table} WHERE "${ledaIdColumn}" = $1`,
+			[tempId]
+		)
+	).rows;
+
+	let migrated = 0;
+	let duplicatesDropped = 0;
+	for (const row of rows) {
+		const matchClause = matchColumns.map((col, i) => `"${col}" = $${i + 3}`).join(" AND ");
+		const matchValues = matchColumns.map((col) => row[col]);
+		try {
+			await queryPost(
+				`UPDATE public.${table} SET "${ledaIdColumn}" = $1 WHERE "${ledaIdColumn}" = $2 AND ${matchClause}`,
+				[newLedaId, tempId, ...matchValues]
+			);
+			migrated++;
+		} catch (error) {
+			if (error instanceof DatabaseError && error.code === "23505") {
+				// Target member already has a row for this key; discard the temp duplicate
+				await queryPost(
+					`DELETE FROM public.${table} WHERE "${ledaIdColumn}" = $1 AND ${matchClause}`,
+					[tempId, ...matchValues]
+				);
+				duplicatesDropped++;
+			} else {
+				throw error;
+			}
+		}
+	}
+	return { migrated, duplicatesDropped };
+}
+
+// Merges a temp player's trails history onto `newLedaId`. Trails points totals are a
+// running ledger (leda_trails_point_totals_audit.totalPoints carries forward from the
+// previous row), so unlike the other tables a plain re-key would leave two independent
+// ledgers on the same ledaId instead of one combined total. Raw history rows are moved
+// with the usual duplicate-drop-on-conflict behaviour, the temp player's own ledger is
+// discarded, and a fresh audit row is appended for each surviving date on top of
+// whatever total the target already had.
+async function mergeTrailsPoints(
+	tempId: number | string,
+	newLedaId: number | string
+): Promise<{ migrated: number; duplicatesDropped: number }> {
+	const targetDatesResult = await query<{ trailsDate: Date }>(
+		`SELECT "trailsDate" FROM public.leda_trails_history WHERE "ledaId" = $1`,
+		[newLedaId]
+	);
+	const targetDates = new Set(targetDatesResult.rows.map((r) => new Date(r.trailsDate).getTime()));
+
+	const tempRows = (
+		await query<{ trailsDate: Date; trailsPoints: number; singlesPlace: number | null; doublesPlace: number | null }>(
+			`SELECT "trailsDate", "trailsPoints", "singlesPlace", "doublesPlace" FROM public.leda_trails_history WHERE "ledaId" = $1`,
+			[tempId]
+		)
+	).rows;
+
+	const { migrated, duplicatesDropped } = await migrateTempRows(
+		"leda_trails_history", "ledaId", ["trailsDate"], tempId, newLedaId
+	);
+
+	// The temp player's own running total no longer means anything once merged
+	await queryPost(`DELETE FROM public.leda_trails_point_totals_audit WHERE "ledaId" = $1`, [tempId]);
+
+	const mergedRows = tempRows.filter((row) => !targetDates.has(new Date(row.trailsDate).getTime()));
+
+	if (mergedRows.length > 0) {
+		// A merged date can fall anywhere in the target's timeline (not just after their
+		// most recent entry), so the whole ledger is rebuilt in trailsDate order and every
+		// row's running total is recomputed from scratch. Appending the merge as a single
+		// new row instead would leave earlier/later rows with stale totals depending on
+		// how a report sorts/picks the "current" row (by trailsDate vs. modifyDate).
+		const existingRows = (
+			await query<{ modifyDate: Date; trailsDate: Date; changeBy: number; singlesPlace: number | null; doublesPlace: number | null }>(
+				`SELECT "modifyDate", "trailsDate", "changeBy", "singlesPlace", "doublesPlace"
+				 FROM public.leda_trails_point_totals_audit WHERE "ledaId" = $1`,
+				[newLedaId]
+			)
+		).rows;
+
+		type LedgerEntry = {
+			modifyDate: Date | null;
+			trailsDate: Date;
+			changeBy: number;
+			singlesPlace: number | null;
+			doublesPlace: number | null;
+		};
+		const combined: LedgerEntry[] = [
+			...existingRows.map((r) => ({
+				modifyDate: r.modifyDate,
+				trailsDate: r.trailsDate,
+				changeBy: Number(r.changeBy),
+				singlesPlace: r.singlesPlace,
+				doublesPlace: r.doublesPlace,
+			})),
+			...mergedRows.map((r) => ({
+				modifyDate: null,
+				trailsDate: r.trailsDate,
+				changeBy: Number(r.trailsPoints),
+				singlesPlace: r.singlesPlace,
+				doublesPlace: r.doublesPlace,
+			})),
+		];
+		combined.sort((a, b) => {
+			const dateDiff = new Date(a.trailsDate).getTime() - new Date(b.trailsDate).getTime();
+			if (dateDiff !== 0) return dateDiff;
+			return (a.modifyDate ? new Date(a.modifyDate).getTime() : 0) - (b.modifyDate ? new Date(b.modifyDate).getTime() : 0);
+		});
+
+		await queryPost(`DELETE FROM public.leda_trails_point_totals_audit WHERE "ledaId" = $1`, [newLedaId]);
+
+		let runningTotal = 0;
+		let latestTrailsDate: Date | null = null;
+		const mergeTimestamp = Date.now();
+		let mergedIndex = 0;
+		for (const entry of combined) {
+			const previousTotalPoints = runningTotal;
+			runningTotal += entry.changeBy;
+			const modifyDate = entry.modifyDate ?? new Date(mergeTimestamp + mergedIndex++);
+			await queryPost(
+				`INSERT INTO public.leda_trails_point_totals_audit
+					("ledaId", "modifyDate", "previousTotalPoints", "totalPoints", "changeBy", "trailsDate", "singlesPlace", "doublesPlace")
+				 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+				[newLedaId, modifyDate, previousTotalPoints, runningTotal, entry.changeBy, entry.trailsDate, entry.singlesPlace, entry.doublesPlace]
+			);
+			latestTrailsDate = entry.trailsDate;
+		}
+
+		if (latestTrailsDate) {
+			await queryPost(
+				`UPDATE public.leda_membership_info SET "lastTrailsDate" = $2
+				 WHERE "ledaId" = $1 AND ("lastTrailsDate" IS NULL OR "lastTrailsDate" < $2)`,
+				[newLedaId, latestTrailsDate]
+			);
+		}
+	}
+
+	return { migrated, duplicatesDropped };
+}
 
 export default async function handler(
 	req: NextApiRequest,
@@ -100,15 +259,66 @@ export default async function handler(
 			res.status(500).json({ message: "Failed to delete temp player", error });
 		}
 
-	// ── PUT (convert) ────────────────────────────────────────────────────────
+	// ── PUT (convert / link) ─────────────────────────────────────────────────
 	} else if (req.method === "PUT") {
-		const { action, tempId, ...playerData } = req.body as {
+		const { action, tempId, ledaId, ...playerData } = req.body as {
 			action: string;
 			tempId: number;
+			ledaId?: number;
 		} & PlayerMemberInfo;
 
+		// ── Link to an existing member ──────────────────────────────────────
+		if (action === "link") {
+			log.info({ method: "PUT", action, tempId, ledaId }, "Link temp player to existing member");
+			try {
+				const memberCheck = await query<{ ledaId: number }>(
+					`SELECT "ledaId" FROM public.leda_player_info WHERE "ledaId" = $1`,
+					[ledaId]
+				);
+				if (memberCheck.rows.length === 0) {
+					return res.status(404).json({ message: "Target player not found" });
+				}
+
+				const scoresheets = await migrateTempRows(
+					"leda_weekly_scoresheets_player_info", "ledaId",
+					["seasonCode", "weekNum", "division", "subdivision", "teamId"],
+					tempId, ledaId as number
+				);
+				const playerPoints = await migrateTempRows(
+					"leda_weekly_player_points", "ledaId",
+					["seasonCode", "weekNum", "division", "subdivision", "teamLedaId"],
+					tempId, ledaId as number
+				);
+				const mentions = await migrateTempRows(
+					"leda_player_mention_history", "ledaId",
+					["seasonCode", "weekNum", "mentionId", "teamId"],
+					String(tempId), String(ledaId)
+				);
+				const trails = await mergeTrailsPoints(tempId, ledaId as number);
+
+				await queryPost(`DELETE FROM public.leda_temp_player_info WHERE "tempId" = $1`, [tempId]);
+
+				const duplicatesDropped =
+					scoresheets.duplicatesDropped + playerPoints.duplicatesDropped +
+					mentions.duplicatesDropped + trails.duplicatesDropped;
+
+				log.info({ tempId, ledaId, scoresheets, playerPoints, mentions, trails }, "Linked temp player to existing member");
+				res.status(200).json({
+					message:
+						duplicatesDropped > 0
+							? `Link successful. ${duplicatesDropped} duplicate record(s) already existed for this player and were discarded.`
+							: "Link successful",
+					ledaId,
+				});
+			} catch (error) {
+				log.error({ err: error }, "Failed to link temp player");
+				res.status(500).json({ message: (error as Error).message || "Server error" });
+			}
+			return;
+		}
+
 		if (action !== "convert") {
-			return res.status(400).json({ message: "Unknown action. Use action=convert." });
+			return res.status(400).json({ message: "Unknown action. Use action=convert or action=link." });
 		}
 
 		log.info({ method: "PUT", action, tempId }, "Convert temp player to regular member");
@@ -198,6 +408,18 @@ export default async function handler(
 			await queryPost(
 				`UPDATE public.leda_player_mention_history SET "ledaId" = $1 WHERE "ledaId" = $2`,
 				[String(newLedaId), String(tempId)]
+			);
+
+			// Re-key all trails history rows
+			await queryPost(
+				`UPDATE public.leda_trails_history SET "ledaId" = $1 WHERE "ledaId" = $2`,
+				[newLedaId, tempId]
+			);
+
+			// Re-key all trails point totals audit rows
+			await queryPost(
+				`UPDATE public.leda_trails_point_totals_audit SET "ledaId" = $1 WHERE "ledaId" = $2`,
+				[newLedaId, tempId]
 			);
 
 			// Remove the temp player record

@@ -11,7 +11,8 @@ import { Spinner } from "@/components/ui/skeleton";
 
 type PageProps = Promise<{ ledaId: string }>;
 
-async function PlayerData({ ledaId }: { ledaId: string }) {
+async function PlayerData({ params }: { params: PageProps }) {
+	const { ledaId } = await params;
 	const playerData = await fetchPlayerMember(ledaId);
 	if (!playerData) {
 		notFound();
@@ -20,13 +21,10 @@ async function PlayerData({ ledaId }: { ledaId: string }) {
 	return <PlayerPageContent playerData={playerData} />;
 }
 
-export default async function Page(props: { params: PageProps }) {
-	const params = await props.params;
-	const ledaId = params.ledaId;
-
+export default function Page(props: { params: PageProps }) {
 	return (
 		<Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Spinner /></div>}>
-			<PlayerData ledaId={ledaId} />
+			<PlayerData params={props.params} />
 		</Suspense>
 	);
 }

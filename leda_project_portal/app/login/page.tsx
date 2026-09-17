@@ -4,6 +4,7 @@
 // Import necessary components and types
 import LoginPageContent from "@/components/page-content/landing-content/login-page-content";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 // Define metadata for the page
 export const metadata: Metadata = {
@@ -15,7 +16,10 @@ export default function Page() {
 	return (
 		// Main container for the page content
 		<main>
-            <LoginPageContent />
+			{/* Suspense required because LoginPageContent reads the ?redirect search param on the client */}
+			<Suspense fallback={<div>Loading...</div>}>
+				<LoginPageContent />
+			</Suspense>
 		</main>
 	);
 }

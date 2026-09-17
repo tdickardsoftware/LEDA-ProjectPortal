@@ -87,6 +87,8 @@ interface ServerSideDataTableProps<TData extends Record<string, unknown>, TValue
 	onPageChange: (page: number) => void;
 	onSearchChange: (search: string) => void;
 	searchValue: string;
+	// Optional extra controls rendered next to the page-size dropdown
+	extraControls?: React.ReactNode;
 }
 
 export function ServerSideDataTable<TData extends Record<string, unknown>, TValue>({
@@ -111,6 +113,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	onPageChange,
 	onSearchChange,
 	searchValue,
+	extraControls,
 }: ServerSideDataTableProps<TData, TValue>) {
 	const [internalSorting, setInternalSorting] = React.useState<SortingState>(() =>
 		defaultSort ? [{ id: defaultSort, desc: false }] : []
@@ -529,6 +532,7 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 											<SelectItem value="100">100 rows</SelectItem>
 										</SelectContent>
 									</Select>
+								{extraControls}
 								{customLink && (
 									<Button
 										variant="outline"

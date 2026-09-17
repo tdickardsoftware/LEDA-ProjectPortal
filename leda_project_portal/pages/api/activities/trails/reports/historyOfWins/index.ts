@@ -18,8 +18,17 @@ export default async function handler(
 		log.info({ method: "GET", query: req.query }, "Fetch trails history of wins");
 		try {
 			// Execute the database query to fetch season code information
+			// LEFT JOIN temp player info so temp players (not yet in leda_player_info,
+			// which the view sources names from) still get a name instead of a blank one
 			const result = await query<TrailsHistoryOfWins>(
-				'SELECT "ledaId", "fullName", "singlesPlace1", "singlesPlace2", "singlesPlace3", "singlesPlace4", "doublesPlace1", "doublesPlace2", "doublesPlace3", "doublesPlace4" FROM public.leda_reports_trails_history_of_wins'
+				`SELECT v."ledaId",
+						CASE WHEN tp."tempId" IS NOT NULL THEN
+							CONCAT_WS(', ', tp."lastName", TRIM(CONCAT_WS(' ', tp."firstName", tp."middleInitial")))
+						ELSE v."fullName" END as "fullName",
+						v."singlesPlace1", v."singlesPlace2", v."singlesPlace3", v."singlesPlace4",
+						v."doublesPlace1", v."doublesPlace2", v."doublesPlace3", v."doublesPlace4"
+				 FROM public.leda_reports_trails_history_of_wins v
+				 LEFT JOIN public.leda_temp_player_info tp ON v."ledaId" = tp."tempId"`
 			);
 			// Respond with the query result
 			res.status(200).json(result.rows);

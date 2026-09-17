@@ -46,16 +46,21 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import PlayerAddInformationForm from "@/components/forms/management/player-add-form";
+import LinkTempPlayerForm from "@/components/forms/management/link-temp-player-form";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export default function Page() {
 	const [activeTab, setActiveTab] = useState<"members" | "temp">("members");
 	const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+	const [linkDialogOpen, setLinkDialogOpen] = useState(false);
 	const [selectedTempPlayer, setSelectedTempPlayer] = useState<TempPlayer | null>(null);
+	const [hideInactivePlayers, setHideInactivePlayers] = useState(false);
 
 	// ── Members tab state ─────────────────────────────────────────────────────
 	const { page, setPage, pageSize, setPageSize, search, setSearch, sorting, setSorting } =
 		usePersistedDataTableState("datatable:/Portal/Management/Players");
-	const { data, isLoading } = usePlayersData(page, pageSize, search, sorting);
+	const { data, isLoading } = usePlayersData(page, pageSize, search, sorting, hideInactivePlayers);
 
 	// ── Temp players tab state ────────────────────────────────────────────────
 	const queryClient = useQueryClient();
@@ -95,6 +100,11 @@ export default function Page() {
 		setConvertDialogOpen(true);
 	};
 
+	const handleOpenLink = (player: TempPlayer) => {
+		setSelectedTempPlayer(player);
+		setLinkDialogOpen(true);
+	};
+
 	const tabClass = (tab: "members" | "temp") =>
 		`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
 			activeTab === tab
@@ -126,43 +136,60 @@ export default function Page() {
 
 			{/* Members tab */}
 			{activeTab === "members" && (
-				<ServerSideDataTable
-					columns={columns}
-					data={data?.data || []}
-					pageName="Players Page"
-					stateKey="datatable:/Portal/Management/Players"
-					queryKey={["players-datatable"]}
-					pageSize={pageSize}
-					onPageSizeChange={setPageSize}
-					addDialogConfig={{
-						form: "PlayerAddInformationForm",
-						title: "Add Player",
-						buttonName: "Add Player +",
-					}}
-					deleteDialogConfig={{
-						buttonName: "Delete Player",
-						title: "Delete Player",
-						apiEndpoint: playerRoute,
-					}}
-					editDialogConfig={{
-						form: "PlayerEditInformationForm",
-						title: "Edit Player",
-						buttonName: "Edit Player",
-					}}
-					viewLinkConfig={{
-						linkName: "View Player",
-						parentPage: "Players",
-					}}
-					defaultSort="ledaId"
-					sorting={sorting}
-					onSortingChange={setSorting}
-					isLoading={isLoading}
-					totalPages={data?.pagination.totalPages || 1}
-					currentPage={page}
-					onPageChange={setPage}
-					onSearchChange={setSearch}
-					searchValue={search}
-				/>
+				<>
+					<ServerSideDataTable
+						columns={columns}
+						data={data?.data || []}
+						pageName="Players Page"
+						stateKey="datatable:/Portal/Management/Players"
+						queryKey={["players-datatable"]}
+						pageSize={pageSize}
+						onPageSizeChange={setPageSize}
+						extraControls={
+							<div className="flex items-center gap-2">
+								<Checkbox
+									id="hideInactivePlayers"
+									checked={hideInactivePlayers}
+									onCheckedChange={(checked) => {
+										setHideInactivePlayers(checked === true);
+										setPage(1);
+									}}
+								/>
+								<Label htmlFor="hideInactivePlayers" className="cursor-pointer">
+									Hide inactive players
+								</Label>
+							</div>
+						}
+						addDialogConfig={{
+							form: "PlayerAddInformationForm",
+							title: "Add Player",
+							buttonName: "Add Player +",
+						}}
+						deleteDialogConfig={{
+							buttonName: "Delete Player",
+							title: "Delete Player",
+							apiEndpoint: playerRoute,
+						}}
+						editDialogConfig={{
+							form: "PlayerEditInformationForm",
+							title: "Edit Player",
+							buttonName: "Edit Player",
+						}}
+						viewLinkConfig={{
+							linkName: "View Player",
+							parentPage: "Players",
+						}}
+						defaultSort="ledaId"
+						sorting={sorting}
+						onSortingChange={setSorting}
+						isLoading={isLoading}
+						totalPages={data?.pagination.totalPages || 1}
+						currentPage={page}
+						onPageChange={setPage}
+						onSearchChange={setSearch}
+						searchValue={search}
+					/>
+				</>
 			)}
 
 			{/* Temporary Players tab */}
@@ -203,6 +230,14 @@ export default function Page() {
 													onClick={() => handleOpenConvert(player)}
 												>
 													Convert to Member
+												</Button>
+												<Button
+													variant="outline"
+													size="sm"
+													className="border-border hover:bg-muted text-foreground"
+													onClick={() => handleOpenLink(player)}
+												>
+													Link to Existing Player
 												</Button>
 												<AlertDialog>
 													<AlertDialogTrigger asChild>
@@ -264,6 +299,27 @@ export default function Page() {
 								queryClient.invalidateQueries({ queryKey: ["tempPlayers"] });
 							}}
 							tempConversionData={selectedTempPlayer}
+						/>
+					)}
+				</DialogContent>
+			</Dialog>
+
+			{/* Link temp player to existing member dialog */}
+			<Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+				<DialogContent className="bg-background">
+					<DialogHeader>
+						<DialogTitle>
+							Link Temp Player to Existing Player —{" "}
+							{selectedTempPlayer?.firstName} {selectedTempPlayer?.lastName}
+						</DialogTitle>
+					</DialogHeader>
+					{selectedTempPlayer && (
+						<LinkTempPlayerForm
+							tempPlayer={selectedTempPlayer}
+							onClose={() => {
+								setLinkDialogOpen(false);
+								setSelectedTempPlayer(null);
+							}}
 						/>
 					)}
 				</DialogContent>

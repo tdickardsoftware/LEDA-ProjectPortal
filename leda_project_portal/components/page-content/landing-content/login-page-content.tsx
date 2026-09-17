@@ -11,7 +11,9 @@
  *   - Invalidates any cached session in React Query.
  *   - Sets or clears the `mustResetPassword` cookie based on the user record.
  *   - Redirects to `/login/change-required` when a password reset is required,
- *     otherwise to `/Portal`.
+ *     otherwise to the `?redirect` target (falling back to `/Portal`) so
+ *     users bounced here by Nginx's auth-gated locations (e.g. Dozzle,
+ *     Grafana) land back on the page they originally requested.
  *
  * Generic error messages (defaulting to a password error) are used to avoid
  * revealing whether a given account exists.
@@ -27,8 +29,20 @@ import { Button } from "@/components/ui/button";
 import React, { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Spinner } from "@/components/ui/skeleton";
+
+/**
+ * Validates the `?redirect` query param so it can only point to a same-origin
+ * relative path (never an absolute URL or protocol-relative URL), preventing
+ * open-redirect abuse. Falls back to `/Portal` when absent or unsafe.
+ */
+function getSafeRedirectTarget(raw: string | null): string {
+  if (!raw) return "/Portal";
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("://")) return "/Portal";
+  return raw;
+}
 
 // Accepts either a valid email or a username (alphanumeric, 3-32 chars)
 const loginSchema = z.object({
@@ -45,6 +59,8 @@ const loginSchema = z.object({
 export default function LoginPageContent() {
 
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const redirectTarget = getSafeRedirectTarget(searchParams?.get("redirect") ?? null);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -93,7 +109,7 @@ export default function LoginPageContent() {
     try {
       if (isEmail) {
         await authClient.signIn.email(
-          { email: emailOrUsername, password, callbackURL: `/Portal` },
+          { email: emailOrUsername, password, callbackURL: redirectTarget },
           {
             onSuccess: async () => {
               // Ensure any previously cached session is replaced.
@@ -109,7 +125,7 @@ export default function LoginPageContent() {
                   document.cookie = `mustResetPassword=; Path=/; SameSite=Lax${secure}; Max-Age=0`;
                 }
               } catch { /* no-op */ }
-              window.location.href = mustReset ? "/login/change-required" : "/Portal";
+              window.location.href = mustReset ? "/login/change-required" : redirectTarget;
             },
             onError: (error: unknown) => {
               setIsLoading(false);
@@ -132,7 +148,7 @@ export default function LoginPageContent() {
         );
       } else {
         await authClient.signIn.username(
-          { username: emailOrUsername, password, callbackURL: `/Portal` },
+          { username: emailOrUsername, password, callbackURL: redirectTarget },
           {
             onSuccess: async () => {
               // Ensure any previously cached session is replaced.
@@ -148,7 +164,7 @@ export default function LoginPageContent() {
                   document.cookie = `mustResetPassword=; Path=/; SameSite=Lax${secure}; Max-Age=0`;
                 }
               } catch { /* no-op */ }
-              window.location.href = mustReset ? "/login/change-required" : "/Portal";
+              window.location.href = mustReset ? "/login/change-required" : redirectTarget;
             },
             onError: (error: unknown) => {
               setIsLoading(false);

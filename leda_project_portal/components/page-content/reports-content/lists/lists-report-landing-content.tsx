@@ -439,6 +439,7 @@ export default function ListsReportLandingContent() {
 					columns={captainsReportColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
+					refetchTrigger={pdfRegenKey}
 				/>
 			);
 		}
@@ -450,6 +451,7 @@ export default function ListsReportLandingContent() {
 					columns={electionListColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
+					refetchTrigger={pdfRegenKey}
 				/>
 			);
 		}
@@ -483,6 +485,7 @@ export default function ListsReportLandingContent() {
 										columns={membershipListColumnsFilterBySeason}
 										className="h-full"
 										onDataFetch={handleDataFetch}
+										refetchTrigger={pdfRegenKey}
 									/>
 								) : (
 									<div className="flex h-full items-center justify-center">
@@ -501,6 +504,7 @@ export default function ListsReportLandingContent() {
 									columns={membershipListColumnsFilterByJoinDate}
 									className="h-full"
 									onDataFetch={handleDataFetch}
+									refetchTrigger={pdfRegenKey}
 								/>
 							)}
 						</>
@@ -542,6 +546,7 @@ export default function ListsReportLandingContent() {
 								columns={placesListColumns}
 								className="h-full"
 								onDataFetch={handleDataFetch}
+								refetchTrigger={pdfRegenKey}
 							/>
 						) : (
 							<div className="flex h-full items-center justify-center">
@@ -560,6 +565,7 @@ export default function ListsReportLandingContent() {
 							columns={placesListColumns}
 							className="h-full"
 							onDataFetch={handleDataFetch}
+							refetchTrigger={pdfRegenKey}
 						/>
 					)}
 				</>
@@ -596,6 +602,7 @@ export default function ListsReportLandingContent() {
 										columns={teamsListColumns}
 										className="h-full"
 										onDataFetch={handleDataFetch}
+										refetchTrigger={pdfRegenKey}
 									/>
 								) : (
 									<div className="flex h-full items-center justify-center">
@@ -614,6 +621,7 @@ export default function ListsReportLandingContent() {
 									columns={teamsListColumns}
 									className="h-full"
 									onDataFetch={handleDataFetch}
+									refetchTrigger={pdfRegenKey}
 								/>
 							)}
 						</>
@@ -1428,6 +1436,7 @@ export default function ListsReportLandingContent() {
 							className="h-full"
 							onDataFetch={handleDataFetch}
 							mailingLabelsImported={mailingLabelsImported}
+							refetchTrigger={pdfRegenKey}
 							// Only use sortedMailingLabels when we have actual data to prevent circular dependency
 							{...(reportData.length > 0 ? { dataOverride: sortedMailingLabels as MailingList[] } : {})}
 						/>
