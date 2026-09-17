@@ -77,6 +77,11 @@ services:
     environment:
       - DOZZLE_LEVEL=info
       - DOZZLE_BASE=/monitoring/dozzle
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   # Loki: log aggregation backend
