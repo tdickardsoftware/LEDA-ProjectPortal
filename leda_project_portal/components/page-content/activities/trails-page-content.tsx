@@ -18,8 +18,8 @@ import { useEffect, useMemo, useState } from "react";
 import { format, getMonth, getYear, parse } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchTrailsDateData, fetchTrailsDates, fetchWithSession } from "@/lib/getData";
-import { trailsRoute } from "@/lib/apiRoutes";
-import { TrailsDateData } from "@/lib/definitions";
+import { trailsRoute, tempPlayerRoute } from "@/lib/apiRoutes";
+import { TrailsDateData, TempPlayer } from "@/lib/definitions";
 import SidenavPageLayout from "@/components/sidenav-page-layout";
 import DivisionTreeSidenav, { DivisionTreeDivision } from "@/components/division-tree-sidenav";
 import {
@@ -90,6 +90,21 @@ export default function TrailsPageContent() {
 			selectedDate ? fetchTrailsDateData(selectedDate) : Promise.resolve([]),
 		enabled: !!selectedDate,
 	});
+
+	// Fetch all temp players so staging (not-yet-saved) entries can be flagged as temp
+	const { data: allTempPlayers = [] } = useQuery<TempPlayer[]>({
+		queryKey: ["tempPlayers"],
+		queryFn: async () => {
+			const res = await fetchWithSession(tempPlayerRoute, { method: "GET" });
+			if (!res.ok) return [];
+			return res.json();
+		},
+		staleTime: 1000 * 60 * 5,
+	});
+	const tempIdSet = useMemo(
+		() => new Set(allTempPlayers.map((t) => t.tempId)),
+		[allTempPlayers]
+	);
 
 	// ── Derived data ─────────────────────────────────────────────────────────
 
@@ -373,6 +388,9 @@ export default function TrailsPageContent() {
 									<div className="flex justify-between items-center w-full">
 										<span className="text-left">
 											{item.ledaId} – {item.fullName}
+											{item.isTemp && (
+												<span className="ml-2 text-xs text-muted-foreground">(Temp)</span>
+											)}
 										</span>
 										<div className="flex items-center">
 											<AccordionTrigger />
@@ -487,6 +505,9 @@ export default function TrailsPageContent() {
 								<div className="flex justify-between items-center w-full">
 									<span>
 										{item.ledaId} – {item.fullName}
+										{tempIdSet.has(Number(item.ledaId)) && (
+											<span className="ml-2 text-xs text-muted-foreground">(Temp)</span>
+										)}
 									</span>
 									<div className="flex items-center">
 										<AccordionTrigger />

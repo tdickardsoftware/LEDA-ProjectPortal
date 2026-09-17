@@ -378,6 +378,7 @@ export default function CaptainsMeetingReportLandingContent() {
 					columns={folderLabelsColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
+					refetchTrigger={pdfRegenKey}
 				/>
 			);
 		}
@@ -389,6 +390,7 @@ export default function CaptainsMeetingReportLandingContent() {
 					columns={teamReportColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
+					refetchTrigger={pdfRegenKey}
 				/>
 			);
 		}

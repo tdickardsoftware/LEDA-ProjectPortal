@@ -46,12 +46,14 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import PlayerAddInformationForm from "@/components/forms/management/player-add-form";
+import LinkTempPlayerForm from "@/components/forms/management/link-temp-player-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
 export default function Page() {
 	const [activeTab, setActiveTab] = useState<"members" | "temp">("members");
 	const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+	const [linkDialogOpen, setLinkDialogOpen] = useState(false);
 	const [selectedTempPlayer, setSelectedTempPlayer] = useState<TempPlayer | null>(null);
 	const [hideInactivePlayers, setHideInactivePlayers] = useState(false);
 
@@ -96,6 +98,11 @@ export default function Page() {
 	const handleOpenConvert = (player: TempPlayer) => {
 		setSelectedTempPlayer(player);
 		setConvertDialogOpen(true);
+	};
+
+	const handleOpenLink = (player: TempPlayer) => {
+		setSelectedTempPlayer(player);
+		setLinkDialogOpen(true);
 	};
 
 	const tabClass = (tab: "members" | "temp") =>
@@ -224,6 +231,14 @@ export default function Page() {
 												>
 													Convert to Member
 												</Button>
+												<Button
+													variant="outline"
+													size="sm"
+													className="border-border hover:bg-muted text-foreground"
+													onClick={() => handleOpenLink(player)}
+												>
+													Link to Existing Player
+												</Button>
 												<AlertDialog>
 													<AlertDialogTrigger asChild>
 														<Button
@@ -284,6 +299,27 @@ export default function Page() {
 								queryClient.invalidateQueries({ queryKey: ["tempPlayers"] });
 							}}
 							tempConversionData={selectedTempPlayer}
+						/>
+					)}
+				</DialogContent>
+			</Dialog>
+
+			{/* Link temp player to existing member dialog */}
+			<Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+				<DialogContent className="bg-background">
+					<DialogHeader>
+						<DialogTitle>
+							Link Temp Player to Existing Player —{" "}
+							{selectedTempPlayer?.firstName} {selectedTempPlayer?.lastName}
+						</DialogTitle>
+					</DialogHeader>
+					{selectedTempPlayer && (
+						<LinkTempPlayerForm
+							tempPlayer={selectedTempPlayer}
+							onClose={() => {
+								setLinkDialogOpen(false);
+								setSelectedTempPlayer(null);
+							}}
 						/>
 					)}
 				</DialogContent>
