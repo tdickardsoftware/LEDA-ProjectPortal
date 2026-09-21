@@ -491,17 +491,23 @@ export default function WeeklyScoresheetsContent({
 
 	// Mutations — scoresheet save, player points, team points, mention history, and delete operations
 
+	// Autosave upserts are idempotent, so retry transient failures (e.g. a request
+	// timeout) instead of surfacing an error after a single hiccup.
+	const AUTOSAVE_RETRY = { retry: 2, retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 5000) };
+
 	const savePlayerPointsMutation = useMutation({
 		mutationFn: savePlayerPoints,
+		...AUTOSAVE_RETRY,
 	});
 
 	const saveGameInfoMutation = useMutation({
 		mutationFn: saveGameInfo,
+		...AUTOSAVE_RETRY,
 	});
 
 	// Legacy cumulative points mutations
-	const saveWeeklyTeamPointsMutation = useMutation({ mutationFn: saveWeeklyTeamPoints });
-	const saveWeeklyPlayerPointsMutation = useMutation({ mutationFn: saveWeeklyPlayerPoints });
+	const saveWeeklyTeamPointsMutation = useMutation({ mutationFn: saveWeeklyTeamPoints, ...AUTOSAVE_RETRY });
+	const saveWeeklyPlayerPointsMutation = useMutation({ mutationFn: saveWeeklyPlayerPoints, ...AUTOSAVE_RETRY });
 
 	const createMentionHistoryMutation = useMutation({
 		mutationFn: createMentionHistory,
@@ -549,6 +555,7 @@ export default function WeeklyScoresheetsContent({
 	// New V2 mutations for team baseline inserts
 	const saveTeamInfoMutation = useMutation({
 		mutationFn: saveTeamInfo,
+		...AUTOSAVE_RETRY,
 	});
 
 	// Removed legacy saveScoresheet; saveMatchup now persists directly to V2 tables
