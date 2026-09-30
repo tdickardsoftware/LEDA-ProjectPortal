@@ -100,7 +100,7 @@ interface LeaguePlayWeeklyScoresheetsReportProps {
 	reportDate?: string;
 }
 
-function groupByDivisionAndSubdivision(data: LeaguePlayWeeklyScoresheets[]) {
+export function groupByDivisionAndSubdivision(data: LeaguePlayWeeklyScoresheets[]) {
 	const map: Record<string, Record<string, LeaguePlayWeeklyScoresheets[]>> = {};
 	for (const row of data) {
 		const division = row.division || "Unknown";
@@ -113,7 +113,7 @@ function groupByDivisionAndSubdivision(data: LeaguePlayWeeklyScoresheets[]) {
 }
 
 // Natural sort function to handle division names with numbers
-function naturalSort(a: string, b: string): number {
+export function naturalSort(a: string, b: string): number {
 	const regex = /(\d+)|(\D+)/g;
 	const aParts = a.match(regex) || [];
 	const bParts = b.match(regex) || [];

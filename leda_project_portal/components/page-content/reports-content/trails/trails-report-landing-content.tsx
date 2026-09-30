@@ -38,6 +38,8 @@ import TrailsHistoryOfWinsReport from "./react-pdf/trails-history-of-wins-report
 import TrailsMembershipHistoryReport from "./react-pdf/trails-membership-history-report";
 import TrailsPointsListReport from "./react-pdf/trails-points-list-report";
 import TrailsSavePointsLetterReport from "./react-pdf/trails-save-points-letter-report";
+import DownloadHtmlButton from "@/components/ui/download-html-button";
+import { generateTrailsPointsListHtml } from "./trails-points-list-report-html";
 import { Label } from "@/components/ui/label";
 
 export default function TrailsReportLandingContent() {
@@ -94,6 +96,7 @@ export default function TrailsReportLandingContent() {
 
 		let document: JSX.Element;
 		let fileName: string;
+		let getHtml: (() => string) | undefined;
 
 		switch (selectedReport) {
 			case `${trailsRoute}/reports/historyOfWins`:
@@ -147,6 +150,7 @@ export default function TrailsReportLandingContent() {
 						data={reportData as TrailsPointsList[]}
 					/>
 				);
+				getHtml = () => generateTrailsPointsListHtml(reportData as TrailsPointsList[]);
 				fileName = `pointsList-${new Date()
 					.toLocaleDateString("en-US", {
 						timeZone: "America/New_York",
@@ -231,6 +235,9 @@ export default function TrailsReportLandingContent() {
 					</>
 				)}
 			</PDFDownloadLink>
+			{getHtml && (
+				<DownloadHtmlButton getHtml={getHtml} fileName={fileName.replace(/\.pdf$/, ".html")} />
+			)}
 			<button
 				type="button"
 				onClick={() => setPdfRegenKey((k) => k + 1)}
