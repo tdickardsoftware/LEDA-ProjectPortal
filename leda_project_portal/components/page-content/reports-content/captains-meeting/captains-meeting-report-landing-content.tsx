@@ -13,7 +13,7 @@
  */
 
 import { useState, useCallback, JSX } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
@@ -30,9 +30,12 @@ import { TeamReportTeamPlaceInfo } from "@/lib/definitions";
 import CaptainsMeetingTeamReport from "./react-pdf/captains-meeting-team-report";
 import CaptainsMeetingScheduleContent from "./captains-meeting-schedule-content";
 import CaptainsMeetingScheduleReport from "./react-pdf/captains-meeting-schedule-report";
+import { generateCaptainsMeetingScheduleHtml } from "./captains-meeting-schedule-report-html";
 import { DivisionsData, ScheduleData } from "@/lib/schedule";
 import { CaptainsMtgSchedulePlaceCaptainSeasonInfo } from "@/lib/definitions";
 import { seasonRoute } from "@/lib/apiRoutes";
+import { Button } from "@/components/ui/button";
+import DownloadHtmlButton from "@/components/ui/download-html-button";
 
 // Custom hook for season data
 const useSeasonData = (seasonCode: string) => {
@@ -106,6 +109,31 @@ export default function CaptainsMeetingReportLandingContent() {
 		setScheduleData(data);
 		setDataFetched(true);
 	}, []);
+
+	const queryClient = useQueryClient();
+
+	// Schedule data comes from queries in the schedule content component, so refetch them;
+	// the PDF remounts via the key bump and the HTML is built from the refreshed state on click.
+	const handleRegenerate = () => {
+		setPdfRegenKey((k) => k + 1);
+		if (selectedReport.includes("schedule")) {
+			for (const key of ["roster", "season", "schedule", "seasonInfo"]) {
+				queryClient.invalidateQueries({ queryKey: [key, seasonCode] });
+			}
+			queryClient.invalidateQueries({ queryKey: ["batchPlaceNames", "backup"] });
+		}
+	};
+
+	const getScheduleHtml = () =>
+		generateCaptainsMeetingScheduleHtml({
+			divisionsData: scheduleData!.divisionsData,
+			matchData: scheduleData!.matchData,
+			gameDates: scheduleData!.gameDates,
+			seasonCode,
+			placesData: scheduleData!.placesData,
+			seasonInfo: scheduleData!.seasonInfo,
+			detailedView: detailedScheduleView,
+		});
 
 	// Function to render PDF download button based on selection
 	const renderPDFDownload = () => {
@@ -286,14 +314,20 @@ export default function CaptainsMeetingReportLandingContent() {
 					</>
 				)}
 			</PDFDownloadLink>
-			<button
+			{selectedReport.includes("schedule") && scheduleData && (
+				<DownloadHtmlButton
+					getHtml={getScheduleHtml}
+					fileName={fileName.replace(/\.pdf$/, ".html")}
+				/>
+			)}
+			<Button
 				type="button"
-				onClick={() => setPdfRegenKey((k) => k + 1)}
-				title="Regenerate PDF"
+				onClick={handleRegenerate}
+				title="Regenerate"
 				className="inline-flex items-center justify-center rounded-md bg-secondary p-2 text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-colors"
 			>
 				<RotateCcw className="h-4 w-4" />
-			</button>
+			</Button>
 			</div>
 		);
 	};
