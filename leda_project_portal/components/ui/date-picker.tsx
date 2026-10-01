@@ -12,7 +12,7 @@
 "use client";
 import * as React from "react";
 import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getEasternTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -111,7 +111,7 @@ export function DatePickerCustom({
 					{...(enableMonthYearPicker && {
 						captionLayout: "dropdown" as const,
 						fromYear: 1900,
-						toYear: new Date().getFullYear(),
+						toYear: getEasternTime().getFullYear(),
 					})}
 					disabled={disabledDates.map(d => {
 						const normalized = new Date(d);

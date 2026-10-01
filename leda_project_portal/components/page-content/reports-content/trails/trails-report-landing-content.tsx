@@ -11,7 +11,7 @@
  * specifically on report selection functionality.
  */
 
-import { useState, useCallback, JSX } from "react";
+import { useState, useCallback, useDeferredValue, JSX } from "react";
 import { Separator } from "@/components/ui/separator";
 import { FolderTabMed } from "@/components/ui/folder-tab";
 import ReportSelector from "@/components/ui/report-selector";
@@ -41,6 +41,10 @@ import TrailsSavePointsLetterReport from "./react-pdf/trails-save-points-letter-
 import DownloadHtmlButton from "@/components/ui/download-html-button";
 import { generateTrailsPointsListHtml } from "./trails-points-list-report-html";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DatePickerCustom } from "@/components/ui/date-picker";
+import { format, subMonths } from "date-fns";
+import { getEasternTime } from "@/lib/utils";
 
 export default function TrailsReportLandingContent() {
 	// State declarations
@@ -49,6 +53,41 @@ export default function TrailsReportLandingContent() {
 	const [dataFetched, setDataFetched] = useState<boolean>(false);
 	// Bumped by the "Regenerate PDF" button to force a fresh PDF build.
 	const [pdfRegenKey, setPdfRegenKey] = useState<number>(0);
+	const [includeInactive, setIncludeInactive] = useState<boolean>(false);
+	// Lags behind the checkbox so it repaints immediately before the report switches.
+	const deferredIncludeInactive = useDeferredValue(includeInactive);
+	// Points list only: players whose last recorded trails date is before this are excluded.
+	const [minTrailsDate, setMinTrailsDate] = useState<Date>(() =>
+		subMonths(getEasternTime(), 3)
+	);
+	const deferredMinTrailsDate = useDeferredValue(minTrailsDate);
+	const isSwitching =
+		includeInactive !== deferredIncludeInactive ||
+		minTrailsDate !== deferredMinTrailsDate;
+	const isPointsList = selectedReport === `${trailsRoute}/reports/pointsList`;
+	// Passed to the report APIs; a new route changes the query key and refetches.
+	const reportApiRoute = (() => {
+		const params = new URLSearchParams();
+		if (deferredIncludeInactive) params.set("includeInactive", "true");
+		if (isPointsList) {
+			params.set("minTrailsDate", format(deferredMinTrailsDate, "yyyy-MM-dd"));
+		}
+		const qs = params.toString();
+		return qs ? `${selectedReport}?${qs}` : selectedReport;
+	})();
+
+	const handleIncludeInactiveChange = (checked: boolean) => {
+		setIncludeInactive(checked);
+		setReportData([]);
+		setDataFetched(false);
+	};
+
+	const handleMinTrailsDateChange = (date: Date | undefined) => {
+		if (!date) return;
+		setMinTrailsDate(date);
+		setReportData([]);
+		setDataFetched(false);
+	};
 
 	// Event handlers
 	const handleReportSelect = (value: string) => {
@@ -182,7 +221,7 @@ export default function TrailsReportLandingContent() {
 		return (
 			<div className="flex items-center gap-2">
 			<PDFDownloadLink
-				key={`${selectedReport}-${reportData.length}-${pdfRegenKey}`}
+				key={`${selectedReport}-${reportData.length}-${pdfRegenKey}-${deferredIncludeInactive}-${deferredMinTrailsDate.getTime()}`}
 				document={document}
 				fileName={fileName}
 				className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-foreground shadow hover:bg-muted focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 transition-colors"
@@ -265,11 +304,12 @@ export default function TrailsReportLandingContent() {
 		if (selectedReport === `${trailsRoute}/reports/historyOfWins`) {
 			return (
 				<ReportDisplay<TrailsHistoryOfWins>
-					apiRoute={selectedReport}
+					apiRoute={reportApiRoute}
 					columns={historyOfWinsColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
 					refetchTrigger={pdfRegenKey}
+					loadingOverride={isSwitching}
 				/>
 			);
 		}
@@ -277,11 +317,12 @@ export default function TrailsReportLandingContent() {
 		if (selectedReport === `${trailsRoute}/reports/eligibleForTrip`) {
 			return (
 				<ReportDisplay<TrailsTripEligible>
-					apiRoute={selectedReport}
+					apiRoute={reportApiRoute}
 					columns={tripEligibleColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
 					refetchTrigger={pdfRegenKey}
+					loadingOverride={isSwitching}
 				/>
 			);
 		}
@@ -289,11 +330,12 @@ export default function TrailsReportLandingContent() {
 		if (selectedReport === `${trailsRoute}/reports/membershipList`) {
 			return (
 				<ReportDisplay<TrailsMembershipHistory>
-					apiRoute={selectedReport}
+					apiRoute={reportApiRoute}
 					columns={membershipHistoryColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
 					refetchTrigger={pdfRegenKey}
+					loadingOverride={isSwitching}
 				/>
 			);
 		}
@@ -301,11 +343,12 @@ export default function TrailsReportLandingContent() {
 		if (selectedReport === `${trailsRoute}/reports/pointsList`) {
 			return (
 				<ReportDisplay<TrailsPointsList>
-					apiRoute={selectedReport}
+					apiRoute={reportApiRoute}
 					columns={pointsListColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
 					refetchTrigger={pdfRegenKey}
+					loadingOverride={isSwitching}
 				/>
 			);
 		}
@@ -313,11 +356,12 @@ export default function TrailsReportLandingContent() {
 		if (selectedReport === `${trailsRoute}/reports/savePointsLetter`) {
 			return (
 				<ReportDisplay<TrailsSavePointsLetter>
-					apiRoute={selectedReport}
+					apiRoute={reportApiRoute}
 					columns={savePointsLetterColumns}
 					className="h-full"
 					onDataFetch={handleDataFetch}
 					refetchTrigger={pdfRegenKey}
+					loadingOverride={isSwitching}
 				/>
 			);
 		}
@@ -354,6 +398,29 @@ export default function TrailsReportLandingContent() {
 								type="trails"
 							/>
 						</div>
+						<div className="flex items-end gap-2 pb-2">
+							<Checkbox
+								id="view-inactive-players"
+								checked={includeInactive}
+								onCheckedChange={(checked) =>
+									handleIncludeInactiveChange(checked === true)
+								}
+							/>
+							<Label htmlFor="view-inactive-players">
+								View Inactive Players?
+							</Label>
+						</div>
+						{isPointsList && (
+							<div className="flex flex-col gap-1">
+								<Label>Trails Points Recorded Since</Label>
+								<DatePickerCustom
+									showInput
+									dateSelected={minTrailsDate}
+									initialMonth={minTrailsDate}
+									onDateChange={handleMinTrailsDateChange}
+								/>
+							</div>
+						)}
 					</div>
 				</FolderTabMed>
 				{selectedReport && dataFetched && reportData.length > 0 && (

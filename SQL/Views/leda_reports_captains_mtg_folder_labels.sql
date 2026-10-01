@@ -27,16 +27,17 @@ CREATE OR REPLACE VIEW public.leda_reports_captains_mtg_folder_labels
                     subdivisions.value AS subdivision_value,
                     lri."seasonCode" AS season_code
                    FROM leda_roster_info lri,
-                    LATERAL json_each(lri."teamInformation") divisions(key, value),
-                    LATERAL json_each(divisions.value -> 'subdivisions'::text) subdivisions(key, value)) subdivisions_expanded,
-            LATERAL json_each(subdivisions_expanded.subdivision_value) teams(key, value)) teams_final
+                    LATERAL jsonb_each(lri."teamInformation") divisions(key, value),
+                    LATERAL jsonb_each(divisions.value -> 'subdivisions'::text) subdivisions(key, value)) subdivisions_expanded,
+            LATERAL jsonb_each(subdivisions_expanded.subdivision_value) teams(key, value)) teams_final
      LEFT JOIN leda_place_info lpi ON ((teams_final.team_info ->> 'placeId'::text)::integer) = lpi."ledaId"
      LEFT JOIN leda_team_info lti ON ((teams_final.team_info ->> 'teamId'::text)::integer) = lti."ledaId"
      LEFT JOIN LATERAL ( SELECT captain_members.value
-           FROM json_each(lti."memberIdList") captain_members(key, value)
+           FROM jsonb_each(lti."memberIdList") captain_members(key, value)
           WHERE ((captain_members.value ->> 'isCaptain'::text)::boolean) = true
          LIMIT 1) captain_info ON true
      LEFT JOIN leda_player_info cp ON COALESCE((captain_info.value ->> 'ledaId'::text)::integer, 0) = cp."ledaId";
 
 ALTER TABLE public.leda_reports_captains_mtg_folder_labels
     OWNER TO admin;
+

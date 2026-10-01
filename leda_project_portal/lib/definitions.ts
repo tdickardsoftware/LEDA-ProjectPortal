@@ -438,6 +438,7 @@ export type TrailsHistoryOfWins = {
 	doublesPlace2: number;
 	doublesPlace3: number;
 	doublesPlace4: number;
+	inactiveDate: Date | null;
 }
 //
 // Define type to identify the shape of our data from postgres for a trails history of wins
@@ -447,6 +448,7 @@ export type TrailsTripEligible = {
 	fullName: string;
 	addressFull: string;
 	totalpoints: number;
+	inactiveDate: Date | null;
 }
 //
 // Define type to identify the shape of our data from postgres for a trails membership history
@@ -454,6 +456,7 @@ export type TrailsTripEligible = {
 export type TrailsMembershipHistory = {
 	ledaId: number;
 	fullName: string;
+	inactiveDate: Date | null;
 }
 //
 // Define type to identify the shape of our data from postgres for a trails points list
@@ -466,6 +469,7 @@ export type TrailsPointsList = {
 	trailsDate: Date;
 	fullname: string;
 	paidDues: boolean;
+	inactiveDate: Date | null;
 }
 //
 // Define type to identify the shape of our data from postgres for a trails save points letter
@@ -477,6 +481,7 @@ export type TrailsSavePointsLetter = {
 	addressSecondLine: string;
 	lastTrailsDate: Date;
 	totalpoints: number;
+	inactiveDate: Date | null;
 };
 //
 // Define type to identify the shape of our data from postgres for the folder label report
