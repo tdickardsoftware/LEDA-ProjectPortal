@@ -19,8 +19,7 @@ CREATE OR REPLACE VIEW public.leda_reports_lists_member_list
     lmi."establishedDate",
     lmi."lifetimeMember",
     lmi."badStanding",
-    regexp_replace(subs.subdivision, '[^0-9]'::text, ''::text, 'g'::text) AS subdivision,
-    lmi."inactiveDate"
+    regexp_replace(subs.subdivision, '[^0-9]'::text, ''::text, 'g'::text) AS subdivision
    FROM leda_roster_info r
      LEFT JOIN LATERAL jsonb_each(r."teamInformation") divs(division, divdata) ON true
      LEFT JOIN LATERAL jsonb_each(divs.divdata -> 'subdivisions'::text) subs(subdivision, subdata) ON true
