@@ -41,12 +41,15 @@ CREATE OR REPLACE VIEW public.leda_reports_trails_points_list
     r."singlesPlace",
     r."doublesPlace",
     concat(p."lastName", ', ', p."firstName", ' ', COALESCE(p."middleInitial", ''::character varying)) AS fullname,
-    COALESCE(pp."paidDues", false) AS "paidDues"
+    COALESCE(pp."paidDues", false) AS "paidDues",
+    lmi."inactiveDate"
    FROM ranked_records r
      LEFT JOIN leda_player_info p ON r."ledaId" = p."ledaId"
+     LEFT JOIN leda_membership_info lmi ON r."ledaId" = lmi."ledaId"
      LEFT JOIN player_payments pp ON r."ledaId" = pp."ledaId"
   WHERE r.rn = 1
   ORDER BY r."ledaId";
 
 ALTER TABLE public.leda_reports_trails_points_list
     OWNER TO admin;
+

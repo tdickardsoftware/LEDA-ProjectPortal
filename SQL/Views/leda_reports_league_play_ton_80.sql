@@ -24,7 +24,7 @@ CREATE OR REPLACE VIEW public.leda_reports_league_play_ton_80
           GROUP BY pmh."ledaId", pmh."teamId", pmh."seasonCode", pmh."weekNum"
         )
  SELECT wc."ledaId",
-    concat(COALESCE(lpi."lastName", ''::text), ', ', COALESCE(lpi."firstName", ''::text), ' ', COALESCE(lpi."middleInitial", ''::character varying)) AS "fullName",
+    lpi."fullName",
     wc."teamId",
     wc."seasonCode",
     wc."weekNum",
