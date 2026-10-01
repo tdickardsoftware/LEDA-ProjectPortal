@@ -24,9 +24,13 @@ export default async function handler(
 				`SELECT v."ledaId",
 						CASE WHEN tp."tempId" IS NOT NULL THEN
 							CONCAT_WS(', ', tp."lastName", TRIM(CONCAT_WS(' ', tp."firstName", tp."middleInitial")))
-						ELSE v."fullName" END as "fullName"
+						ELSE v."fullName" END as "fullName",
+						v."inactiveDate"
 				 FROM public.leda_reports_trails_member_history v
-				 LEFT JOIN public.leda_temp_player_info tp ON v."ledaId" = tp."tempId"`
+				 LEFT JOIN public.leda_temp_player_info tp ON v."ledaId" = tp."tempId"
+				 WHERE $1::boolean OR v."inactiveDate" IS NULL
+						OR v."inactiveDate" >= (NOW() AT TIME ZONE 'America/New_York')::date`,
+				[req.query.includeInactive === "true"]
 			);
 			// Respond with the query result
 			res.status(200).json(result.rows);
