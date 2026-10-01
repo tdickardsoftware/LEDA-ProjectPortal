@@ -8,14 +8,15 @@ CREATE TABLE IF NOT EXISTS maint.leda_maint_place_payment_history
     "ledaId" bigint NOT NULL,
     type text COLLATE pg_catalog."default" NOT NULL,
     "paymentType" text COLLATE pg_catalog."default" NOT NULL,
-    amount numeric(2,12) NOT NULL,
+    amount money NOT NULL,
     "seasonCode" text COLLATE pg_catalog."default" NOT NULL,
     comp boolean NOT NULL DEFAULT false,
     notes text COLLATE pg_catalog."default",
     "paidOff" boolean NOT NULL DEFAULT false,
     date date NOT NULL DEFAULT CURRENT_DATE,
     "paymentNbr" bigint NOT NULL DEFAULT nextval('maint.leda_maint_payment_nbr_seq'::regclass),
-    CONSTRAINT leda_maint_place_payment_history_pkey PRIMARY KEY (id)
+    CONSTRAINT leda_maint_place_payment_history_pkey PRIMARY KEY (id),
+    CONSTRAINT "leda_maint_place_payment_history_paymentNbr_key" UNIQUE ("paymentNbr")
 )
 
 TABLESPACE pg_default;
