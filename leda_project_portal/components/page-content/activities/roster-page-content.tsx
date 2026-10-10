@@ -29,7 +29,7 @@ import {
 import DivisionAddForm from "@/components/forms/activities/division-add-form";
 
 import TeamAddForm from "@/components/forms/activities/team-add-form";
-import { X, Pencil, GripVertical, TriangleAlert, CheckCircle2, AlertTriangle } from "lucide-react";
+import { X, Pencil, GripVertical } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -49,7 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { rosterRoute, scheduleRoute, seasonRoute } from "@/lib/apiRoutes";
-import { generateSchedule, type GeneratorOptions, type GenerationPreview } from "@/lib/scheduleGenerator";
+import GenerateScheduleDialog from "@/components/generate-schedule-dialog";
 import { type DivisionsData } from "@/lib/schedule";
 import CopyRosterForm from "@/components/forms/activities/copy-roster-form";
 import { Spinner } from "@/components/ui/skeleton";
@@ -364,8 +364,7 @@ export default function RostersContent({
 	);
 	const [isRosterInitialized, setIsRosterInitialized] = useState(false);
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-	const [generateScheduleAlertOpen, setGenerateScheduleAlertOpen] = useState(false);
-	const [schedulePreview, setSchedulePreview] = useState<GenerationPreview[]>([]);
+	const [generateOpen, setGenerateOpen] = useState(false);
 	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Setup QueryClient
@@ -520,58 +519,29 @@ export default function RostersContent({
 		}
 	});
 
-	// Generates a full round-robin schedule from the current roster and saves it,
-	// overwriting any existing schedule for the season.
-	const generateScheduleMutation = useMutation({
-		mutationFn: async () => {
-			if (!seasonCode || !seasonData?.dates) throw new Error('No season dates available');
+	// Persist the latest roster first so the generated schedule is built from what was just saved.
+	const handleSaveAndGenerate = async () => {
+		if (!seasonCode) return;
+		if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		try {
+			if (hasChanges) await updateRosterMutation.mutateAsync({ seasonCode, data: divisionsData });
+			setGenerateOpen(true);
+		} catch {
+			// updateRosterMutation.onError already reports the failure
+		}
+	};
 
-			// Build sorted game date entries expected by the schedule generator
-			const gameDateEntries: [string, string][] = Object.entries(seasonData.dates as Record<string, string>)
-				.map(([key, date]) => {
-					const num = parseInt(key.match(/\d+/)?.[0] ?? "1", 10);
-					return { weekKey: `week${num}` as string, date, num };
-				})
-				.sort((a, b) => a.num - b.num)
-				.map(({ weekKey, date }) => [weekKey, date] as [string, string]);
+	// Saves a schedule produced by GenerateScheduleDialog (which has already wiped the season data).
+	const handleGenerateSchedule = async (generatedSchedule: object) => {
+		const response = await fetchWithSession(scheduleRoute, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ seasonCode, scheduleData: generatedSchedule }),
+		});
+		if (!response.ok) throw new Error("Failed to save generated schedule");
+		toast.success("Schedule generated and saved successfully");
+	};
 
-			const options: GeneratorOptions = {
-				defaultMatchTime: "19:30",
-				skipFilledWeeks: false,
-				sequentialPairing: true,
-			};
-
-// RosterData is structurally identical to DivisionsData (teamId, placeId, teamName)
-					const { data: generatedSchedule } = generateSchedule(
-						{ type: "all" },
-						divisionsData as unknown as DivisionsData,
-				gameDateEntries,
-				{},
-				options
-			);
-
-			const response = await fetchWithSession(scheduleRoute, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					seasonCode,
-					scheduleData: generatedSchedule,
-				}),
-			});
-
-			if (!response.ok) throw new Error('Failed to save generated schedule');
-		},
-		onSuccess: () => {
-			toast.success("Schedule generated and saved successfully");
-			setGenerateScheduleAlertOpen(false);
-		},
-		onError: (error) => {
-			console.error("Failed to generate schedule:", error);
-			toast.error("Failed to generate schedule");
-			setGenerateScheduleAlertOpen(false);
-		},
-	});
-	
 	// Use renderSeasonCode if provided
 	useEffect(() => {
 		if (renderSeasonCode && !seasonCode) {
@@ -1438,45 +1408,7 @@ export default function RostersContent({
 		isDataLoading ||
 		updateRosterMutation.isPending ||
 		saveRosterMutation.isPending ||
-		deleteRosterMutation.isPending ||
-		generateScheduleMutation.isPending;
-
-	// The generate-schedule button is blocked once the season's first game date has passed.
-	// Uses the server-supplied timestamp so a skewed client clock cannot bypass the guard.
-	const seasonHasStarted = useMemo(() => {
-		if (!seasonData) return false;
-
-		// `dates` may arrive as a parsed JS object or, in some environments, as a raw
-		// JSON string. Handle both so the check is never silently skipped.
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const rawDates = (seasonData as any).dates;
-		if (!rawDates) return false;
-
-		let datesMap: Record<string, string>;
-		if (typeof rawDates === 'string') {
-			try { datesMap = JSON.parse(rawDates); } catch { return false; }
-		} else {
-			datesMap = rawDates as Record<string, string>;
-		}
-
-		// Dates are stored as "M/D/YYYY" strings; new Date() parses that format correctly.
-		const timestamps = Object.values(datesMap)
-			.filter(Boolean)
-			.map(d => new Date(d).getTime())
-			.filter(t => !isNaN(t));
-
-		if (timestamps.length === 0) return false;
-
-		const firstGameMs = new Date(Math.min(...timestamps)).setHours(0, 0, 0, 0);
-
-		// Use the server-supplied time (prevents client-clock bypass). Zero out time
-		// so we compare calendar days only.
-		const nowMs = seasonData.serverTime
-			? new Date(seasonData.serverTime).setHours(0, 0, 0, 0)
-			: new Date().setHours(0, 0, 0, 0);
-
-		return nowMs >= firstGameMs;
-	}, [seasonData]);
+		deleteRosterMutation.isPending;
 
 	const divisionTreeItems = useMemo<DivisionTreeDivision[]>(() => {
 		return Object.keys(divisionsData).map((divisionName) => ({
@@ -1561,43 +1493,15 @@ export default function RostersContent({
 									<Button
 										variant="outline"
 										className="hover:bg-muted border-border text-foreground"
-										disabled={isLoading || seasonHasStarted || !seasonData?.dates}
+										disabled={isLoading || !seasonData?.dates}
 										title={
 											isLoading ? "Loading…" :
-											seasonHasStarted ? "Cannot generate a schedule after the season has started" :
 											!seasonData?.dates ? "No game dates are configured for this season" :
 											""
 										}
-										onClick={() => {
-											console.log("[Roster] Generate Schedule clicked", { isLoading, seasonHasStarted, hasDates: !!seasonData?.dates });
-											if (seasonData?.dates) {
-												try {
-													const entries: [string, string][] = Object.entries(
-														seasonData.dates as Record<string, string>
-													)
-														.map(([key, date]) => {
-															const num = parseInt(key.match(/\d+/)?.[0] ?? "1", 10);
-															return { weekKey: `week${num}` as string, date, num };
-														})
-														.sort((a, b) => a.num - b.num)
-														.map(({ weekKey, date }) => [weekKey, date] as [string, string]);
-													const { preview: p } = generateSchedule(
-														{ type: "all" },
-														divisionsData as unknown as DivisionsData,
-														entries,
-														{},
-														{ defaultMatchTime: "19:30", skipFilledWeeks: false, sequentialPairing: true }
-													);
-													setSchedulePreview(p);
-												} catch (err) {
-													console.error("[Roster] Failed to compute schedule preview:", err);
-													setSchedulePreview([]);
-												}
-											}
-											setGenerateScheduleAlertOpen(true);
-										}}
+										onClick={handleSaveAndGenerate}
 									>
-										Complete Roster &amp; Generate Schedule
+										Save Roster &amp; Generate Schedule
 									</Button>
 								</>
 							)}
@@ -1651,97 +1555,14 @@ export default function RostersContent({
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-			<AlertDialog open={generateScheduleAlertOpen} onOpenChange={setGenerateScheduleAlertOpen}>
-				<AlertDialogContent className="bg-background text-foreground sm:max-w-2xl">
-					<AlertDialogHeader>
-						<AlertDialogTitle>Complete Roster &amp; Generate Schedule</AlertDialogTitle>
-						<AlertDialogDescription>
-							This will generate a complete round-robin schedule for every subdivision using the current roster. All match times will be set to 7:30 PM. Review the preview below before confirming.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-
-					{/* Schedule preview table */}
-					{schedulePreview.length > 0 && (
-						<div className="space-y-2 my-2">
-							<p className="text-sm font-medium">Preview</p>
-							<div className="rounded-md border border-border overflow-hidden">
-								<table className="w-full text-sm">
-									<thead>
-										<tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
-											<th className="text-left px-3 py-2 font-medium">Division</th>
-											<th className="text-left px-3 py-2 font-medium">Subdivision</th>
-											<th className="text-center px-3 py-2 font-medium">Teams</th>
-											<th className="text-center px-3 py-2 font-medium">Rounds / Cycle</th>
-											<th className="text-center px-3 py-2 font-medium">Weeks</th>
-											<th className="text-center px-3 py-2 font-medium">Status</th>
-										</tr>
-									</thead>
-									<tbody>
-										{schedulePreview.map((p, i) => (
-											<tr key={i} className="border-t border-border hover:bg-muted/30">
-												<td className="px-3 py-2">{p.division}</td>
-												<td className="px-3 py-2">{p.subdivision}</td>
-												<td className="px-3 py-2 text-center">{p.teamCount}</td>
-												<td className="px-3 py-2 text-center">{p.roundsPerCycle}</td>
-												<td className="px-3 py-2 text-center">{p.weeksAvailable}</td>
-												<td className="px-3 py-2 text-center">
-													{p.teamCount < 2 ? (
-														<span className="text-xs text-muted-foreground" title="Need at least 2 teams">—</span>
-													) : p.warning ? (
-														<span title={p.warning} className="inline-flex">
-															<TriangleAlert className="h-4 w-4 text-yellow-500 mx-auto" />
-														</span>
-													) : (
-														<CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
-													)}
-												</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
-							</div>
-
-							{/* Per-subdivision warnings */}
-							{schedulePreview.some((p) => !!p.warning) && (
-								<div className="space-y-1">
-									{schedulePreview.filter((p) => p.warning).map((p, i) => (
-										<p key={i} className="text-xs text-yellow-600 dark:text-yellow-400 flex items-start gap-1">
-											<TriangleAlert className="h-3 w-3 mt-0.5 shrink-0" />
-											<span>
-												<span className="font-medium">{p.division} › {p.subdivision}:</span>{" "}{p.warning}
-											</span>
-										</p>
-									))}
-								</div>
-							)}
-
-							<p className="text-xs text-muted-foreground">
-								Approximately{" "}
-								<span className="font-medium text-foreground">
-									{schedulePreview.reduce((sum, p) => sum + p.weeksAvailable * Math.floor(p.teamCount / 2), 0)}
-								</span>{" "}matchups will be created.
-							</p>
-						</div>
-					)}
-
-					{/* Overwrite warning */}
-					<div className="flex gap-2 rounded-md border border-yellow-500 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
-						<AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-						<span>Any existing schedule for this season will be completely replaced. This action cannot be undone.</span>
-					</div>
-
-					<AlertDialogFooter>
-						<Button onClick={() => setGenerateScheduleAlertOpen(false)} disabled={generateScheduleMutation.isPending}>Cancel</Button>
-						<Button
-							onClick={() => generateScheduleMutation.mutate()}
-							variant="destructive"
-							disabled={generateScheduleMutation.isPending}
-						>
-							{generateScheduleMutation.isPending ? "Generating..." : "Generate Schedule"}
-						</Button>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+			<GenerateScheduleDialog
+				open={generateOpen}
+				onOpenChange={setGenerateOpen}
+				divisionsData={divisionsData as unknown as DivisionsData}
+				gameDates={(seasonData?.dates ?? {}) as Record<string, string>}
+				seasonCode={seasonCode}
+				onGenerate={handleGenerateSchedule}
+			/>
 			{/* Edit Team Dialog */}
 			<Dialog open={editTeamOpen} onOpenChange={(open) => { setEditTeamOpen(open); if (!open) setTeamToEdit(null); }}>
 				<DialogContent className="bg-background max-w-full w-fit max-h-full h-fit overflow-auto">

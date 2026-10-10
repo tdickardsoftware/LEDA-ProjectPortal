@@ -3,10 +3,10 @@
 /**
  * GenerateScheduleDialog
  *
- * Allows league administrators to auto-generate a round-robin schedule for:
- *  - The currently selected subdivision
- *  - An entire division (all of its subdivisions)
- *  - All divisions at once
+ * Auto-generates a round-robin schedule for every subdivision in the season.
+ *
+ * Generating wipes all existing season data (schedule, scoresheets, points,
+ * mentions, penalties, payouts) after a window.confirm prompt.
  *
  * Every subdivision's matchups are always confined to that subdivision —
  * teams never receive opponents from outside their own subdivision.
@@ -14,8 +14,9 @@
  * Uses the circle-method round-robin algorithm from lib/scheduleGenerator.ts.
  */
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Wand2, AlertTriangle, CheckCircle2, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -26,65 +27,54 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useQuery } from "@tanstack/react-query";
-import type { DivisionsData, ScheduleData, ScheduleApiResponse } from "@/lib/schedule";
+import type { DivisionsData, ScheduleData } from "@/lib/schedule";
 import {
 	generateSchedule,
 	type GenerateScope,
 	type GeneratorOptions,
 	type GenerationPreview,
 } from "@/lib/scheduleGenerator";
-import { scheduleRoute } from "@/lib/apiRoutes";
+import { wipeSeasonData } from "@/lib/getData";
 
-type ScopeType = "subdivision" | "division" | "all";
+const ALL_DIVISIONS: GenerateScope = { type: "all" };
 
 interface GenerateScheduleDialogProps {
 	divisionsData: DivisionsData;
 	gameDates: Record<string, string>;
-	currentSubdivision: { divisionName: string; subdivisionName: string } | null;
 	seasonCode: string | null;
 	disabled?: boolean;
-	onGenerate: (data: ScheduleData) => void;
+	onGenerate: (data: ScheduleData) => void | Promise<void>;
+	/** Controlled mode: the caller opens/closes the dialog and no trigger button is rendered. */
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+	/** When set, dismissing the dialog without generating asks the user to confirm with this message. */
+	closeWarning?: string;
 }
 
 export default function GenerateScheduleDialog({
 	divisionsData,
 	gameDates,
-	currentSubdivision,
 	seasonCode,
 	disabled = false,
 	onGenerate,
+	open: openProp,
+	onOpenChange,
+	closeWarning,
 }: GenerateScheduleDialogProps) {
-	const [open, setOpen] = useState(false);
-	const [scopeType, setScopeType] = useState<ScopeType>("all");
-	const [selectedDivision, setSelectedDivision] = useState<string>("");
+	const [innerOpen, setInnerOpen] = useState(false);
+	const controlled = openProp !== undefined;
+	const open = controlled ? openProp : innerOpen;
+	const setOpen = controlled ? (v: boolean) => onOpenChange?.(v) : setInnerOpen;
 	const [matchTime, setMatchTime] = useState("19:30");
-	const [skipFilled, setSkipFilled] = useState(false);
 	const [useDifferentLayout, setUseDifferentLayout] = useState(false);
 	const [variationSeed, setVariationSeed] = useState(1);
 	const [useSequentialPairing, setUseSequentialPairing] = useState(true);
 	const [isGenerating, setIsGenerating] = useState(false);
 
 	const divisionNames = useMemo(() => Object.keys(divisionsData), [divisionsData]);
-
-	// Subdivisions available under the currently selected division
-	const subdivisionNames = useMemo(
-		() =>
-			selectedDivision
-				? Object.keys(divisionsData[selectedDivision]?.subdivisions ?? {})
-				: [],
-		[divisionsData, selectedDivision]
-	);
 
 	// Sorted game date entries: [weekKey, dateString][] ascending by week number
 	const gameDateEntries = useMemo<[string, string][]>(
@@ -99,54 +89,20 @@ export default function GenerateScheduleDialog({
 		[gameDates]
 	);
 
-	// Fetch existing schedule data when the "skip filled weeks" option is enabled.
-	// This lets the generator leave already-scheduled weeks untouched.
-	const { data: existingScheduleData, isLoading: isLoadingExisting } =
-		useQuery<ScheduleApiResponse>({
-			queryKey: ["schedule", seasonCode],
-			queryFn: async () => {
-				const res = await fetch(
-					`${scheduleRoute}?seasonCode=${encodeURIComponent(seasonCode ?? "")}`
-				);
-				if (res.status === 404) return { scheduleData: {} };
-				if (!res.ok) throw new Error("Failed to fetch existing schedule");
-				return res.json();
-			},
-			enabled: open && !!seasonCode && skipFilled,
-			staleTime: 30_000,
-		});
-
-	const existingData: ScheduleData = existingScheduleData?.scheduleData ?? {};
-
 	const generatorOptions = useMemo<GeneratorOptions>(() => ({
 		defaultMatchTime: matchTime,
-		skipFilledWeeks: skipFilled,
+		skipFilledWeeks: false,
 		rotationOffset: useDifferentLayout ? variationSeed : 0,
 		shuffleSeed: useDifferentLayout ? variationSeed : undefined,
 		sequentialPairing: useSequentialPairing || undefined,
-	}), [matchTime, skipFilled, useDifferentLayout, variationSeed, useSequentialPairing]);
+	}), [matchTime, useDifferentLayout, variationSeed, useSequentialPairing]);
 
-	// Resolved scope object consumed by the generator
-	const scope = useMemo<GenerateScope>(() => {
-		if (scopeType === "subdivision" && currentSubdivision) {
-			return {
-				type: "subdivision",
-				division: currentSubdivision.divisionName,
-				subdivision: currentSubdivision.subdivisionName,
-			};
-		}
-		if (scopeType === "division" && selectedDivision) {
-			return { type: "division", division: selectedDivision };
-		}
-		return { type: "all" };
-	}, [scopeType, currentSubdivision, selectedDivision]);
-
-	// Live preview — recalculates whenever scope or settings change
+	// Live preview — recalculates whenever settings change
 	const preview = useMemo<GenerationPreview[]>(() => {
 		if (!divisionNames.length || !gameDateEntries.length) return [];
-		const { preview } = generateSchedule(scope, divisionsData, gameDateEntries, existingData, generatorOptions);
+		const { preview } = generateSchedule(ALL_DIVISIONS, divisionsData, gameDateEntries, {}, generatorOptions);
 		return preview;
-	}, [scope, divisionsData, gameDateEntries, existingData, generatorOptions, divisionNames.length]);
+	}, [divisionsData, gameDateEntries, generatorOptions, divisionNames.length]);
 
 	// Rough total matchup count (excludes BYE entries)
 	const totalMatchups = useMemo(
@@ -161,71 +117,80 @@ export default function GenerateScheduleDialog({
 
 	const hasWarnings = preview.some((p) => !!p.warning);
 	const canGenerate =
-		!isGenerating && preview.length > 0 && preview.some((p) => p.teamCount >= 2);
+		!isGenerating && !!seasonCode && preview.length > 0 && preview.some((p) => p.teamCount >= 2);
 
 	const handleGenerate = useCallback(async () => {
+		if (!seasonCode) return;
+		if (
+			!window.confirm(
+				`Generating the schedule will permanently delete ALL existing data for season ${seasonCode} (schedule, scoresheets, points, mentions, penalties and payouts). The schedule will then be regenerated from the roster. This cannot be undone. Continue?`
+			)
+		) {
+			return;
+		}
 		setIsGenerating(true);
 		try {
+			await wipeSeasonData(seasonCode);
 			const { data } = generateSchedule(
-				scope,
+				ALL_DIVISIONS,
 				divisionsData,
 				gameDateEntries,
-				existingData,
+				{},
 				generatorOptions
 			);
-			console.log("[Schedule] Generated draft data", {
-				scope,
-				options: generatorOptions,
-				data,
-			});
-			onGenerate(data);
+			await onGenerate(data);
 			setOpen(false);
-		} catch {
-			// generation error is surfaced via the save-status indicator
+		} catch (error) {
+			console.error("Failed to generate schedule:", error);
+			toast.error("Failed to generate schedule");
 		} finally {
 			setIsGenerating(false);
 		}
-	}, [scope, divisionsData, gameDateEntries, existingData, generatorOptions, onGenerate]);
+	}, [seasonCode, divisionsData, gameDateEntries, generatorOptions, onGenerate]);
 
 	const handleTryAnotherLayout = useCallback(() => {
 		setUseDifferentLayout(true);
 		setVariationSeed((current) => current + 1);
 	}, []);
 
-	// When the dialog opens, synchronise state with the current page selection
-	const handleOpenChange = useCallback(
-		(val: boolean) => {
-			if (val) {
-				const defaultScope: ScopeType = currentSubdivision
-					? "subdivision"
-					: "all";
-				setScopeType(defaultScope);
-				setSelectedDivision(
-					currentSubdivision?.divisionName ?? divisionNames[0] ?? ""
-				);
-				setMatchTime("19:30");
-				setSkipFilled(false);
-				setUseDifferentLayout(false);
-				setVariationSeed(1);
-				setUseSequentialPairing(true);
-			}
-			setOpen(val);
-		},
-		[currentSubdivision, divisionNames]
-	);
+	// Reset settings each time the dialog opens
+	useEffect(() => {
+		if (open) {
+			setMatchTime("19:30");
+			setUseDifferentLayout(false);
+			setVariationSeed(1);
+			setUseSequentialPairing(true);
+		}
+	}, [open]);
+
+	// Dismissals (Cancel, Esc, click outside) go through the optional close warning
+	const handleOpenChange = (val: boolean) => {
+		if (!val && closeWarning && !window.confirm(closeWarning)) return;
+		setOpen(val);
+	};
+
+	// Browser-level warning for reloads/tab closes while the dialog is pending
+	useEffect(() => {
+		if (!open || !closeWarning || isGenerating) return;
+		const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+		window.addEventListener("beforeunload", warn);
+		return () => window.removeEventListener("beforeunload", warn);
+	}, [open, closeWarning, isGenerating]);
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger asChild>
-				<Button
-					variant="outline"
-					className="hover:bg-muted border-border text-foreground"
-					disabled={disabled}
-				>
-					<Wand2 className="mr-2 h-4 w-4" />
-					Generate Schedule
-				</Button>
-			</DialogTrigger>
+			{!controlled && (
+				<DialogTrigger asChild>
+					<Button
+						variant="outline"
+						className="hover:bg-muted border-border text-foreground"
+						disabled={disabled}
+					>
+						<Wand2 className="mr-2 h-4 w-4" />
+						Generate Schedule
+					</Button>
+				</DialogTrigger>
+			)}
 
 			<DialogContent className="bg-background sm:max-w-2xl">
 				<DialogHeader>
@@ -238,85 +203,6 @@ export default function GenerateScheduleDialog({
 				</DialogHeader>
 
 				<div className="space-y-5 pt-1">
-					{/* ── Scope ─────────────────────────────────────────────── */}
-					<div className="space-y-2">
-						<Label className="text-sm font-medium">Generate for</Label>
-						<div className="flex flex-wrap gap-2">
-							<Button
-								size="sm"
-								variant={scopeType === "subdivision" ? "default" : "outline"}
-								disabled={!currentSubdivision}
-								onClick={() => setScopeType("subdivision")}
-								className={
-									scopeType !== "subdivision"
-										? "border-border text-foreground hover:bg-muted"
-										: ""
-								}
-							>
-								Current Subdivision
-							</Button>
-							<Button
-								size="sm"
-								variant={scopeType === "division" ? "default" : "outline"}
-								onClick={() => setScopeType("division")}
-								className={
-									scopeType !== "division"
-										? "border-border text-foreground hover:bg-muted"
-										: ""
-								}
-							>
-								Division
-							</Button>
-							<Button
-								size="sm"
-								variant={scopeType === "all" ? "default" : "outline"}
-								onClick={() => setScopeType("all")}
-								className={
-									scopeType !== "all"
-										? "border-border text-foreground hover:bg-muted"
-										: ""
-								}
-							>
-								All Divisions
-							</Button>
-						</div>
-
-						{/* Subdivision scope: display current selection as read-only */}
-						{scopeType === "subdivision" && currentSubdivision && (
-							<p className="text-sm text-muted-foreground pl-1">
-								<span className="font-medium text-foreground">
-									{currentSubdivision.divisionName}
-								</span>
-								{" › "}
-								<span className="font-medium text-foreground">
-									{currentSubdivision.subdivisionName}
-								</span>
-							</p>
-						)}
-
-						{/* Division scope: pick which division */}
-						{scopeType === "division" && (
-							<div className="flex items-center gap-3 pl-1">
-								<Label className="text-sm shrink-0">Division</Label>
-								<Select
-									value={selectedDivision}
-									onValueChange={setSelectedDivision}
-								>
-									<SelectTrigger className="w-[220px]">
-										<SelectValue placeholder="Select division…" />
-									</SelectTrigger>
-									<SelectContent>
-										{divisionNames.map((d) => (
-											<SelectItem key={d} value={d}>
-												{d}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-						)}
-					</div>
-
 					{/* ── Match time ────────────────────────────────────────── */}
 					<div className="flex items-center gap-3">
 						<Label className="text-sm w-36 shrink-0">Default Match Time</Label>
@@ -326,21 +212,6 @@ export default function GenerateScheduleDialog({
 							onChange={(e) => setMatchTime(e.target.value)}
 							className="w-36"
 						/>
-					</div>
-
-					{/* ── Preserve-existing toggle ─────────────────────────── */}
-					<div className="flex items-center gap-3">
-						<Checkbox
-							id="preserve-existing"
-							checked={skipFilled}
-							onCheckedChange={(v) => setSkipFilled(v === true)}
-						/>
-						<Label htmlFor="preserve-existing" className="text-sm cursor-pointer">
-							Preserve existing matchups
-						</Label>
-						{skipFilled && isLoadingExisting && (
-							<span className="text-xs text-muted-foreground">Loading…</span>
-						)}
 					</div>
 
 					<div className="flex items-center gap-3 flex-wrap">
@@ -401,9 +272,6 @@ export default function GenerateScheduleDialog({
 												Rounds / Cycle
 											</th>
 											<th className="text-center px-3 py-2 font-medium">
-												Preserved
-											</th>
-											<th className="text-center px-3 py-2 font-medium">
 												Weeks
 											</th>
 											<th className="text-center px-3 py-2 font-medium">
@@ -424,9 +292,6 @@ export default function GenerateScheduleDialog({
 												</td>
 												<td className="px-3 py-2 text-center">
 													{p.roundsPerCycle}
-												</td>
-												<td className="px-3 py-2 text-center">
-													{p.preservedWeeks}
 												</td>
 												<td className="px-3 py-2 text-center">
 													{p.weeksAvailable}
@@ -486,21 +351,19 @@ export default function GenerateScheduleDialog({
 					)}
 
 					{/* ── Overwrite warning ─────────────────────────────────── */}
-					{!skipFilled && (
-						<div className="flex gap-2 rounded-md border border-yellow-500 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
-							<AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-							<span>
-								Existing matchups in the selected scope will be replaced.
-								Matchups with logged scoresheet points may be affected.
-							</span>
-						</div>
-					)}
+					<div className="flex gap-2 rounded-md border border-yellow-500 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+						<AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+						<span>
+							All existing data for this season (schedule, scoresheets, points,
+							mentions, penalties and payouts) will be permanently deleted.
+						</span>
+					</div>
 				</div>
 
 				<DialogFooter className="mt-2">
 					<Button
 						variant="outline"
-						onClick={() => setOpen(false)}
+						onClick={() => handleOpenChange(false)}
 						className="border-border text-foreground hover:bg-muted"
 					>
 						Cancel
