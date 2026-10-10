@@ -40,6 +40,8 @@ interface ReportDisplayProps<T> {
 	dataOverride?: T[];
 	// Bump this value (e.g. from a "Regenerate PDF" button) to force a refetch
 	refetchTrigger?: number;
+	// Forces the loading animation, e.g. while the parent is switching routes
+	loadingOverride?: boolean;
 }
 
 export default function ReportDisplay<T extends Record<string, unknown>>({
@@ -50,6 +52,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 	mailingLabelsImported,
 	dataOverride,
 	refetchTrigger,
+	loadingOverride,
 }: ReportDisplayProps<T>) {
 	const [sortColumn, setSortColumn] = useState<string | null>(null);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -173,7 +176,7 @@ export default function ReportDisplay<T extends Record<string, unknown>>({
 		},
 	});
 
-	if (loading) {
+	if (loading || loadingOverride) {
 		return (
 			<div className="flex items-center justify-center p-8">
 				<Loader2 className="h-8 w-8 animate-spin" />

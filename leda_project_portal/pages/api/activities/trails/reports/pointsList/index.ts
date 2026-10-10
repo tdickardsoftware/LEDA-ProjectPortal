@@ -17,6 +17,11 @@ export default async function handler(
 	if (req.method === "GET") {
 		log.info({ method: "GET", query: req.query }, "Fetch trails points list");
 		try {
+			const minTrailsDate =
+				typeof req.query.minTrailsDate === "string" &&
+				/^\d{4}-\d{2}-\d{2}$/.test(req.query.minTrailsDate)
+					? req.query.minTrailsDate
+					: null;
 			// Execute the database query to fetch season code information
 			// LEFT JOIN temp player info so temp players (not yet in leda_player_info,
 			// which the view sources names from) still get a name instead of a blank one
@@ -25,9 +30,13 @@ export default async function handler(
 						CASE WHEN tp."tempId" IS NOT NULL THEN
 							CONCAT_WS(', ', tp."lastName", TRIM(CONCAT_WS(' ', tp."firstName", tp."middleInitial")))
 						ELSE v."fullname" END as "fullname",
-						v."paidDues"
+						v."paidDues", v."inactiveDate"
 				 FROM public.leda_reports_trails_points_list v
-				 LEFT JOIN public.leda_temp_player_info tp ON v."ledaId" = tp."tempId";`
+				 LEFT JOIN public.leda_temp_player_info tp ON v."ledaId" = tp."tempId"
+				 WHERE ($1::boolean OR v."inactiveDate" IS NULL
+						OR v."inactiveDate" >= (NOW() AT TIME ZONE 'America/New_York')::date)
+				   AND ($2::date IS NULL OR v."trailsDate" >= $2::date);`,
+				[req.query.includeInactive === "true", minTrailsDate]
 			);
 			// Respond with the query result
 			res.status(200).json(result.rows);

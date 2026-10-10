@@ -9,12 +9,15 @@ CREATE OR REPLACE VIEW public.leda_reports_trails_save_points
     concat(COALESCE(p."addressOne", ''::text), ' ', COALESCE(p."addressTwo", ''::text)) AS "addressFirstLine",
     concat(COALESCE(p.city, ''::text), ', ', COALESCE(p.state, ''::text), ' ', COALESCE(p.zip, ''::text::character varying)) AS "addressSecondLine",
     m."lastTrailsDate",
-    max(t."totalPoints") AS totalpoints
+    max(t."totalPoints") AS totalpoints,
+    lmi."inactiveDate"
    FROM leda_membership_info m
      JOIN leda_player_info p ON m."ledaId" = p."ledaId"
+     JOIN leda_membership_info lmi ON m."ledaId" = lmi."ledaId"
      JOIN leda_trails_point_totals_audit t ON m."ledaId" = t."ledaId"
   WHERE m."lastTrailsDate" < (CURRENT_DATE - '4 mons'::interval)
-  GROUP BY p."ledaId", p."firstName", p."middleInitial", p."lastName", m."lastTrailsDate", p."addressOne", p."addressTwo", p.city, p.state, p.zip;
+  GROUP BY p."ledaId", p."firstName", p."middleInitial", p."lastName", m."lastTrailsDate", p."addressOne", p."addressTwo", p.city, p.state, p.zip, lmi."inactiveDate";
 
 ALTER TABLE public.leda_reports_trails_save_points
     OWNER TO admin;
+

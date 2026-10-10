@@ -21,13 +21,14 @@ CREATE OR REPLACE VIEW public.leda_player_paid_status
     to_date(s.dates ->> 'Date1'::text, 'MM/DD/YYYY'::text) AS date1
    FROM leda_roster_info r
      JOIN maint.leda_maint_seasons s ON s."seasonCode" = r."seasonCode",
-    LATERAL jsonb_each(r."teamInformation"::jsonb) divs(division, divdata),
+    LATERAL jsonb_each(r."teamInformation") divs(division, divdata),
     LATERAL jsonb_each(divs.divdata -> 'subdivisions'::text) subs(subdivision, subdata),
     LATERAL jsonb_each(subs.subdata) teams(letter, value)
      JOIN leda_team_info t ON t."ledaId" = ((teams.value ->> 'teamId'::text)::bigint),
-    LATERAL jsonb_each(t."memberIdList"::jsonb) player(playerkey, playervalue)
+    LATERAL jsonb_each(t."memberIdList") player(playerkey, playervalue)
   WHERE teams.value ? 'teamId'::text AND player.playervalue ? 'ledaId'::text
   ORDER BY (to_date(s.dates ->> 'Date1'::text, 'MM/DD/YYYY'::text)) DESC;
 
 ALTER TABLE public.leda_player_paid_status
     OWNER TO admin;
+

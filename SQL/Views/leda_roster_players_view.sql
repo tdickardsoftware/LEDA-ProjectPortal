@@ -7,12 +7,13 @@ CREATE OR REPLACE VIEW public.leda_roster_players_view
  SELECT DISTINCT r."seasonCode",
     player.playervalue ->> 'ledaId'::text AS ledaid
    FROM leda_roster_info r,
-    LATERAL jsonb_each(r."teamInformation"::jsonb) divs(division, divdata),
+    LATERAL jsonb_each(r."teamInformation") divs(division, divdata),
     LATERAL jsonb_each(divs.divdata -> 'subdivisions'::text) subs(subdivision, subdata),
     LATERAL jsonb_each(subs.subdata) teams(letter, value)
      JOIN leda_team_info t ON t."ledaId" = ((teams.value ->> 'teamId'::text)::bigint),
-    LATERAL jsonb_each(t."memberIdList"::jsonb) player(playerkey, playervalue)
+    LATERAL jsonb_each(t."memberIdList") player(playerkey, playervalue)
   WHERE teams.value ? 'teamId'::text AND player.playervalue ? 'ledaId'::text;
 
 ALTER TABLE public.leda_roster_players_view
     OWNER TO admin;
+

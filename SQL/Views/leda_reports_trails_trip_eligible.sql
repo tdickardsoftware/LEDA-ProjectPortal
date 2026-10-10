@@ -5,14 +5,17 @@
 CREATE OR REPLACE VIEW public.leda_reports_trails_trip_eligible
  AS
  SELECT p."ledaId",
-    concat(COALESCE(p."firstName", ''::text), ' ', COALESCE(p."middleInitial", ''::character varying), ' ', COALESCE(p."lastName", ''::text)) AS "fullName",
+    p."fullName",
     concat(COALESCE(p."addressOne", ''::text), ' ', COALESCE(p."addressTwo", ''::text), ' ', COALESCE(p.city, ''::text), ', ', COALESCE(p.state, ''::text), ' ', COALESCE(p.zip, ''::character varying)) AS "addressFull",
-    max(t."totalPoints") AS totalpoints
+    max(t."totalPoints") AS totalpoints,
+    lmi."inactiveDate"
    FROM leda_trails_point_totals_audit t
      JOIN leda_player_info p ON t."ledaId" = p."ledaId"
+     JOIN leda_membership_info lmi ON t."ledaId" = lmi."ledaId"
   WHERE t."totalPoints" > 500
-  GROUP BY p."ledaId", p."firstName", p."middleInitial", p."lastName", p."addressOne", p."addressTwo", p.city, p.state, p.zip
+  GROUP BY p."ledaId", p."fullName", p."addressOne", p."addressTwo", p.city, p.state, p.zip, lmi."inactiveDate"
   ORDER BY (max(t."totalPoints")) DESC;
 
 ALTER TABLE public.leda_reports_trails_trip_eligible
     OWNER TO admin;
+

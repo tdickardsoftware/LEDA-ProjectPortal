@@ -5,7 +5,7 @@
 CREATE OR REPLACE VIEW public.leda_reports_league_play_bar_fee_not_paid
  AS
  SELECT rpv."seasonCode",
-    rpv.ledaid,
+    rpv.ledaid AS "ledaId",
     lpi.name
    FROM leda_roster_places_view rpv
      LEFT JOIN leda_place_info lpi ON rpv.ledaid = lpi."ledaId"::text

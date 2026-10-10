@@ -16,7 +16,7 @@ CREATE OR REPLACE VIEW public.leda_reports_league_play_top_darter
     lrt."divisionInfo"
    FROM leda_weekly_player_points lwp
      LEFT JOIN leda_player_info lpi ON lwp."ledaId" = lpi."ledaId"
-     LEFT JOIN leda_roster_teams_view lrt ON lwp."teamLedaId"::text = lrt.ledaid
+     LEFT JOIN leda_roster_teams_view lrt ON lwp."teamLedaId" = lrt."teamId" AND lwp."seasonCode" = lrt."seasonCode"
   ORDER BY lwp."seasonCode", lwp."ledaId", lwp."teamLedaId", lwp."totalPoints" DESC;
 
 ALTER TABLE public.leda_reports_league_play_top_darter

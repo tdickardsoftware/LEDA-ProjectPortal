@@ -41,6 +41,9 @@ import LeaguePlayTeamFeeNotPaidReport from "./react-pdf/league-play-team-fee-not
 import LeaguePlayTopDarterReport from "./react-pdf/league-play-top-darter-report";
 import LeaguePlayWeeklyScoresheetsReport from "./react-pdf/league-play-weekly-scoresheets-report";
 import LeaguePlayTon80Report from "./react-pdf/league-play-ton80-report";
+import DownloadHtmlButton from "@/components/ui/download-html-button";
+import { generateTopDarterHtml } from "./league-play-top-darter-report-html";
+import { generateWeeklyScoresheetsHtml } from "./league-play-weekly-scoresheets-report-html";
 import { seasonRoute } from "@/lib/apiRoutes";
 
 // Custom hook for season data
@@ -158,6 +161,7 @@ export default function LeaguePlayReportLandingContent() {
 
         let document: JSX.Element;
         let fileName: string;
+        let getHtml: (() => string) | undefined;
         if (selectedReport.includes("barAffiliationFeeNotPaid")) {
             document = (
                 <LeaguePlayBarAffiliationFeeNotPaidReport
@@ -273,6 +277,8 @@ export default function LeaguePlayReportLandingContent() {
                     minimumPoints={minimumPoints?.toString() || "0"}
                 />
             );
+            getHtml = () =>
+                generateTopDarterHtml(reportData as TopDarter[], seasonCodeDesc, minimumPoints?.toString() || "0");
             fileName = `topDarter-${seasonCode}-week${weekNum}-${new Date()
                 .toLocaleDateString("en-US", {
                     timeZone: "America/New_York",
@@ -291,6 +297,8 @@ export default function LeaguePlayReportLandingContent() {
                     desc={seasonCodeDesc}
                 />
             );
+            getHtml = () =>
+                generateWeeklyScoresheetsHtml(reportData as LeaguePlayWeeklyScoresheets[], weekNum, seasonCodeDesc);
             fileName = `weeklyScoresheets-${seasonCode}-week${weekNum}-${new Date()
                 .toLocaleDateString("en-US", {
                     timeZone: "America/New_York",
@@ -388,6 +396,9 @@ export default function LeaguePlayReportLandingContent() {
                     </>
                 )}
             </PDFDownloadLink>
+            {getHtml && (
+                <DownloadHtmlButton getHtml={getHtml} fileName={fileName.replace(/\.pdf$/, ".html")} />
+            )}
             <button
                 type="button"
                 onClick={() => setPdfRegenKey((k) => k + 1)}

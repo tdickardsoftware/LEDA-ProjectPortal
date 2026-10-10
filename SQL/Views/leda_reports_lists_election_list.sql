@@ -5,9 +5,12 @@
 CREATE OR REPLACE VIEW public.leda_reports_lists_election_list
  AS
  SELECT DISTINCT concat(COALESCE(lpi."lastName", ''::text), ', ', COALESCE(lpi."firstName", ''::text), ' ', COALESCE(lpi."middleInitial", ''::character varying)) AS "fullName",
-    pps."fiscalYear"
+    pps."fiscalYear",
+    lmi."badStanding",
+    lmi."inactiveDate"
    FROM leda_player_info lpi
-     JOIN leda_player_paid_status pps ON lpi."ledaId" = pps.playerid::bigint;
+     JOIN leda_player_paid_status pps ON lpi."ledaId" = pps.playerid::bigint
+     JOIN leda_membership_info lmi ON lpi."ledaId" = lmi."ledaId";
 
 ALTER TABLE public.leda_reports_lists_election_list
     OWNER TO admin;

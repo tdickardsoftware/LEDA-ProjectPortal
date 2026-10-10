@@ -50,6 +50,7 @@ import {
 	placeTypeRoute,
 	playerRoute,
 	playersDataTableRoute,
+	seasonDataRoute,
 	seasonDataTableRoute,
 	seasonRoute,
 	teamRoute,
@@ -85,6 +86,8 @@ function rethrowNextRedirect(error: unknown) {
  *   document.cookie for unsafe methods.
  * - Redirects to /Portal (server) or reloads (client) on 403 responses.
  */
+const FETCH_TIMEOUT_MS = 20000; // abort hung requests instead of waiting forever
+
 export async function fetchWithSession(input: string, init: RequestInit = {}) {
 	const baseInit: RequestInit = {
 		method: init.method ?? "GET",
@@ -95,6 +98,15 @@ export async function fetchWithSession(input: string, init: RequestInit = {}) {
 		cache: "no-store",
 		...init,
 	};
+
+	// Client-side only: bound how long a request can hang so callers relying
+	// on Promise.all (e.g. scoresheet autosave) don't stall indefinitely.
+	let timeoutId: ReturnType<typeof setTimeout> | undefined;
+	if (typeof window !== "undefined" && !init.signal) {
+		const controller = new AbortController();
+		timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+		baseInit.signal = controller.signal;
+	}
 
 	let url = input;
 
@@ -132,7 +144,17 @@ export async function fetchWithSession(input: string, init: RequestInit = {}) {
 		}
 	}
 
-	const resp = await fetch(url, baseInit);
+	let resp: Response;
+	try {
+		resp = await fetch(url, baseInit);
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") {
+			throw new Error(`Request timed out after ${FETCH_TIMEOUT_MS}ms: ${url}`);
+		}
+		throw error;
+	} finally {
+		if (timeoutId) clearTimeout(timeoutId);
+	}
 	if (resp.status === 403) {
 		if (typeof window === "undefined") {
 			const { redirect } = await import("next/navigation");
@@ -712,4 +734,12 @@ export function useTrailsDateDataQuery(trailsDate: string) {
 		queryFn: () => fetchTrailsDateData(trailsDate),
 		enabled: !!trailsDate,
 	});
+}
+// Deletes schedule, scoresheets, points, mentions, penalties and payouts for a season.
+export async function wipeSeasonData(seasonCode: string): Promise<void> {
+	const res = await fetchWithSession(
+		`${seasonDataRoute}?seasonCode=${encodeURIComponent(seasonCode)}`,
+		{ method: "DELETE" }
+	);
+	if (!res.ok) throw new Error("Failed to wipe season data");
 }

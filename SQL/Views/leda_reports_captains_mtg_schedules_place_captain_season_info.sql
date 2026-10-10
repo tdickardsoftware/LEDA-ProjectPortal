@@ -1,7 +1,15 @@
+-- View: public.leda_reports_captains_mtg_schedules_place_captain_season_info
+
+-- DROP VIEW public.leda_reports_captains_mtg_schedules_place_captain_season_info;
+
+CREATE OR REPLACE VIEW public.leda_reports_captains_mtg_schedules_place_captain_season_info
+ AS
  SELECT info."seasonCode",
     s."desc",
-    info.teamid as "teamId",
-    info.placeid as "placeId",
+    info.teamid AS "teamId",
+    info.placeid AS "placeId",
+    info.division,
+    info.subdivision,
     p.name AS "placeName",
     TRIM(BOTH FROM COALESCE(p."addressOne", ''::text) ||
         CASE
@@ -21,18 +29,26 @@
             ELSE pi."phoneNumber"
         END AS "captainPhoneNumber"
    FROM ( SELECT leda_roster_info."seasonCode",
+            sub_division.division,
+            sub_division.subdivision,
             sub_division.team_info ->> 'teamId'::text AS teamid,
             sub_division.team_info ->> 'placeId'::text AS placeid
            FROM leda_roster_info,
-            LATERAL ( SELECT teams.team_info
+            LATERAL ( SELECT teams.division,
+                    teams.subdivision,
+                    teams.team_info
                    FROM ( SELECT divs.key AS division,
                             subdivs.key AS subdivision,
                             pools.key AS pool,
                             pools.value AS team_info
-                           FROM json_each(leda_roster_info."teamInformation") divs(key, value)
-                             CROSS JOIN LATERAL json_each(divs.value -> 'subdivisions'::text) subdivs(key, value)
-                             CROSS JOIN LATERAL json_each(subdivs.value) pools(key, value)) teams) sub_division) info
+                           FROM jsonb_each(leda_roster_info."teamInformation") divs(key, value)
+                             CROSS JOIN LATERAL jsonb_each(divs.value -> 'subdivisions'::text) subdivs(key, value)
+                             CROSS JOIN LATERAL jsonb_each(subdivs.value) pools(key, value)) teams) sub_division) info
      JOIN maint.leda_maint_seasons s ON info."seasonCode" = s."seasonCode"
      LEFT JOIN leda_place_info p ON info.placeid::bigint = p."ledaId"
      LEFT JOIN leda_player_team_info pti ON info.teamid::bigint = pti."teamLedaId" AND pti."isCaptain" = true
      LEFT JOIN leda_player_info pi ON COALESCE(pti."ledaId", '0'::text)::bigint = pi."ledaId";
+
+ALTER TABLE public.leda_reports_captains_mtg_schedules_place_captain_season_info
+    OWNER TO admin;
+

@@ -7,16 +7,16 @@ CREATE OR REPLACE VIEW public.leda_reports_captains_mtg_team_report_player_info
  WITH team_ids AS (
          SELECT DISTINCT (teams.team_info ->> 'teamId'::text)::integer AS team_id
            FROM leda_roster_info lri
-             CROSS JOIN LATERAL json_each(lri."teamInformation") divisions(division_key, division_value)
-             CROSS JOIN LATERAL json_each(divisions.division_value -> 'subdivisions'::text) subdivisions(subdivision_key, subdivision_value)
-             CROSS JOIN LATERAL json_each(subdivisions.subdivision_value) teams(team_key, team_info)
+             CROSS JOIN LATERAL jsonb_each(lri."teamInformation") divisions(division_key, division_value)
+             CROSS JOIN LATERAL jsonb_each(divisions.division_value -> 'subdivisions'::text) subdivisions(subdivision_key, subdivision_value)
+             CROSS JOIN LATERAL jsonb_each(subdivisions.subdivision_value) teams(team_key, team_info)
         ), team_members AS (
          SELECT ti.team_id,
             (member_data.value ->> 'ledaId'::text)::integer AS player_id,
             (member_data.value ->> 'isCaptain'::text)::boolean AS is_captain
            FROM team_ids ti
              JOIN leda_team_info lti ON ti.team_id = lti."ledaId"
-             CROSS JOIN LATERAL json_each(lti."memberIdList") member_data(member_key, value)
+             CROSS JOIN LATERAL jsonb_each(lti."memberIdList") member_data(member_key, value)
         ), player_data AS (
          SELECT p."ledaId",
             p."lastName",
