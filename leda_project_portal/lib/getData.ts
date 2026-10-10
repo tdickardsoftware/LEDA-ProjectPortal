@@ -50,6 +50,7 @@ import {
 	placeTypeRoute,
 	playerRoute,
 	playersDataTableRoute,
+	seasonDataRoute,
 	seasonDataTableRoute,
 	seasonRoute,
 	teamRoute,
@@ -733,4 +734,12 @@ export function useTrailsDateDataQuery(trailsDate: string) {
 		queryFn: () => fetchTrailsDateData(trailsDate),
 		enabled: !!trailsDate,
 	});
+}
+// Deletes schedule, scoresheets, points, mentions, penalties and payouts for a season.
+export async function wipeSeasonData(seasonCode: string): Promise<void> {
+	const res = await fetchWithSession(
+		`${seasonDataRoute}?seasonCode=${encodeURIComponent(seasonCode)}`,
+		{ method: "DELETE" }
+	);
+	if (!res.ok) throw new Error("Failed to wipe season data");
 }

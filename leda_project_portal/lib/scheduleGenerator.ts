@@ -39,8 +39,8 @@ export interface GeneratorOptions {
 	/**
 	 * When true, uses the legacy LEDA recursive half-split pairing pattern with
 	 * pre-determined home/away assignments derived from historical data.
-	 * Supported for subdivisions with 2, 4, 6, or 8 effective team slots.
-	 * Falls back to the standard circle method for other team counts.
+	 * Teams keep their letter slot (A-H); unused letters become BYE weeks.
+	 * Falls back to the standard circle method if any team letter is outside A-H.
 	 */
 	sequentialPairing?: boolean;
 }
@@ -99,83 +99,27 @@ function shuffleTeamLetters(teamLetters: string[], seed: number | undefined): st
 }
 
 /**
- * LEDA legacy pairing algorithm (recursive half-split).
- *
- * Returns rounds as [home, away] pairs — the first element is ALWAYS the home
- * team for cycle 1 (the caller flips for cycle 2 via shouldFlipCycleHomeAway).
- *
- * Exact schedules for n=2, 4, 6, 8 are derived from historical LEDA database data.
- * Odd team counts are padded with a BYE slot at the end before applying the
- * even-team algorithm (e.g. 7 real teams → 8-team schedule with 1 BYE).
- * Falls back to the standard circle method for other (larger) sizes.
+ * LEDA legacy schedule template, taken verbatim from the original Access
+ * "Create Subdivision" routine. Row i is slot A..H; column w is week w+1 of the
+ * first 7-week cycle. The letter is the opponent's slot; UPPERCASE means the row's
+ * team is HOME that week. Weeks 8-14 repeat these opponents with home/away flipped
+ * (handled by the caller's cycle flip). A slot with no team is a BYE for its opponent.
  */
-function buildPairingsLEDA(teamLetters: string[]): [string, string][][] {
-	const isOdd = teamLetters.length % 2 !== 0;
-	const teams = isOdd ? [...teamLetters, BYE_PLACEHOLDER] : [...teamLetters];
-	const n = teams.length;
-	const t = (i: number) => teams[i];
+const LEGACY_TEMPLATE = ["BcDeFgH", "aDCfGhE", "dAbgHeF", "CbahEfG", "fGHAdCb", "EhGBaDc", "HefCbAd", "gFeDcBa"];
 
-	if (n === 2) {
-		// Single round; team 0 is home.
-		return [[[t(0), t(1)]]];
-	}
+const usesLegacyTemplate = (teamLetters: string[], options: GeneratorOptions) =>
+	!!options.sequentialPairing && teamLetters.every((l) => /^[A-H]$/.test(l));
 
-	if (n === 4) {
-		// 3-round schedule derived from the n=8 recursive structure (L sub-group).
-		// W0: base pairs — 0H, 3H
-		// W1: sub-cross j=0 — 2H, 1H
-		// W2: sub-cross j=1 — all lower home
-		return [
-			[[t(0), t(1)], [t(3), t(2)]],
-			[[t(2), t(0)], [t(1), t(3)]],
-			[[t(0), t(3)], [t(1), t(2)]],
-		];
-	}
-
-	if (n === 6) {
-		// 5-round schedule derived from historical LEDA data (s01/Summer/sub4).
-		// Pairs ordered [home, away] for cycle 1.
-		return [
-			[[t(0), t(1)], [t(2), t(5)], [t(3), t(4)]],
-			[[t(2), t(0)], [t(4), t(1)], [t(5), t(3)]],
-			[[t(0), t(5)], [t(1), t(3)], [t(4), t(2)]],
-			[[t(3), t(0)], [t(1), t(2)], [t(5), t(4)]],
-			[[t(0), t(4)], [t(5), t(1)], [t(2), t(3)]],
-		];
-	}
-
-	if (n === 8) {
-		// 7-round schedule from the recursive half-split algorithm.
-		// L={0..3}, U={4..7}. Weeks 0-2 within-group; weeks 3-6 cross-group.
-		// Pairs ordered [home, away] for cycle 1 — verified against LEDA CSV data.
-		const half = 4;
-		const rounds: [string, string][][] = [
-			// W0: base pairs, homeFirst = [T, F, F, T] (0H, 3H, 5H, 6H)
-			[[t(0), t(1)], [t(3), t(2)], [t(5), t(4)], [t(6), t(7)]],
-			// W1: sub-cross j=0, homeFirst = [F, T, T, F] (2H, 1H, 4H, 7H)
-			[[t(2), t(0)], [t(1), t(3)], [t(4), t(6)], [t(7), t(5)]],
-			// W2: sub-cross j=1, all lower home (0H, 1H, 4H, 5H)
-			[[t(0), t(3)], [t(1), t(2)], [t(4), t(7)], [t(5), t(6)]],
-		];
-		// W3-W6: cross-group rounds.
-		// j even → upper group home; j odd → lower group home.
-		for (let j = 0; j < half; j++) {
-			const round: [string, string][] = [];
-			const lowerHome = j % 2 === 1;
-			for (let i = 0; i < half; i++) {
-				const lTeam = i;
-				const uTeam = (i + j) % half + half;
-				round.push(lowerHome ? [t(lTeam), t(uTeam)] : [t(uTeam), t(lTeam)]);
-			}
-			rounds.push(round);
-		}
-		return rounds;
-	}
-
-	// Fallback for larger subdivisions: use standard circle method.
-	// Note: home/away is NOT pre-determined in this path; the caller must
-	// use homeCount-based assignment for these cases.
-	return buildPairings(teams);
+/** Legacy pairing: 7 rounds of [home, away] over the 8 fixed slots (BYE_PLACEHOLDER for empty ones). */
+function buildPairingsLEDA(slots: string[]): [string, string][][] {
+	return Array.from({ length: 7 }, (_, w) => {
+		const round: [string, string][] = [];
+		LEGACY_TEMPLATE.forEach((row, i) => {
+			const ch = row[w];
+			if (ch === ch.toUpperCase()) round.push([slots[i], slots[ch.charCodeAt(0) - 65]]);
+		});
+		return round;
+	});
 }
 
 /**
@@ -247,15 +191,18 @@ function generateForSubdivision(
 
 	if (teamLetters.length < 2) return result; // Need at least 2 teams to schedule
 
-	const shuffledTeamLetters = shuffleTeamLetters(teamLetters, options.shuffleSeed);
-
-	// Determine whether to use the LEDA recursive algorithm.
-	// Only activate for effective sizes 2, 4, 6, 8 (odd counts get +1 BYE → even).
-	const effectiveN = teamLetters.length % 2 === 0 ? teamLetters.length : teamLetters.length + 1;
-	const useLEDA = !!options.sequentialPairing && effectiveN >= 2 && effectiveN <= 8;
+	// The legacy template is keyed by team letter (A-H); empty letters become BYE slots.
+	const useLEDA = usesLegacyTemplate(teamLetters, options);
 
 	const rounds = rotateRounds(
-		useLEDA ? buildPairingsLEDA(shuffledTeamLetters) : buildPairings(shuffledTeamLetters),
+		useLEDA
+			? buildPairingsLEDA(
+					shuffleTeamLetters(
+						Array.from("ABCDEFGH", (l) => (teamLetters.includes(l) ? l : BYE_PLACEHOLDER)),
+						options.shuffleSeed
+					)
+				)
+			: buildPairings(shuffleTeamLetters(teamLetters, options.shuffleSeed)),
 		options.rotationOffset
 	);
 	const preservedWeekKeys = new Set<string>();
@@ -287,6 +234,8 @@ function generateForSubdivision(
 			const shouldFlipCycleHomeAway = cycleNumber % 2 === 1;
 			const teamA = shouldFlipCycleHomeAway ? rawTeamB : rawTeamA;
 			const teamB = shouldFlipCycleHomeAway ? rawTeamA : rawTeamB;
+
+			if (teamA === BYE_PLACEHOLDER && teamB === BYE_PLACEHOLDER) continue;
 
 			// The BYE placeholder can appear in either slot depending on the rotation round.
 			const isBye = teamA === BYE_PLACEHOLDER || teamB === BYE_PLACEHOLDER;
@@ -383,7 +332,7 @@ export function generateSchedule(
 		const teamLetters = Object.keys(teams).filter((l) => teams[l].teamId !== "0");
 		const isOdd = teamLetters.length % 2 !== 0;
 		const roundsPerCycle =
-			teamLetters.length < 2 ? 0 : isOdd ? teamLetters.length : teamLetters.length - 1;
+			teamLetters.length < 2 ? 0 : usesLegacyTemplate(teamLetters, options) ? 7 : isOdd ? teamLetters.length : teamLetters.length - 1;
 
 		const existing = existingData[division]?.[subdivision];
 		const preservedWeekKeys = new Set<string>();

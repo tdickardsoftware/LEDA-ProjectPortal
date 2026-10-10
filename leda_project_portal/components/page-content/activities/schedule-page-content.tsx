@@ -35,7 +35,6 @@ export default function ScheduleContent() {
 		currentSeason,
 		setCurrentSeason,
 		gameDates,
-		seasonHasStarted,
 		updatedMatchData,
 		stageScheduleData,
 		enableSaveButton,
@@ -113,10 +112,16 @@ export default function ScheduleContent() {
 	);
 
 	const handleGenerate = useCallback(
-		(data: ScheduleData) => {
+		async (data: ScheduleData) => {
 			stageScheduleData(data, { requiresManualSave: true });
+			// The season was already wiped, so persist right away instead of leaving a draft.
+			try {
+				await handleSaveData(data);
+			} catch (error) {
+				console.error("Failed to save generated schedule:", error);
+			}
 		},
-		[stageScheduleData]
+		[handleSaveData, stageScheduleData]
 	);
 
 	const handleCurrentSeasonChange = useCallback(
@@ -192,9 +197,8 @@ export default function ScheduleContent() {
 						<div className="p-4 flex items-center gap-3">						<GenerateScheduleDialog
 							divisionsData={divisionsData}
 							gameDates={gameDates}
-							currentSubdivision={selectedSubdivision}
 							seasonCode={seasonCode}
-							disabled={!seasonCode || rosterNotFound || seasonHasStarted}
+							disabled={!seasonCode || rosterNotFound}
 							onGenerate={handleGenerate}
 							/>							<SaveStatusIndicator status={saveStatus} />
 							<Button

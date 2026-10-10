@@ -65,6 +65,8 @@ export const trailsRoute = "/api/activities/trails";
 export const rosterRoute = "/api/activities/roster";
 // Define route for schedule not on the serverside
 export const scheduleRoute = "/api/activities/schedule";
+// Define route for wiping all in-season data not on the serverside
+export const seasonDataRoute = "/api/activities/seasonData";
 // Define route for weekly scoresheets not on serverside
 export const weeklyScoresheetsRoute = "/api/activities/scoresheets";
 // Define route for scoresheet count not on serverside
