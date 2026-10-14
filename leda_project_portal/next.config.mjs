@@ -4,6 +4,7 @@ const nextConfig = {
     output: "standalone",
     cacheComponents: true,
     partialPrefetching: true,
+    outputFileTracingIncludes: { "/help": ["./content/help/**/*"] },
     experimental: {
 	workerThreads: false,
 	cpus: 2

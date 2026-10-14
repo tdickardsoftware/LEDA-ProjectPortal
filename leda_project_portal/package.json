@@ -44,7 +44,7 @@
     "dotenv": "^16.6.1",
     "emailjs": "^5.0.3",
     "fuse.js": "^7.5.0",
-    "jose": "^5.10.0",
+    "jose": "^6.2.3",
     "libphonenumber-js": "^1.13.12",
     "lucide-react": "^0.453.0",
     "next": "16.4.0",
