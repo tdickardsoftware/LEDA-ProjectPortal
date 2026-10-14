@@ -305,11 +305,22 @@ export function DataTable<TData extends Record<string, unknown>, TValue>({
 			} else if (typeof col.header === "function") {
 				// Try to render the header function to get the display name
 				try {
+					const mockColumn = {
+						columnDef: col,
+						getIsSorted: () => false,
+						toggleSorting: () => {},
+					};
 					const mockContext = {
+						column: mockColumn,
 						header: {
-							column: { columnDef: col },
+							column: mockColumn,
 							getContext: () => ({}),
-						}
+						},
+						table: {
+							getIsAllPageRowsSelected: () => false,
+							getIsSomePageRowsSelected: () => false,
+							toggleAllPageRowsSelected: () => {},
+						},
 					} as any;
 					const rendered = col.header(mockContext);
 					if (typeof rendered === "string") {

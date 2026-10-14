@@ -21,6 +21,7 @@ import {
 	Monitor,
 	Bug,
 	Info,
+	CircleHelp,
 	Activity,
 	LayoutDashboard,
 	ScrollText,
@@ -337,6 +338,12 @@ export function NavUser() {
 						<DropdownMenuItem onClick={() => setTimeout(() => setShowIssueDialog(true), 0)}>
 							<Bug className="mr-2 size-4" />
 							<span>Found an Issue?</span>
+						</DropdownMenuItem>
+						<DropdownMenuItem asChild>
+							<a href="/help" target="_blank" rel="noopener noreferrer">
+								<CircleHelp className="mr-2 size-4" />
+								<span>Help</span>
+							</a>
 						</DropdownMenuItem>
 						<DropdownMenuSub>
 							<DropdownMenuSubTrigger>

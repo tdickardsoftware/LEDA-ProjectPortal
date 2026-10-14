@@ -4,7 +4,9 @@
  */
 import RostersContent from "@/components/page-content/activities/roster-page-content";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/skeleton";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
 	title: "Rosters",
@@ -12,8 +14,17 @@ export const metadata: Metadata = {
 
 type SearchParamsProps = Promise<{ divisionName?: string; subdivisionName?: string }>;
 
-export default async function Page(props: { searchParams: SearchParamsProps }) {
-	const searchParams = await props.searchParams;
+async function RostersData({ searchParams }: { searchParams: SearchParamsProps }) {
+	const { divisionName, subdivisionName } = await searchParams;
+	return (
+		<RostersContent
+			initialDivisionName={divisionName}
+			initialSubdivisionName={subdivisionName}
+		/>
+	);
+}
+
+export default function Page(props: { searchParams: SearchParamsProps }) {
 	return (
 		<main>
 			<div className="mb-6 py-2 ">
@@ -23,10 +34,9 @@ export default async function Page(props: { searchParams: SearchParamsProps }) {
 				</p>
 				<Separator />
 			</div>
-			<RostersContent
-				initialDivisionName={searchParams.divisionName}
-				initialSubdivisionName={searchParams.subdivisionName}
-			/>
+			<Suspense fallback={<div className="flex items-center justify-center min-h-[200px]"><Spinner /></div>}>
+				<RostersData searchParams={props.searchParams} />
+			</Suspense>
 		</main>
 	);
 }
