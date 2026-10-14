@@ -14,7 +14,8 @@
  * penalties, and point calculations across multiple teams and players.
  */
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useDebouncedCallback } from "@/hooks/useDebounce";
 import Link from "next/link";
 import { MentionPlayerHistory } from "@/lib/definitions";
 import { X, Pencil } from "lucide-react";
@@ -123,8 +124,6 @@ export default function WeeklyScoresheetsContent({
 	const [isDataChanged, setIsDataChanged] = useState<boolean>(false);
 	const [changeToken, setChangeToken] = useState<number>(0);
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const saveMatchupRef = useRef<(markComplete?: boolean) => Promise<void>>(async () => {});
 
 	// Manual completion and reset snapshot state
 	const [isMatchupCompleted, setIsMatchupCompleted] = useState<boolean>(false);
@@ -977,19 +976,17 @@ const confirmPendingChangesPlaceholder = () => true;
 
 	// removed legacy saveMatchup implementation
 
-	// Keep saveMatchupRef in sync so the autosave effect always calls the latest version
-	useEffect(() => { saveMatchupRef.current = saveMatchup; }, [saveMatchup]);
+	const { schedule: scheduleAutosave, cancel: cancelAutosave } = useDebouncedCallback(() => {
+		saveMatchup(false);
+	}, 1500);
 
 	// Autosave: debounce 1.5s after every user data change. Only auto-saves without
 	// markComplete; "Save & Mark Complete" always requires a manual click.
 	useEffect(() => {
 		if (!isDataChanged || !matchSelected) return;
 		setSaveStatus('pending');
-		if (debounceTimer.current) clearTimeout(debounceTimer.current);
-		debounceTimer.current = setTimeout(() => {
-			saveMatchupRef.current(false);
-		}, 1500);
-		return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+		scheduleAutosave();
+		return cancelAutosave;
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [changeToken, matchSelected]);
 
@@ -2504,7 +2501,7 @@ const FolderTabSkeleton = () => (
 								<div className="flex flex-wrap gap-3 justify-center mt-6">
 									<SaveStatusIndicator status={saveStatus} />
 									<Button
-										onClick={() => { if (debounceTimer.current) clearTimeout(debounceTimer.current); saveMatchup(false); }}
+										onClick={() => { cancelAutosave(); saveMatchup(false); }}
 										disabled={isSaving || !isDataChanged}
 										variant="outline"
 										className="border-border text-foreground hover:bg-muted"
@@ -2512,14 +2509,14 @@ const FolderTabSkeleton = () => (
 										{isSaving ? "Saving..." : "Save Now"}
 									</Button>
 									<Button
-										onClick={() => { if (debounceTimer.current) clearTimeout(debounceTimer.current); saveMatchup(true); }}
+										onClick={() => { cancelAutosave(); saveMatchup(true); }}
 										className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white"
 										disabled={isSaving || isMatchupCompleted}
 									>
 										Mark Complete
 									</Button>
 									<Button
-										onClick={() => { if (debounceTimer.current) clearTimeout(debounceTimer.current); saveMatchup(true); }}
+										onClick={() => { cancelAutosave(); saveMatchup(true); }}
 										className="bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-800 dark:hover:bg-emerald-900 text-white"
 										disabled={isSaving}
 									>

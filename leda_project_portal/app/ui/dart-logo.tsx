@@ -2,7 +2,7 @@
  * DartLogo component — renders the Lake Erie Dart Association branding header
  * with a globe icon and the association name in the Lusitana font.
  */
-import {GlobeAmericasIcon} from "@heroicons/react/24/outline";
+import { Globe } from "lucide-react";
 import { lusitana } from "./fonts";
 
 export default function DartLogo() {
@@ -10,7 +10,7 @@ export default function DartLogo() {
         <div
             className={`${lusitana.className} flex flex-row items-center leading-none text-white`}
         >
-            <GlobeAmericasIcon className="h-12 w-12 rotate-[15deg]" />
+            <Globe className="h-12 w-12 rotate-[15deg]" />
             <p className="text-[24px]">Lake Erie Dart Association</p>
         </div>
     );

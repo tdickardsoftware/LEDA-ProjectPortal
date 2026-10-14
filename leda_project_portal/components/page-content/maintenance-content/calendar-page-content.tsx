@@ -41,8 +41,9 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import ShadcnBigCalendar from "@/components/ui/shadcn-big-calendar/shadcn-big-calendar";
-import { Calendar, momentLocalizer, Views } from "react-big-calendar";
-import moment from "moment";
+import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
+import { format, getDay, parse, startOfWeek } from "date-fns";
+import { enUS } from "date-fns/locale";
 import type { CalendarProps } from "react-big-calendar";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { calendarRoute } from "@/lib/apiRoutes";
@@ -50,7 +51,13 @@ import { fetchWithSession } from "@/lib/getData";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
-const localizer = momentLocalizer(moment);
+const localizer = dateFnsLocalizer({
+	format,
+	parse,
+	startOfWeek,
+	getDay,
+	locales: { "en-US": enUS },
+});
 
 // Type for blocked date from database
 interface BlockedDate {
@@ -345,7 +352,7 @@ export default function CalendarPageContent() {
 										.map((blockedDate, index) => (
 											<TableRow key={index} className="group">
 												<TableCell className="font-medium">
-													{moment(blockedDate.date).format("MMMM D, YYYY")}
+													{format(new Date(blockedDate.date), "MMMM d, yyyy")}
 												</TableCell>
 												<TableCell>{blockedDate.desc}</TableCell>
 												<TableCell>
@@ -377,7 +384,7 @@ export default function CalendarPageContent() {
 						<AlertDialogDescription>
 							Are you sure you want to delete the blocked date for{" "}
 							<span className="font-semibold">
-								{dateToDelete && moment(dateToDelete.date).format("MMMM D, YYYY")}
+								{dateToDelete && format(new Date(dateToDelete.date), "MMMM d, yyyy")}
 							</span>
 							? This action cannot be undone.
 						</AlertDialogDescription>

@@ -11,6 +11,7 @@ import React, { useState } from "react";
 import { FormProvider, useFormContext } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDebouncedEffect } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -135,16 +136,12 @@ const PlaceOwnerSelectContent: React.FC = () => {
 	}, []);
 
 	// Debounce search input
-	React.useEffect(() => {
-		const timer = setTimeout(() => {
-			setDebouncedSearch(searchQuery);
-			setOffset(0); // Reset offset when search changes
-			setAllOwners([]); // Clear existing results
-			setHasMore(true); // Reset hasMore flag
-		}, 300);
-
-		return () => clearTimeout(timer);
-	}, [searchQuery]);
+	useDebouncedEffect(() => {
+		setDebouncedSearch(searchQuery);
+		setOffset(0); // Reset offset when search changes
+		setAllOwners([]); // Clear existing results
+		setHasMore(true); // Reset hasMore flag
+	}, [searchQuery], 300);
 
 	// Fetch records based on search and offset
 	const { data: owners = [], isLoading, isFetching } = useQuery({

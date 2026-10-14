@@ -15,6 +15,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useDebouncedCallback } from "@/hooks/useDebounce";
 import SidenavPageLayout from "@/components/sidenav-page-layout";
 import DivisionTreeSidenav, { DivisionTreeDivision } from "@/components/division-tree-sidenav";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
@@ -365,7 +366,6 @@ export default function RostersContent({
 	const [isRosterInitialized, setIsRosterInitialized] = useState(false);
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 	const [generateOpen, setGenerateOpen] = useState(false);
-	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Setup QueryClient
 	const queryClient = useQueryClient();
@@ -519,10 +519,16 @@ export default function RostersContent({
 		}
 	});
 
+	const { schedule: scheduleAutosave, cancel: cancelAutosave } = useDebouncedCallback(() => {
+		if (!seasonCode) return;
+		setSaveStatus('saving');
+		updateRosterMutation.mutate({ seasonCode, data: divisionsData });
+	}, 1500);
+
 	// Persist the latest roster first so the generated schedule is built from what was just saved.
 	const handleSaveAndGenerate = async () => {
 		if (!seasonCode) return;
-		if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		cancelAutosave();
 		try {
 			if (hasChanges) await updateRosterMutation.mutateAsync({ seasonCode, data: divisionsData });
 			setGenerateOpen(true);
@@ -626,13 +632,8 @@ export default function RostersContent({
 	useEffect(() => {
 		if (!isRosterInitialized || !update || !hasChanges) return;
 		setSaveStatus('pending');
-		if (debounceTimer.current) clearTimeout(debounceTimer.current);
-		debounceTimer.current = setTimeout(() => {
-			if (!seasonCode) return;
-			setSaveStatus('saving');
-			updateRosterMutation.mutate({ seasonCode, data: divisionsData });
-		}, 1500);
-		return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+		scheduleAutosave();
+		return cancelAutosave;
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [divisionsData]);
 
@@ -1484,7 +1485,7 @@ export default function RostersContent({
 							)}
 							{update && (
 								<>
-									<Button variant="outline" className="hover:bg-muted border-border text-foreground" disabled={!hasChanges || isLoading} onClick={() => { if (debounceTimer.current) clearTimeout(debounceTimer.current); handleUpdateRoster(); }}>
+									<Button variant="outline" className="hover:bg-muted border-border text-foreground" disabled={!hasChanges || isLoading} onClick={() => { cancelAutosave(); handleUpdateRoster(); }}>
 										Save Now
 									</Button>
 									<Button variant="outline" className="hover:bg-muted border-border text-foreground" disabled={!hasChanges || isLoading} onClick={() => { setDivisionsData(JSON.parse(JSON.stringify(initialData))); setHasChanges(false); }}>

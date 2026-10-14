@@ -20,7 +20,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import validator from "validator";
 import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -36,7 +35,7 @@ import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
 import { playerRoute } from "@/lib/apiRoutes";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { PlayerMemberInfo } from "@/lib/definitions";
-import { Tab } from "@headlessui/react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
@@ -95,7 +94,7 @@ const playerInfoSchema = z.object({
 	if (data.emailUnknown) return;
 	if (!data.email) {
 		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Required", path: ["email"] });
-	} else if (!validator.isEmail(data.email)) {
+	} else if (!z.string().email().safeParse(data.email).success) {
 		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Invalid", path: ["email"] });
 	}
 });
@@ -369,28 +368,22 @@ export default function PlayerEditInformationForm({
 				// Prevent form from reloading the page
 				onSubmitCapture={(e) => e.preventDefault()}
 			>
-				<Tab.Group
-					selectedIndex={currentStep}
-					onChange={setCurrentStep}
+				<Tabs
+					value={String(currentStep)}
+					onValueChange={(value) => setCurrentStep(Number(value))}
 				>
 					<div className="mb-6">
 						<div className="flex border-b border-border">
-							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
+							<TabsList className="flex h-auto w-full space-x-1 rounded-xl bg-transparent p-1">
 								{steps.map((step, index) => (
-									<Tab
+									<TabsTrigger
 										key={index}
-										className={({ selected }) =>
-											`w-full py-2.5 text-sm font-medium leading-5 
-											${
-												selected
-													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-muted-foreground hover:text-foreground hover:border-border"
-											} ${
-												index < currentStep
-													? "text-green-500"
-													: ""
-											}`
-										}
+										value={String(index)}
+										className={`w-full rounded-none px-0 py-2.5 text-sm font-medium leading-5 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 ${
+											index < currentStep
+												? "text-green-500"
+												: "text-muted-foreground hover:text-foreground"
+										}`}
 									>
 										<span className="flex items-center justify-center">
 											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
@@ -400,15 +393,14 @@ export default function PlayerEditInformationForm({
 											</span>
 											{step.name}
 										</span>
-									</Tab>
+									</TabsTrigger>
 								))}
-							</Tab.List>
+							</TabsList>
 						</div>
 					</div>
 
-					<Tab.Panels>
-						{/* Step 1: Personal Info */}
-						<Tab.Panel>
+					{/* Step 1: Personal Info */}
+					<TabsContent value="0" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>
 									Personal Information for LEDA ID #
@@ -448,10 +440,10 @@ export default function PlayerEditInformationForm({
 									enableMonthYearPicker
 								/>
 							</div>
-						</Tab.Panel>
+						</TabsContent>
 
 						{/* Step 2: Contact Info */}
-						<Tab.Panel>
+						<TabsContent value="1" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>Contact Information</h1>
 								<InputDefault
@@ -504,10 +496,10 @@ export default function PlayerEditInformationForm({
 									label="Other Number"
 								/>
 							</div>
-						</Tab.Panel>
+						</TabsContent>
 
 						{/* Step 3: Membership Info */}
-						<Tab.Panel>
+						<TabsContent value="2" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>Membership Information</h1>
 								<FormField
@@ -603,10 +595,10 @@ export default function PlayerEditInformationForm({
 									)}
 								/>
 							</div>
-						</Tab.Panel>
+						</TabsContent>
 
 						{/* Step 4: Additional Info */}
-						<Tab.Panel>
+						<TabsContent value="3" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>Additional Information</h1>
 								{/* Lifetime Member Checkbox */}
@@ -713,9 +705,8 @@ export default function PlayerEditInformationForm({
 									enableMonthYearPicker
 								/>
 							</div>
-						</Tab.Panel>
-					</Tab.Panels>
-				</Tab.Group>
+						</TabsContent>
+				</Tabs>
 
 				<div className="flex justify-between">
 					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">
