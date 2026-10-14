@@ -23,7 +23,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import validator from "validator";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -72,12 +71,12 @@ const placeFormSchema = z.object({
 		.string()
 		.nullable()
 		.optional()
-		.refine((value) => !value || validator.isEmail(value), { message: "Email is Invalid" }),
+		.refine((value) => !value || z.string().email().safeParse(value).success, { message: "Email is Invalid" }),
 	website: z
 		.string()
 		.nullable()
 		.optional()
-		.refine((value) => !value || validator.isURL(value), {
+		.refine((value) => !value || URL.canParse(value.includes("://") ? value : `https://${value}`), {
 			message: "Website is Invalid",
 		}),
 	establishDate: z.string(),

@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
+import { useDebouncedCallback } from "@/hooks/useDebounce";
 import { Spinner } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -137,7 +138,10 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	const searchInputRef = React.useRef<HTMLInputElement>(null);
 
 	// Debounced search
-	const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+	const { schedule: executeSearch, cancel: cancelSearch } = useDebouncedCallback(() => {
+		onSearchChange(searchQuery);
+		onPageChange(1); // Reset to first page on search
+	}, 500);
 	const isInitialSearchEffect = React.useRef(true);
 	const isInitialSortEffect = React.useRef(true);
 
@@ -158,16 +162,6 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 		cellValue: string;
 	}>({ show: false, x: 0, y: 0, columnKey: "", columnName: "", cellValue: "" });
 	
-	const executeSearch = React.useCallback(() => {
-		if (searchTimeoutRef.current) {
-			clearTimeout(searchTimeoutRef.current);
-		}
-		searchTimeoutRef.current = setTimeout(() => {
-			onSearchChange(searchQuery);
-			onPageChange(1); // Reset to first page on search
-		}, 500); // 500ms debounce
-	}, [searchQuery, onSearchChange, onPageChange]);
-
 	const clearSearch = React.useCallback(() => {
 		setSearchQuery("");
 		onSearchChange("");
@@ -177,15 +171,13 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 	const handleSearchKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === 'Enter') {
 			e.preventDefault();
-			if (searchTimeoutRef.current) {
-				clearTimeout(searchTimeoutRef.current);
-			}
+			cancelSearch();
 			onSearchChange(searchQuery);
 			onPageChange(1);
 		} else if (e.key === 'Escape') {
 			clearSearch();
 		}
-	}, [searchQuery, onSearchChange, onPageChange, clearSearch]);
+	}, [searchQuery, onSearchChange, onPageChange, clearSearch, cancelSearch]);
 
 	// Trigger search as user types (debounced)
 	// Important: skip initial mount so we don't reset to page 1 when returning to a table.
@@ -196,12 +188,8 @@ export function ServerSideDataTable<TData extends Record<string, unknown>, TValu
 		}
 
 		executeSearch();
-		return () => {
-			if (searchTimeoutRef.current) {
-				clearTimeout(searchTimeoutRef.current);
-			}
-		};
-	}, [searchQuery, executeSearch]);
+		return cancelSearch;
+	}, [searchQuery, executeSearch, cancelSearch]);
 
 	// When sorting changes, reset to page 1 (skip initial mount).
 	React.useEffect(() => {

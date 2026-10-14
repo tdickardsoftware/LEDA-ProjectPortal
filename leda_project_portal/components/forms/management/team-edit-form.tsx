@@ -31,7 +31,7 @@ import { InputDefault } from "@/components/ui/form-input-default";
 import { teamRoute } from "@/lib/apiRoutes";
 import { Team } from "@/lib/definitions";
 import PlayerSelector from "@/components/ui/player-selector";
-import { Tab } from "@headlessui/react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 
@@ -239,28 +239,22 @@ export default function TeamEditForm({
 				ref={formRef}
 				onSubmitCapture={(e) => e.preventDefault()}
 			>
-				<Tab.Group
-					selectedIndex={currentStep}
-					onChange={setCurrentStep}
+				<Tabs
+					value={String(currentStep)}
+					onValueChange={(value) => setCurrentStep(Number(value))}
 				>
 					<div className="mb-6">
 						<div className="flex border-b border-border">
-							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
+							<TabsList className="flex h-auto w-full space-x-1 rounded-xl bg-transparent p-1">
 								{steps.map((step, index) => (
-									<Tab
+									<TabsTrigger
 										key={index}
-										className={({ selected }) =>
-											`w-full py-2.5 text-sm font-medium leading-5 
-											${
-												selected
-													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-muted-foreground hover:text-foreground hover:border-border"
-											} ${
-												index < currentStep
-													? "text-green-500"
-													: ""
-											}`
-										}
+										value={String(index)}
+										className={`w-full rounded-none px-0 py-2.5 text-sm font-medium leading-5 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 ${
+											index < currentStep
+												? "text-green-500"
+												: "text-muted-foreground hover:text-foreground"
+										}`}
 									>
 										<span className="flex items-center justify-center">
 											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
@@ -270,15 +264,14 @@ export default function TeamEditForm({
 											</span>
 											{step.name}
 										</span>
-									</Tab>
+									</TabsTrigger>
 								))}
-							</Tab.List>
+							</TabsList>
 						</div>
 					</div>
 
-					<Tab.Panels>
-						{/* Step 1: Basic Info */}
-						<Tab.Panel>
+					{/* Step 1: Basic Info */}
+					<TabsContent value="0" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>
 									Team Basic Information for LEDA ID #
@@ -321,10 +314,10 @@ export default function TeamEditForm({
 									label="Team Name *"
 								/>
 							</div>
-						</Tab.Panel>
+						</TabsContent>
 
 						{/* Step 2: Team Details */}
-						<Tab.Panel>
+						<TabsContent value="1" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>Team Details</h1>
 								<hr className="bg-muted mb-4"></hr>
@@ -352,10 +345,10 @@ export default function TeamEditForm({
 									)}
 								/>
 							</div>
-						</Tab.Panel>
+						</TabsContent>
 
 						{/* Step 3: Team Members */}
-						<Tab.Panel>
+						<TabsContent value="2" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>Team Members</h1>
 								<hr className="bg-muted mb-4"></hr>
@@ -366,9 +359,8 @@ export default function TeamEditForm({
 									/>
 								</div>
 							</div>
-						</Tab.Panel>
-					</Tab.Panels>
-				</Tab.Group>
+						</TabsContent>
+				</Tabs>
 
 				<div className="flex justify-between">
 					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">

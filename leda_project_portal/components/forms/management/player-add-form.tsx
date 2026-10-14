@@ -22,7 +22,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import validator from "validator";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -98,7 +97,7 @@ const playerInfoSchema = z.object({
 	if (data.emailUnknown) return;
 	if (!data.email) {
 		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Required", path: ["email"] });
-	} else if (!validator.isEmail(data.email)) {
+	} else if (!z.string().email().safeParse(data.email).success) {
 		ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is Invalid", path: ["email"] });
 	}
 });

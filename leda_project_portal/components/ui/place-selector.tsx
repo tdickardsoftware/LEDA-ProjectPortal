@@ -16,6 +16,7 @@ import React, { useState } from "react";
 import { useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDebouncedEffect } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -131,16 +132,12 @@ const DivisionSelectorContent = ({
 	}, [open]);
 
 	// Debounce search input
-	React.useEffect(() => {
-		const timer = setTimeout(() => {
-			setDebouncedSearch(searchQuery);
-			setOffset(0);
-			setAllPlaces([]);
-			setHasMore(true);
-		}, 300);
-
-		return () => clearTimeout(timer);
-	}, [searchQuery]);
+	useDebouncedEffect(() => {
+		setDebouncedSearch(searchQuery);
+		setOffset(0);
+		setAllPlaces([]);
+		setHasMore(true);
+	}, [searchQuery], 300);
 
 	// Fetch records based on search and offset
 	const { data: places = [], isLoading, isFetching } = useQuery({

@@ -12,6 +12,7 @@ import React, { useState } from "react";
 import { useFormContext, FormProvider } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDebouncedEffect } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -114,10 +115,7 @@ const DivisionSelectorContent: React.FC<DivisionSelectorContentProps> = ({
 	const lastInputType = useLastInputType();
 
 	// Debounce search input to avoid filtering on every keystroke
-	React.useEffect(() => {
-		const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
-		return () => clearTimeout(timer);
-	}, [searchQuery]);
+	useDebouncedEffect(() => setDebouncedSearch(searchQuery), [searchQuery], 300);
 
 	// Reset search when dropdown closes
 	React.useEffect(() => {

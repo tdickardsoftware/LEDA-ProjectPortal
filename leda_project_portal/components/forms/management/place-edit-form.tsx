@@ -21,7 +21,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import validator from "validator";
 import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -36,7 +35,7 @@ import { placeRoute } from "@/lib/apiRoutes";
 import StatePicker from "../../ui/state-selector";
 import CheckboxDefault from "@/components/ui/checkbox-default";
 import { Place } from "@/lib/definitions";
-import { Tab } from "@headlessui/react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation } from "@tanstack/react-query";
 import { fetchWithSession } from "@/lib/getData";
 import { DatePickerFormField } from "@/components/ui/date-picker-form-field";
@@ -71,12 +70,12 @@ const placeFormSchema = z.object({
 		.string()
 		.nullable()
 		.optional()
-		.refine((value) => !value || validator.isEmail(value), { message: "Email is Invalid" }),
+		.refine((value) => !value || z.string().email().safeParse(value).success, { message: "Email is Invalid" }),
 	website: z
 		.string()
 		.nullable()
 		.optional()
-		.refine((value) => !value || validator.isURL(value), {
+		.refine((value) => !value || URL.canParse(value.includes("://") ? value : `https://${value}`), {
 			message: "Website is Invalid",
 		}),
 	establishDate: z.string(),
@@ -322,28 +321,22 @@ export default function PlaceEditForm({
 				ref={formRef}
 				onSubmitCapture={(e) => e.preventDefault()}
 			>
-				<Tab.Group
-					selectedIndex={currentStep}
-					onChange={setCurrentStep}
+				<Tabs
+					value={String(currentStep)}
+					onValueChange={(value) => setCurrentStep(Number(value))}
 				>
 					<div className="mb-6">
 						<div className="flex border-b border-border">
-							<Tab.List className="flex space-x-1 rounded-xl p-1 w-full">
+							<TabsList className="flex h-auto w-full space-x-1 rounded-xl bg-transparent p-1">
 								{steps.map((step, index) => (
-									<Tab
+									<TabsTrigger
 										key={index}
-										className={({ selected }) =>
-											`w-full py-2.5 text-sm font-medium leading-5 
-											${
-												selected
-													? "border-b-2 border-blue-500 text-blue-600"
-													: "text-muted-foreground hover:text-foreground hover:border-border"
-											} ${
-												index < currentStep
-													? "text-green-500"
-													: ""
-											}`
-										}
+										value={String(index)}
+										className={`w-full rounded-none px-0 py-2.5 text-sm font-medium leading-5 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 ${
+											index < currentStep
+												? "text-green-500"
+												: "text-muted-foreground hover:text-foreground"
+										}`}
 									>
 										<span className="flex items-center justify-center">
 											<span className="flex h-6 w-6 items-center justify-center rounded-full mr-2 border border-current">
@@ -353,15 +346,14 @@ export default function PlaceEditForm({
 											</span>
 											{step.name}
 										</span>
-									</Tab>
+									</TabsTrigger>
 								))}
-							</Tab.List>
+							</TabsList>
 						</div>
 					</div>
 
-					<Tab.Panels>
-						{/* Step 1: Basic Info */}
-						<Tab.Panel>
+					{/* Step 1: Basic Info */}
+					<TabsContent value="0" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>
 									Basic Place Information for LEDA ID #
@@ -409,10 +401,10 @@ export default function PlaceEditForm({
 									)}
 								/>
 							</div>
-						</Tab.Panel>
+						</TabsContent>
 
 						{/* Step 2: Contact Info */}
-						<Tab.Panel>
+						<TabsContent value="1" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>Contact Information</h1>
 								<hr className="bg-muted mb-4"></hr>
@@ -459,10 +451,10 @@ export default function PlaceEditForm({
 									label="Other Number"
 								/>
 							</div>
-						</Tab.Panel>
+						</TabsContent>
 
 						{/* Step 3: Membership Info */}
-						<Tab.Panel>
+						<TabsContent value="2" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>Membership Information</h1>
 								<hr className="bg-muted mb-4"></hr>
@@ -513,10 +505,10 @@ export default function PlaceEditForm({
 									enableMonthYearPicker
 								/>
 							</div>
-						</Tab.Panel>
+						</TabsContent>
 
 						{/* Step 4: Additional Info */}
-						<Tab.Panel>
+						<TabsContent value="3" className="mt-0">
 							<div className={formContainerStyle}>
 								<h1>Additional Information</h1>
 								<hr className="bg-muted mb-4"></hr>
@@ -568,9 +560,8 @@ export default function PlaceEditForm({
 									)}
 								/>
 							</div>
-						</Tab.Panel>
-					</Tab.Panels>
-				</Tab.Group>
+						</TabsContent>
+				</Tabs>
 
 				<div className="flex justify-between">
 					<Button variant="outline" type="button" onClick={prevStep} className="hover:bg-muted border-border text-foreground">

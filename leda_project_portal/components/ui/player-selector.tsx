@@ -12,6 +12,7 @@
 import React, { useEffect, useState } from "react";
 import { Check, ChevronsUpDown, X, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDebouncedEffect } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -73,16 +74,12 @@ export default function PlayerSelector({
 	}, [open]);
 
 	// Debounce search input
-	React.useEffect(() => {
-		const timer = setTimeout(() => {
-			setDebouncedSearch(searchQuery);
-			setOffset(0);
-			setAllPlayers([]);
-			setHasMore(true);
-		}, 300);
-
-		return () => clearTimeout(timer);
-	}, [searchQuery]);
+	useDebouncedEffect(() => {
+		setDebouncedSearch(searchQuery);
+		setOffset(0);
+		setAllPlayers([]);
+		setHasMore(true);
+	}, [searchQuery], 300);
 
 	// Fetch records based on search and offset
 	const { data: players = [], isLoading: isLoadingPlayers, isFetching } = useQuery({

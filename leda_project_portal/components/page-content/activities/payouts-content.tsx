@@ -20,7 +20,8 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import SeasonCodeSelector from "@/components/ui/season-code-selector";
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { useDebouncedCallback } from "@/hooks/useDebounce";
 import {
 	rosterRoute,
 	scoresheetCountRoute,
@@ -175,7 +176,6 @@ export default function PayoutsContent() {
 		{}
 	); // Store original data for comparison
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// --- TanStack Query: Fetch payouts data ---
 	const {
@@ -378,8 +378,14 @@ export default function PayoutsContent() {
 		},
 	});
 
+	const { schedule: scheduleAutosave, cancel: cancelAutosave } = useDebouncedCallback(() => {
+		setSaveStatus('saving');
+		savePayoutsMutation.mutate({ seasonCode, payoutsData });
+		setOriginalPayoutsData(deepCopy(payoutsData));
+	}, 1500);
+
 	const handleSavePayoutsData = async () => {
-		if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		cancelAutosave();
 		savePayoutsMutation.mutate({ seasonCode, payoutsData });
 		setOriginalPayoutsData(deepCopy(payoutsData));
 	};
@@ -389,13 +395,8 @@ export default function PayoutsContent() {
 		if (!seasonCode || Object.keys(payoutsData).length === 0) return;
 		if (JSON.stringify(payoutsData) === JSON.stringify(originalPayoutsData)) return;
 		setSaveStatus('pending');
-		if (debounceTimer.current) clearTimeout(debounceTimer.current);
-		debounceTimer.current = setTimeout(() => {
-			setSaveStatus('saving');
-			savePayoutsMutation.mutate({ seasonCode, payoutsData });
-			setOriginalPayoutsData(deepCopy(payoutsData));
-		}, 1500);
-		return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+		scheduleAutosave();
+		return cancelAutosave;
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [payoutsData]);
 
